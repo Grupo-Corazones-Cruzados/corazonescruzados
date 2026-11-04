@@ -1,15 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { toast, Toaster } from 'sonner';
-import PublicHeader from '@/components/public/PublicHeader';
+import { toast } from 'sonner';
+import MarcoPublico, { AvisoPublico, CargandoPublico } from '@/components/public/MarcoPublico';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { ListaSubidas, useSubidaArchivos } from '@/components/ui/SubidaArchivos';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { CheckCircle2, Link2Off, LogIn } from 'lucide-react';
-
-const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
 
 type Datos = { motivo: string | null; titulo?: string; indicaciones?: string; sesion: string | null };
 
@@ -70,17 +67,12 @@ export default function EnlacePortal({ token }: { token: string }) {
   const entrar = `/?acceso=cliente&redirect=${encodeURIComponent(`/enlace/${token}`)}`;
 
   const tarjeta = (Icono: any, titulo: string, cuerpo: React.ReactNode, acciones?: React.ReactNode) => (
-    <div className="bg-digi-card border border-digi-border rounded-xl p-8 text-center">
-      <Icono className="w-8 h-8 text-accent mx-auto mb-3" />
-      <p className="text-[15px] font-semibold text-digi-text" style={mf}>{titulo}</p>
-      <div className="text-[13px] text-digi-muted mt-1.5" style={mf}>{cuerpo}</div>
-      {acciones && <div className="mt-5 flex flex-col sm:flex-row gap-2 justify-center">{acciones}</div>}
-    </div>
+    <AvisoPublico icon={Icono} titulo={titulo} acciones={acciones}>{cuerpo}</AvisoPublico>
   );
 
   let cuerpo: React.ReactNode;
   if (!datos) {
-    cuerpo = <p className="text-[13px] text-white/60 text-center py-16" style={mf}>Cargando…</p>;
+    cuerpo = <CargandoPublico />;
   } else if (enviado) {
     cuerpo = tarjeta(CheckCircle2, 'Respuesta enviada', 'Gracias. El enlace ya quedó cerrado.');
   } else if (datos.motivo === 'necesita_sesion') {
@@ -96,16 +88,17 @@ export default function EnlacePortal({ token }: { token: string }) {
     cuerpo = tarjeta(Link2Off, m.titulo, m.texto);
   } else {
     cuerpo = (
-      <div className="bg-digi-card border border-digi-border rounded-xl p-5 space-y-4">
+      <div className="bg-digi-card border border-digi-border rounded-xl p-5 sm:p-6 space-y-5">
         <div>
-          <h1 className="text-[18px] font-semibold text-digi-text leading-snug" style={df}>{datos.titulo}</h1>
-          {datos.indicaciones && <p className="text-[13px] text-digi-muted mt-1.5 whitespace-pre-wrap" style={mf}>{datos.indicaciones}</p>}
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">Solicitud</p>
+          <h1 className="titulo-progreso mt-1 text-[20px] text-digi-text leading-snug">{datos.titulo}</h1>
+          {datos.indicaciones && <p className="text-[13.5px] text-digi-muted mt-2 whitespace-pre-wrap">{datos.indicaciones}</p>}
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="enlace-texto" className="text-[12px] font-semibold text-digi-text opacity-70" style={mf}>Tu respuesta</label>
+          <label htmlFor="enlace-texto" className="text-[12px] font-semibold text-digi-muted">Tu respuesta</label>
           <AutoGrowTextarea id="enlace-texto" value={texto} onChange={(e) => setTexto(e.target.value)} minRows={5} maxLength={20000}
-            className="field-control w-full px-3 py-2.5 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/50 focus:outline-none"
+            className="field-control w-full px-3 py-2.5 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/60 focus:outline-none"
             placeholder="Escribe aquí…" />
         </div>
 
@@ -121,10 +114,6 @@ export default function EnlacePortal({ token }: { token: string }) {
   }
 
   return (
-    <div className="corp page-dark min-h-screen">
-      <Toaster position="top-center" richColors />
-      <PublicHeader />
-      <div className="max-w-2xl mx-auto px-4 py-8">{cuerpo}</div>
-    </div>
+    <MarcoPublico>{cuerpo}</MarcoPublico>
   );
 }

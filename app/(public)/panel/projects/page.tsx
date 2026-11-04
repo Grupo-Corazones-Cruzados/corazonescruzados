@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Plus, Trash2, ChevronRight, ChevronDown,
   FolderTree, Box, Layers, FileText,
-  Save, Loader2, Link2, Check, ExternalLink,
+  Save, Loader2, ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type {
@@ -188,16 +188,8 @@ function ProjectColumn({
   onUpdate: (patch: Partial<ProjectStructure>) => void;
   onRemove: () => void;
 }) {
-  const [linkCopied, setLinkCopied] = useState(false);
   const appUrl = agentInfo?.productionUrl || (agentInfo?.port ? `http://localhost:${agentInfo.port}` : null);
 
-  const copyPortalLink = () => {
-    const base = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-    const url = `${base}/portal/${project.id}`;
-    navigator.clipboard.writeText(url);
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
-  };
 
   const addModule = () => {
     onUpdate({
@@ -234,16 +226,6 @@ function ProjectColumn({
             className="flex-1 bg-transparent text-sm font-pixel text-digi-green border-none outline-none placeholder:text-digi-muted min-w-0"
             placeholder="Nombre del proyecto"
           />
-          <button
-            onClick={copyPortalLink}
-            className={cn(
-              'shrink-0 transition-colors',
-              linkCopied ? 'text-green-400' : 'text-digi-muted hover:text-blue-400',
-            )}
-            title="Copiar enlace del portal"
-          >
-            {linkCopied ? <Check size={13} /> : <Link2 size={13} />}
-          </button>
           <button
             onClick={onRemove}
             className="text-digi-muted hover:text-red-400 transition-colors shrink-0"

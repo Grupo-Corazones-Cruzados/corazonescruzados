@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { TEMAS, TEMA_POR_DEFECTO, definicionTema, type TemaId } from '@/lib/temas';
-import { LLAVE_ULTIMO_TEMA } from '@/components/providers/TemaPanel';
+import { TEMA_POR_DEFECTO, type TemaId } from '@/lib/temas';
+import { TEMAS_OSCUROS, leerUltimoTema, scriptTema } from '@/lib/tema-ultimo';
 
 /**
  * ⭐ LA PANTALLA DE CARGA DEL PANEL (Fernando, 2026-10-30: «actualizar esta pantalla de carga a un
@@ -23,22 +23,9 @@ import { LLAVE_ULTIMO_TEMA } from '@/components/providers/TemaPanel';
  * quien usa el negro vería un fogonazo blanco. Después, el estado de React coge el mismo valor.
  */
 
-const OSCUROS = TEMAS.filter((t) => t.base === 'oscuro').map((t) => t.id);
-const IDS = TEMAS.map((t) => t.id);
-
-function leerUltimo(): TemaId {
-  try {
-    const v = localStorage.getItem(LLAVE_ULTIMO_TEMA) ?? localStorage.getItem('gcc_dash_theme');
-    if (v === 'dark') return 'oscuro';
-    if (v === 'light') return 'claro';
-    return definicionTema(v)?.id ?? TEMA_POR_DEFECTO;
-  } catch {
-    return TEMA_POR_DEFECTO;
-  }
-}
-
-// Lo mismo que `leerUltimo`, para el `<script>` en línea (corre antes que React).
-const SCRIPT_TEMA = `(function(){try{var e=document.currentScript.parentElement,t=localStorage.getItem(${JSON.stringify(LLAVE_ULTIMO_TEMA)})||localStorage.getItem('gcc_dash_theme')||'';if(t==='dark')t='oscuro';if(t==='light')t='claro';if(${JSON.stringify(IDS)}.indexOf(t)<0)t=${JSON.stringify(TEMA_POR_DEFECTO)};e.classList.remove('tema-${TEMA_POR_DEFECTO}');e.classList.add('tema-'+t);if(${JSON.stringify(OSCUROS)}.indexOf(t)>=0)e.classList.add('dark');}catch(_){}})();`;
+const OSCUROS = TEMAS_OSCUROS;
+const leerUltimo = () => leerUltimoTema();
+const SCRIPT_TEMA = scriptTema();
 
 /** Un bloque que se ilumina. `i` escalona la ola: cada bloque brilla un poco después del anterior. */
 function B({ className = '', i = 0 }: { className?: string; i?: number }) {

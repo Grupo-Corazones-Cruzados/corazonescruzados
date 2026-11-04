@@ -1,14 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Toaster } from 'sonner';
-import PublicHeader from '@/components/public/PublicHeader';
+import MarcoPublico, { AvisoPublico, CargandoPublico } from '@/components/public/MarcoPublico';
 import FormatosExcel from '@/components/herramientas/FormatosExcel';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Link2Off, LogIn } from 'lucide-react';
-
-const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
 
 type Datos = { motivo: string | null; herramienta?: string; nombre?: string; titulo?: string | null; vence_en?: string; sesion: string | null };
 
@@ -44,18 +40,16 @@ export default function HerramientaPortal({ token }: { token: string }) {
   };
   const entrar = `/?acceso=cliente&redirect=${encodeURIComponent(`/herramienta/${token}`)}`;
 
+  // La herramienta usa el ancho completo; los avisos, el de un formulario.
   const tarjeta = (Icono: any, titulo: string, cuerpo: React.ReactNode, acciones?: React.ReactNode) => (
-    <div className="max-w-2xl mx-auto bg-digi-card border border-digi-border rounded-xl p-8 text-center">
-      <Icono className="w-8 h-8 text-accent mx-auto mb-3" />
-      <p className="text-[15px] font-semibold text-digi-text" style={mf}>{titulo}</p>
-      <div className="text-[13px] text-digi-muted mt-1.5" style={mf}>{cuerpo}</div>
-      {acciones && <div className="mt-5 flex flex-col sm:flex-row gap-2 justify-center">{acciones}</div>}
+    <div className="max-w-2xl mx-auto">
+      <AvisoPublico icon={Icono} titulo={titulo} acciones={acciones}>{cuerpo}</AvisoPublico>
     </div>
   );
 
   let cuerpo: React.ReactNode;
   if (!datos) {
-    cuerpo = <p className="text-[13px] text-white/60 text-center py-16" style={mf}>Cargando…</p>;
+    cuerpo = <CargandoPublico />;
   } else if (datos.motivo === 'necesita_sesion') {
     cuerpo = tarjeta(LogIn, 'Inicia sesión para usarla',
       'Este acceso es para un cliente de GCC World: entra con tu cuenta y volverás aquí.',
@@ -71,8 +65,9 @@ export default function HerramientaPortal({ token }: { token: string }) {
     cuerpo = (
       <div className="space-y-4">
         <div className="bg-digi-card border border-digi-border rounded-xl px-5 py-4">
-          <h1 className="text-[18px] font-semibold text-digi-text leading-snug" style={df}>{datos.nombre}</h1>
-          {datos.titulo && <p className="text-[13px] text-digi-muted mt-1" style={mf}>{datos.titulo}</p>}
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">Herramienta compartida</p>
+          <h1 className="titulo-progreso mt-1 text-[20px] text-digi-text leading-snug">{datos.nombre}</h1>
+          {datos.titulo && <p className="text-[13.5px] text-digi-muted mt-1">{datos.titulo}</p>}
         </div>
         {datos.herramienta === 'formatos-excel' && <FormatosExcel onUso={usar} />}
       </div>
@@ -80,10 +75,8 @@ export default function HerramientaPortal({ token }: { token: string }) {
   }
 
   return (
-    <div className="corp page-dark min-h-screen">
-      <Toaster position="top-center" richColors closeButton />
-      <PublicHeader />
-      <div className="max-w-[1400px] mx-auto px-4 py-8">{cuerpo}</div>
-    </div>
+    <MarcoPublico ancho="completo">
+      <div className="max-w-[1400px] mx-auto">{cuerpo}</div>
+    </MarcoPublico>
   );
 }

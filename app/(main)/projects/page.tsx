@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import {
   Plus, Trash2, ChevronRight, ChevronDown,
   FolderTree, Box, Layers, FileText,
-  Save, Loader2, Link2, Check, ExternalLink,
+  Save, Loader2, ExternalLink,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ProjectStructure, Module, Section, Subsection } from '@/types/projects';
@@ -244,15 +244,8 @@ function ProjectDetail({
   onUpdate: (patch: Partial<ProjectStructure>) => void;
   onRemove: () => void;
 }) {
-  const [linkCopied, setLinkCopied] = useState(false);
   const appUrl = agentInfo?.productionUrl || (agentInfo?.port ? `http://localhost:${agentInfo.port}` : null);
 
-  const copyPortalLink = () => {
-    const base = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-    navigator.clipboard.writeText(`${base}/portal/${project.id}`);
-    setLinkCopied(true);
-    setTimeout(() => setLinkCopied(false), 2000);
-  };
 
   const addModule = () => onUpdate({ modules: [...project.modules, { id: uid(), name: 'Nuevo módulo', sections: [] }] });
   const updateModule = (moduleId: string, patch: Partial<Module>) =>
@@ -269,9 +262,6 @@ function ProjectDetail({
         <div className="flex items-center gap-2">
           <FolderTree size={18} className="text-accent shrink-0" />
           <InlineText value={project.name} onChange={v => onUpdate({ name: v })} placeholder="Nombre del proyecto" className="flex-1 text-[16px] font-semibold text-digi-text" />
-          <button onClick={copyPortalLink} className={cn(iconBtn, linkCopied ? 'text-green-600' : 'hover:text-accent hover:bg-accent-light')} title="Copiar enlace del portal">
-            {linkCopied ? <Check size={15} /> : <Link2 size={15} />}
-          </button>
           <button onClick={onRemove} className={cn(iconBtn, 'hover:text-red-600 hover:bg-red-50')} title="Eliminar proyecto">
             <Trash2 size={15} />
           </button>

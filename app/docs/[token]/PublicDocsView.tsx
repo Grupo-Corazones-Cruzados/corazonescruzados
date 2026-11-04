@@ -1,11 +1,27 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
+/**
+ * LA DOCUMENTACIÓN PÚBLICA DE UN PROYECTO (caso de estudio), con el diseño del panel
+ * (Fernando, 2026-11-04: «habrá que editarla con el nuevo diseño de /dashboard»).
+ *
+ * Antes era el estilo oscuro antiguo: letra pixel, resplandores y bordes de 2 px fuera de `.corp`.
+ * Ahora vive en `MarcoPublico` (mismos tokens, fondo y tarjetas que el panel, en el tema del
+ * visitante). Es un texto largo, así que se navega: en escritorio un índice fijo a la izquierda
+ * que marca la sección que se está leyendo; en el teléfono, un `<select>` «Ir a…» arriba.
+ */
 
-const pf = { fontFamily: "'Silkscreen', cursive" } as const;
-const mf = { fontFamily: "'JetBrains Mono', monospace" } as const;
-const sf = { fontFamily: "'Inter', sans-serif" } as const;
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { Home, Store } from 'lucide-react';
+import MarcoPublico from '@/components/public/MarcoPublico';
+import Segmentado from '@/components/ui/Segmentado';
+import { BTN_SECONDARY } from '@/components/ui/Button';
+
+/** El selector nativo del teléfono, igual que el «Ir a…» de Generación de Contenido. */
+const SELECT_MOVIL = 'field-control field-select appearance-none w-full h-11 px-3 bg-digi-darker border-2 border-digi-border text-[14px] text-digi-text focus:border-accent focus:outline-none';
+/** La etiqueta pequeña en mayúsculas del panel (`.ep-titulo`). */
+const ETIQUETA = 'text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]';
+const TARJETA = 'bg-digi-card border border-digi-border rounded-xl';
 
 interface Bi { es: string; en: string }
 
@@ -49,20 +65,29 @@ interface Props {
 
 const LABELS = {
   es: {
+    kicker: 'Caso de estudio',
     published: 'Publicado',
     backToMarket: 'Ver marketplace',
     home: 'Ir al inicio',
-    langToggle: 'EN',
-    disclaimer: 'Este caso de estudio es una presentacion publica. Nombres, datos y marcas pueden ser genericos para proteger informacion confidencial del cliente.',
+    index: 'Contenido',
+    goTo: 'Ir a…',
+    highlights: 'En cifras',
+    disclaimer: 'Este caso de estudio es una presentación pública. Nombres, datos y marcas pueden ser genéricos para proteger información confidencial del cliente.',
   },
   en: {
+    kicker: 'Case study',
     published: 'Published',
     backToMarket: 'View marketplace',
     home: 'Go to home',
-    langToggle: 'ES',
+    index: 'Contents',
+    goTo: 'Go to…',
+    highlights: 'At a glance',
     disclaimer: 'This case study is a public presentation. Names, data and brands may be generic to protect confidential client information.',
   },
 } as const;
+
+const idSeccion = (i: number) => `doc-seccion-${i}`;
+const ID_TECNOLOGIA = 'doc-tecnologia';
 
 export default function PublicDocsView({ docs, images, publishedAt, initialLang }: Props) {
   const [lang, setLang] = useState<'es' | 'en'>(initialLang);
@@ -72,6 +97,32 @@ export default function PublicDocsView({ docs, images, publishedAt, initialLang 
     const idx = Number(s.imageIndex);
     return Number.isInteger(idx) && idx >= 0 && idx < images.length;
   });
+  const hayTecnologia = !!docs.techStack && docs.techStack.items.length > 0;
+
+  // El índice: las secciones y, al final, la tecnología.
+  const indice = [
+    ...validSections.map((s, i) => ({ id: idSeccion(i), texto: `${String(i + 1).padStart(2, '0')} · ${s.title[lang]}` })),
+    ...(hayTecnologia ? [{ id: ID_TECNOLOGIA, texto: docs.techStack!.title[lang] }] : []),
+  ];
+
+  // La sección que se está leyendo, para marcarla en el índice.
+  const [activa, setActiva] = useState<string | null>(null);
+  useEffect(() => {
+    const els = indice.map((x) => document.getElementById(x.id)).filter(Boolean) as HTMLElement[];
+    if (!els.length || typeof IntersectionObserver === 'undefined') return;
+    const obs = new IntersectionObserver((entradas) => {
+      const visibles = entradas.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (visibles[0]) setActiva(visibles[0].target.id);
+    }, { rootMargin: '-80px 0px -60% 0px' });
+    els.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [indice.length, lang]);
+
+  const ir = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setActiva(id);
+  };
 
   const heroImage = images[0] || null;
   const publishedLabel = publishedAt
@@ -80,159 +131,112 @@ export default function PublicDocsView({ docs, images, publishedAt, initialLang 
       })
     : null;
 
-  return (
-    <div className="min-h-screen bg-digi-darker text-digi-text" style={sf}>
-      {/* Top bar */}
-      <header className="sticky top-0 z-20 border-b-2 border-digi-border bg-digi-darker/90 backdrop-blur-md">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link href="/" className="text-[11px] text-accent-glow hover:text-accent transition-colors" style={pf}>
-            GCC WORLD
-          </Link>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setLang(lang === 'es' ? 'en' : 'es')}
-              className="px-3 py-1.5 text-[9px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors"
-              style={pf}
-              aria-label={`Switch to ${t.langToggle}`}
-            >
-              {t.langToggle}
-            </button>
-          </div>
-        </div>
-      </header>
+  const grouped = hayTecnologia
+    ? docs.techStack!.items.reduce<Record<string, TechItem[]>>((acc, it) => {
+        (acc[it.category || 'General'] ||= []).push(it);
+        return acc;
+      }, {})
+    : {};
 
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b-2 border-digi-border">
+  return (
+    <MarcoPublico ancho="amplio">
+      {/* ── Cabecera: qué es, cuándo se publicó y el idioma ── */}
+      <div className="flex items-center justify-between gap-3">
+        <p className={`${ETIQUETA} min-w-0 truncate`}>
+          {t.kicker}{publishedLabel && <span className="normal-case tracking-normal font-normal"> · {t.published} {publishedLabel}</span>}
+        </p>
+        <Segmentado className="w-[112px] shrink-0" etiqueta="Idioma" valor={lang} onChange={setLang}
+          opciones={[{ valor: 'es', texto: 'ES' }, { valor: 'en', texto: 'EN' }]} />
+      </div>
+
+      <section className={`${TARJETA} mt-4 overflow-hidden`}>
         {heroImage && (
-          <div className="absolute inset-0 opacity-20">
+          <div className="border-b border-digi-border bg-digi-darker">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={heroImage} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-b from-digi-darker/60 via-digi-darker/80 to-digi-darker" />
+            <img src={heroImage} alt="" className="w-full max-h-[340px] object-cover object-top" />
           </div>
         )}
-        <div className="relative max-w-5xl mx-auto px-4 py-20 md:py-28 text-center">
-          <h1
-            className="text-3xl md:text-5xl font-bold text-white mb-4"
-            style={{ ...pf, letterSpacing: '0.02em', textShadow: '0 0 30px rgba(123, 95, 191, 0.4)' }}
-          >
-            {docs.hero.title[lang]}
-          </h1>
-          <p className="text-sm md:text-base text-digi-text/80 max-w-2xl mx-auto leading-relaxed">
-            {docs.hero.subtitle[lang]}
-          </p>
-          {publishedLabel && (
-            <p className="text-[9px] text-digi-muted mt-6" style={mf}>
-              {t.published}: {publishedLabel}
-            </p>
-          )}
+        <div className="p-5 sm:p-8">
+          <h1 className="titulo-progreso text-[26px] sm:text-[34px] leading-[1.15] text-digi-text">{docs.hero.title[lang]}</h1>
+          <p className="mt-3 max-w-3xl text-[15px] sm:text-[16px] leading-relaxed text-digi-muted">{docs.hero.subtitle[lang]}</p>
         </div>
       </section>
 
-      {/* Highlights */}
+      {/* ── Cifras ── */}
       {docs.highlights && docs.highlights.length > 0 && (
-        <section className="border-b-2 border-digi-border bg-digi-card/30">
-          <div className="max-w-5xl mx-auto px-4 py-10">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              {docs.highlights.map((h, i) => (
-                <div
-                  key={i}
-                  className="border border-digi-border bg-digi-darker/60 px-4 py-3 hover:border-accent/60 transition-colors"
-                >
-                  <p className="text-[9px] text-accent-glow/80 uppercase tracking-wider mb-1" style={pf}>
-                    {h.label[lang]}
-                  </p>
-                  <p className="text-sm text-white font-medium">{h.value[lang]}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+        <section className={`${TARJETA} mt-4 p-5 sm:p-6`} aria-label={t.highlights}>
+          <p className={ETIQUETA}>{t.highlights}</p>
+          <dl className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
+            {docs.highlights.map((h, i) => (
+              <div key={i} className="min-w-0 border-l-2 border-accent/50 pl-3">
+                <dt className="text-[12px] text-digi-muted">{h.label[lang]}</dt>
+                <dd className="mt-0.5 text-[15px] font-semibold text-digi-text break-words">{h.value[lang]}</dd>
+              </div>
+            ))}
+          </dl>
         </section>
       )}
 
-      {/* Sections */}
-      <main className="max-w-5xl mx-auto px-4 py-12 space-y-20">
-        {validSections.length === 0 ? (
-          <p className="text-center text-digi-muted text-sm py-16">{t.disclaimer}</p>
-        ) : (
-          validSections.map((section, i) => {
-            const imgUrl = images[section.imageIndex];
-            const reverse = i % 2 === 1;
-            return (
-              <article
-                key={i}
-                className={`grid md:grid-cols-2 gap-8 md:gap-12 items-center ${reverse ? 'md:[&>div:first-child]:order-2' : ''}`}
-              >
-                <div className="relative group">
-                  <div
-                    className="absolute -inset-1 bg-gradient-to-br from-accent/40 to-accent-glow/20 blur-xl opacity-50 group-hover:opacity-70 transition-opacity"
-                    aria-hidden
-                  />
-                  <div className="relative border-2 border-digi-border bg-digi-card overflow-hidden">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={imgUrl}
-                      alt={section.title[lang]}
-                      className="w-full h-auto object-contain"
-                      loading="lazy"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] text-accent-glow" style={pf}>
-                      {String(i + 1).padStart(2, '0')}
-                    </span>
-                    <span className="h-px flex-1 bg-digi-border" />
-                  </div>
-                  <h2 className="text-xl md:text-2xl font-semibold text-white leading-tight">
-                    {section.title[lang]}
-                  </h2>
-                  <p className="text-sm md:text-[15px] text-digi-text/85 leading-relaxed whitespace-pre-wrap">
-                    {section.narrative[lang]}
-                  </p>
+      {validSections.length === 0 && !hayTecnologia ? (
+        <p className="text-center text-digi-muted text-sm py-16">{t.disclaimer}</p>
+      ) : (
+        <div className="mt-6 lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8 lg:items-start">
+          {/* ── Índice: fijo en escritorio, «Ir a…» en el teléfono ── */}
+          {indice.length > 1 && (
+            <>
+              <nav aria-label={t.index} className={`${TARJETA} hidden lg:block sticky top-20 p-3`}>
+                <p className={`${ETIQUETA} px-2 pb-2`}>{t.index}</p>
+                <ul className="space-y-0.5">
+                  {indice.map((x) => (
+                    <li key={x.id}>
+                      <button type="button" onClick={() => ir(x.id)} aria-current={activa === x.id ? 'location' : undefined}
+                        className={`w-full text-left rounded-lg px-2 py-1.5 text-[13px] leading-snug transition-colors ${
+                          activa === x.id ? 'bg-accent-light text-accent font-semibold' : 'text-digi-muted hover:text-digi-text hover:bg-black/[0.04]'}`}>
+                        {x.texto}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+              <label className="lg:hidden block mb-4">
+                <span className="sr-only">{t.goTo}</span>
+                <select className={SELECT_MOVIL} value="" onChange={(e) => e.target.value && ir(e.target.value)}>
+                  <option value="">{t.goTo}</option>
+                  {indice.map((x) => <option key={x.id} value={x.id}>{x.texto}</option>)}
+                </select>
+              </label>
+            </>
+          )}
+
+          <div className={`min-w-0 space-y-4 ${indice.length > 1 ? '' : 'lg:col-span-2'}`}>
+            {validSections.map((section, i) => (
+              <article key={i} id={idSeccion(i)} className={`${TARJETA} scroll-mt-20 p-5 sm:p-6`}>
+                <p className={ETIQUETA}>{String(i + 1).padStart(2, '0')}</p>
+                <h2 className="titulo-progreso mt-1 text-[20px] sm:text-[22px] leading-snug text-digi-text">{section.title[lang]}</h2>
+                <p className="mt-3 text-[14.5px] sm:text-[15px] leading-relaxed text-digi-text/85 whitespace-pre-wrap break-words">
+                  {section.narrative[lang]}
+                </p>
+                <div className="mt-5 rounded-lg border border-digi-border bg-digi-darker overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={images[section.imageIndex]} alt={section.title[lang]} className="w-full h-auto object-contain" loading="lazy" />
                 </div>
               </article>
-            );
-          })
-        )}
-      </main>
+            ))}
 
-      {/* Tech Stack */}
-      {docs.techStack && docs.techStack.items.length > 0 && (
-        <section className="border-t-2 border-digi-border bg-digi-card/30">
-          <div className="max-w-5xl mx-auto px-4 py-14">
-            <div className="flex items-center gap-3 mb-8">
-              <span className="h-px flex-1 bg-digi-border" />
-              <h2 className="text-lg md:text-xl text-accent-glow" style={pf}>
-                {docs.techStack.title[lang]}
-              </h2>
-              <span className="h-px flex-1 bg-digi-border" />
-            </div>
-            {(() => {
-              const grouped = docs.techStack!.items.reduce<Record<string, TechItem[]>>((acc, it) => {
-                const cat = it.category || (lang === 'es' ? 'General' : 'General');
-                (acc[cat] ||= []).push(it);
-                return acc;
-              }, {});
-              const categories = Object.keys(grouped);
-              return (
-                <div className="space-y-8">
-                  {categories.map((cat) => (
+            {/* ── Tecnología ── */}
+            {hayTecnologia && (
+              <section id={ID_TECNOLOGIA} className={`${TARJETA} scroll-mt-20 p-5 sm:p-6`}>
+                <h2 className="titulo-progreso text-[20px] sm:text-[22px] leading-snug text-digi-text">{docs.techStack!.title[lang]}</h2>
+                <div className="mt-4 space-y-5">
+                  {Object.keys(grouped).map((cat) => (
                     <div key={cat}>
-                      <h3 className="text-[10px] text-accent-glow/70 uppercase tracking-wider mb-3" style={pf}>
-                        {cat}
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <h3 className={ETIQUETA}>{cat}</h3>
+                      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
                         {grouped[cat].map((item, i) => (
-                          <div
-                            key={i}
-                            className="border border-digi-border bg-digi-darker/60 px-4 py-3 hover:border-accent/60 transition-colors"
-                          >
-                            <p className="text-sm text-white font-semibold mb-1">{item.name}</p>
+                          <div key={i} className="bg-digi-card border border-digi-border rounded-lg px-3.5 py-3 min-w-0">
+                            <p className="text-[14px] font-semibold text-digi-text break-words">{item.name}</p>
                             {item.description && (
-                              <p className="text-[11px] text-digi-text/70 leading-relaxed">
-                                {item.description[lang]}
-                              </p>
+                              <p className="mt-1 text-[12.5px] leading-relaxed text-digi-muted">{item.description[lang]}</p>
                             )}
                           </div>
                         ))}
@@ -240,39 +244,21 @@ export default function PublicDocsView({ docs, images, publishedAt, initialLang 
                     </div>
                   ))}
                 </div>
-              );
-            })()}
+              </section>
+            )}
           </div>
-        </section>
+        </div>
       )}
 
-      {/* Footer */}
-      <footer className="border-t-2 border-digi-border mt-16">
-        <div className="max-w-5xl mx-auto px-4 py-10 space-y-4 text-center">
-          <p className="text-[10px] text-digi-muted leading-relaxed max-w-2xl mx-auto" style={mf}>
-            {t.disclaimer}
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <Link
-              href="/"
-              className="px-3 py-1.5 text-[9px] text-digi-muted border border-digi-border hover:text-white hover:border-accent transition-colors"
-              style={pf}
-            >
-              {t.home}
-            </Link>
-            <Link
-              href="/dashboard/marketplace"
-              className="px-3 py-1.5 text-[9px] text-accent-glow border border-accent/40 hover:bg-accent/10 transition-colors"
-              style={pf}
-            >
-              {t.backToMarket}
-            </Link>
-          </div>
-          <p className="text-[8px] text-digi-muted/60" style={pf}>
-            © GCC WORLD · Grupo Corazones Cruzados
-          </p>
+      {/* ── Pie ── */}
+      <footer className="mt-10 space-y-4 text-center">
+        <p className="text-[12px] text-digi-muted leading-relaxed max-w-2xl mx-auto">{t.disclaimer}</p>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-2">
+          <Link href="/" className={BTN_SECONDARY}><Home className="w-4 h-4" /> {t.home}</Link>
+          <Link href="/dashboard/marketplace" className={BTN_SECONDARY}><Store className="w-4 h-4" /> {t.backToMarket}</Link>
         </div>
+        <p className="text-[11px] text-digi-muted">© GCC World · Grupo Corazones Cruzados</p>
       </footer>
-    </div>
+    </MarcoPublico>
   );
 }

@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import {
-  CalendarDays, ChevronLeft, ChevronRight, RefreshCw, CalendarPlus, Clock,
+  CalendarDays, CalendarX2, ChevronLeft, ChevronRight, RefreshCw, CalendarPlus, Clock,
 } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import CalendarView, { type CalendarViewMode } from '@/components/calendar/CalendarView';
 import EventDetailsModal from '@/components/calendar/EventDetailsModal';
 import ProposalModal, { type ProposalPayload } from '@/components/calendar/ProposalModal';
-import PublicHeader from '@/components/public/PublicHeader';
+import MarcoPublico, { AvisoPublico, CargandoPublico } from '@/components/public/MarcoPublico';
+import Segmentado from '@/components/ui/Segmentado';
 import { BotonDetalles } from '@/components/ui/DetailHeader';
 import {
   type CalendarEvent,
@@ -19,12 +20,15 @@ import {
 } from '@/lib/calendar/recurrence';
 import { type AvailabilityStatus, AVAILABILITY } from '@/lib/calendar/availability';
 
-// Dashboard Fluent (.corp): ambas fuentes resuelven a Segoe UI.
-const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
-
-// Color neutro de los bloques "Ocupado" (coincide con el del endpoint público).
-const BUSY_COLOR = '#64748b';
+// El estado del miembro es TEXTO de color, sin punto ni píldora, en los tonos del tema (`.corp`
+// redefine los `-400` para claro y oscuro): los hex de `AVAILABILITY` son para el panel.
+const TONO_ESTADO: Record<AvailabilityStatus, string> = {
+  conectado: 'text-green-400',
+  ocupado: 'text-red-400',
+  trabajando: 'text-orange-400',
+  descanso: 'text-digi-muted',
+  fuera_de_casa: 'text-digi-muted',
+};
 
 const MEMBER_TZ = 'America/Guayaquil';
 
@@ -97,6 +101,12 @@ export default function PublicCalendarPage() {
     vv?.addEventListener('resize', medir);
     return () => { window.removeEventListener('resize', medir); vv?.removeEventListener('resize', medir); };
   }, [allowMultiView]);
+  // El marco (`MarcoPublico`) no recibe estilos: el alto medido le llega como variable CSS.
+  useEffect(() => {
+    if (altoVisible == null) return;
+    document.documentElement.style.setProperty('--alto-visible', `${altoVisible}px`);
+    return () => { document.documentElement.style.removeProperty('--alto-visible'); };
+  }, [altoVisible]);
   const [currentDate, setCurrentDate] = useState<Date>(() => new Date());
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [memberName, setMemberName] = useState<string>('');
@@ -300,23 +310,16 @@ export default function PublicCalendarPage() {
   }, [view, currentDate]);
 
   if (loading) {
-    return (
-      <div className="corp page-dark min-h-screen flex items-center justify-center">
-        <div className="inline-flex items-center gap-2 text-[13px] text-white/70" style={mf}>
-          <CalendarDays className="w-4 h-4 animate-pulse" /> Cargando calendario…
-        </div>
-      </div>
-    );
+    return <MarcoPublico><CargandoPublico texto="Cargando calendario…" /></MarcoPublico>;
   }
 
   if (error) {
     return (
-      <div className="corp page-dark min-h-screen flex items-center justify-center p-6">
-        <div className="bg-digi-card border border-digi-border rounded-xl shadow-sm p-6 max-w-md w-full text-center space-y-1.5">
-          <div className="text-[15px] font-semibold text-digi-text" style={df}>Enlace no disponible</div>
-          <div className="text-[13px] text-digi-muted" style={mf}>{error}</div>
+      <MarcoPublico>
+        <div className="max-w-md mx-auto">
+          <AvisoPublico icon={CalendarX2} titulo="Enlace no disponible">{error}</AvisoPublico>
         </div>
-      </div>
+      </MarcoPublico>
     );
   }
 
@@ -333,17 +336,22 @@ export default function PublicCalendarPage() {
   //    todo el ancho: es LA acción de la página.
   const enTelefono = !allowMultiView;
   const esHoy = new Date().toDateString() === currentDate.toDateString();
+  // La muestra de cada bloque: los mismos tonos que pinta la rejilla (pizarra = ocupado, ámbar
+  // discontinuo = tu propuesta), con clases del tema en vez de hex sueltos.
   const leyenda = (
     <>
-      <span className="inline-flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
-        <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: `${BUSY_COLOR}30`, borderLeft: `3px solid ${BUSY_COLOR}` }} /> Ocupado
+      <span className="inline-flex items-center gap-1.5 text-[12px] text-digi-muted">
+        <span className="w-3 h-3 rounded-sm bg-slate-500/20 border-l-[3px] border-slate-500" /> Ocupado
       </span>
-      <span className="inline-flex items-center gap-1.5 text-[12px] text-digi-muted" style={mf}>
-        <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: '#f59e0b1f', borderLeft: '3px dashed #f59e0b' }} /> Tu propuesta (pendiente)
+      <span className="inline-flex items-center gap-1.5 text-[12px] text-digi-muted">
+        <span className="w-3 h-3 rounded-sm bg-amber-500/12 border-l-[3px] border-dashed border-amber-500" /> Tu propuesta (pendiente)
       </span>
     </>
   );
-  const flecha = 'w-11 h-11 md:w-8 md:h-8 shrink-0 flex items-center justify-center rounded-md border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors';
+  const estado = (
+    <span className={`text-[12px] font-medium ${TONO_ESTADO[memberStatus]}`}>{AVAILABILITY[memberStatus].label}</span>
+  );
+  const flecha = 'w-11 h-11 md:w-9 md:h-9 shrink-0 flex items-center justify-center rounded-[var(--radio-control,6px)] border border-digi-border text-digi-muted hover:text-accent hover:border-accent transition-colors';
 
   return (
     // FIJA arriba y con el alto VISIBLE: la página no se desplaza; solo las horas, dentro.
@@ -351,23 +359,22 @@ export default function PublicCalendarPage() {
     // ningún alto la descuenta (ni `dvh`, ni `innerHeight`, ni `viewport-fit`: probado el
     // 2026-10-31). Por eso nada importante vive abajo: «Agendar» va arriba, junto al nombre, la
     // tarjeta llega al borde y las horas llevan un hueco final para poder subir la última.
-    <div
-      className={`corp page-dark ${enTelefono ? 'fixed inset-x-0 top-0 h-dvh flex flex-col overflow-hidden' : 'min-h-screen'}`}
-      style={enTelefono && altoVisible ? { height: altoVisible } : undefined}
+    <MarcoPublico
+      sinContenedor
+      className={enTelefono ? 'fixed inset-x-0 top-0 !min-h-0 h-[var(--alto-visible,100dvh)] overflow-hidden' : ''}
     >
-      <div className="shrink-0"><PublicHeader /></div>
       {diag && (
         <pre className="fixed top-0 inset-x-0 z-[999] m-0 p-2 bg-black/85 text-[10px] leading-snug text-lime-300 whitespace-pre-wrap break-all pointer-events-none">
           {`modo ${allowMultiView ? 'ESCRITORIO' : 'TELÉFONO'}\n${diag}`}
         </pre>
       )}
-      <div className={enTelefono ? 'flex-1 min-h-0 flex flex-col px-3 pt-3' : 'max-w-6xl mx-auto space-y-4 py-6 px-8'}>
-        <div className={`bg-digi-card border border-digi-border shadow-sm overflow-hidden flex flex-col ${enTelefono ? 'flex-1 min-h-0 rounded-t-xl border-b-0' : 'rounded-xl h-[calc(100dvh-6.5rem)]'}`}>
+      <main className={enTelefono ? 'flex-1 min-h-0 flex flex-col px-3 pt-3' : 'w-full max-w-6xl mx-auto py-6 px-8'}>
+        <div className={`bg-digi-card border border-digi-border rounded-xl overflow-hidden flex flex-col ${enTelefono ? 'flex-1 min-h-0 !rounded-b-none border-b-0' : 'h-[calc(100dvh-6.5rem)]'}`}>
           {enTelefono ? (
             <div className="flex items-center gap-3 px-4 py-3 border-b border-digi-border shrink-0">
               <div className="flex-1 min-w-0">
               <div className="flex items-start gap-1">
-                <h1 className="text-[17px] leading-snug font-semibold text-digi-text min-w-0" style={df}>{memberName}</h1>
+                <h1 className="titulo-progreso text-[17px] leading-snug text-digi-text min-w-0">{memberName}</h1>
                 <BotonDetalles
                   titulo={memberName}
                   detalles={[
@@ -378,10 +385,7 @@ export default function PublicCalendarPage() {
                   chips={leyenda}
                 />
               </div>
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: AVAILABILITY[memberStatus].color }} />
-                <span className="text-[12px] text-digi-muted" style={mf}>{AVAILABILITY[memberStatus].label}</span>
-              </div>
+              <div className="mt-0.5">{estado}</div>
               </div>
               <button onClick={() => { setProposalStart(null); setProposalOpen(true); }} className={`${BTN_PRIMARY} h-11 shrink-0`}>
                 <CalendarPlus className="w-[18px] h-[18px]" /> Agendar
@@ -391,20 +395,17 @@ export default function PublicCalendarPage() {
           /* Encabezado: miembro + disponibilidad + zona horaria/última sincronización */
           <div className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 border-b border-digi-border shrink-0">
             <div className="min-w-0">
-              <div className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Calendario público</div>
-              <h1 className="text-[20px] font-semibold text-digi-text flex items-center gap-2 mt-0.5" style={df}>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">Calendario público</div>
+              <h1 className="titulo-progreso text-[20px] text-digi-text flex items-center gap-2 mt-0.5">
                 <CalendarDays className="w-5 h-5 text-accent shrink-0" /> <span className="min-w-0 break-words">{memberName}</span>
               </h1>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: AVAILABILITY[memberStatus].color }} />
-                <span className="text-[12px] text-digi-muted" style={mf}>{AVAILABILITY[memberStatus].label}</span>
-              </div>
+              <div className="mt-1">{estado}</div>
             </div>
             <div className="text-right">
-              <div className="text-[12px] text-digi-muted inline-flex items-center gap-1" style={mf}>
+              <div className="text-[12px] text-digi-muted inline-flex items-center gap-1">
                 <Clock className="w-3.5 h-3.5" /> GMT-5 · Ecuador
               </div>
-              <div className="text-[11px] text-digi-muted mt-1" style={mf}>
+              <div className="text-[11px] text-digi-muted mt-1">
                 {lastSync ? `Actualizado: ${fmtSync(lastSync)}` : 'Sin sincronizar'}
               </div>
             </div>
@@ -415,10 +416,10 @@ export default function PublicCalendarPage() {
           {enTelefono ? (
             <div className="flex items-center gap-1.5 px-3 py-2.5 border-b border-digi-border shrink-0">
               <button onClick={goPrev} aria-label="Día anterior" className={flecha}><ChevronLeft className="w-5 h-5" /></button>
-              <span className="flex-1 min-w-0 text-center text-[14.5px] font-semibold text-digi-text capitalize truncate" style={mf}>{label}</span>
+              <span className="flex-1 min-w-0 text-center text-[14.5px] font-semibold text-digi-text capitalize truncate">{label}</span>
               <button onClick={goNext} aria-label="Día siguiente" className={flecha}><ChevronRight className="w-5 h-5" /></button>
               {!esHoy && (
-                <button onClick={() => setCurrentDate(new Date())} className="h-11 px-3 shrink-0 rounded-md border border-digi-border text-[13px] font-medium text-digi-text" style={mf}>Hoy</button>
+                <button onClick={() => setCurrentDate(new Date())} className={`${BTN_SECONDARY} h-11 shrink-0`}>Hoy</button>
               )}
               <button onClick={() => load()} disabled={loading} aria-label="Sincronizar calendario" title="Sincronizar calendario" className={flecha}>
                 <RefreshCw className={`w-[18px] h-[18px] ${loading ? 'animate-spin' : ''}`} />
@@ -427,37 +428,32 @@ export default function PublicCalendarPage() {
           ) : (
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b border-digi-border shrink-0">
             <div className="flex items-center gap-2">
-              <button onClick={() => setCurrentDate(new Date())} className={`${BTN_SECONDARY} !py-1.5`}>Hoy</button>
+              <button onClick={() => setCurrentDate(new Date())} className={`${BTN_SECONDARY} h-9 !py-0`}>Hoy</button>
               <div className="flex items-center gap-1">
                 <button onClick={goPrev} aria-label="Anterior" className={flecha}><ChevronLeft className="w-4 h-4" /></button>
                 <button onClick={goNext} aria-label="Siguiente" className={flecha}><ChevronRight className="w-4 h-4" /></button>
               </div>
-              <span className="text-[15px] font-semibold text-digi-text capitalize ml-1" style={mf}>{label}</span>
+              <span className="text-[15px] font-semibold text-digi-text capitalize ml-1">{label}</span>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <div className="inline-flex rounded-md border border-digi-border overflow-hidden">
-                {VIEWS.map((v) => (
-                  <button
-                    key={v.value}
-                    onClick={() => setView(v.value)}
-                    className={`px-3 py-1.5 text-[12.5px] font-medium transition-colors ${view === v.value ? 'bg-accent text-white' : 'text-digi-muted hover:bg-black/[0.03]'}`}
-                    style={mf}
-                  >
-                    {v.label}
-                  </button>
-                ))}
-              </div>
+              <Segmentado
+                opciones={VIEWS.map((v) => ({ valor: v.value, texto: v.label }))}
+                valor={view}
+                onChange={setView}
+                etiqueta="Vista"
+                className="w-[220px]"
+              />
               <button
                 onClick={() => load()}
                 disabled={loading}
-                className={`${BTN_SECONDARY} !py-1.5`}
+                className={`${BTN_SECONDARY} h-9 !py-0`}
                 title={lastSync ? `Última actualización: ${fmtSync(lastSync)}` : 'Sincronizar calendario'}
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                 <span>{loading ? 'Sincronizando…' : 'Sincronizar'}</span>
               </button>
-              <button onClick={() => { setProposalStart(null); setProposalOpen(true); }} className={BTN_PRIMARY}>
+              <button onClick={() => { setProposalStart(null); setProposalOpen(true); }} className={`${BTN_PRIMARY} h-9 !py-0`}>
                 <CalendarPlus className="w-4 h-4" /> Agendar espacio
               </button>
             </div>
@@ -483,13 +479,13 @@ export default function PublicCalendarPage() {
           {/* Leyenda — el calendario público es libre/ocupado (sin exponer el detalle de los
               eventos). En el teléfono vive en la burbuja (i) de arriba. */}
           {!enTelefono && (
-          <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-t border-digi-border text-[12px] text-digi-muted shrink-0" style={mf}>
+          <div className="flex flex-wrap items-center gap-4 px-4 py-2.5 border-t border-digi-border text-[12px] text-digi-muted shrink-0">
             {leyenda}
             <span className="ml-auto">Solo se muestran las franjas ocupadas, no el detalle de los eventos.</span>
           </div>
           )}
         </div>
-      </div>
+      </main>
 
       {/* El detalle solo se abre para reservas PROPIAS de esta sesión → muestra el dato
           real y permite cancelarla (mientras no se recargue la página). */}
@@ -509,6 +505,6 @@ export default function PublicCalendarPage() {
         initialStart={proposalStart}
         isBusy={isBusy}
       />
-    </div>
+    </MarcoPublico>
   );
 }

@@ -4,13 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Check, X, Calculator, ListChecks, CalendarDays, MessageSquare, Send, Wallet } from 'lucide-react';
-import PublicHeader from '@/components/public/PublicHeader';
+import MarcoPublico, { AvisoPublico, CargandoPublico } from '@/components/public/MarcoPublico';
+import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
+import { BTN_ACCENT, BTN_DANGER, BTN_PRIMARY } from '@/components/ui/Button';
+import { fmt2 } from '@/lib/format';
 import { QUOTE_NOTES } from '@/lib/cotizaciones/notes';
 
-const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
-
-function money(n: number) { return `$${Number(n || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
+function money(n: number) { return `$${fmt2(Number(n || 0))}`; }
 
 export default function PublicQuotePage() {
   const { id } = useParams();
@@ -95,64 +95,65 @@ export default function PublicQuotePage() {
     finally { setSendingObs(false); }
   };
 
-  if (loading) return <div className="corp page-dark min-h-screen flex items-center justify-center"><p className="text-white/70" style={mf}>Cargando cotización…</p></div>;
+  if (loading) return <MarcoPublico ancho="medio"><CargandoPublico texto="Cargando cotización…" /></MarcoPublico>;
   if (error) return (
-    <div className="corp page-dark min-h-screen flex items-center justify-center px-4">
-      <div className="bg-digi-card border border-digi-border rounded-xl p-8 text-center max-w-md">
-        <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-3"><X className="w-6 h-6 text-red-500" /></div>
-        <p className="text-[15px] font-semibold text-digi-text" style={mf}>No se pudo abrir la cotización</p>
-        <p className="text-[13px] text-digi-muted mt-1" style={mf}>{error}</p>
-      </div>
-    </div>
+    <MarcoPublico>
+      <AvisoPublico icon={X} titulo="No se pudo abrir la cotización">{error}</AvisoPublico>
+    </MarcoPublico>
   );
 
   const decided = quote.quoteStatus === 'accepted' || quote.quoteStatus === 'rejected';
+  const TARJETA = 'bg-digi-card border border-digi-border rounded-xl p-5 sm:p-6';
+  const TITULO_SECCION = 'titulo-progreso text-[16px] text-digi-text mb-3 flex items-center gap-2';
+  const CAMPO = 'field-control w-full px-3 py-2.5 bg-digi-darker border-2 border-digi-border text-sm text-digi-text placeholder:text-digi-muted/60 focus:outline-none';
 
   return (
-    <div className="corp page-dark min-h-screen">
-      <PublicHeader />
-      <div className="max-w-3xl mx-auto space-y-4 py-6 px-4 md:px-8">
+    <MarcoPublico ancho="medio">
+      <div className="space-y-4">
         {/* Encabezado */}
-        <div className="bg-digi-card border border-digi-border rounded-xl p-5 shadow-sm">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-9 h-9 rounded-lg bg-accent-light border border-accent/15 flex items-center justify-center"><Calculator className="w-5 h-5 text-accent" /></div>
-            <span className="text-[11px] font-semibold text-accent uppercase tracking-wide" style={df}>Cotización · {quote.responsibleName || 'GCC World'}</span>
-          </div>
-          <h1 className="text-[22px] font-bold text-digi-text leading-tight" style={df}>{quote.title}</h1>
-          {quote.summary && <p className="text-[13px] text-digi-muted mt-1.5 leading-relaxed" style={mf}>{quote.summary}</p>}
-          <div className="flex flex-wrap gap-4 mt-3 text-[12px]" style={mf}>
-            {quote.deadline && <span className="inline-flex items-center gap-1.5 text-digi-text"><CalendarDays className="w-4 h-4 text-digi-muted" /> Entrega estimada: {new Date(quote.deadline).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' })}</span>}
-            {quote.service?.name && <span className="text-digi-muted">Servicio: {quote.service.name}</span>}
-          </div>
+        <div className={TARJETA}>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)] inline-flex items-center gap-1.5">
+            <Calculator className="w-3.5 h-3.5 text-accent" /> Cotización · {quote.responsibleName || 'GCC World'}
+          </p>
+          <h1 className="titulo-progreso mt-1.5 text-[22px] sm:text-[24px] text-digi-text leading-tight">{quote.title}</h1>
+          {quote.summary && <p className="text-[13.5px] text-digi-muted mt-2 leading-relaxed">{quote.summary}</p>}
+          {(quote.deadline || quote.service?.name) && (
+            <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3 text-[12.5px]">
+              {quote.deadline && <span className="inline-flex items-center gap-1.5 text-digi-text"><CalendarDays className="w-4 h-4 text-digi-muted" /> Entrega estimada: {new Date(quote.deadline).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric' })}</span>}
+              {quote.service?.name && <span className="text-digi-muted">Servicio: {quote.service.name}</span>}
+            </div>
+          )}
         </div>
 
-        {/* Estado si ya decidió */}
+        {/* Estado si ya decidió: texto de color con su icono, sin caja tintada. */}
         {quote.quoteStatus === 'accepted' && (
-          <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center">
-            <p className="text-[14px] font-semibold text-green-600 inline-flex items-center gap-2" style={mf}><Check className="w-5 h-5" /> Aceptaste esta cotización. ¡Gracias! El equipo se pondrá en marcha.</p>
+          <div className={`${TARJETA} flex items-start gap-2.5`}>
+            <Check className="w-5 h-5 text-green-400 shrink-0 mt-px" />
+            <p className="text-[14px] font-semibold text-green-400">Aceptaste esta cotización. ¡Gracias! El equipo se pondrá en marcha.</p>
           </div>
         )}
         {quote.quoteStatus === 'rejected' && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
-            <p className="text-[14px] font-semibold text-red-500 inline-flex items-center gap-2" style={mf}><X className="w-5 h-5" /> Rechazaste esta cotización. Puedes pedir cambios al asistente y volver a revisarla.</p>
+          <div className={`${TARJETA} flex items-start gap-2.5`}>
+            <X className="w-5 h-5 text-red-400 shrink-0 mt-px" />
+            <p className="text-[14px] font-semibold text-red-400">Rechazaste esta cotización. Puedes pedir cambios al asistente y volver a revisarla.</p>
           </div>
         )}
 
         {/* Requerimientos */}
-        <div className="bg-digi-card border border-digi-border rounded-xl p-5 shadow-sm">
-          <h2 className="text-[15px] font-semibold text-digi-text mb-3 inline-flex items-center gap-2" style={df}><ListChecks className="w-4 h-4 text-accent" /> Detalle ({quote.requirements.length})</h2>
+        <div className={TARJETA}>
+          <h2 className={TITULO_SECCION}><ListChecks className="w-4 h-4 text-accent" /> Detalle <span className="text-digi-muted font-normal tabular-nums">{quote.requirements.length}</span></h2>
           <div className="space-y-3">
             {quote.requirements.map((r: any) => (
               <div key={r.id} className="border border-digi-border rounded-lg p-3.5">
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-[14px] font-medium text-digi-text" style={mf}>{r.title}</h3>
-                  <span className="text-[14px] font-semibold text-accent tabular-nums shrink-0" style={mf}>{money(r.cost)}</span>
+                  <h3 className="min-w-0 text-[14px] font-medium text-digi-text">{r.title}</h3>
+                  <span className="text-[14px] font-semibold text-digi-text tabular-nums shrink-0">{money(r.cost)}</span>
                 </div>
-                {r.description && <p className="text-[12.5px] text-digi-muted mt-1 leading-relaxed" style={mf}>{r.description}</p>}
+                {r.description && <p className="text-[12.5px] text-digi-muted mt-1 leading-relaxed">{r.description}</p>}
                 {r.subtasks?.length > 0 && (
                   <ul className="mt-2 space-y-1">
                     {r.subtasks.map((s: string, i: number) => (
-                      <li key={i} className="flex items-start gap-1.5 text-[12px] text-digi-text" style={mf}><Check className="w-3.5 h-3.5 text-accent mt-0.5 shrink-0" /> {s}</li>
+                      <li key={i} className="flex items-start gap-1.5 text-[12.5px] text-digi-text"><Check className="w-3.5 h-3.5 text-accent mt-0.5 shrink-0" /> {s}</li>
                     ))}
                   </ul>
                 )}
@@ -162,34 +163,34 @@ export default function PublicQuotePage() {
 
           {/* Costos adicionales (servicios de proveedores externos) */}
           {(quote.additionalCosts?.length ?? 0) > 0 && (
-            <div className="mt-4 pt-3 border-t border-digi-border">
-              <p className="text-[13px] font-semibold text-digi-text mb-2" style={mf}>Servicios externos (proveedores)</p>
+            <div className="mt-4 pt-4 border-t border-digi-border">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)] mb-2">Servicios externos (proveedores)</p>
               <div className="space-y-1.5">
                 {quote.additionalCosts.map((c: any, i: number) => (
-                  <div key={i} className="flex items-start justify-between gap-3 text-[12.5px]">
+                  <div key={i} className="flex items-start justify-between gap-3 text-[13px]">
                     <div className="min-w-0">
-                      <span className="text-digi-text" style={mf}>{c.label}</span>
-                      {c.description && <span className="block text-[11.5px] text-digi-muted" style={mf}>{c.description}</span>}
+                      <span className="text-digi-text">{c.label}</span>
+                      {c.description && <span className="block text-[12px] text-digi-muted">{c.description}</span>}
                     </div>
-                    <span className="text-digi-text tabular-nums shrink-0" style={mf}>{money(c.amount)}</span>
+                    <span className="text-digi-text tabular-nums shrink-0">{money(c.amount)}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="flex items-center justify-between mt-4 pt-3 border-t border-digi-border">
-            <span className="text-[14px] font-semibold text-digi-text" style={mf}>Total</span>
-            <span className="text-[20px] font-bold text-accent tabular-nums" style={df}>{money(quote.total)}</span>
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-digi-border">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--etiqueta)]">Total</span>
+            <span className="titulo-progreso text-[22px] text-digi-text tabular-nums">{money(quote.total)}</span>
           </div>
         </div>
 
         {/* Notas adicionales (condiciones estándar de la oferta) */}
-        <div className="bg-digi-card border border-digi-border rounded-xl p-5 shadow-sm">
-          <h2 className="text-[15px] font-semibold text-digi-text mb-3 inline-flex items-center gap-2" style={df}><ListChecks className="w-4 h-4 text-accent" /> Notas adicionales</h2>
+        <div className={TARJETA}>
+          <h2 className={TITULO_SECCION}><ListChecks className="w-4 h-4 text-accent" /> Notas adicionales</h2>
           <ul className="space-y-2">
             {QUOTE_NOTES.map((note, i) => (
-              <li key={i} className="flex items-start gap-2.5 text-[13px] text-digi-text leading-relaxed" style={mf}>
+              <li key={i} className="flex items-start gap-2.5 text-[13px] text-digi-text leading-relaxed">
                 <Check className="w-4 h-4 text-accent mt-0.5 shrink-0" strokeWidth={2.5} />
                 <span>{note}</span>
               </li>
@@ -197,72 +198,66 @@ export default function PublicQuotePage() {
           </ul>
         </div>
 
-        {/* Aceptar / Rechazar / Modificar presupuesto (grandes) */}
+        {/* Aceptar / Rechazar / Modificar presupuesto: rechazar a la izquierda, aceptar a la derecha. */}
         {!decided && (
-          <div className="bg-digi-card border border-digi-border rounded-xl p-5 shadow-sm">
-            <p className="text-[13px] text-digi-muted text-center mb-3" style={mf}>¿Aceptas esta cotización? Si el costo no se ajusta a lo que tienes, usa “Modificar presupuesto” e indícanos tu monto; el responsable la ajustará y te la compartirá de nuevo.</p>
+          <div className={TARJETA}>
+            <p className="text-[13.5px] text-digi-muted mb-4">¿Aceptas esta cotización? Si el costo no se ajusta a lo que tienes, usa «Modificar presupuesto» e indícanos tu monto; el responsable la ajustará y te la compartirá de nuevo.</p>
             {quote.clientBudget != null && (
-              <p className="text-[12px] text-center text-accent mb-3" style={mf}>Indicaste un presupuesto de <strong>{money(quote.clientBudget)}</strong>. El responsable ajustará la cotización.</p>
+              <p className="text-[13px] text-digi-text mb-4">Indicaste un presupuesto de <strong className="tabular-nums">{money(quote.clientBudget)}</strong>. El responsable ajustará la cotización.</p>
             )}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button onClick={() => decide('reject')} disabled={deciding}
-                className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-lg border-2 border-red-400 text-red-500 text-[15px] font-semibold hover:bg-red-500/10 transition-colors disabled:opacity-50" style={mf}>
-                <X className="w-5 h-5" /> Rechazar
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button onClick={() => decide('reject')} disabled={deciding} className={`${BTN_DANGER} sm:flex-1 whitespace-nowrap`}>
+                <X className="w-4 h-4" /> Rechazar
               </button>
               <button onClick={() => { setBudgetInput(quote.clientBudget != null ? String(quote.clientBudget) : ''); setShowBudget((v) => !v); }} disabled={deciding}
-                className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-lg border-2 border-accent text-accent text-[15px] font-semibold hover:bg-accent-light transition-colors disabled:opacity-50" style={mf}>
-                <Wallet className="w-5 h-5" /> Modificar presupuesto
+                aria-expanded={showBudget} className={`${BTN_ACCENT} sm:flex-1 whitespace-nowrap`}>
+                <Wallet className="w-4 h-4" /> Modificar presupuesto
               </button>
-              <button onClick={() => decide('accept')} disabled={deciding}
-                className="flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-lg bg-green-600 text-white text-[15px] font-semibold hover:bg-green-700 transition-colors disabled:opacity-50" style={mf}>
-                <Check className="w-5 h-5" /> Aceptar cotización
+              <button onClick={() => decide('accept')} disabled={deciding} className={`${BTN_PRIMARY} sm:flex-1 whitespace-nowrap`}>
+                <Check className="w-4 h-4" /> Aceptar cotización
               </button>
             </div>
             {showBudget && (
               <div className="mt-4 pt-4 border-t border-digi-border">
-                <label className="text-[12px] font-medium text-digi-text" style={mf}>¿Cuál es tu presupuesto para este proyecto?</label>
+                <label htmlFor="cot-presupuesto" className="text-[12px] font-semibold text-digi-muted">¿Cuál es tu presupuesto para este proyecto?</label>
                 <div className="flex gap-2 mt-1.5">
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-digi-muted text-sm" style={mf}>$</span>
-                    <input type="number" value={budgetInput} onChange={(e) => setBudgetInput(e.target.value)} placeholder="0.00" min="0"
-                      className="field-control w-full pl-7 pr-3 py-2.5 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
+                  <div className="relative flex-1 min-w-0">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-digi-muted text-sm">$</span>
+                    <input id="cot-presupuesto" type="number" inputMode="decimal" value={budgetInput} onChange={(e) => setBudgetInput(e.target.value)} placeholder="0,00" min="0"
+                      className={`${CAMPO} pl-7`} />
                   </div>
-                  <button onClick={submitBudget} disabled={savingBudget || !budgetInput.trim()} className="inline-flex items-center gap-1.5 px-4 py-2.5 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>
+                  <button onClick={submitBudget} disabled={savingBudget || !budgetInput.trim()} className={`${BTN_PRIMARY} shrink-0`}>
                     <Send className="w-4 h-4" /> Enviar
                   </button>
                 </div>
-                <p className="text-[11px] text-digi-muted mt-1.5" style={mf}>No cambia la cotización: le avisamos al responsable para que la ajuste a tu presupuesto y te la comparta de nuevo.</p>
               </div>
             )}
           </div>
         )}
 
         {/* Observaciones */}
-        <div className="bg-digi-card border border-digi-border rounded-xl p-5 shadow-sm">
-          <h2 className="text-[15px] font-semibold text-digi-text mb-3 inline-flex items-center gap-2" style={df}><MessageSquare className="w-4 h-4 text-accent" /> Observaciones</h2>
+        <div className={TARJETA}>
+          <h2 className={TITULO_SECCION}><MessageSquare className="w-4 h-4 text-accent" /> Observaciones</h2>
           <div className="flex flex-col gap-2">
-            <input value={obsName} onChange={(e) => setObsName(e.target.value)} placeholder="Tu nombre (opcional)"
-              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none" style={mf} />
-            <textarea value={obsText} onChange={(e) => setObsText(e.target.value)} rows={3} placeholder="Deja una observación o comentario para el equipo…"
-              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-y" style={mf} />
-            <button onClick={sendObs} disabled={sendingObs || !obsText.trim()} className="self-end inline-flex items-center gap-1.5 px-3 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors disabled:opacity-50" style={mf}>
+            <input value={obsName} onChange={(e) => setObsName(e.target.value)} placeholder="Tu nombre (opcional)" aria-label="Tu nombre" className={CAMPO} />
+            <AutoGrowTextarea value={obsText} onChange={(e) => setObsText(e.target.value)} minRows={3} placeholder="Deja una observación o comentario para el equipo…"
+              aria-label="Observación" className={CAMPO} />
+            <button onClick={sendObs} disabled={sendingObs || !obsText.trim()} className={`${BTN_PRIMARY} w-full sm:w-auto sm:self-end`}>
               <Send className="w-4 h-4" /> Enviar observación
             </button>
           </div>
           {obs.length > 0 && (
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 pt-4 border-t border-digi-border divide-y divide-digi-border">
               {obs.map((o) => (
-                <div key={o.id} className="border border-digi-border rounded-lg px-3 py-2 bg-digi-darker/40">
-                  <p className="text-[12px] text-digi-text whitespace-pre-wrap" style={mf}>{o.body}</p>
-                  <p className="text-[10.5px] text-digi-muted mt-1" style={mf}>{o.author_name || 'Cliente'} · {new Date(o.created_at).toLocaleString('es-EC')}</p>
+                <div key={o.id} className="py-2.5 first:pt-0 last:pb-0">
+                  <p className="text-[13px] text-digi-text whitespace-pre-wrap break-words">{o.body}</p>
+                  <p className="text-[11.5px] text-digi-muted mt-1">{o.author_name || 'Cliente'} · {new Date(o.created_at).toLocaleString('es-EC')}</p>
                 </div>
               ))}
             </div>
           )}
         </div>
-
-        <p className="text-center text-[11px] text-digi-muted pb-4" style={mf}>GCC World · Esta cotización es de solo lectura. Puedes aceptarla, rechazarla o indicar tu presupuesto.</p>
       </div>
-    </div>
+    </MarcoPublico>
   );
 }
