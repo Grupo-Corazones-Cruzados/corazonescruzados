@@ -71,7 +71,7 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
   }, [proyectos, q]);
 
   /* Lo que está en marcha, arriba y sin tener que abrir nada: es lo que se vigila. */
-  const enMarcha = vivas.filter((v) => v.estado !== 'cerrada' && (v.estado !== 'libre' || v.noVisto));
+  const enMarcha = vivas.filter((v) => v.estado !== 'cerrada' && (v.estado !== 'libre' || v.noVisto || (v.tareas || 0) > 0));
 
   function alternar(id: string) {
     setAbiertos((a) => { const n = new Set(a); if (n.has(id)) n.delete(id); else n.add(id); return n; });

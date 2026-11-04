@@ -19,13 +19,13 @@ export default function PanelProyecto({ abierto, proyecto, alCerrar, alCambiar }
   const [ruta, setRuta] = useState('');
   const [nombre, setNombre] = useState('');
   const [grupo, setGrupo] = useState('');
-  const [sandbox, setSandbox] = useState(true);
+  const [aislado, setAislado] = useState(false);
   const [error, setError] = useState('');
   const [detectados, setDetectados] = useState<{ ruta: string; nombre: string; grupo: string }[]>([]);
 
   useEffect(() => {
     if (!abierto) return;
-    setRuta(proyecto?.ruta || ''); setNombre(proyecto?.nombre || ''); setGrupo(proyecto?.grupo || ''); setSandbox(proyecto?.sandbox ?? true); setError('');
+    setRuta(proyecto?.ruta || ''); setNombre(proyecto?.nombre || ''); setGrupo(proyecto?.grupo || ''); setAislado(proyecto?.aislado ?? false); setError('');
     if (!proyecto) api('/proyectos/detectados').then((j) => setDetectados(j.detectados)).catch(() => setDetectados([]));
   }, [abierto, proyecto]);
 
@@ -38,8 +38,8 @@ export default function PanelProyecto({ abierto, proyecto, alCerrar, alCambiar }
   async function guardar() {
     setError('');
     try {
-      if (proyecto) await api(`/proyectos/${proyecto.id}`, { metodo: 'PATCH', cuerpo: { nombre, grupo, sandbox } });
-      else await api('/proyectos', { cuerpo: { ruta: ruta.trim(), nombre: nombre.trim() || undefined, grupo: grupo.trim() || undefined, sandbox } });
+      if (proyecto) await api(`/proyectos/${proyecto.id}`, { metodo: 'PATCH', cuerpo: { nombre, grupo, aislado } });
+      else await api('/proyectos', { cuerpo: { ruta: ruta.trim(), nombre: nombre.trim() || undefined, grupo: grupo.trim() || undefined, aislado } });
       alCambiar(); alCerrar();
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo guardar.'); }
   }
@@ -65,9 +65,9 @@ export default function PanelProyecto({ abierto, proyecto, alCerrar, alCambiar }
             </>}
         <PixelInput label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} />
         <PixelInput label="Cliente" value={grupo} onChange={(e) => setGrupo(e.target.value)} />
-        <div className="flex items-center justify-between gap-3" title="Sin el aislamiento del sistema, los comandos de esta sesión pueden leer otras carpetas. Las herramientas de archivo siguen limitadas al proyecto.">
-          <span className="text-[13px] text-digi-text">Aislar comandos de la terminal</span>
-          <Interruptor activo={sandbox} onChange={setSandbox} etiqueta="Aislar comandos de la terminal" />
+        <div className="flex items-center justify-between gap-3" title="Aislado, no sale de su carpeta ni se conecta directo a una base de datos. Se aplica al abrir o retomar una sesión.">
+          <span className="text-[13px] text-digi-text">Aislar este proyecto</span>
+          <Interruptor activo={aislado} onChange={setAislado} etiqueta="Aislar este proyecto" />
         </div>
         {error && <p className={`text-[13px] ${TONO.error.texto}`}>{error}</p>}
       </div>

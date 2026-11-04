@@ -7004,6 +7004,7 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   web de Safari no abre otro origen en su ventana. Sesión por token en cabecera, porque Safari no da cookies a un marco ajeno.
   En una pestaña normal de la web la opción no aparece. El dictado en la app del iPhone necesita una compilación nativa nueva
   (`NSMicrophoneUsageDescription`).
+  **Acceso completo por defecto (Fernando, 2026-11-04):** sin sandbox ni bloqueos; una instrucción fija le dice que no edite otro proyecto sin pedírselo y que use la memoria del proyecto correcto. Solo se aíslan un proyecto marcado y las sesiones nacidas de una incidencia. Lista de lo que funciona y lo que no, en `Aprendizaje.md`.
   ⚠️ Las tablas `Project`/`Module`/`Section`/`Subsection`/`Incident` siguen en uso por `/portal`: no borrarlas sin decidirlo.
 
 ## Decisiones y reglas de negocio

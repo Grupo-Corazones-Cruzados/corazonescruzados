@@ -16,10 +16,21 @@ function resumen(nombre: string, e: any): string {
   return e.description || e.command || e.file_path || e.notebook_path || e.pattern || e.query || e.url || e.skill || e.prompt || e.subject || '';
 }
 
-function Herramienta({ b, resultado }: { b: Extract<Bloque, { tipo: 'herramienta' }>; resultado?: Extract<Bloque, { tipo: 'resultado' }> }) {
+const EDITAN = new Set(['Write', 'Edit', 'MultiEdit', 'NotebookEdit']);
+
+/** No se bloquea: el acceso es completo por decisión de Fernando. Pero una edición fuera se ve. */
+function editaFuera(b: Extract<Bloque, { tipo: 'herramienta' }>, carpeta: string): boolean {
+  const ruta = String(b.entrada?.file_path || b.entrada?.notebook_path || '');
+  if (!EDITAN.has(b.nombre) || !ruta.startsWith('/')) return false;
+  if (ruta === carpeta || ruta.startsWith(`${carpeta}/`)) return false;
+  return !/^\/(private\/)?tmp\/|\/\.claude\//.test(ruta);
+}
+
+function Herramienta({ b, resultado, carpeta, pasos = [] }: { b: Extract<Bloque, { tipo: 'herramienta' }>; resultado?: Extract<Bloque, { tipo: 'resultado' }>; carpeta: string; pasos?: Mensaje[] }) {
   const [abierto, setAbierto] = useState(false);
   const Icono = ICONOS[b.nombre] || Wrench;
   const linea = String(resumen(b.nombre, b.entrada)).split('\n')[0];
+  const llamadas = pasos.flatMap((m) => m.bloques).filter((x): x is Extract<Bloque, { tipo: 'herramienta' }> => x.tipo === 'herramienta');
   const entrada = b.entrada?.command || b.entrada?.new_string || b.entrada?.content || JSON.stringify(b.entrada, null, 2);
   return (
     <div className="min-w-0">
@@ -29,11 +40,18 @@ function Herramienta({ b, resultado }: { b: Extract<Bloque, { tipo: 'herramienta
         <Icono className="w-3.5 h-3.5 shrink-0" />
         <span className="font-medium shrink-0">{b.nombre}</span>
         <span className="truncate min-w-0 font-mono text-[11.5px]" title={linea}>{linea}</span>
+        {editaFuera(b, carpeta) && <span className="shrink-0 text-[11px] font-medium text-amber-400">Otro proyecto</span>}
+        {llamadas.length > 0 && <span className="shrink-0 text-[11px] tabular-nums text-accent">{llamadas.length} pasos</span>}
         {resultado?.error && <AlertCircle className="w-3.5 h-3.5 shrink-0 text-red-400" aria-label="Falló" />}
       </button>
       {abierto && (
         <div className="mt-1 mb-2 ml-5 rounded-md border border-digi-border overflow-hidden text-[11.5px] font-mono">
           <pre className="p-2.5 whitespace-pre-wrap break-words max-h-64 overflow-y-auto bg-digi-darker text-digi-text">{String(entrada)}</pre>
+          {llamadas.length > 0 && (
+            <ul className="p-2.5 border-t border-digi-border space-y-1 max-h-64 overflow-y-auto text-digi-muted">
+              {llamadas.map((x) => <li key={x.id} className="truncate" title={String(resumen(x.nombre, x.entrada))}><span className="font-medium">{x.nombre}</span> {String(resumen(x.nombre, x.entrada)).split('\n')[0]}</li>)}
+            </ul>
+          )}
           {resultado && <pre className={`p-2.5 border-t border-digi-border whitespace-pre-wrap break-words max-h-80 overflow-y-auto ${resultado.error ? 'text-red-400' : 'text-digi-muted'}`}>{resultado.texto || '(sin salida)'}</pre>}
         </div>
       )}
@@ -53,7 +71,7 @@ function Pensamiento({ texto }: { texto: string }) {
   );
 }
 
-export default function ListaMensajes({ mensajes, parcial }: { mensajes: Mensaje[]; parcial: string }) {
+export default function ListaMensajes({ mensajes, parcial, hijos, carpeta }: { mensajes: Mensaje[]; parcial: string; hijos: Record<string, Mensaje[]>; carpeta: string }) {
   const resultados = useMemo(() => {
     const m = new Map<string, Extract<Bloque, { tipo: 'resultado' }>>();
     for (const x of mensajes) for (const b of x.bloques) if (b.tipo === 'resultado') m.set(b.id, b);
@@ -83,7 +101,7 @@ export default function ListaMensajes({ mensajes, parcial }: { mensajes: Mensaje
             {visibles.map((b, i) => {
               if (b.tipo === 'texto') return <div key={i} className="espacio-md text-[13.5px] text-digi-text break-words min-w-0"><MarkdownRenderer content={b.texto} /></div>;
               if (b.tipo === 'pensando') return <Pensamiento key={i} texto={b.texto} />;
-              if (b.tipo === 'herramienta') return <Herramienta key={i} b={b} resultado={resultados.get(b.id)} />;
+              if (b.tipo === 'herramienta') return <Herramienta key={i} b={b} resultado={resultados.get(b.id)} carpeta={carpeta} pasos={hijos[b.id]} />;
               return null;
             })}
           </div>

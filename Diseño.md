@@ -3271,6 +3271,33 @@ función y no de la memoria de quien escribe.
 > en la app de Meta y enlazadas desde formularios. Reorganizar la navegación **añade puertas, no
 > mueve habitaciones**.
 
+## ⭐ Páginas públicas POR ENLACE con el diseño del PANEL — `MarcoPublico` (2026-11-04)
+
+Fernando: *«quiero que apliques las mejoras para [cotización, calendario, enlace, entrega,
+herramienta, incidentes y documentación]… aunque algunas están bien implementadas quiero algo
+estándar en cuanto a colores y diseño de controles»*; eligió **el diseño de /dashboard** (no el
+del sitio).
+
+- **Dos familias, y solo dos**, para lo que se abre sin sesión:
+  · **Sitio claro** (`(sitio)`, `Contenedor`/`Tarjeta`): lo que llega por correo para **pagar o
+    ver el acuerdo** — `/pagar`, `/proyecto/[id]`, `/ticket/[id]` — y el sitio web.
+  · **Panel** (`components/public/MarcoPublico.tsx`): las **herramientas compartidas por enlace**
+    — `/cotizacion`, `/calendario`, `/enlace`, `/entrega`, `/herramienta`, `/incidentes`, `/docs`.
+  · El CV (`/cv`) conserva su diseño propio de documento.
+- `MarcoPublico` = el MISMO envoltorio que el panel (`corp tema-progreso tema-<id>` + `.dark`), con
+  `PublicHeader` (barra translúcida de las tarjetas) y el `Toaster`. **Tema**: el último que se usó
+  en el panel en ese equipo (`lib/tema-ultimo.ts`, aplicado con un `<script>` antes de hidratar);
+  si nunca se abrió el panel, el claro/oscuro del sistema. Props: `ancho` (`estrecho`, `medio`,
+  `amplio`) o `sinContenedor`. Piezas: `AvisoPublico` (enlace vencido/cerrado/usado: icono en
+  degradado + título + texto + acciones) y `CargandoPublico`.
+- Dentro, las piezas del panel y nada más: `bg-digi-card border border-digi-border rounded-xl`
+  (el tema la vuelve tarjeta translúcida), `BTN_*`, `PixelInput`/`PixelSelect`/`field-control`,
+  rótulos de 11 px en mayúsculas con `var(--etiqueta)`, títulos `titulo-progreso`, estados como
+  texto de color. **Prohibido**: `corp page-dark` (fondo negro forzado con tarjetas claras),
+  `text-white/…` sobre el fondo, hex sueltos, fuentes en línea, piezas pixel antiguas.
+- ⛔ Se eliminaron `/proforma/[id]` (sin botón que la generara) y `/portal/[projectId]` (se abría
+  sin llave, solo con el número del proyecto).
+
 ## CV público — `/cv/<token>` (2026-08-14) · **TEMA CLARO**
 
 ⚠️ **Es el ÚNICO sitio público en claro, y es a propósito.** Decisión de Fernando
@@ -6250,6 +6277,7 @@ Pantalla de alto completo con `PanelHastaElPie desdeAncho={0}`: raíl de 300 px 
 - **Teléfono (Fernando, 2026-11-04: «muchísima altura en botones o controles»):** lista → detalle, decidido en JS, a pantalla completa: sin pie de ruta, sin márgenes y sin tarjeta, y sin el muelle de chats y avisos, que ocupa el sitio de enviar. Cabecera de 44 px. Modelo y permisos van en el «⋯».
 - **Estado de sesión:** texto de color, sin punto ni píldora (`TEXTO_ESTADO`): Trabajando en acento, Espera tu respuesta en `amber-400`, Lista en `green-400`.
 - **Una herramienta** es una línea plegada (icono, nombre, resumen en mono) y se abre al pulsar. Una pregunta de Claude es una tarjeta dentro de la conversación.
+- **Aviso de edición fuera:** una fila de herramienta que edita fuera de la carpeta del proyecto lleva «Otro proyecto» en `amber-400`, sin relleno. Un subagente muestra «N pasos» y los lista al abrirla.
 - **Pantalla encendida:** en el teléfono, un sol en la cabecera a la izquierda de Recargar (`BotonPantallaActiva`), solo en esta ruta. Encendido, en `amber-400`, sin relleno.
 - **Cuadro de escritura:** `textarea.sin-marco` dentro de su franja. En escritorio, acciones debajo del campo. En el teléfono, UNA fila de 49 px (adjuntar · campo · micrófono · enviar) que crece con el texto. Un adjunto es icono + nombre recortado + quitar, sin cápsula. Intro envía solo en escritorio.
 - **`AutoGrowTextarea` lleva `rows={minRows}`:** sin eso, el navegador mide dos filas y el campo nunca baja de dos líneas aunque se pida una.

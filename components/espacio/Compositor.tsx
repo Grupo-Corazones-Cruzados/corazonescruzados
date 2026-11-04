@@ -191,6 +191,7 @@ export default function Compositor({
     const t = texto.trim();
     if (!hayAlgo || enviando || subiendo) return;
     if (t === '/clear' || t === '/new' || t === '/reset') { setTexto(''); alLimpiar(); return; }
+    if (t === '/plan') { setTexto(''); alCambiarModo('plan'); return; }
     setEnviando(true);
     const ok = await alEnviar(t, imagenes, adjuntos.map((a) => a.ruta as string));
     setEnviando(false);

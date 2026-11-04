@@ -3,8 +3,14 @@ import os from 'node:os';
 import path from 'node:path';
 
 /**
- * EL LÍMITE DE CADA SESIÓN, impuesto por Claude Code y por el sistema; nunca como texto en el
- * prompt (así lo hacía el DigiMundo y por eso se metía en otros proyectos).
+ * DECISIÓN DE FERNANDO (2026-11-04): por defecto una sesión tiene acceso COMPLETO, como en la
+ * terminal: puede leer otro proyecto si se le pide, consultar bases de datos, usar SSH o Chrome.
+ * Lo que la mantiene en su proyecto es `instruccionProyecto`, no un candado.
+ *
+ * El aislamiento de abajo solo se aplica a un proyecto marcado como aislado y a las sesiones que
+ * nacen de una incidencia de WhatsApp, porque ese texto lo escribió un desconocido.
+ *
+ * LÍMITE DE UNA SESIÓN AISLADA, impuesto por Claude Code y por el sistema:
  *
  * Probado el 2026-11-04 con `bypassPermissions`:
  *   · Las herramientas de archivo las frena `blockReads/WritesOutsideWorkingDirectories`.
@@ -95,6 +101,21 @@ export function ajustesDeSesion({ cwd, raizProyecto = cwd, proyectos = [], sandb
     };
   }
   return ajustes;
+}
+
+/**
+ * Lo que se añade a las instrucciones de Claude Code en cada sesión.
+ * El DigiMundo fallaba porque cada sesión podía arrancar en otra carpeta; aquí arranca en la suya y
+ * esto cubre el resto: leer es libre, editar otro proyecto se hace solo si se pide.
+ */
+export function instruccionProyecto({ nombre, ruta, cwd = ruta }) {
+  return [
+    '# Proyecto de esta sesión',
+    `Esta sesión pertenece al proyecto «${nombre}», en ${ruta}${cwd !== ruta ? ` (directorio de trabajo: ${cwd})` : ''}.`,
+    '- Puedes leer cualquier otro proyecto cuando el usuario lo pida o cuando le sirva para lo que te pidió.',
+    '- No crees, edites ni borres archivos de otro proyecto, ni hagas commit o despliegues en él, salvo que el usuario te lo pida expresamente para ese proyecto.',
+    '- Los archivos de memoria y seguimiento (MEMORIA.md, Aprendizaje.md, Diseño.md, PROPUESTAS.md, CLAUDE.md) que actualices son los del proyecto en el que estás trabajando, nunca los del proyecto que solo consultaste. Si esta carpeta agrupa varios proyectos, usa los del subproyecto al que corresponde el trabajo.',
+  ].join('\n');
 }
 
 /** Sin esto se cobra por API: `.env.local` tiene la clave, y con ella presente Claude Code siempre la usa. */

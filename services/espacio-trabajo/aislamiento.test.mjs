@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import os from 'node:os';
 import path from 'node:path';
-import { hermanas, ajustesDeSesion, entornoLimpio, carpetaAdjuntos, RAICES_CLIENTES } from './aislamiento.mjs';
+import { hermanas, ajustesDeSesion, entornoLimpio, carpetaAdjuntos, instruccionProyecto, RAICES_CLIENTES } from './aislamiento.mjs';
 
 const R = RAICES_CLIENTES[0];
 const arbol = { [R]: ['Diego', 'Motordesa', 'nota.txt'], [path.join(R, 'Motordesa')]: ['Marketplace', 'Ventas'], [path.join(R, 'Diego')]: ['Portal'] };
@@ -69,4 +69,11 @@ test('una sesión solo alcanza los adjuntos de su proyecto, y no los datos del s
   assert.ok(a.permissions.blockReadsExemptPaths.includes(mios));
   assert.ok(!a.sandbox.filesystem.allowRead.includes(carpetaAdjuntos('otro')));
   assert.ok(!a.permissions.blockReadsExemptPaths.includes(datos));
+});
+
+test('la instrucción nombra el proyecto y su regla de edición y memoria', () => {
+  const i = instruccionProyecto({ nombre: 'Marketplace', ruta: '/a/Marketplace', cwd: '/a/Marketplace/app' });
+  assert.match(i, /«Marketplace», en \/a\/Marketplace \(directorio de trabajo: \/a\/Marketplace\/app\)/);
+  assert.match(i, /No crees, edites ni borres archivos de otro proyecto/);
+  assert.match(i, /MEMORIA\.md/);
 });

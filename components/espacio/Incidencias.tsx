@@ -8,7 +8,7 @@ import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
 import Segmentado from '@/components/ui/Segmentado';
-import { api, cabeceras, hace, type Proyecto, type Sesion } from './api';
+import { api, cabeceras, hace, type Proyecto } from './api';
 import { FilaSesion } from './RailProyectos';
 
 interface MensajeWa { id: number; direccion: 'ENTRANTE' | 'SALIENTE'; tipo: string; texto: string | null; en: string }
@@ -28,8 +28,8 @@ function borrador(c: ConversacionWa, desde: number) {
  *
  * ⚠️ Un mensaje de un cliente es texto de un desconocido: si entrara solo en una sesión sin
  * confirmaciones, cualquiera podría dar órdenes a Claude escribiendo al WhatsApp. Por eso nada se
- * envía sin que se elija el proyecto, se revise el texto y se confirme; y una sesión nueva nace en
- * modo Plan, que no puede cambiar archivos.
+ * envía sin que se elija el proyecto, se revise el texto y se confirme; y siempre abre una sesión
+ * nueva, aislada y en modo Plan: es la única con límites de verdad, y las normales no los tienen.
  */
 export default function Incidencias({ cabecera, proyectos, enTelefono, alAbrirSesion }: {
   cabecera: React.ReactNode;
@@ -157,8 +157,6 @@ function PanelEnviar({ abierto, conversacion, proyectos, locales, alCerrar, alEn
   alEnviado: (proyecto: string, sesion: string, estado: any) => void;
 }) {
   const [proyecto, setProyecto] = useState('');
-  const [sesion, setSesion] = useState('');
-  const [sesiones, setSesiones] = useState<Sesion[]>([]);
   const [texto, setTexto] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -167,23 +165,15 @@ function PanelEnviar({ abierto, conversacion, proyectos, locales, alCerrar, alEn
     if (!abierto || !conversacion) return;
     const previo = locales.conversaciones[conversacion.id];
     setProyecto(locales.contactos[conversacion.contacto] || '');
-    setSesion(''); setError('');
+    setError('');
     setTexto(borrador(conversacion, previo?.hasta || 0));
   }, [abierto, conversacion, locales]);
-
-  useEffect(() => {
-    setSesion('');
-    if (!proyecto) { setSesiones([]); return; }
-    api(`/proyectos/${proyecto}/sesiones`).then((j) => setSesiones(j.sesiones)).catch(() => setSesiones([]));
-  }, [proyecto]);
 
   async function confirmar() {
     if (!conversacion) return;
     setEnviando(true); setError('');
     try {
-      let id = sesion;
-      if (id) await api(`/sesiones/${id}/enviar`, { cuerpo: { proyecto, texto } });
-      else id = (await api('/sesiones', { cuerpo: { proyecto, texto, modo: 'plan' } })).id;
+      const { id } = await api('/sesiones', { cuerpo: { proyecto, texto, modo: 'plan', aislada: true } });
       const hasta = Math.max(0, ...conversacion.mensajes.map((m) => m.id));
       const j = await api('/incidencias/estado', { cuerpo: { conversacion: conversacion.id, contacto: conversacion.contacto, proyecto, datos: { estado: 'enviada', proyecto, sesion: id, hasta } } });
       alEnviado(proyecto, id, j);
@@ -194,7 +184,7 @@ function PanelEnviar({ abierto, conversacion, proyectos, locales, alCerrar, alEn
   const clase = 'w-full h-11 sm:h-9 rounded-md border border-digi-border bg-digi-darker px-3 pr-9 text-[16px] sm:text-[13px] text-digi-text outline-none focus:border-digi-muted';
   const grupos = useMemo(() => [...proyectos].sort((a, b) => `${a.grupo}${a.nombre}`.localeCompare(`${b.grupo}${b.nombre}`, 'es')), [proyectos]);
   return (
-    <PixelModal open={abierto} onClose={alCerrar} title="Llevar a una sesión" size="md"
+    <PixelModal open={abierto} onClose={alCerrar} title="Llevar a una sesión nueva" size="md"
       pie={<PieAcciones>
         <button type="button" className={BTN_SECONDARY} onClick={alCerrar}>Cancelar</button>
         <button type="button" className={BTN_PRIMARY} disabled={!proyecto || !texto.trim() || enviando} onClick={confirmar}>{enviando && <Loader2 className="w-4 h-4 animate-spin" />} Enviar</button>
@@ -204,11 +194,6 @@ function PanelEnviar({ abierto, conversacion, proyectos, locales, alCerrar, alEn
           <select className={clase} value={proyecto} onChange={(e) => setProyecto(e.target.value)}>
             <option value="">Elige un proyecto</option>
             {grupos.map((p) => <option key={p.id} value={p.id}>{p.grupo} · {p.nombre}</option>)}
-          </select></label>
-        <label className="block"><span className="block text-[12px] font-medium text-digi-muted mb-1">Sesión</span>
-          <select className={clase} value={sesion} onChange={(e) => setSesion(e.target.value)} disabled={!proyecto}>
-            <option value="">Sesión nueva, en modo Plan</option>
-            {sesiones.map((s) => <option key={s.id} value={s.id}>{s.titulo}</option>)}
           </select></label>
         <label className="block"><span className="block text-[12px] font-medium text-digi-muted mb-1">Mensaje</span>
           <AutoGrowTextarea value={texto} onChange={(e) => setTexto(e.target.value)} minRows={8}

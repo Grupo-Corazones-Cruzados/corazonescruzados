@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import { spawn, execFile } from 'node:child_process';
 import { query, listSessions, getSessionMessages, renameSession, getSessionInfo } from '@anthropic-ai/claude-agent-sdk';
 import { pipeline } from 'node:stream/promises';
-import { ajustesDeSesion, carpetaAdjuntos, entornoLimpio, RAICES_CLIENTES } from './aislamiento.mjs';
+import { ajustesDeSesion, carpetaAdjuntos, entornoLimpio, instruccionProyecto, RAICES_CLIENTES } from './aislamiento.mjs';
 
 /**
  * SERVICIO LOCAL DEL ESPACIO DE TRABAJO. Es el dueño de las sesiones vivas; va aparte de la web
@@ -26,6 +26,10 @@ const INACTIVA_MS = 30 * 60_000;
 const MAX_EVENTOS = 4000;
 const MAX_ADJUNTO = 100 * 1024 * 1024;
 const DIAS_ADJUNTOS = 30;
+/* Probados el 2026-11-04 con Claude Code 2.1.318: responden «isn't available in this environment».
+   /plan sí se atiende, porque el cuadro de escritura lo convierte en el modo Plan. */
+const SIN_DISPONIBILIDAD = new Set(['memory', 'status', 'hooks', 'permissions', 'skills', 'rewind', 'help', 'ide', 'export', 'tasks', 'plugin', 'add-dir', 'login', 'logout', 'statusline', 'vim', 'terminal-setup', 'release-notes', 'bug', 'fast', 'agents']);
+const comandosUtiles = (l) => l.filter((c) => !SIN_DISPONIBILIDAD.has(c.name));
 const MARCA_ADJUNTOS = '[Archivos adjuntos por el usuario. Léelos con la herramienta Read]';
 
 fs.mkdirSync(DATOS, { recursive: true, mode: 0o700 });
@@ -94,6 +98,14 @@ function reposGit(dir, nivel = 0, salida = []) {
   return salida;
 }
 
+/* Las sesiones nacidas de una incidencia siguen aisladas aunque se retomen otro día. */
+const leerAisladas = () => new Set(leerJson('sesiones-aisladas.json', []));
+function marcarAislada(id, aislada) {
+  const s = leerAisladas();
+  if (aislada) s.add(id); else s.delete(id);
+  guardarJson('sesiones-aisladas.json', [...s]);
+}
+
 const nuevoId = (ruta) => crypto.createHash('sha1').update(ruta).digest('hex').slice(0, 12);
 
 function crearProyecto(ruta, datos = {}) {
@@ -102,7 +114,7 @@ function crearProyecto(ruta, datos = {}) {
     nombre: datos.nombre || path.basename(ruta),
     grupo: datos.grupo || clienteDe(ruta),
     subcarpetas: [...(datos.subcarpetas || [])],
-    sandbox: datos.sandbox !== false,
+    aislado: datos.aislado === true,
   };
 }
 
@@ -211,7 +223,7 @@ class SesionViva {
   constructor({ id, proyecto, cwd, modelo, modo, retomar, proyectosTodos }) {
     Object.assign(this, { id, proyecto, cwd, modelo, modo: modo || MODO_DEFECTO, retomar });
     this.eventos = []; this.seq = 0; this.clientes = new Set(); this.solicitudes = new Map();
-    this.estado = 'iniciando'; this.noVisto = false; this.actividad = Date.now();
+    this.tareas = new Set(); this.estado = 'iniciando'; this.noVisto = false; this.actividad = Date.now();
     this.cola = new Cola(); this.comandos = []; this.modelos = []; this.error = null; this.terminada = false;
     this.q = query({ prompt: this.cola, options: this.opciones(proyectosTodos) });
     this.leer();
@@ -221,6 +233,7 @@ class SesionViva {
     const { cwd, proyecto, modelo, modo, retomar, id } = this;
     const adjuntos = carpetaAdjuntos(proyecto.id, DATOS);
     fs.mkdirSync(adjuntos, { recursive: true, mode: 0o700 });
+    this.aislada = proyecto.aislado === true || leerAisladas().has(id);
     const opciones = {
       cwd,
       env: entornoLimpio(),
@@ -229,9 +242,10 @@ class SesionViva {
       permissionMode: modo,
       allowDangerouslySkipPermissions: true,
       includePartialMessages: true,
-      settings: ajustesDeSesion({ cwd, raizProyecto: proyecto.ruta, proyectos: proyectosTodos, sandbox: proyecto.sandbox, adjuntos, datos: DATOS }),
+      systemPrompt: { type: 'preset', preset: 'claude_code', append: instruccionProyecto({ nombre: proyecto.nombre, ruta: proyecto.ruta, cwd }) },
       canUseTool: (herramienta, entrada, ctx) => this.preguntar(herramienta, entrada, ctx),
     };
+    if (this.aislada) opciones.settings = ajustesDeSesion({ cwd, raizProyecto: proyecto.ruta, proyectos: proyectosTodos, sandbox: true, adjuntos, datos: DATOS });
     if (cwd !== proyecto.ruta) opciones.additionalDirectories = [proyecto.ruta];
     if (modelo) opciones.model = modelo;
     if (retomar) opciones.resume = id; else opciones.sessionId = id;
@@ -335,6 +349,11 @@ class SesionViva {
         if (m.state === 'running') this.cambiarEstado('trabajando');
         else if (m.state === 'requires_action') this.cambiarEstado('espera');
         else if (!this.solicitudes.size) this.cambiarEstado('libre');
+      } else if (m.subtype === 'task_started' || m.subtype === 'task_notification') {
+        // Un subagente o un comando en segundo plano sigue vivo aunque el turno ya haya terminado.
+        const clave = m.task_id || m.tool_use_id;
+        if (m.subtype === 'task_started') this.tareas.add(clave); else this.tareas.delete(clave);
+        this.emitir({ tipo: 'tareas', activas: this.tareas.size });
       } else if (m.subtype === 'compact_boundary') {
         this.emitir({ tipo: 'aviso', texto: 'Conversación compactada' });
       }
@@ -473,7 +492,7 @@ async function proyectoPorId(id) {
   return p;
 }
 
-const resumenViva = (s) => ({ id: s.id, proyecto: s.proyecto.id, estado: s.estado, noVisto: s.noVisto, modelo: s.modelo, modo: s.modo, preguntas: s.solicitudes.size });
+const resumenViva = (s) => ({ id: s.id, proyecto: s.proyecto.id, estado: s.estado, noVisto: s.noVisto, modelo: s.modelo, modo: s.modo, preguntas: s.solicitudes.size, aislada: s.aislada, tareas: s.tareas.size });
 
 /** La carpeta donde está guardada una sesión. Se usa la suya, no se adivina. */
 async function ubicar(proyecto, id) {
@@ -499,7 +518,7 @@ async function asegurarViva(id, proyectoId, { forzar = false, modelo, modo } = {
 /* Las inactivas dejan de ocupar memoria; al escribir de nuevo se retoman con el mismo id. */
 setInterval(() => {
   for (const s of vivas.values()) {
-    if (s.estado === 'libre' && !s.clientes.size && Date.now() - s.actividad > INACTIVA_MS) s.cerrar();
+    if (s.estado === 'libre' && !s.tareas.size && !s.clientes.size && Date.now() - s.actividad > INACTIVA_MS) s.cerrar();
   }
 }, 60_000).unref();
 
@@ -575,7 +594,7 @@ ruta('PATCH', '/proyectos/:id', async ({ p, cuerpo }) => {
   const cambios = {};
   if (typeof cuerpo.nombre === 'string' && cuerpo.nombre.trim()) cambios.nombre = cuerpo.nombre.trim();
   if (typeof cuerpo.grupo === 'string' && cuerpo.grupo.trim()) cambios.grupo = cuerpo.grupo.trim();
-  if (typeof cuerpo.sandbox === 'boolean') cambios.sandbox = cuerpo.sandbox;
+  if (typeof cuerpo.aislado === 'boolean') cambios.aislado = cuerpo.aislado;
   lista[i] = { ...lista[i], ...cambios };
   guardarJson('proyectos.json', lista);
   return { proyecto: lista[i] };
@@ -607,12 +626,13 @@ ruta('GET', '/proyectos/:id/sesiones', async ({ p }) => {
 ruta('GET', '/vivas', async () => ({ vivas: [...vivas.values()].map(resumenViva) }));
 ruta('GET', '/listas', async ({ url }) => {
   const s = vivas.get(url.searchParams.get('sesion'));
-  return { comandos: s?.comandos?.length ? s.comandos : comandosGlobales, modelos: s?.modelos?.length ? s.modelos : modelosGlobales };
+  return { comandos: comandosUtiles(s?.comandos?.length ? s.comandos : comandosGlobales), modelos: s?.modelos?.length ? s.modelos : modelosGlobales };
 });
 
 ruta('POST', '/sesiones', async ({ cuerpo }) => {
   const proyecto = await proyectoPorId(cuerpo.proyecto);
   const id = crypto.randomUUID();
+  if (cuerpo.aislada === true) marcarAislada(id, true);
   const s = new SesionViva({ id, proyecto, cwd: proyecto.ruta, modelo: cuerpo.modelo, modo: cuerpo.modo, retomar: false, proyectosTodos: await proyectos() });
   vivas.set(id, s);
   if (cuerpo.texto || cuerpo.imagenes?.length) s.enviar(cuerpo);
@@ -633,7 +653,7 @@ ruta('GET', '/sesiones/:id/mensajes', async ({ p, url }) => {
   return {
     mensajes: filas.slice(desde, antes), hayAnteriores: desde > 0, inicio: desde,
     titulo: donde?.info?.customTitle || donde?.info?.summary || null,
-    carpeta: donde?.dir || viva?.cwd, enTerminal: !!abiertaEnTerminal(p.id),
+    carpeta: donde?.dir || viva?.cwd, enTerminal: !!abiertaEnTerminal(p.id), aislada: proyecto.aislado === true || leerAisladas().has(p.id),
     viva: viva ? { ...resumenViva(viva), solicitudes: [...viva.solicitudes].map(([solicitudId, s]) => ({ solicitudId, herramienta: s.herramienta, entrada: recortarEntrada(s.entrada) })) } : null,
     ultimoSeq: viva?.seq ?? 0,
     error: ultimosErrores.get(p.id) || null,
@@ -656,6 +676,14 @@ ruta('POST', '/sesiones/:id/ajustes', async ({ p, cuerpo }) => {
   if (cuerpo.modo) { await s.q.setPermissionMode(cuerpo.modo); s.modo = cuerpo.modo; }
   s.emitir({ tipo: 'ajustes', modelo: s.modelo, modo: s.modo });
   return { ok: true, aplicado: true };
+});
+/** Cierra el proceso para que al escribir de nuevo se retome ya con el acceso completo. */
+ruta('POST', '/sesiones/:id/sin-aislamiento', async ({ p }) => {
+  marcarAislada(p.id, false);
+  const s = vivas.get(p.id);
+  if (s && s.estado === 'trabajando') throw new ErrorApi(409, 'La sesión está trabajando. Deténla antes.');
+  s?.cerrar();
+  return { ok: true };
 });
 ruta('POST', '/sesiones/:id/visto', async ({ p }) => { const s = vivas.get(p.id); if (s) s.noVisto = false; return { ok: true }; });
 ruta('POST', '/sesiones/:id/cerrar', async ({ p }) => { vivas.get(p.id)?.cerrar(); return { ok: true }; });

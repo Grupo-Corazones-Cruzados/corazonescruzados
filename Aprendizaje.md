@@ -66,6 +66,13 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
 
 - **Adjuntos (2026-11-04):** van a `~/.gcc-espacio/adjuntos/<proyecto>/`, hasta 100 MB, en bytes y se purgan al mes. Las imágenes de hasta 10 MB van dentro del mensaje. Probado: binario íntegro, nombre `../../../token` neutralizado, ruta de otro proyecto rechazada, Read y Bash leen el propio y no el ajeno.
 
+- **DECISIÓN DE FERNANDO (2026-11-04): acceso completo por defecto.** Deroga el aislamiento general. «No me importa darle el acceso o control total»: puede pedirle que lea otro proyecto para mejorar el actual, confiando en que no lo edite por eso y en que use la memoria del proyecto que corresponde. Sin bloqueos de archivo ni sandbox; lo cubre una instrucción fija (`instruccionProyecto`) y la pantalla avisa «Otro proyecto» si una edición sale de su carpeta. Solo quedan aislados un proyecto marcado y las sesiones nacidas de una incidencia, que siempre son nuevas y en Plan.
+- **Instrucciones base:** el SDK necesita `systemPrompt: { type: 'preset', preset: 'claude_code' }` explícito para garantizar las de Claude Code. Antes no se pedía.
+- **Lista comprobada (2026-11-04, 2.1.318):**
+  - **Funciona:** base de datos, Chrome, SSH al M1, leer otros proyectos, Xcode, `gh`, Bash en segundo plano, subagentes con sus pasos, `/usage`, `/cost`, `/context`, `/mcp`, `/model`, `/config`, skills, `/compact`, preguntas, plan, imágenes, adjuntos, retomar. Memoria: leyó otro proyecto y anotó en el propio; lo editó solo cuando se le pidió.
+  - **No existe en este motor, sí en terminal:** `/rewind`, `/status`, `/help`, `/memory`, `/hooks`, `/permissions`, `/skills`, `/tasks`, `/export`, `/plugin`, `/add-dir`, `/ide`, `/statusline`, `/vim`, `/login`, `/bug`, `/release-notes`, `/fast`. Se ocultan del menú; `/plan` cambia el modo.
+  - **Conectores de claude.ai (Gmail, Drive, Docs):** el motor no los carga (`mcp_servers` vacío). Servidores propios de MCP no probados.
+
 ### Pendiente
 - ~~Fernando: crear su contraseña, activar HTTPS en Tailscale y añadir el teléfono a la red.~~ Hecho el 2026-11-04.
 - Probar en el iPhone real: micrófono, márgenes seguros y cuadro de escritura.

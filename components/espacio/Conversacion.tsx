@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ChevronLeft, Copy, Loader2, Pencil, Power, SlidersHorizontal, SquareTerminal } from 'lucide-react';
+import { ArrowDown, ChevronLeft, Copy, Loader2, LockOpen, Pencil, Power, SlidersHorizontal, SquareTerminal } from 'lucide-react';
 import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import MenuMas from '@/components/ui/MenuMas';
 import PixelConfirm from '@/components/ui/PixelConfirm';
@@ -34,6 +34,10 @@ export default function Conversacion({
   alCambiar: () => void;
 }) {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
+  const [hijos, setHijos] = useState<Record<string, Mensaje[]>>({});
+  const [aislada, setAislada] = useState(false);
+  const [tareas, setTareas] = useState(0);
+  const [quitarAislamiento, setQuitarAislamiento] = useState(false);
   const [parcial, setParcial] = useState('');
   const [solicitudes, setSolicitudes] = useState<Solicitud[]>([]);
   const [estado, setEstado] = useState<EstadoViva | null>(null);
@@ -73,7 +77,14 @@ export default function Conversacion({
     switch (e.tipo) {
       case 'delta': setParcial((p) => p + e.texto); setFin(null); break;
       case 'mensaje':
-        if (e.padre) break;
+        // Lo que hace un subagente va bajo su herramienta, no en la conversación principal.
+        if (e.padre) {
+          if (!vistos.current.has(e.uuid)) {
+            vistos.current.add(e.uuid);
+            setHijos((h) => ({ ...h, [e.padre]: [...(h[e.padre] || []), { uuid: e.uuid, rol: e.rol, bloques: e.bloques }] }));
+          }
+          break;
+        }
         if (e.rol === 'assistant') setParcial('');
         if (vistos.current.has(e.uuid)) break;
         vistos.current.add(e.uuid);
@@ -81,6 +92,7 @@ export default function Conversacion({
         if (e.propio) { setFin(null); setError(''); }
         break;
       case 'estado': setEstado(e.estado); break;
+      case 'tareas': setTareas(e.activas); break;
       case 'inicio': setModelo((m) => (m === 'default' ? m : e.modelo)); setModo(e.modo); break;
       case 'ajustes': setModo(e.modo); break;
       case 'solicitud': setSolicitudes((l) => (l.some((x) => x.solicitudId === e.solicitudId) ? l : [...l, e])); break;
@@ -114,9 +126,11 @@ export default function Conversacion({
       setTitulo(j.titulo || '');
       setCarpeta(j.carpeta || '');
       setEnTerminal(j.enTerminal);
+      setAislada(!!j.aislada);
       if (j.error) setError(`La sesión se detuvo: ${j.error}`);
       if (j.viva) {
         setEstado(j.viva.estado);
+        setTareas(j.viva.tareas || 0);
         if (j.viva.modo) setModo(j.viva.modo);
         setSolicitudes(j.viva.solicitudes || []);
         conectar(id);
@@ -131,7 +145,7 @@ export default function Conversacion({
   }, [proyecto.id, conectar, bajar]);
 
   useEffect(() => {
-    setMensajes([]); setParcial(''); setSolicitudes([]); setEstado(null); setFin(null); setError(''); setTitulo(''); setEnTerminal(false); setAnteriores(null);
+    setMensajes([]); setHijos({}); setAislada(false); setTareas(0); setParcial(''); setSolicitudes([]); setEstado(null); setFin(null); setError(''); setTitulo(''); setEnTerminal(false); setAnteriores(null);
     if (sesionId) cargar(sesionId); else { setCargando(false); setCarpeta(proyecto.ruta); }
     return () => { fuente.current?.(); fuente.current = null; };
     // Solo al cambiar de sesión: `cargar` depende del proyecto, que cambia con ella.
@@ -221,13 +235,14 @@ export default function Conversacion({
         <div className="min-w-0 flex-1">
           <h2 className="text-[13.5px] font-semibold text-digi-text truncate" title={titulo}>{sesionId ? titulo || 'Sesión' : 'Sesión nueva'}</h2>
           <p className="text-[11.5px] text-digi-muted truncate" title={carpeta}>
-            {proyecto.nombre}{!enEscritorio && modo !== 'bypassPermissions' && <> · {MODOS.find((m) => m.valor === modo)?.texto}</>}{lineaEstado && <> · <span className={lineaEstado.clase}>{lineaEstado.texto}</span></>}{enTerminal && !estado && <> · <span className="text-amber-400">Abierta en una terminal</span></>}
+            {proyecto.nombre}{aislada && <> · Aislada</>}{!enEscritorio && modo !== 'bypassPermissions' && <> · {MODOS.find((m) => m.valor === modo)?.texto}</>}{tareas > 0 ? <> · <span className="text-accent">{tareas === 1 ? '1 tarea' : `${tareas} tareas`} en segundo plano</span></> : lineaEstado && <> · <span className={lineaEstado.clase}>{lineaEstado.texto}</span></>}{enTerminal && !estado && <> · <span className="text-amber-400">Abierta en una terminal</span></>}
           </p>
         </div>
         {(sesionId || !enEscritorio) && (
           <MenuMas className="max-lg:!border-0 max-lg:!w-9 max-lg:!h-9 max-lg:!min-w-9 max-lg:!min-h-9" items={[
             ...(enEscritorio ? [] : [{ label: 'Modelo y permisos', icon: SlidersHorizontal, onClick: () => setAjustes(true) }]),
-            ...(!sesionId ? [] : [{ label: 'Cambiar nombre', icon: Pencil, onClick: () => setRenombrar(titulo) },
+            ...(!sesionId ? [] : [...(aislada ? [{ label: 'Quitar aislamiento', icon: LockOpen, onClick: () => setQuitarAislamiento(true) }] : []),
+            { label: 'Cambiar nombre', icon: Pencil, onClick: () => setRenombrar(titulo) },
             { label: 'Abrir en Terminal', icon: SquareTerminal, onClick: () => terminal(true), disabled: trabajando, hint: 'Primero detén la sesión' },
             { label: 'Copiar comando de terminal', icon: Copy, onClick: () => terminal(false), disabled: trabajando, hint: 'Primero detén la sesión' },
             { label: 'Cerrar el proceso', icon: Power, onClick: () => { api(`/sesiones/${sesionId}/cerrar`, { cuerpo: {} }).then(() => { setEstado(null); alCambiar(); }); }, disabled: !estado }]),
@@ -242,10 +257,11 @@ export default function Conversacion({
             {anteriores !== null && <div className="flex justify-center"><button type="button" onClick={verAnteriores} className={BTN_SECONDARY}>Ver mensajes anteriores</button></div>}
             {cargando && <div className="flex justify-center py-10"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}
             {!cargando && !sesionId && <p className="text-center text-[13px] text-digi-muted py-16 truncate" title={proyecto.ruta}>{proyecto.ruta}</p>}
-            <ListaMensajes mensajes={mensajes} parcial={parcial} />
+            <ListaMensajes mensajes={mensajes} parcial={parcial} hijos={hijos} carpeta={proyecto.ruta} />
             {solicitudes.map((s) => <TarjetaSolicitud key={s.solicitudId} s={s} responder={responder} />)}
             {trabajando && !parcial && !solicitudes.length && <p className="flex items-center gap-2 text-[12.5px] text-accent"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Trabajando</p>}
-            {fin && !trabajando && <p className={`text-[11.5px] tabular-nums ${fin.ok ? 'text-digi-muted' : 'text-red-400'}`}>{fin.ok ? `Terminó en ${segundos(fin.duracion)}` : `Terminó con error: ${fin.error || 'sin detalle'}`}</p>}
+            {tareas > 0 && !trabajando && <p className="flex items-center gap-2 text-[12.5px] text-accent"><Loader2 className="w-3.5 h-3.5 animate-spin" /> {tareas === 1 ? 'Una tarea sigue' : `${tareas} tareas siguen`} en segundo plano. Claude retomará al terminar.</p>}
+            {fin && !trabajando && !tareas && <p className={`text-[11.5px] tabular-nums ${fin.ok ? 'text-digi-muted' : 'text-red-400'}`}>{fin.ok ? `Terminó en ${segundos(fin.duracion)}` : `Terminó con error: ${fin.error || 'sin detalle'}`}</p>}
             {error && <p className={`rounded-lg border p-3 text-[13px] ${TONO.error.caja} ${TONO.error.texto}`}>{error}</p>}
           </div>
         </div>
@@ -264,6 +280,11 @@ export default function Conversacion({
       <PixelConfirm open={!!confirmar} title="Abierta en una terminal"
         message="Esta sesión sigue abierta en una terminal. Si escribes aquí también, cada parte dejará de ver lo que hace la otra. Lo seguro es cerrarla allí primero."
         confirmLabel="Enviar de todos modos" cancelLabel="Cancelar" danger onConfirm={() => confirmar?.()} onCancel={() => setConfirmar(null)} />
+      <PixelConfirm open={quitarAislamiento} title="Quitar aislamiento"
+        message="Esta sesión nació de un mensaje de un cliente. Sin aislamiento tendrá acceso completo a tu Mac, y es mejor hacerlo después de revisar lo que escribió ese cliente."
+        confirmLabel="Quitar aislamiento" cancelLabel="Cancelar" danger
+        onConfirm={() => { setQuitarAislamiento(false); api(`/sesiones/${sesionId}/sin-aislamiento`, { cuerpo: {} }).then(() => { setAislada(false); setEstado(null); fuente.current?.(); fuente.current = null; }).catch((e) => setError(e.message)); }}
+        onCancel={() => setQuitarAislamiento(false)} />
       <PixelModal open={renombrar !== null} onClose={() => setRenombrar(null)} title="Cambiar nombre" size="sm"
         pie={<PieAcciones><button type="button" className={BTN_SECONDARY} onClick={() => setRenombrar(null)}>Cancelar</button><button type="button" className={BTN_PRIMARY} onClick={guardarTitulo}>Guardar</button></PieAcciones>}>
         <PixelInput label="Nombre" value={renombrar || ''} autoFocus onChange={(e) => setRenombrar(e.target.value)} />

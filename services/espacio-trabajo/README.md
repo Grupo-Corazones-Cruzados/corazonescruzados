@@ -15,6 +15,6 @@ Navegador de la Mac ────────────────────
   son los archivos de Claude Code; aquí no se copian.
 - **Registros:** `~/.gcc-espacio/servicio.log` y `web.log`.
 - **Teléfono:** `tailscale serve --bg --https=443 http://127.0.0.1:3792`, y entrar a `/espacio-acceso`.
-- **Pruebas:** `npm test` en esta carpeta (límites de cada sesión).
+- **Pruebas:** `npm test` en esta carpeta.
 
-Reglas de aislamiento y su porqué: `aislamiento.mjs`.
+Por defecto cada sesión tiene acceso completo, como en la terminal. Solo se aíslan un proyecto marcado así y las sesiones nacidas de una incidencia. Reglas y porqué: `aislamiento.mjs`.

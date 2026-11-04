@@ -73,9 +73,9 @@ export async function api<T = any>(ruta: string, init?: { metodo?: string; cuerp
   return j as T;
 }
 
-export interface Proyecto { id: string; ruta: string; nombre: string; grupo: string; subcarpetas: string[]; sandbox: boolean }
+export interface Proyecto { id: string; ruta: string; nombre: string; grupo: string; subcarpetas: string[]; aislado: boolean }
 export type EstadoViva = 'iniciando' | 'trabajando' | 'espera' | 'libre' | 'cerrada';
-export interface Viva { id: string; proyecto: string; estado: EstadoViva; noVisto: boolean; modelo?: string; modo?: string; preguntas: number }
+export interface Viva { id: string; proyecto: string; estado: EstadoViva; noVisto: boolean; modelo?: string; modo?: string; preguntas: number; tareas?: number }
 export interface Sesion { id: string; titulo: string; actualizada: number; rama: string | null; carpeta: string | null; enTerminal: boolean; error: string | null; viva: Viva | null }
 
 export type Bloque =
