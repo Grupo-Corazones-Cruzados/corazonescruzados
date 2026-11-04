@@ -1,9 +1,12 @@
+import { rechazo } from '@/lib/espacio-trabajo/guardia';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { editarEntregable } from '@/lib/centralized/generacion-contenido-db';
 
 // La corrección a mano de un guion, «por encima» de lo que escribió el agente.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const fuera = await rechazo(req);
+  if (fuera) return fuera;
   const user = await getCurrentUser();
   if (!user || !['admin', 'member'].includes(user.role)) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 });

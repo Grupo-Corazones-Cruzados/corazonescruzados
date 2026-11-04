@@ -164,6 +164,15 @@ Fernando valoró bien la primera prueba («excelente aporte») y pidió probar c
   y registrado. Sin confirmar si Fernando lo abrió en CapCut real o vio la vista previa.
 - **Veredicto de Fernando (2026-11-04):** «quedó perfecto… yo solo agregaré embellecimiento y los cambios de cámara… está super bien». Queda como referencia de calidad; se aprueban las tarjetas y la limpieza con `cortes`.
 
+### Implementado en Generación de Contenido (2026-11-04)
+**Pedido de Fernando:** la misma interfaz del Espacio de trabajo, centrada en los videos. Una idea tiene varios videos; se sube uno a la vez y cada video es una sesión completa. Llega con sus cortes aplicados; si se equivoca, el agente lo resuelve.
+- **El chat no es una copia:** es el mismo `Conversacion` y las mismas piezas de fila, con voz, adjuntos, comandos, modelo, permisos, detener y retomar. Pantalla: `VideosDeIdea`, tras el botón «Videos» junto a «Generar todo». Como pestaña quedaba escondida en el «⋯».
+- **Sesiones:** proyecto `Edición de video` en `~/Movies/GCC-Edicion` (aparece también en el Espacio de trabajo), una sesión por video, primera orden `/editar-video`. La ficha está en `gcont_videos`; el archivo, en `video-<id>-<tema>/`, con `idea.md`. El prefijo impide que borrar alcance `biblioteca` o los proyectos anteriores.
+- **Subida por partes de 32 MB, en orden y reanudable:** el servicio rechaza una parte fuera de lugar y dice desde dónde seguir, y solo acepta el video con el tamaño completo. Probado con 335 MB y un corte simulado: idéntico byte a byte, 178 MB/s. Con 6 GB no se ha probado.
+- **Textos con Claude local:** `/generar-json` del servicio, sin herramientas ni sesión guardada. Si detectara cobro por API, se detiene. Medido: guion largo de 11.492 caracteres en 57 s, metadatos en 15 s. La conexión se mantiene viva con espacios porque `fetch` se rinde a los 5 min sin cabeceras. Las imágenes del carrusel siguen en `gpt-image-2`.
+- **Web bloqueada:** las rutas del sistema pasan por el candado del Espacio (`rechazo`). Probado sin la variable local: 404 en todas y pantalla «solo funciona en tu Mac». En local pide además la contraseña del Espacio.
+- **Sin probar en real:** el sistema lanzado desde launchd tras reiniciar el servicio, que se reinicia al terminar la sesión que lo instaló, porque esa sesión corre dentro de él. Tampoco un video completo de principio a fin por esta pantalla: la prueba se detuvo antes de escribir en CapCut para no dejarle basura; el agente ya había preparado el clip y leído la idea. El dictado no se probó aquí: es el mismo componente.
+
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?

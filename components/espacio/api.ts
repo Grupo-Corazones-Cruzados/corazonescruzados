@@ -7,6 +7,9 @@ export class ErrorEspacio extends Error {
 
 const LLAVE_TOKEN = 'espacio_token';
 export const RUTA_EMBEBIDA = '/espacio';
+export const rutaAcceso = (volver: string) => `/espacio-acceso?volver=${encodeURIComponent(volver)}`;
+/** Solo rutas de aquí: un enlace no puede mandar a otra web tras escribir la contraseña. */
+export const destinoSeguro = (v: string | null | undefined) => (v && v.startsWith('/') && !v.startsWith('//') && !v.includes('\\') ? v : '/dashboard/admin/espacio');
 
 export function tokenGuardado(): string | null {
   try { return localStorage.getItem(LLAVE_TOKEN); } catch { return null; }
@@ -21,7 +24,7 @@ export function cabeceras(extra: Record<string, string> = {}): Record<string, st
 
 function sesionCaducada() {
   if (window.location.pathname === RUTA_EMBEBIDA) { guardarToken(null); window.dispatchEvent(new Event('espacio-sin-sesion')); }
-  else window.location.href = '/espacio-acceso';
+  else window.location.href = rutaAcceso(window.location.pathname + window.location.search);
 }
 
 /**

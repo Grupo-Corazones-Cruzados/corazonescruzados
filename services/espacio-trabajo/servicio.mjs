@@ -10,6 +10,8 @@ import { pipeline } from 'node:stream/promises';
 import { expandirCadena, plegarCadena } from './cadena.mjs';
 import { sesionesActivas, ultimaInteraccion } from './activas.mjs';
 import { ajustesDeSesion, carpetaAdjuntos, entornoLimpio, instruccionProyecto, RAICES_CLIENTES } from './aislamiento.mjs';
+import { carpetaDe, ErrorVideo, estadoSubida, guardarParte, primerMensaje, raizEdicion, terminarSubida } from './videos.mjs';
+import { generarJson } from './generar.mjs';
 
 /**
  * SERVICIO LOCAL DEL ESPACIO DE TRABAJO. Es el dueño de las sesiones vivas; va aparte de la web
@@ -222,8 +224,8 @@ class Cola {
 }
 
 class SesionViva {
-  constructor({ id, proyecto, cwd, modelo, modo, retomar, proyectosTodos }) {
-    Object.assign(this, { id, proyecto, cwd, modelo, modo: modo || MODO_DEFECTO, retomar });
+  constructor({ id, proyecto, cwd, modelo, modo, retomar, proyectosTodos, tituloInicial }) {
+    Object.assign(this, { id, proyecto, cwd, modelo, modo: modo || MODO_DEFECTO, retomar, tituloInicial });
     this.eventos = []; this.seq = 0; this.clientes = new Set(); this.solicitudes = new Map();
     this.tareas = new Set(); this.estado = 'iniciando'; this.noVisto = false; this.actividad = Date.now();
     this.cola = new Cola(); this.comandos = []; this.modelos = []; this.error = null; this.terminada = false;
@@ -322,6 +324,12 @@ class SesionViva {
     }
     if (m.type === 'assistant' || m.type === 'user') {
       if (m.isReplay) return;
+      // El archivo de la sesión ya existe con la primera respuesta: antes no hay qué renombrar.
+      if (m.type === 'assistant' && this.tituloInicial) {
+        const titulo = this.tituloInicial;
+        this.tituloInicial = null;
+        renameSession(this.id, titulo, { dir: this.cwd }).then(() => this.emitir({ tipo: 'titulo', titulo })).catch((e) => console.error('[espacio] sin título', e?.message));
+      }
       const bloques = normalizar(m.type, m.message);
       if (bloques.length) this.emitir({ tipo: 'mensaje', uuid: m.uuid, rol: m.type, bloques, padre: m.parent_tool_use_id || null });
       return;
@@ -753,6 +761,46 @@ ruta('POST', '/sesiones/:id/terminal', async ({ p, cuerpo }) => {
   return { comando };
 });
 
+/* ─────────── Videos de Generación de Contenido ─────────── */
+
+const RAIZ_EDICION = raizEdicion();
+
+/** Todas las sesiones de video viven aquí, cada una con su carpeta dentro. Aparece solo la primera vez. */
+async function proyectoEdicion() {
+  fs.mkdirSync(RAIZ_EDICION, { recursive: true });
+  const real = fs.realpathSync(RAIZ_EDICION);
+  const lista = await proyectos();
+  const existente = lista.find((p) => p.ruta === real);
+  if (existente) return existente;
+  const p = crearProyecto(real, { nombre: 'Edición de video', grupo: 'Fernando González' });
+  guardarJson('proyectos.json', [...lista, p]);
+  return p;
+}
+
+ruta('GET', '/edicion', async () => ({ proyecto: await proyectoEdicion() }));
+ruta('GET', '/videos/:carpeta/estado', async ({ p, url }) => estadoSubida(carpetaDe(RAIZ_EDICION, p.carpeta), url.searchParams.get('nombre')));
+/** Deja el video completo en su carpeta y abre su sesión. La idea va en un archivo: un guion no cabe en un mensaje legible. */
+ruta('POST', '/videos/:carpeta/iniciar', async ({ p, cuerpo }) => {
+  const dir = carpetaDe(RAIZ_EDICION, p.carpeta);
+  const video = terminarSubida(dir, cuerpo.nombre, cuerpo.tamano);
+  fs.writeFileSync(path.join(dir, 'idea.md'), String(cuerpo.contexto || ''), { mode: 0o600 });
+  const proyecto = await proyectoEdicion();
+  const id = crypto.randomUUID();
+  const s = new SesionViva({ id, proyecto, cwd: proyecto.ruta, retomar: false, proyectosTodos: await proyectos(), tituloInicial: String(cuerpo.titulo || '').slice(0, 200) || null });
+  vivas.set(id, s);
+  s.enviar({ texto: primerMensaje({ ruta: video, carpeta: p.carpeta, tema: String(cuerpo.tema || '') }) });
+  return { id, proyecto: proyecto.id };
+});
+/** Borra la carpeta del video. El proyecto de CapCut y la conversación no se tocan. */
+ruta('DELETE', '/videos/:carpeta', async ({ p, cuerpo }) => {
+  const dir = carpetaDe(RAIZ_EDICION, p.carpeta);
+  const s = cuerpo.sesion ? vivas.get(cuerpo.sesion) : null;
+  if (s && (s.estado === 'trabajando' || s.estado === 'iniciando' || s.tareas.size)) throw new ErrorApi(409, 'La sesión de este video está trabajando. Deténla antes.');
+  s?.cerrar();
+  fs.rmSync(dir, { recursive: true, force: true });
+  return { ok: true };
+});
+
 ruta('GET', '/incidencias/estado', async () => leerJson('incidencias.json', { conversaciones: {}, contactos: {} }));
 ruta('POST', '/incidencias/estado', async ({ cuerpo }) => {
   const d = leerJson('incidencias.json', { conversaciones: {}, contactos: {} });
@@ -784,6 +832,26 @@ async function leerCuerpo(req) {
   try { return JSON.parse(Buffer.concat(trozos).toString('utf8')); } catch { throw new ErrorApi(400, 'JSON inválido.'); }
 }
 
+/**
+ * Un guion largo tarda minutos y sin cabeceras `fetch` se rinde a los 5 (ya tumbó las imágenes del
+ * carrusel). Por eso se responde de inmediato y se mantiene viva la conexión con espacios, que el
+ * JSON de la respuesta ignora.
+ */
+async function generarConLatido(req, res) {
+  const { system, user } = await leerCuerpo(req);
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  const latido = setInterval(() => res.write(' '), 15_000);
+  let salida;
+  try {
+    const datos = await generarJson({ query, system: String(system || ''), user: String(user || ''), opciones: { cwd: DATOS, env: entornoLimpio(), pathToClaudeCodeExecutable: CLAUDE } });
+    salida = { datos };
+  } catch (e) {
+    salida = { error: String(e?.message || e) };
+  }
+  clearInterval(latido);
+  res.end(JSON.stringify(salida));
+}
+
 function autorizado(req) {
   const a = Buffer.from(String(req.headers.authorization || ''));
   const b = Buffer.from(`Bearer ${TOKEN}`);
@@ -803,6 +871,9 @@ const servidor = http.createServer(async (req, res) => {
     }
     const subida = url.pathname.match(/^\/proyectos\/([^/]+)\/adjuntos$/);
     if (subida && req.method === 'POST') return responder(200, await subirAdjunto(req, subida[1], url.searchParams.get('nombre')));
+    const parte = url.pathname.match(/^\/videos\/([^/]+)\/partes$/);
+    if (parte && req.method === 'POST') return responder(200, await guardarParte(req, carpetaDe(RAIZ_EDICION, decodeURIComponent(parte[1])), url.searchParams.get('nombre'), url.searchParams.get('desde')));
+    if (url.pathname === '/generar-json' && req.method === 'POST') return generarConLatido(req, res);
     for (const r of rutas) {
       if (r.metodo !== req.method) continue;
       const m = url.pathname.match(r.re);
@@ -813,8 +884,8 @@ const servidor = http.createServer(async (req, res) => {
     }
     responder(404, { error: 'No existe.' });
   } catch (e) {
-    if (!(e instanceof ErrorApi)) console.error('[espacio]', e);
-    if (!res.headersSent) responder(e.estado || 500, { error: e.message, codigo: e.codigo });
+    if (!(e instanceof ErrorApi) && !(e instanceof ErrorVideo)) console.error('[espacio]', e);
+    if (!res.headersSent) responder(e.estado || 500, { error: e.message, codigo: e.codigo, recibido: e.recibido });
   }
 });
 

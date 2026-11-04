@@ -100,6 +100,7 @@ export default function Conversacion({
         setParcial(''); setFin({ ok: e.ok, detenida: e.detenida, duracion: e.duracion, error: e.error }); alCambiar();
         if (idRef.current) api(`/sesiones/${idRef.current}/mensajes?proyecto=${proyecto.id}&antes=0`).then((j) => { if (j.titulo) setTitulo(j.titulo); }).catch(() => {});
         break;
+      case 'titulo': setTitulo(e.titulo); break;
       case 'error': setError(e.texto); break;
     }
   }, [alCambiar, proyecto.id]);

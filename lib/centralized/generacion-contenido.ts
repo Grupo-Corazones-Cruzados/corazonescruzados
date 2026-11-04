@@ -314,3 +314,20 @@ export const PROMPT_LABEL: Record<string, string> = {
   base: 'Contexto base (se antepone a todos)',
   ...Object.fromEntries(ENTREGABLES.map((e) => [e.tipo, e.label])),
 };
+
+/** Lo que el agente de edición lee para entender el video: la idea y los textos ya escritos. */
+export function contextoDeIdea(c: any): string {
+  const partes = [
+    `# ${c.titulo || c.tema}`,
+    `- **Tema:** ${c.tema}`,
+    c.proposito_social && `- **Propósito social:** ${c.proposito_social}`,
+    c.proposito_monetario && `- **Propósito monetario:** ${c.proposito_monetario}`,
+    c.desarrollo && `- **Desarrollo:** ${c.desarrollo}`,
+    c.talento && `- **Talento:** ${c.talento}`,
+    c.tonos?.length && `- **Tonos:** ${c.tonos.join(', ')}`,
+  ].filter(Boolean) as string[];
+  for (const e of c.entregables || []) {
+    if (e.texto && e.tipo !== 'carrusel') partes.push(`\n---\n\n# ${ENTREGABLE_META[e.tipo as EntregableTipo]?.label || e.tipo}\n\n${e.texto}`);
+  }
+  return partes.join('\n');
+}

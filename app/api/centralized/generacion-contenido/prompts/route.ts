@@ -1,3 +1,4 @@
+import { rechazo } from '@/lib/espacio-trabajo/guardia';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrompts, setPrompt } from '@/lib/centralized/generacion-contenido-db';
@@ -11,7 +12,9 @@ async function guard() {
   return { userId: user.userId };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const fuera = await rechazo(req);
+  if (fuera) return fuera;
   const g = await guard();
   if (!g) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   try {
@@ -26,6 +29,8 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
+  const fuera = await rechazo(req);
+  if (fuera) return fuera;
   const g = await guard();
   if (!g) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   try {

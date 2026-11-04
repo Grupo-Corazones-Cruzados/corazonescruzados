@@ -130,6 +130,17 @@ async function doEnsure(): Promise<void> {
     CREATE TABLE IF NOT EXISTS gcc_world.gd_tonos (
       id SERIAL PRIMARY KEY, nombre TEXT NOT NULL UNIQUE, created_at TIMESTAMPTZ DEFAULT NOW()
     )`);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS gcc_world.gcont_videos (
+      id SERIAL PRIMARY KEY,
+      contenido_id INT NOT NULL REFERENCES gcc_world.gcont_contenidos(id) ON DELETE CASCADE,
+      nombre TEXT NOT NULL,
+      tamano BIGINT NOT NULL,
+      carpeta TEXT UNIQUE,
+      sesion_id TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS gcont_videos_contenido_idx ON gcc_world.gcont_videos(contenido_id)`);
   const { rows: [t] } = await pool.query(`SELECT COUNT(*)::int AS n FROM gcc_world.gd_tonos`);
   if (t.n === 0) {
     await pool.query(
@@ -329,6 +340,57 @@ export async function deleteContenido(id: number, userId: string, isAdmin: boole
     isAdmin ? [id] : [id, userId],
   );
   return (rowCount ?? 0) > 0;
+}
+
+/* ── Videos ───────────────────────────────────────────────────────────────────── */
+/** La carpeta lleva el tema para reconocerla en el disco, y el prefijo para que nada más coincida. */
+function nombreCarpeta(id: number, tema: string): string {
+  const slug = tema.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40).replace(/^-+|-+$/g, '');
+  return slug ? `video-${id}-${slug}` : `video-${id}`;
+}
+
+export async function listarVideos(contenidoId: number, userId: string, isAdmin: boolean) {
+  await ensureGeneracionContenidoTables();
+  if (!(await puedeEditar(contenidoId, userId, isAdmin))) return null;
+  const { rows } = await pool.query(
+    `SELECT id, contenido_id, nombre, tamano::float8 AS tamano, carpeta, sesion_id, created_at FROM gcc_world.gcont_videos WHERE contenido_id = $1 ORDER BY created_at DESC`,
+    [contenidoId],
+  );
+  return rows;
+}
+
+export async function crearVideo(contenidoId: number, nombre: string, tamano: number, userId: string, isAdmin: boolean) {
+  await ensureGeneracionContenidoTables();
+  const c = await getContenido(contenidoId, userId, isAdmin);
+  if (!c) return null;
+  const { rows: [v] } = await pool.query(
+    `INSERT INTO gcc_world.gcont_videos (contenido_id, nombre, tamano) VALUES ($1, $2, $3) RETURNING id`,
+    [contenidoId, nombre, tamano],
+  );
+  const { rows: [fila] } = await pool.query(
+    `UPDATE gcc_world.gcont_videos SET carpeta = $2 WHERE id = $1 RETURNING id, contenido_id, nombre, tamano::float8 AS tamano, carpeta, sesion_id, created_at`,
+    [v.id, nombreCarpeta(v.id, c.tema)],
+  );
+  return fila;
+}
+
+/** La pertenencia va por la idea: un video no tiene dueño propio. */
+export async function getVideo(videoId: number, userId: string, isAdmin: boolean) {
+  await ensureGeneracionContenidoTables();
+  const { rows: [v] } = await pool.query(
+    `SELECT id, contenido_id, nombre, tamano::float8 AS tamano, carpeta, sesion_id, created_at FROM gcc_world.gcont_videos WHERE id = $1`,
+    [videoId],
+  );
+  if (!v || !(await puedeEditar(v.contenido_id, userId, isAdmin))) return null;
+  return v;
+}
+
+export async function fijarSesionVideo(videoId: number, sesionId: string | null) {
+  await pool.query(`UPDATE gcc_world.gcont_videos SET sesion_id = $2 WHERE id = $1`, [videoId, sesionId]);
+}
+
+export async function borrarVideo(videoId: number) {
+  await pool.query(`DELETE FROM gcc_world.gcont_videos WHERE id = $1`, [videoId]);
 }
 
 /* ── Entregables ──────────────────────────────────────────────────────────────── */

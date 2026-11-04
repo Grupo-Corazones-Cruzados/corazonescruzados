@@ -28,17 +28,17 @@ export function FilaSesion({ titulo, linea, activa, alElegir, icono, borrador }:
   );
 }
 
-function procesando(s: Sesion) {
+export function procesando(s: Sesion) {
   const v = s.viva && s.viva.estado !== 'cerrada' ? s.viva : null;
   return v ? v.estado === 'iniciando' || v.estado === 'trabajando' || (v.tareas || 0) > 0 : s.estadoTerminal === 'busy';
 }
 
 /** Solo se para desde aquí lo que corre aquí: una terminal se para en su terminal. */
-function detenible(s: Sesion) {
+export function detenible(s: Sesion) {
   return !!s.viva && s.viva.estado !== 'cerrada' && (procesando(s) || s.viva.estado === 'espera');
 }
 
-function BotonDetener({ s }: { s: Sesion }) {
+export function BotonDetener({ s }: { s: Sesion }) {
   return (
     <button type="button" onClick={() => { api(`/sesiones/${s.id}/detener`, { cuerpo: {} }).catch(() => {}); }} aria-label={`Detener ${s.titulo}`} title="Detener"
       className={`${BTN_ICONO_FILA} !text-red-400`}><Square className="w-3 h-3 fill-current" /></button>
@@ -46,7 +46,7 @@ function BotonDetener({ s }: { s: Sesion }) {
 }
 
 /** Qué está haciendo la sesión, de un vistazo. Lo escrito sin enviar es aparte: puede darse a la vez. */
-function IconoEstado({ s }: { s: Sesion }) {
+export function IconoEstado({ s }: { s: Sesion }) {
   const v = s.viva && s.viva.estado !== 'cerrada' ? s.viva : null;
   const t = v ? null : s.estadoTerminal;
   const [Icono, texto, clase] =
@@ -59,7 +59,7 @@ function IconoEstado({ s }: { s: Sesion }) {
   return <span role="img" aria-label={texto} title={texto} className="shrink-0 mt-[2px]"><Icono className={`w-3.5 h-3.5 ${clase}`} /></span>;
 }
 
-function lineaSesion(s: Sesion, detalle = s.rama) {
+export function lineaSesion(s: Sesion, detalle = s.rama) {
   const viva = s.viva && s.viva.estado !== 'cerrada' ? TEXTO_ESTADO[s.viva.estado] : null;
   return (
     <>

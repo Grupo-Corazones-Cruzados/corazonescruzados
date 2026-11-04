@@ -14,9 +14,10 @@
  *    guion corto cuenta el mismo tema para otra persona: si no ven el guion largo, se
  *    inventan tres videos distintos en vez de uno.
  *
- * El modelo y sus trampas viven en `lib/ia/openai.ts` (temperature/top_p/max_tokens son 400).
+ * Desde 2026-11-04 los textos los escribe Claude Code en la Mac, con la suscripción, y el sistema
+ * solo existe en local. Lo único que sigue en OpenAI son las imágenes del carrusel (`gpt-image-2`).
  */
-import { chatJSON } from '@/lib/ia/openai';
+import { generarJSONLocal } from '@/lib/espacio-trabajo/claude-local';
 import { claveIA, mensajeDeErrorIA } from '@/lib/ia/openai';
 import { cloudinaryConfigured, uploadImage } from '@/lib/cloudinary';
 import {
@@ -27,16 +28,6 @@ import {
   detalleFuentes, detalleReferencias, getContenido, getPrompts,
   guardarEntregable, reemplazarLaminas, setLaminaImagen,
 } from '@/lib/centralized/generacion-contenido-db';
-
-/** Techo de salida por entregable. El guion largo es el que de verdad escribe. */
-const TECHO: Record<EntregableTipo, number> = {
-  guion_largo: 24000,
-  guion_corto: 12000,
-  short: 6000,
-  carrusel: 12000,
-  requerimientos: 12000,
-  metadatos: 8000,
-};
 
 /* ── El contexto ──────────────────────────────────────────────────────────────── */
 async function armarContexto(contenido: any, tipo: EntregableTipo): Promise<string> {
@@ -183,12 +174,7 @@ export async function generarEntregable(
   const system = `${prompts.base}\n\n──────────\n\n${prompts[tipo]}`;
   const user = await armarContexto(contenido, tipo);
 
-  const datos = await chatJSON<any>({
-    system,
-    user,
-    maxTokens: TECHO[tipo],
-    etiqueta: `contenido:${tipo}`,
-  });
+  const datos = await generarJSONLocal<any>(system, user);
 
   let texto = '';
   if (tipo === 'guion_largo' || tipo === 'guion_corto') texto = bloquesATexto(datos);

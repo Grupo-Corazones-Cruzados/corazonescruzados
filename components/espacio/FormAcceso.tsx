@@ -6,6 +6,7 @@ import PixelInput from '@/components/ui/PixelInput';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
 import { ProveedorTemaPanel, useTemaPanel } from '@/components/providers/TemaPanel';
+import { destinoSeguro } from './api';
 import '../../app/tema-progreso.css';
 import '../../app/temas.css';
 
@@ -26,7 +27,7 @@ function Formulario({ servicio, claveConfigurada }: { servicio: boolean; claveCo
       body: JSON.stringify({ accion: crear ? 'crear' : 'entrar', clave }),
     }).catch(() => null);
     const j = await r?.json().catch(() => ({}));
-    if (r?.ok) { window.location.href = '/dashboard/admin/espacio'; return; }
+    if (r?.ok) { window.location.href = destinoSeguro(new URLSearchParams(window.location.search).get('volver')); return; }
     setCargando(false);
     setError(j?.error || 'No se pudo entrar.');
   }

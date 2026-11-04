@@ -1,3 +1,4 @@
+import { rechazo } from '@/lib/espacio-trabajo/guardia';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { buscarReferencias, memberIdDeUsuario } from '@/lib/centralized/generacion-contenido-db';
@@ -5,6 +6,8 @@ import { buscarReferencias, memberIdDeUsuario } from '@/lib/centralized/generaci
 // El buscador de REFERENCIA HISTÓRICA: productos, proyectos y tickets del usuario. El admin
 // busca en todos.
 export async function GET(req: NextRequest) {
+  const fuera = await rechazo(req);
+  if (fuera) return fuera;
   const user = await getCurrentUser();
   if (!user || !['admin', 'member'].includes(user.role)) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 });

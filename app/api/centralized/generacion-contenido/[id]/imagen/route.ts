@@ -1,3 +1,4 @@
+import { rechazo } from '@/lib/espacio-trabajo/guardia';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { getLamina } from '@/lib/centralized/generacion-contenido-db';
@@ -9,6 +10,8 @@ export const maxDuration = 300;
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const fuera = await rechazo(req);
+  if (fuera) return fuera;
   const user = await getCurrentUser();
   if (!user || !['admin', 'member'].includes(user.role)) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 403 });

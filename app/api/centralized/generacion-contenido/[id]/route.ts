@@ -1,6 +1,8 @@
+import { borrarCarpetaVideo } from '@/lib/espacio-trabajo/claude-local';
+import { rechazo } from '@/lib/espacio-trabajo/guardia';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { deleteContenido, getContenido, updateContenido } from '@/lib/centralized/generacion-contenido-db';
+import { deleteContenido, listarVideos, getContenido, updateContenido } from '@/lib/centralized/generacion-contenido-db';
 import { isEstado, isFuenteTipo, isReferenciaTipo } from '@/lib/centralized/generacion-contenido';
 
 async function guard() {
@@ -9,7 +11,9 @@ async function guard() {
   return { userId: user.userId, isAdmin: user.role === 'admin' };
 }
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const fuera = await rechazo(req);
+  if (fuera) return fuera;
   const g = await guard();
   if (!g) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   try {
@@ -24,6 +28,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const fuera = await rechazo(req);
+  if (fuera) return fuera;
   const g = await guard();
   if (!g) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   try {
@@ -61,11 +67,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const fuera = await rechazo(req);
+  if (fuera) return fuera;
   const g = await guard();
   if (!g) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   try {
     const { id } = await params;
+    // Primero las carpetas: si una sesión sigue trabajando, la idea no se borra a medias.
+    for (const v of (await listarVideos(Number(id), g.userId, g.isAdmin)) || []) await borrarCarpetaVideo(v);
     const ok = await deleteContenido(Number(id), g.userId, g.isAdmin);
     if (!ok) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
     return NextResponse.json({ ok: true });

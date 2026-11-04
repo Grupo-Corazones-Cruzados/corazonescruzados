@@ -8,9 +8,11 @@ import MenuMas from '@/components/ui/MenuMas';
 import { toast } from 'sonner';
 import {
   Plus, Settings, Sparkles, Pencil, Trash2, RefreshCw, Image as ImageIcon,
-  ClipboardList, Info, FileVideo, Wand2, Check, X, ChevronLeft, ChevronRight, ChevronDown,
+  ClipboardList, Info, FileVideo, Wand2, Check, X, ChevronLeft, ChevronRight, ChevronDown, Loader2, Lock, FileText, Clapperboard,
 } from 'lucide-react';
-import Button, { BTN_SECONDARY } from '@/components/ui/Button';
+import Button, { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { rutaAcceso } from '@/components/espacio/api';
+import VideosDeIdea from '@/components/centralized/generacion-contenido/VideosDeIdea';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelTabs from '@/components/ui/PixelTabs';
 import PixelConfirm from '@/components/ui/PixelConfirm';
@@ -26,6 +28,39 @@ import {
   LAMINA_ROL_LABEL, ORDEN_GENERACION,
   type ContenidoEstado, type EntregableTipo, type LaminaRol,
 } from '@/lib/centralized/generacion-contenido';
+
+type Puerta = 'cargando' | 'web' | 'clave' | 'sin-servicio' | 'dentro';
+
+/**
+ * ⭐ SOLO EN LA MAC (Fernando, 2026-11-04). Los textos los escribe Claude Code con la suscripción y
+ * los videos viven en el disco, así que en la web no hay nada que abrir: las rutas responden 404.
+ * Va detrás del mismo candado que el Espacio de trabajo.
+ */
+export default function GeneracionDeContenidoSystem(_props: { system?: any; isAdmin?: boolean }) {
+  const [puerta, setPuerta] = useState<Puerta>('cargando');
+  useEffect(() => {
+    fetch('/api/espacio-trabajo/estado')
+      .then(async (r) => {
+        if (!r.ok) { setPuerta('web'); return; }
+        const j = await r.json();
+        setPuerta(!j.servicio ? 'sin-servicio' : j.autenticado ? 'dentro' : 'clave');
+      })
+      .catch(() => setPuerta('web'));
+  }, []);
+  if (puerta === 'dentro') return <SistemaLocal />;
+  if (puerta === 'cargando') return <div className="py-16 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>;
+  const ruta = typeof window === 'undefined' ? '' : window.location.pathname;
+  return (
+    <div className="bg-digi-card border border-digi-border rounded-xl py-16 px-6 flex flex-col items-center text-center gap-3">
+      <Lock className="w-6 h-6 text-digi-muted" />
+      <p className="text-[14px] font-medium text-digi-text">
+        {puerta === 'web' ? 'Generación de Contenido solo funciona en tu Mac' : puerta === 'clave' ? 'Hace falta la contraseña del Espacio de trabajo' : 'El servicio local no está en marcha'}
+      </p>
+      {puerta === 'web' && <a className={BTN_PRIMARY} href={`http://localhost:3792${ruta}`}>Abrir en la Mac</a>}
+      {puerta === 'clave' && <a className={BTN_PRIMARY} href={rutaAcceso(ruta)}>Escribir la contraseña</a>}
+    </div>
+  );
+}
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
@@ -78,13 +113,15 @@ const vacio = {
  */
 // El alcance (quién ve qué) lo decide el SERVIDOR: las rutas filtran por dueño y el admin
 // las ve todas. La pantalla no recibe permisos que decidir, y por eso no usa `isAdmin`.
-export default function GeneracionDeContenidoSystem(_props: { system?: any; isAdmin?: boolean }) {
+function SistemaLocal() {
   const [lista, setLista] = useState<ContenidoLista[]>([]);
   const [selId, setSelId] = useState<number | null>(null);
   const [detalle, setDetalle] = useState<any | null>(null);
   const [cargando, setCargando] = useState(false);
 
   const [tab, setTab] = useState<EntregableTipo>('guion_largo');
+  /* Los videos no son un entregable: es el chat de cada video y ocupa también la columna derecha. */
+  const [enVideos, setEnVideos] = useState(false);
   const [generando, setGenerando] = useState<EntregableTipo | null>(null);
   const [generandoLamina, setGenerandoLamina] = useState<number | null>(null);
   const [enTanda, setEnTanda] = useState(false);
@@ -688,15 +725,16 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
           <div ref={arribaSeccion} className="scroll-mt-4 flex flex-col gap-2">
             <label className="flex flex-col gap-1">
               <span className="field-label text-[11px] text-digi-muted" style={mf}>Sección</span>
-              <select value={tab} onChange={(e) => irASeccion(e.target.value as EntregableTipo)} className={SELECT_MOVIL} style={mf}>
+              <select value={enVideos ? 'videos' : tab} onChange={(e) => { if (e.target.value === 'videos') { setEnVideos(true); setEditandoTexto(null); return; } setEnVideos(false); irASeccion(e.target.value as EntregableTipo); }} className={SELECT_MOVIL} style={mf}>
                 {SECCIONES.map((t) => (
                   <option key={t} value={t}>
                     {ENTREGABLE_META[t].label}{entregables[t] ? ' ✓' : ''}{t === 'carrusel' && laminas.length ? ` · ${laminas.length} láminas` : ''}
                   </option>
                 ))}
+                <option value="videos">Videos</option>
               </select>
             </label>
-            {anclas.length >= 3 && editandoTexto !== tab && (
+            {!enVideos && anclas.length >= 3 && editandoTexto !== tab && (
               <label className="flex flex-col gap-1">
                 <span className="field-label text-[11px] text-digi-muted" style={mf}>Ir a</span>
                 <select
@@ -710,7 +748,7 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
                 </select>
               </label>
             )}
-            {entregables[tab] && editandoTexto !== tab && (
+            {!enVideos && entregables[tab] && editandoTexto !== tab && (
               <div className="flex items-center gap-2">
                 {ENTREGABLE_META[tab].editable && (
                   <button type="button" onClick={() => abrirEditorTexto(tab)} className={`${BTN_SECONDARY} flex-1`}>
@@ -722,9 +760,10 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
                 </button>
               </div>
             )}
-            {entregables[tab]?.editado && <span className="text-[12px]"><PixelBadge variant="warning">Editado a mano</PixelBadge></span>}
+            {!enVideos && entregables[tab]?.editado && <span className="text-[12px]"><PixelBadge variant="warning">Editado a mano</PixelBadge></span>}
           </div>
 
+          {enVideos ? <VideosDeIdea key={detalle.id} contenidoId={detalle.id} /> : <>
           <div className="bg-digi-card border border-digi-border rounded-xl p-3.5">
             {cargando ? <div className="py-16 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</div> : cuerpoSeccionMovil()}
           </div>
@@ -743,6 +782,7 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
             )}
           </div>
           {conBarraAbajo && <EnBarraAcciones>{botonGenerarTodo}</EnBarraAcciones>}
+          </>}
         </>
       )}
     </div>
@@ -861,7 +901,7 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
       <PixelConfirm
         open={Boolean(borrar)}
         title="Eliminar contenido"
-        message={`Se eliminan la idea «${borrar?.titulo || borrar?.tema || ''}» y todos sus entregables, incluidas las láminas del carrusel. No se puede deshacer.`}
+        message={`Se eliminan la idea «${borrar?.titulo || borrar?.tema || ''}», todos sus entregables, las láminas del carrusel y las carpetas de sus videos. Los proyectos de CapCut se conservan. No se puede deshacer.`}
         confirmLabel="Eliminar"
         danger
         onConfirm={confirmarBorrado}
@@ -884,7 +924,7 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
       {/* ── IZQUIERDA: lo generado ── */}
       <aside className="w-full xl:w-[250px] shrink-0 flex flex-col gap-3 min-h-0">
         <div className="flex items-center gap-2">
-          <button onClick={abrirNueva} className={`${BTN_SECONDARY} flex-1 bg-accent text-white border-accent hover:bg-accent-hover hover:text-white`}>
+          <button onClick={abrirNueva} className={`${BTN_PRIMARY} flex-1`}>
             <Plus className="w-4 h-4" /> Nueva idea
           </button>
           <button
@@ -945,6 +985,9 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
           {detalle && <PixelBadge variant={ESTADO_VARIANT[estado]}>{ESTADO_LABEL[estado]}</PixelBadge>}
           {detalle && (
             <div className="ml-auto flex items-center gap-2">
+              <button type="button" onClick={() => { setEnVideos((v) => !v); setEditandoTexto(null); }} className={BTN_SECONDARY}>
+                {enVideos ? <><FileText className="w-4 h-4" /> Guiones</> : <><Clapperboard className="w-4 h-4" /> Videos</>}
+              </button>
               <Button
                 onClick={generarTodo}
                 disabled={ocupado}
@@ -965,7 +1008,7 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
           )}
         </div>
 
-        {detalle && (
+        {detalle && !enVideos && (
           <div className="px-3 pt-2 flex items-center gap-2 flex-wrap">
             <div className="flex-1 min-w-0">
               <PixelTabs
@@ -1007,15 +1050,15 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto p-3 min-h-[40vh]">
+        {enVideos && detalle ? <div className="flex-1 min-h-0 flex flex-col"><VideosDeIdea key={detalle.id} contenidoId={detalle.id} /></div> : <div className="flex-1 overflow-y-auto p-3 min-h-[40vh]">
           {cargando ? (
             <div className="py-16 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</div>
           ) : cuerpoCentral()}
-        </div>
+        </div>}
       </section>
 
       {/* ── DERECHA: requerimientos, metadatos y estado ── */}
-      <aside className="w-full xl:w-[330px] shrink-0 flex flex-col gap-3 min-h-0 overflow-y-auto">
+      {!(enVideos && detalle) && <aside className="w-full xl:w-[330px] shrink-0 flex flex-col gap-3 min-h-0 overflow-y-auto">
         <div className="bg-digi-card border border-digi-border rounded-xl overflow-hidden">
           <div className="px-3 py-2.5 border-b border-digi-border flex items-center gap-1.5">
             <ClipboardList className="w-4 h-4 text-accent" />
@@ -1082,7 +1125,7 @@ export default function GeneracionDeContenidoSystem(_props: { system?: any; isAd
             </div>
           </div>
         )}
-      </aside>
+      </aside>}
 
       {dialogos}
     </div>
