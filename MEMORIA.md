@@ -6979,8 +6979,9 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   graba y recorta → sube el video → chat con sesión continua que lo potencia con sonido, gráficos,
   música y transiciones → termina en CapCut. **Los cambios de cámara los hace él.** Decidió el
   **proyecto de CapCut por capas** (asume que un cambio de formato se arregla actualizando el puente)
-  y **HyperFrames** para los gráficos; quiere priorizar sus favoritos de sonido y transiciones sin
-  cerrar la puerta al resto de la biblioteca. Investigación,
+  y **HyperFrames** para los gráficos. Tiene CapCut Pro y seguirá con él. **Los videos son publicidad,
+  así que todo se trata como uso comercial:** la música de CapCut no se usa, y de su biblioteca solo
+  entran los materiales marcados de uso dual; sus favoritos marcan el gusto. Investigación,
   pruebas pendientes y plan en `Aprendizaje.md` («EDICIÓN DE VIDEO CON IA»).
 
 - **Espacio de trabajo local con Claude Code (pedido 2026-11-04), aún sin construir:** una interfaz en Admin, solo en

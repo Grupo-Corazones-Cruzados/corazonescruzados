@@ -50,7 +50,7 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
 1. Prueba de aislamiento y paridad en un proyecto de ensayo. 2. Candado local + servicio + registro de proyectos.
 3. Sesiones múltiples con su estado. 4. Dictado. 5. WhatsApp.
 
-## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 62 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5
+## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 66 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5 Y LOS PROYECTOS DE REFERENCIA
 
 **Declarado por Fernando el 2026-11-04:** sus videos ya grabados y recortados deben potenciarse con IA (efectos de
 sonido, iconos y gráficos según lo que se dice, música de fondo, transiciones de sonido y de video). Quiere recibir un
@@ -112,9 +112,30 @@ no los documentos completos (más de 26.000 líneas). Falta auditar el diseño c
 - **APROBADO por Fernando (2026-11-04): HyperFrames** para los gráficos.
 - **Propuesto, voz y archivos en la capa de chat:** dictado, imágenes y archivos los resuelve el chat de la aplicación y
   llegan a Claude Code; no hay que modificar las herramientas de CapCut.
-- **Propuesto, biblioteca en tres niveles** con guía de edición: 1) favoritos (preferidos), 2) resto de CapCut (si el
-  momento lo justifica, verificando que el efecto exista), 3) archivos propios o generados. La guía se afina comparando
-  lo que la IA colocó con lo que Fernando dejó, quitó o movió.
+- **~~Biblioteca en tres niveles con favoritos primero~~ — CORREGIDO el 2026-11-04.** Los videos son para publicidad
+  y el acuerdo de materiales de CapCut (actualizado el 2026-01-22) no permite usar así su música. Ver el orden nuevo abajo.
+- **Decidido por encargo de Fernando («tú decides»), 2026-11-04: todo video se trata como uso comercial.**
+  - **Música:** nunca de la biblioteca de CapCut. Los `Sounds` son solo para uso personal y no comercial, y los
+    `Commercial Sounds` solo valen en CapCut, TikTok y TikTok for Business. Se usa una fuente externa cuya licencia
+    cubra publicidad y los canales donde se publique, guardando la licencia.
+  - **Efectos de sonido y visuales:** de CapCut solo los marcados de uso dual, que es lo único con uso comercial
+    permitido. Si no llevan marca, biblioteca externa con licencia. Las transiciones no se nombran en el acuerdo: se
+    aplica la misma regla, o se hacen con HyperFrames.
+  - **Favoritos:** referencia de gusto; se usan tal cual solo si llevan la marca. Si no, la IA busca un equivalente con licencia.
+  - **CapCut Pro** da acceso a lo pagado, pero el acuerdo no dice que amplíe la licencia. No es consejo legal.
+- La guía de edición se sigue afinando comparando lo que la IA colocó con lo que Fernando dejó, quitó o movió.
+
+### Referencias de estilo (Fernando, 2026-11-04)
+- **Proyectos en el iPhone 17:** `1014` (negocio de desarrollo humano) y `1021` (negocio de automatización de procesos,
+  **solo los primeros 26 s**: el resto no está cortado). Tienen ediciones similares. El `1014` del Mac tiene el mismo
+  nombre, pero una sola pista y 717 s; aún no se ha comprobado si es el mismo proyecto.
+- **El iPhone no se puede leer desde el Mac:** `devicectl` lo ve emparejado, pero lista solo 3 apps y da error al pedir
+  los archivos de CapCut. Una copia de seguridad completa llevaría todos sus datos privados y puede no caber (256 GB de
+  capacidad, 82 GB libres), así que no se usa.
+- **Vía propuesta:** Fernando sube los dos a la nube de CapCut y los abre en el Mac con la misma cuenta, más el video
+  exportado de cada uno. Abrirlos y guardarlos en 9.5 también resolvería P1 y parte de P5, sin crear `prueba-ia` aún.
+- **Reutilizar:** otra sesión construye el «Espacio de trabajo local» (Claude Code en Admin). El chat de edición debería
+  apoyarse en él, no duplicarlo. Revisar antes de construir.
 
 ### Decisiones propuestas (sin aprobar)
 - **Un manifiesto propio (JSON) es la fuente de verdad:** cada elemento se ancla a la palabra en el tiempo de origen, no
