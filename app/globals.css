@@ -1019,6 +1019,8 @@ select:where(:not([multiple]):not([size]):not(.field-plain)) {
   box-shadow: none !important;
   outline: none !important;
 }
+/* Campo sin marco, dentro de una caja que ya lo enmarca (cuadro de escritura del espacio de trabajo). */
+.corp textarea.sin-marco, .corp textarea.sin-marco:focus { border: 0 !important; box-shadow: none !important; background: transparent !important; }
 /* Los contenedores que se coloreaban al enfocar su campo (buscadores con icono). */
 .corp .focus-within\:border-accent:focus-within {
   border-color: var(--color-digi-muted) !important;

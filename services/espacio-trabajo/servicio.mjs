@@ -1,0 +1,679 @@
+#!/usr/bin/env node
+import http from 'node:http';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { spawn, execFile } from 'node:child_process';
+import { query, listSessions, getSessionMessages, renameSession, getSessionInfo } from '@anthropic-ai/claude-agent-sdk';
+import { ajustesDeSesion, entornoLimpio, RAICES_CLIENTES } from './aislamiento.mjs';
+
+/**
+ * SERVICIO LOCAL DEL ESPACIO DE TRABAJO. Es el dueño de las sesiones vivas; va aparte de la web
+ * para que reiniciar o recompilar la web no corte ningún trabajo.
+ *
+ * Solo escucha en 127.0.0.1 y exige el token de ~/.gcc-espacio/token. La verdad de las sesiones
+ * son los archivos de Claude Code: aquí se guarda el registro de proyectos, nunca conversaciones.
+ * Si una sesión no se puede retomar se avisa y se para: JAMÁS se abre otra en silencio (eso
+ * hacía el DigiMundo, y por eso «se perdían» las conversaciones).
+ */
+const DATOS = process.env.ESPACIO_DATOS || path.join(os.homedir(), '.gcc-espacio');
+const PUERTO = Number(process.env.ESPACIO_PUERTO || 3791);
+const CLAUDE = process.env.CLAUDE_BIN || path.join(os.homedir(), '.local/bin/claude');
+const MODO_DEFECTO = 'bypassPermissions';
+const INACTIVA_MS = 30 * 60_000;
+const MAX_EVENTOS = 4000;
+
+fs.mkdirSync(DATOS, { recursive: true, mode: 0o700 });
+const rutaDato = (n) => path.join(DATOS, n);
+
+function leerJson(nombre, defecto) {
+  try { return JSON.parse(fs.readFileSync(rutaDato(nombre), 'utf8')); }
+  catch (e) { if (e.code === 'ENOENT') return defecto; throw e; }
+}
+function guardarJson(nombre, valor) {
+  const tmp = rutaDato(`${nombre}.${process.pid}.tmp`);
+  fs.writeFileSync(tmp, JSON.stringify(valor, null, 2), { mode: 0o600 });
+  fs.renameSync(tmp, rutaDato(nombre));
+}
+
+function tokenServicio() {
+  const r = rutaDato('token');
+  if (!fs.existsSync(r)) fs.writeFileSync(r, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
+  return fs.readFileSync(r, 'utf8').trim();
+}
+const TOKEN = tokenServicio();
+
+/* ─────────── Proyectos ─────────── */
+
+const clienteDe = (ruta) => {
+  const m = ruta.match(/02_Clientes\/([^/]+)/);
+  return m ? m[1] : 'Otros';
+};
+
+function raizGit(dir) {
+  return new Promise((ok) => execFile('git', ['-C', dir, 'rev-parse', '--show-toplevel'], (e, out) => ok(e ? null : out.trim())));
+}
+
+/** Los proyectos con sesiones de Claude Code, para no registrar a mano 30 carpetas. */
+async function detectar() {
+  const sesiones = await listSessions({ limit: 5000 });
+  const porCwd = new Map();
+  for (const s of sesiones) if (s.cwd) porCwd.set(s.cwd, Math.max(porCwd.get(s.cwd) || 0, s.lastModified || 0));
+  const home = os.homedir();
+  const excluida = (c) => c === home || c === '/' || c.startsWith('/tmp') || c.startsWith('/private') || c.includes('/Library/CloudStorage/')
+    || c === path.join(home, 'Desktop') || c === path.join(home, 'Documents') || !fs.existsSync(c);
+  const porRaiz = new Map();
+  for (const [cwd, ultima] of porCwd) {
+    if (excluida(cwd)) continue;
+    const raiz = (await raizGit(cwd)) || cwd;
+    const e = porRaiz.get(raiz) || { ruta: raiz, subcarpetas: new Set(), ultima: 0 };
+    if (cwd !== raiz) e.subcarpetas.add(cwd);
+    e.ultima = Math.max(e.ultima, ultima);
+    porRaiz.set(raiz, e);
+  }
+  // Un proyecto sin sesiones recientes también es un proyecto: Claude Code borra las viejas.
+  for (const raiz of reposGit(RAICES_CLIENTES[0])) {
+    if (!porRaiz.has(raiz)) porRaiz.set(raiz, { ruta: raiz, subcarpetas: new Set(), ultima: 0 });
+  }
+  return [...porRaiz.values()].sort((a, b) => b.ultima - a.ultima);
+}
+
+function reposGit(dir, nivel = 0, salida = []) {
+  let entradas = [];
+  try { entradas = fs.readdirSync(dir, { withFileTypes: true }); } catch { return salida; }
+  if (entradas.some((e) => e.name === '.git')) { salida.push(dir); return salida; }
+  if (nivel >= 3) return salida;
+  for (const e of entradas) {
+    if (e.isDirectory() && !e.name.startsWith('.') && e.name !== 'node_modules') reposGit(path.join(dir, e.name), nivel + 1, salida);
+  }
+  return salida;
+}
+
+const nuevoId = (ruta) => crypto.createHash('sha1').update(ruta).digest('hex').slice(0, 12);
+
+function crearProyecto(ruta, datos = {}) {
+  return {
+    id: nuevoId(ruta), ruta,
+    nombre: datos.nombre || path.basename(ruta),
+    grupo: datos.grupo || clienteDe(ruta),
+    subcarpetas: [...(datos.subcarpetas || [])],
+    sandbox: datos.sandbox !== false,
+  };
+}
+
+async function proyectos() {
+  let lista = leerJson('proyectos.json', null);
+  if (!lista) {
+    lista = (await detectar()).map((d) => crearProyecto(d.ruta, { subcarpetas: d.subcarpetas }));
+    guardarJson('proyectos.json', lista);
+  }
+  return lista;
+}
+
+/** Fija una ruta real: sin esto, una ruta inexistente haría trabajar a la sesión en otro sitio. */
+function validarRuta(ruta) {
+  if (typeof ruta !== 'string' || !path.isAbsolute(ruta)) throw new ErrorApi(400, 'La ruta debe ser absoluta.');
+  let real;
+  try { real = fs.realpathSync(ruta); } catch { throw new ErrorApi(400, 'Esa carpeta no existe.'); }
+  if (!fs.statSync(real).isDirectory()) throw new ErrorApi(400, 'Esa ruta no es una carpeta.');
+  if (real === os.homedir() || real === '/') throw new ErrorApi(400, 'Esa carpeta es demasiado amplia para ser un proyecto.');
+  return real;
+}
+
+class ErrorApi extends Error {
+  constructor(estado, mensaje, codigo) { super(mensaje); this.estado = estado; this.codigo = codigo; }
+}
+
+/* ─────────── Normalización de mensajes: una sola para el historial y el directo ─────────── */
+
+const TOPE = 8000;
+const recortar = (t) => (typeof t === 'string' && t.length > TOPE ? `${t.slice(0, TOPE)}\n… (recortado, ${t.length} caracteres)` : t);
+
+function recortarEntrada(v) {
+  if (typeof v === 'string') return recortar(v);
+  if (Array.isArray(v)) return v.map(recortarEntrada);
+  if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, recortarEntrada(x)]));
+  return v;
+}
+
+/** Texto que Claude Code se inyecta a sí mismo y que nadie escribió. */
+function textoUsuario(t) {
+  const texto = String(t);
+  const comando = texto.match(/<command-name>([^<]*)<\/command-name>[\s\S]*?(?:<command-args>([\s\S]*?)<\/command-args>)?/);
+  if (comando) {
+    const args = texto.match(/<command-args>([\s\S]*?)<\/command-args>/);
+    return `${comando[1]}${args?.[1] ? ` ${args[1]}` : ''}`.trim();
+  }
+  const limpio = texto.replace(/<system-reminder>[\s\S]*?<\/system-reminder>/g, '').trim();
+  if (!limpio) return null;
+  if (/^(<local-command|<command-message|<task-notification|Caveat: |Base directory for this skill:|This session is being continued)/.test(limpio)) return null;
+  return limpio;
+}
+
+function aplanarResultado(c) {
+  if (typeof c === 'string') return c;
+  if (!Array.isArray(c)) return '';
+  return c.map((b) => (b?.type === 'text' ? b.text : b?.type === 'image' ? '[imagen]' : '')).join('\n');
+}
+
+export function normalizar(tipo, message) {
+  const contenido = message?.content;
+  const bloques = [];
+  const lista = typeof contenido === 'string' ? [{ type: 'text', text: contenido }] : Array.isArray(contenido) ? contenido : [];
+  for (const b of lista) {
+    if (b.type === 'text') {
+      const texto = tipo === 'user' ? textoUsuario(b.text) : b.text;
+      if (texto && texto.trim()) bloques.push({ tipo: 'texto', texto });
+    } else if (b.type === 'thinking' && b.thinking) bloques.push({ tipo: 'pensando', texto: recortar(b.thinking) });
+    else if (b.type === 'tool_use') bloques.push({ tipo: 'herramienta', id: b.id, nombre: b.name, entrada: recortarEntrada(b.input) });
+    else if (b.type === 'tool_result') bloques.push({ tipo: 'resultado', id: b.tool_use_id, error: !!b.is_error, texto: recortar(aplanarResultado(b.content)) });
+    else if (b.type === 'image') bloques.push({ tipo: 'imagen' });
+  }
+  return bloques;
+}
+
+/* ─────────── Sesiones vivas ─────────── */
+
+const vivas = new Map();
+
+class Cola {
+  constructor() { this.items = []; this.espera = null; this.fin = false; }
+  poner(x) { if (this.espera) { const r = this.espera; this.espera = null; r({ value: x, done: false }); } else this.items.push(x); }
+  cerrar() { this.fin = true; if (this.espera) { const r = this.espera; this.espera = null; r({ value: undefined, done: true }); } }
+  [Symbol.asyncIterator]() { return this; }
+  next() {
+    if (this.items.length) return Promise.resolve({ value: this.items.shift(), done: false });
+    if (this.fin) return Promise.resolve({ value: undefined, done: true });
+    return new Promise((r) => { this.espera = r; });
+  }
+}
+
+class SesionViva {
+  constructor({ id, proyecto, cwd, modelo, modo, retomar, proyectosTodos }) {
+    Object.assign(this, { id, proyecto, cwd, modelo, modo: modo || MODO_DEFECTO, retomar });
+    this.eventos = []; this.seq = 0; this.clientes = new Set(); this.solicitudes = new Map();
+    this.estado = 'iniciando'; this.noVisto = false; this.actividad = Date.now();
+    this.cola = new Cola(); this.comandos = []; this.modelos = []; this.error = null; this.terminada = false;
+    this.q = query({ prompt: this.cola, options: this.opciones(proyectosTodos) });
+    this.leer();
+  }
+
+  opciones(proyectosTodos) {
+    const { cwd, proyecto, modelo, modo, retomar, id } = this;
+    const opciones = {
+      cwd,
+      env: entornoLimpio(),
+      pathToClaudeCodeExecutable: CLAUDE,
+      settingSources: ['user', 'project', 'local'],
+      permissionMode: modo,
+      allowDangerouslySkipPermissions: true,
+      includePartialMessages: true,
+      settings: ajustesDeSesion({ cwd, raizProyecto: proyecto.ruta, proyectos: proyectosTodos, sandbox: proyecto.sandbox }),
+      canUseTool: (herramienta, entrada, ctx) => this.preguntar(herramienta, entrada, ctx),
+    };
+    if (cwd !== proyecto.ruta) opciones.additionalDirectories = [proyecto.ruta];
+    if (modelo) opciones.model = modelo;
+    if (retomar) opciones.resume = id; else opciones.sessionId = id;
+    return opciones;
+  }
+
+  emitir(ev, guardar = true) {
+    const e = { ...ev, seq: ++this.seq, en: Date.now() };
+    if (guardar) {
+      this.eventos.push(e);
+      if (this.eventos.length > MAX_EVENTOS) this.eventos.splice(0, this.eventos.length - MAX_EVENTOS);
+    }
+    const linea = `id: ${e.seq}\ndata: ${JSON.stringify(e)}\n\n`;
+    for (const c of this.clientes) c.write(linea);
+  }
+
+  cambiarEstado(estado) {
+    if (estado === this.estado) return;
+    this.estado = estado;
+    this.emitir({ tipo: 'estado', estado });
+  }
+
+  preguntar(herramienta, entrada, { signal, toolUseID } = {}) {
+    return new Promise((resolver) => {
+      const solicitudId = crypto.randomUUID();
+      const quitar = () => { this.solicitudes.delete(solicitudId); this.emitir({ tipo: 'solicitud_fin', solicitudId }); };
+      this.solicitudes.set(solicitudId, { herramienta, entrada, resolver: (r) => { quitar(); resolver(r); } });
+      signal?.addEventListener('abort', () => { if (this.solicitudes.has(solicitudId)) { quitar(); resolver({ behavior: 'deny', message: 'Cancelado', interrupt: true }); } });
+      this.noVisto = true;
+      this.emitir({ tipo: 'solicitud', solicitudId, herramienta, entrada: recortarEntrada(entrada), usoId: toolUseID });
+      this.cambiarEstado('espera');
+    });
+  }
+
+  responder(solicitudId, { permitir, respuestas, mensaje }) {
+    const s = this.solicitudes.get(solicitudId);
+    if (!s) throw new ErrorApi(404, 'Esa pregunta ya no está pendiente.');
+    if (!permitir) return s.resolver({ behavior: 'deny', message: mensaje || 'Rechazado por el usuario.' });
+    const updatedInput = respuestas ? { ...s.entrada, answers: respuestas } : s.entrada;
+    s.resolver({ behavior: 'allow', updatedInput });
+  }
+
+  enviar({ texto, imagenes = [] }) {
+    const contenido = [];
+    for (const i of imagenes) contenido.push({ type: 'image', source: { type: 'base64', media_type: i.tipo, data: i.datos } });
+    if (texto) contenido.push({ type: 'text', text: texto });
+    const uuid = crypto.randomUUID();
+    this.actividad = Date.now();
+    this.cambiarEstado('trabajando');
+    this.emitir({ tipo: 'mensaje', uuid, rol: 'user', bloques: normalizar('user', { content: contenido.map((b) => (b.type === 'text' ? { ...b, text: texto } : b)) }), propio: true });
+    this.cola.poner({ type: 'user', uuid, session_id: this.id, parent_tool_use_id: null, message: { role: 'user', content: contenido } });
+  }
+
+  async leer() {
+    try {
+      for await (const m of this.q) this.manejar(m);
+      this.terminar();
+    } catch (e) {
+      this.terminar(String(e?.message || e));
+    }
+  }
+
+  manejar(m) {
+    this.actividad = Date.now();
+    if (m.type === 'stream_event') {
+      const d = m.event;
+      if (!m.parent_tool_use_id && d?.type === 'content_block_delta' && d.delta?.type === 'text_delta') this.emitir({ tipo: 'delta', texto: d.delta.text }, false);
+      return;
+    }
+    if (m.type === 'assistant' || m.type === 'user') {
+      if (m.isReplay) return;
+      const bloques = normalizar(m.type, m.message);
+      if (bloques.length) this.emitir({ tipo: 'mensaje', uuid: m.uuid, rol: m.type, bloques, padre: m.parent_tool_use_id || null });
+      return;
+    }
+    if (m.type === 'result') {
+      this.noVisto = true;
+      this.emitir({
+        tipo: 'fin', ok: m.subtype === 'success' && !m.is_error, duracion: m.duration_ms,
+        error: m.subtype === 'success' ? null : (m.errors || []).join(' ') || m.subtype,
+        tokens: m.usage ? (m.usage.input_tokens || 0) + (m.usage.cache_read_input_tokens || 0) + (m.usage.cache_creation_input_tokens || 0) : null,
+      });
+      if (!this.solicitudes.size) this.cambiarEstado('libre');
+      return;
+    }
+    if (m.type === 'system') {
+      if (m.subtype === 'init') {
+        // ⚠️ Si al retomar llega otro id, es otra conversación: se para aquí en vez de seguir sin contexto.
+        if (m.session_id !== this.id) {
+          this.emitir({ tipo: 'error', texto: 'Claude Code abrió otra sesión en vez de retomar esta. Se detuvo para no perder el contexto.' });
+          this.q.close();
+          return;
+        }
+        this.modelo = m.model; this.modo = m.permissionMode;
+        this.emitir({ tipo: 'inicio', modelo: m.model, modo: m.permissionMode, cwd: m.cwd, origenClave: m.apiKeySource });
+        if (m.apiKeySource && m.apiKeySource !== 'none') this.emitir({ tipo: 'error', texto: `Esta sesión se está cobrando por API (${m.apiKeySource}), no por la suscripción.` });
+        this.cargarListas();
+      } else if (m.subtype === 'session_state_changed') {
+        if (m.state === 'running') this.cambiarEstado('trabajando');
+        else if (m.state === 'requires_action') this.cambiarEstado('espera');
+        else if (!this.solicitudes.size) this.cambiarEstado('libre');
+      } else if (m.subtype === 'compact_boundary') {
+        this.emitir({ tipo: 'aviso', texto: 'Conversación compactada' });
+      }
+    }
+  }
+
+  async cargarListas() {
+    try {
+      [this.comandos, this.modelos] = await Promise.all([this.q.supportedCommands(), this.q.supportedModels()]);
+      comandosGlobales = this.comandos; modelosGlobales = this.modelos;
+      this.emitir({ tipo: 'listas' });
+    } catch { /* el selector se queda con lo último conocido */ }
+  }
+
+  terminar(error) {
+    if (this.terminada) return;
+    this.terminada = true;
+    for (const s of [...this.solicitudes.values()]) s.resolver({ behavior: 'deny', message: 'La sesión se cerró.' });
+    if (error) {
+      this.error = error;
+      this.emitir({ tipo: 'error', texto: `La sesión se detuvo: ${error}` });
+    }
+    this.estado = 'cerrada';
+    this.emitir({ tipo: 'estado', estado: 'cerrada' });
+    for (const c of this.clientes) c.end();
+    this.clientes.clear();
+    if (vivas.get(this.id) === this) vivas.delete(this.id);
+    if (error) ultimosErrores.set(this.id, error);
+  }
+
+  cerrar() {
+    this.cola.cerrar();
+    this.q.close();
+    this.terminar();
+  }
+}
+
+let comandosGlobales = [];
+let modelosGlobales = [];
+const ultimosErrores = new Map();
+
+/** Las sesiones del propio servicio también se apuntan ahí, pero con otro `entrypoint`. */
+const esTerminal = (d) => d.kind === 'interactive' && d.entrypoint === 'cli';
+
+function abiertaEnTerminal(id) {
+  const dir = path.join(os.homedir(), '.claude/sessions');
+  let archivos = [];
+  try { archivos = fs.readdirSync(dir).filter((f) => f.endsWith('.json')); } catch { return null; }
+  for (const f of archivos) {
+    try {
+      const d = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+      if (d.sessionId !== id || !esTerminal(d)) continue;
+      process.kill(d.pid, 0);
+      return { pid: d.pid, estado: d.status };
+    } catch { /* proceso muerto o archivo a medio escribir */ }
+  }
+  return null;
+}
+
+function sesionesEnTerminal() {
+  const dir = path.join(os.homedir(), '.claude/sessions');
+  const ids = new Set();
+  try {
+    for (const f of fs.readdirSync(dir)) {
+      if (!f.endsWith('.json')) continue;
+      try {
+        const d = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+        if (!esTerminal(d)) continue;
+        process.kill(d.pid, 0);
+        ids.add(d.sessionId);
+      } catch { /* muerto */ }
+    }
+  } catch { /* sin carpeta */ }
+  return ids;
+}
+
+async function proyectoPorId(id) {
+  const p = (await proyectos()).find((x) => x.id === id);
+  if (!p) throw new ErrorApi(404, 'Ese proyecto no está registrado.');
+  if (!fs.existsSync(p.ruta)) throw new ErrorApi(409, `La carpeta del proyecto ya no existe: ${p.ruta}`);
+  return p;
+}
+
+const resumenViva = (s) => ({ id: s.id, proyecto: s.proyecto.id, estado: s.estado, noVisto: s.noVisto, modelo: s.modelo, modo: s.modo, preguntas: s.solicitudes.size });
+
+/** La carpeta donde está guardada una sesión. Se usa la suya, no se adivina. */
+async function ubicar(proyecto, id) {
+  for (const dir of [proyecto.ruta, ...(proyecto.subcarpetas || [])]) {
+    const info = await getSessionInfo(id, { dir }).catch(() => undefined);
+    if (info) return { dir, info };
+  }
+  return null;
+}
+
+async function asegurarViva(id, proyectoId, { forzar = false, modelo, modo } = {}) {
+  const existente = vivas.get(id);
+  if (existente) return existente;
+  const proyecto = await proyectoPorId(proyectoId);
+  const donde = await ubicar(proyecto, id);
+  if (!donde) throw new ErrorApi(404, 'No encuentro esa sesión en los archivos de Claude Code de este proyecto.');
+  if (!forzar && abiertaEnTerminal(id)) throw new ErrorApi(409, 'Esta sesión está abierta en una terminal. Si escribes aquí también, las dos partes dejarán de ver lo que hace la otra.', 'abierta_en_terminal');
+  const s = new SesionViva({ id, proyecto, cwd: donde.dir, modelo, modo, retomar: true, proyectosTodos: await proyectos() });
+  vivas.set(id, s);
+  return s;
+}
+
+/* Las inactivas dejan de ocupar memoria; al escribir de nuevo se retoman con el mismo id. */
+setInterval(() => {
+  for (const s of vivas.values()) {
+    if (s.estado === 'libre' && !s.clientes.size && Date.now() - s.actividad > INACTIVA_MS) s.cerrar();
+  }
+}, 60_000).unref();
+
+/** Comandos y modelos antes de abrir la primera sesión. Sin mensaje no hay llamada al modelo. */
+async function precargarListas() {
+  const cola = new Cola();
+  const q = query({ prompt: cola, options: { cwd: os.homedir(), env: entornoLimpio(), pathToClaudeCodeExecutable: CLAUDE, settingSources: ['user'], persistSession: false } });
+  try {
+    [comandosGlobales, modelosGlobales] = await Promise.all([q.supportedCommands(), q.supportedModels()]);
+  } catch (e) {
+    console.error('[espacio] no se pudieron precargar los comandos', e?.message);
+  } finally {
+    cola.cerrar();
+    q.close();
+  }
+}
+
+/* ─────────── Acceso ─────────── */
+
+const scrypt = (clave, sal) => crypto.scryptSync(clave, sal, 64, { N: 2 ** 15, r: 8, p: 1, maxmem: 128 * 1024 * 1024 }).toString('hex');
+const intentos = { n: 0, desde: 0 };
+
+function comprobarClave(clave) {
+  const guardada = leerJson('clave.json', null);
+  if (!guardada) throw new ErrorApi(409, 'Aún no hay contraseña.');
+  if (Date.now() - intentos.desde > 15 * 60_000) { intentos.n = 0; intentos.desde = Date.now(); }
+  if (intentos.n >= 5) throw new ErrorApi(429, 'Demasiados intentos. Espera 15 minutos.');
+  const ok = crypto.timingSafeEqual(Buffer.from(scrypt(String(clave), guardada.sal), 'hex'), Buffer.from(guardada.hash, 'hex'));
+  if (!ok) { intentos.n++; throw new ErrorApi(401, 'Contraseña incorrecta.'); }
+  intentos.n = 0;
+}
+
+function fijarClave(clave) {
+  if (typeof clave !== 'string' || clave.length < 10) throw new ErrorApi(400, 'La contraseña debe tener al menos 10 caracteres.');
+  const sal = crypto.randomBytes(16).toString('hex');
+  guardarJson('clave.json', { sal, hash: scrypt(clave, sal) });
+}
+
+/* ─────────── API ─────────── */
+
+const rutas = [];
+const ruta = (metodo, patron, fn) => {
+  const nombres = [];
+  const re = new RegExp(`^${patron.replace(/:(\w+)/g, (_, n) => { nombres.push(n); return '([^/]+)'; })}$`);
+  rutas.push({ metodo, re, nombres, fn });
+};
+
+ruta('GET', '/estado', async () => ({ ok: true, version: 1, claveConfigurada: !!leerJson('clave.json', null) }));
+ruta('POST', '/acceso/crear', async ({ cuerpo }) => {
+  if (leerJson('clave.json', null)) throw new ErrorApi(409, 'La contraseña ya existe.');
+  fijarClave(cuerpo.clave);
+  return { ok: true };
+});
+ruta('POST', '/acceso/entrar', async ({ cuerpo }) => { comprobarClave(cuerpo.clave); return { ok: true }; });
+
+ruta('GET', '/proyectos', async () => ({ proyectos: await proyectos() }));
+ruta('GET', '/proyectos/detectados', async () => {
+  const ya = new Set((await proyectos()).map((p) => p.ruta));
+  return { detectados: (await detectar()).filter((d) => !ya.has(d.ruta)).map((d) => ({ ruta: d.ruta, nombre: path.basename(d.ruta), grupo: clienteDe(d.ruta), subcarpetas: [...d.subcarpetas] })) };
+});
+ruta('POST', '/proyectos', async ({ cuerpo }) => {
+  const real = validarRuta(cuerpo.ruta);
+  const lista = await proyectos();
+  if (lista.some((p) => p.ruta === real)) throw new ErrorApi(409, 'Ese proyecto ya está registrado.');
+  const p = crearProyecto(real, cuerpo);
+  guardarJson('proyectos.json', [...lista, p]);
+  return { proyecto: p };
+});
+ruta('PATCH', '/proyectos/:id', async ({ p, cuerpo }) => {
+  const lista = await proyectos();
+  const i = lista.findIndex((x) => x.id === p.id);
+  if (i < 0) throw new ErrorApi(404, 'Ese proyecto no está registrado.');
+  const cambios = {};
+  if (typeof cuerpo.nombre === 'string' && cuerpo.nombre.trim()) cambios.nombre = cuerpo.nombre.trim();
+  if (typeof cuerpo.grupo === 'string' && cuerpo.grupo.trim()) cambios.grupo = cuerpo.grupo.trim();
+  if (typeof cuerpo.sandbox === 'boolean') cambios.sandbox = cuerpo.sandbox;
+  lista[i] = { ...lista[i], ...cambios };
+  guardarJson('proyectos.json', lista);
+  return { proyecto: lista[i] };
+});
+/** Solo lo quita de la lista: ni la carpeta ni sus sesiones se tocan. */
+ruta('DELETE', '/proyectos/:id', async ({ p }) => {
+  guardarJson('proyectos.json', (await proyectos()).filter((x) => x.id !== p.id));
+  return { ok: true };
+});
+
+ruta('GET', '/proyectos/:id/sesiones', async ({ p }) => {
+  const proyecto = (await proyectos()).find((x) => x.id === p.id);
+  if (!proyecto) throw new ErrorApi(404, 'Ese proyecto no está registrado.');
+  const terminal = sesionesEnTerminal();
+  const todas = [];
+  for (const dir of [proyecto.ruta, ...(proyecto.subcarpetas || [])]) {
+    const l = await listSessions({ dir, limit: 60, includeWorktrees: false }).catch(() => []);
+    for (const s of l) todas.push({
+      id: s.sessionId, titulo: s.customTitle || s.summary || s.firstPrompt || 'Sesión sin título',
+      actualizada: s.lastModified, rama: s.gitBranch || null, carpeta: dir === proyecto.ruta ? null : path.relative(proyecto.ruta, dir),
+      enTerminal: terminal.has(s.sessionId), error: ultimosErrores.get(s.sessionId) || null,
+      viva: vivas.has(s.sessionId) ? resumenViva(vivas.get(s.sessionId)) : null,
+    });
+  }
+  const unicas = [...new Map(todas.map((s) => [s.id, s])).values()].sort((a, b) => b.actualizada - a.actualizada);
+  return { sesiones: unicas };
+});
+
+ruta('GET', '/vivas', async () => ({ vivas: [...vivas.values()].map(resumenViva) }));
+ruta('GET', '/listas', async ({ url }) => {
+  const s = vivas.get(url.searchParams.get('sesion'));
+  return { comandos: s?.comandos?.length ? s.comandos : comandosGlobales, modelos: s?.modelos?.length ? s.modelos : modelosGlobales };
+});
+
+ruta('POST', '/sesiones', async ({ cuerpo }) => {
+  const proyecto = await proyectoPorId(cuerpo.proyecto);
+  const id = crypto.randomUUID();
+  const s = new SesionViva({ id, proyecto, cwd: proyecto.ruta, modelo: cuerpo.modelo, modo: cuerpo.modo, retomar: false, proyectosTodos: await proyectos() });
+  vivas.set(id, s);
+  if (cuerpo.texto || cuerpo.imagenes?.length) s.enviar(cuerpo);
+  return { id };
+});
+
+ruta('GET', '/sesiones/:id/mensajes', async ({ p, url }) => {
+  const proyecto = await proyectoPorId(url.searchParams.get('proyecto'));
+  const donde = await ubicar(proyecto, p.id);
+  const viva = vivas.get(p.id);
+  if (!donde && !viva) throw new ErrorApi(404, 'No encuentro esa sesión en los archivos de Claude Code de este proyecto.');
+  const crudos = donde ? await getSessionMessages(p.id, { dir: donde.dir }) : [];
+  const filas = crudos
+    .map((m) => ({ uuid: m.uuid, rol: m.type, padre: m.parent_tool_use_id || null, bloques: normalizar(m.type, m.message) }))
+    .filter((m) => m.bloques.length && !m.padre);
+  const antes = Number(url.searchParams.get('antes') || filas.length);
+  const desde = Math.max(0, antes - 120);
+  return {
+    mensajes: filas.slice(desde, antes), hayAnteriores: desde > 0, inicio: desde,
+    titulo: donde?.info?.customTitle || donde?.info?.summary || null,
+    carpeta: donde?.dir || viva?.cwd, enTerminal: !!abiertaEnTerminal(p.id),
+    viva: viva ? { ...resumenViva(viva), solicitudes: [...viva.solicitudes].map(([solicitudId, s]) => ({ solicitudId, herramienta: s.herramienta, entrada: recortarEntrada(s.entrada) })) } : null,
+    ultimoSeq: viva?.seq ?? 0,
+    error: ultimosErrores.get(p.id) || null,
+  };
+});
+
+ruta('POST', '/sesiones/:id/enviar', async ({ p, cuerpo }) => {
+  const s = await asegurarViva(p.id, cuerpo.proyecto, { forzar: !!cuerpo.forzar, modelo: cuerpo.modelo, modo: cuerpo.modo });
+  ultimosErrores.delete(p.id);
+  s.enviar(cuerpo);
+  return { ok: true };
+});
+const viva = (id) => { const s = vivas.get(id); if (!s) throw new ErrorApi(409, 'La sesión no está en marcha.'); return s; };
+ruta('POST', '/sesiones/:id/detener', async ({ p }) => { await viva(p.id).q.interrupt(); return { ok: true }; });
+ruta('POST', '/sesiones/:id/responder', async ({ p, cuerpo }) => { viva(p.id).responder(cuerpo.solicitudId, cuerpo); return { ok: true }; });
+ruta('POST', '/sesiones/:id/ajustes', async ({ p, cuerpo }) => {
+  const s = vivas.get(p.id);
+  if (!s) return { ok: true, aplicado: false };
+  if (cuerpo.modelo) { await s.q.setModel(cuerpo.modelo); s.modelo = cuerpo.modelo; }
+  if (cuerpo.modo) { await s.q.setPermissionMode(cuerpo.modo); s.modo = cuerpo.modo; }
+  s.emitir({ tipo: 'ajustes', modelo: s.modelo, modo: s.modo });
+  return { ok: true, aplicado: true };
+});
+ruta('POST', '/sesiones/:id/visto', async ({ p }) => { const s = vivas.get(p.id); if (s) s.noVisto = false; return { ok: true }; });
+ruta('POST', '/sesiones/:id/cerrar', async ({ p }) => { vivas.get(p.id)?.cerrar(); return { ok: true }; });
+ruta('POST', '/sesiones/:id/titulo', async ({ p, cuerpo }) => {
+  const proyecto = await proyectoPorId(cuerpo.proyecto);
+  const donde = await ubicar(proyecto, p.id);
+  if (!donde) throw new ErrorApi(404, 'No encuentro esa sesión.');
+  await renameSession(p.id, String(cuerpo.titulo || '').slice(0, 200), { dir: donde.dir });
+  return { ok: true };
+});
+/** Misma sesión en una terminal. Antes se cierra aquí: dos procesos sobre una sesión se pisan. */
+ruta('POST', '/sesiones/:id/terminal', async ({ p, cuerpo }) => {
+  const proyecto = await proyectoPorId(cuerpo.proyecto);
+  const donde = await ubicar(proyecto, p.id);
+  if (!donde) throw new ErrorApi(404, 'No encuentro esa sesión.');
+  const s = vivas.get(p.id);
+  if (s && s.estado === 'trabajando') throw new ErrorApi(409, 'La sesión está trabajando. Deténla antes de pasarla a la terminal.');
+  s?.cerrar();
+  const comando = `cd ${JSON.stringify(donde.dir)} && claude --resume ${p.id}`;
+  if (cuerpo.abrir) {
+    const guion = `tell application "Terminal"\nactivate\ndo script ${JSON.stringify(comando)}\nend tell`;
+    await new Promise((ok, mal) => execFile('osascript', ['-e', guion], (e) => (e ? mal(new ErrorApi(500, 'macOS no dejó abrir la Terminal. Copia el comando.')) : ok())));
+  }
+  return { comando };
+});
+
+ruta('GET', '/incidencias/estado', async () => leerJson('incidencias.json', { conversaciones: {}, contactos: {} }));
+ruta('POST', '/incidencias/estado', async ({ cuerpo }) => {
+  const d = leerJson('incidencias.json', { conversaciones: {}, contactos: {} });
+  if (cuerpo.conversacion) d.conversaciones[cuerpo.conversacion] = { ...cuerpo.datos, en: Date.now() };
+  if (cuerpo.contacto && cuerpo.proyecto) d.contactos[cuerpo.contacto] = cuerpo.proyecto;
+  guardarJson('incidencias.json', d);
+  return d;
+});
+
+function sse(req, res, s, desde) {
+  res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+  res.write(': conectado\n\n');
+  for (const e of s.eventos) if (e.seq > desde) res.write(`id: ${e.seq}\ndata: ${JSON.stringify(e)}\n\n`);
+  s.clientes.add(res);
+  s.noVisto = false;
+  const latido = setInterval(() => res.write(': latido\n\n'), 20_000);
+  req.on('close', () => { clearInterval(latido); s.clientes.delete(res); });
+}
+
+async function leerCuerpo(req) {
+  const trozos = [];
+  let total = 0;
+  for await (const t of req) {
+    total += t.length;
+    if (total > 60 * 1024 * 1024) throw new ErrorApi(413, 'Demasiado grande.');
+    trozos.push(t);
+  }
+  if (!total) return {};
+  try { return JSON.parse(Buffer.concat(trozos).toString('utf8')); } catch { throw new ErrorApi(400, 'JSON inválido.'); }
+}
+
+function autorizado(req) {
+  const a = Buffer.from(String(req.headers.authorization || ''));
+  const b = Buffer.from(`Bearer ${TOKEN}`);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+const servidor = http.createServer(async (req, res) => {
+  const responder = (estado, cuerpo) => { res.writeHead(estado, { 'Content-Type': 'application/json' }); res.end(JSON.stringify(cuerpo)); };
+  try {
+    if (!autorizado(req)) return responder(401, { error: 'No autorizado.' });
+    const url = new URL(req.url, 'http://local');
+    const eventos = url.pathname.match(/^\/sesiones\/([^/]+)\/eventos$/);
+    if (eventos && req.method === 'GET') {
+      const s = vivas.get(eventos[1]);
+      if (!s) return responder(404, { error: 'La sesión no está en marcha.' });
+      return sse(req, res, s, Number(url.searchParams.get('desde') || 0));
+    }
+    for (const r of rutas) {
+      if (r.metodo !== req.method) continue;
+      const m = url.pathname.match(r.re);
+      if (!m) continue;
+      const p = Object.fromEntries(r.nombres.map((n, i) => [n, decodeURIComponent(m[i + 1])]));
+      const cuerpo = req.method === 'GET' ? {} : await leerCuerpo(req);
+      return responder(200, await r.fn({ p, cuerpo, url }));
+    }
+    responder(404, { error: 'No existe.' });
+  } catch (e) {
+    if (!(e instanceof ErrorApi)) console.error('[espacio]', e);
+    if (!res.headersSent) responder(e.estado || 500, { error: e.message, codigo: e.codigo });
+  }
+});
+
+if (process.env.ESPACIO_SIN_ARRANCAR !== '1') {
+  servidor.listen(PUERTO, '127.0.0.1', () => console.log(`[espacio] servicio en 127.0.0.1:${PUERTO}`));
+  precargarListas();
+  // Con corriente, la Mac no se duerme mientras el servicio corre. Con batería, sí.
+  spawn('caffeinate', ['-s', '-w', String(process.pid)], { stdio: 'ignore', detached: true }).unref();
+  const apagar = () => { for (const s of vivas.values()) s.cerrar(); servidor.close(() => process.exit(0)); setTimeout(() => process.exit(0), 3000).unref(); };
+  process.on('SIGTERM', apagar);
+  process.on('SIGINT', apagar);
+}

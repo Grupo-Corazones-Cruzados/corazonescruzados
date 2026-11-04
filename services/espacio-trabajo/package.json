@@ -1,0 +1,8 @@
+{
+  "name": "espacio-trabajo",
+  "private": true,
+  "type": "module",
+  "description": "Servicio local que mantiene las sesiones de Claude Code del espacio de trabajo. Nunca se despliega.",
+  "scripts": { "start": "node servicio.mjs", "test": "node --test" },
+  "dependencies": { "@anthropic-ai/claude-agent-sdk": "0.3.318" }
+}

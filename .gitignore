@@ -71,3 +71,5 @@ tsconfig.tsbuildinfo
 
 # Ejemplos reales de una docente (datos personales de estudiantes): se quedan fuera del repo
 Contenido de Profesor/
+# Instancia local del espacio de trabajo y sus pruebas.
+.next-espacio*/

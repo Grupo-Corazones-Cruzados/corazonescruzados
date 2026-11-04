@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo (declarado 2026-11-04) — ESPACIO DE TRABAJO LOCAL CON CLAUDE CODE PARA TODOS LOS PROYECTOS · 🔎 55 %
+## Objetivo (declarado 2026-11-04) — ESPACIO DE TRABAJO LOCAL CON CLAUDE CODE PARA TODOS LOS PROYECTOS · 🔎 90 %
 
 **Necesidad (Fernando):** una sola interfaz, en el módulo Admin y solo en local (teléfono por Tailscale), para
 trabajar con Claude Code en todos sus proyectos, con varias sesiones por proyecto, igual que hoy en VS Code, más
@@ -43,8 +43,27 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
   bot apagado. **Un mensaje de cliente es entrada no confiable:** jamás llega solo a una sesión con bypass; Fernando
   lo elige, lo asocia a un proyecto y confirma.
 - **P9 — Teléfono:** ⏸ Tailscale está activo en la Mac y falta el teléfono en la red. Si la Mac duerme, no hay acceso.
-- **P10 — Restos sin borrar:** ⏸ tablas `gcc_world."Project"` (6), `"Module"` (17), `"Section"` (4), `"Subsection"` (0),
+- **P10 — Restos sin borrar:** ✅ (ver corrección abajo) tablas `gcc_world."Project"` (6), `"Module"` (17), `"Section"` (4), `"Subsection"` (0),
   `"Incident"` (32); `sql/backup-mundo-web-2026-07-27.sql`; hooks a `localhost:4321` en FlowData y TerraSync (2). Esperan su decisión.
+
+### Resultado de las pruebas (2026-11-04, con `bypassPermissions` y Claude Code 2.1.318)
+- **P1 ✅ Aprobada por Fernando:** los proyectos se quedan en su ruta. Los respaldos de esos proyectos los verá él en otra sesión.
+- **P2 ✅ El límite aguanta.** Probado sobre la carpeta real de GCC WORLD: `ls` de Diego, FlowData, `../respaldos-gcc`, `~/.claude/projects` y el Escritorio dan «Operation not permitted»; la herramienta Read rechaza otro proyecto; python tampoco puede leerlo. Funcionan `git status`, `git push --dry-run`, `gh`, `node` y la memoria del propio proyecto.
+  - **Trampa 1:** `denyRead` NO puede incluir una carpeta padre del proyecto, aunque `allowRead` reabra el proyecto: git y npm dejan de leer su directorio actual. Se deniegan las hermanas de cada nivel.
+  - **Trampa 2:** sin los servicios Mach del Llavero, `git push` se queda colgado 120 s buscando la credencial.
+  - **Trampa 3:** una prueba en `/tmp` engaña: el sandbox deja escribir ahí, y parece que falla el límite.
+- **P3 ✅ Aprobado el SDK con interfaz propia.** `AskUserQuestion` llega a `canUseTool` incluso con bypass; las demás herramientas no. `/compact` funciona. `resume` conserva el id. Historial y directo llevan el mismo `uuid`, así que al recargar no hay duplicados. `/clear` se resuelve abriendo sesión nueva.
+- **P4 ✅** Con la clave fuera del entorno, `apiKeySource` da `none`: se usa la suscripción. El servicio avisa en la conversación si alguna vez deja de ser así.
+- **P7 ✅** Dictado probado con voz real contra Whisper: transcribe y escribe bien «BellaFlor», porque se le pasan los nombres de los proyectos como pista. Falta probar el micrófono en el iPhone real.
+- **P8 ✅ Preparado; conexión pendiente de Fernando:** él conecta el número por coexistencia con un negocio nuevo, dentro de `/grupo` en Automatizaciones, cuando lo tenga. Hasta entonces se ve el número de prueba. El inquilino va escrito en la consulta; Peter Tours no se puede leer desde aquí. Una incidencia va a una sesión nueva en modo Plan, con confirmación.
+- **P10 ✅ CORREGIDO, era un error mío:** las tablas `Project`, `Module`, `Section`, `Subsection` e `Incident` NO son restos sin uso: las leen `/portal/<proyecto>`, `/api/incidents`, `/api/project-structures` y las páginas `(main)` y `(public)/panel`. **No se borraron.** Sí se borraron los hooks viejos y el respaldo SQL.
+- **Hallazgo de seguridad:** `app/api/open-vscode` metía el cuerpo de la petición en un comando de shell, sin sesión, también en producción, y `app/api/dev-server` lanzaba procesos. Borradas el 2026-11-04 (b4859bca, 4ae9589f). Estuvieron publicadas desde 2026-03. `/api/transcribe` e `/api/incidents` siguen sin pedir sesión: sin revisar.
+- **Por qué se perdían sesiones también en terminal:** Claude Code borra las transcripciones viejas (`cleanupPeriodDays`): solo quedaban 52 sesiones en total. Se subió a 365 en `~/.claude/settings.json`; lo ya borrado no vuelve.
+
+### Pendiente
+- Fernando: crear su contraseña, activar HTTPS en Tailscale y añadir el teléfono a la red.
+- Probar en el iPhone real: micrófono, márgenes seguros y cuadro de escritura.
+- Fernando decide qué hacer con el portal de `Incident` y las páginas `(main)`/`(public)/panel`.
 
 ### Plan
 1. Prueba de aislamiento y paridad en un proyecto de ensayo. 2. Candado local + servicio + registro de proyectos.

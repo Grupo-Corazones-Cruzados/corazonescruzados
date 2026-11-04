@@ -6994,10 +6994,12 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   `gpt-image-2`; trabaja solo, así que el bloqueo web no afecta a nadie. Investigación,
   pruebas pendientes y plan en `Aprendizaje.md` («EDICIÓN DE VIDEO CON IA»).
 
-- **Espacio de trabajo local con Claude Code (pedido 2026-11-04), aún sin construir:** una interfaz en Admin, solo en
-  local y por Tailscale, para todos los proyectos, con varias sesiones por proyecto, dictado e incidencias de WhatsApp.
-  Sustituye de cero al DigiMundo, cuyos últimos restos se borraron (b10aacac), incluida `/api/chat`, que ejecutaba
-  `claude` sin sesión. Causas, plan y pruebas pendientes en `Aprendizaje.md` («ESPACIO DE TRABAJO LOCAL»).
+- **Espacio de trabajo local con Claude Code (2026-11-04):** Admin ▸ Espacio de trabajo, solo en esta Mac y por Tailscale.
+  Todos los proyectos, varias sesiones por proyecto, dictado e incidencias de WhatsApp. Sustituye de cero al DigiMundo.
+  Web en `/dashboard/admin/espacio`, acceso en `/espacio-acceso`, servicio en `services/espacio-trabajo/` (ver su README).
+  Los proyectos se quedan en su ruta. El número del negocio lo conecta Fernando por coexistencia en `/grupo` cuando tenga
+  el negocio nuevo; no hace falta código. Pruebas y trampas en `Aprendizaje.md` («ESPACIO DE TRABAJO LOCAL»).
+  ⚠️ Las tablas `Project`/`Module`/`Section`/`Subsection`/`Incident` siguen en uso por `/portal`: no borrarlas sin decidirlo.
 
 ## Decisiones y reglas de negocio
 - **«DETALLE DE SERVICIOS»: el documento INFORMATIVO de una factura (Fernando, 2026-08-20).**

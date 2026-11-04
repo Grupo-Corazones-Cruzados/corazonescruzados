@@ -6244,3 +6244,11 @@ Desarrollo Humano mientras Fernando decide.
   filtros». Tarjetas `TarjetaTrabajo` en `.rejilla-trabajos`, de 12 en 12, con `.paginacion-sitio`
   (botones redondos, la actual en degradado violeta). `SelectorSegmentado.tsx` se extrajo de
   `SolucionesExplorador` (allí sigue en uso).
+
+### Espacio de trabajo (`components/espacio/`, 2026-11-04)
+Pantalla de alto completo con `PanelHastaElPie desdeAncho={0}`: raíl de 300 px (Sesiones · Incidencias, buscador, «En marcha» y proyectos por cliente) + conversación de ancho máximo `max-w-3xl`.
+- **Teléfono:** lista → detalle, decidido en JS. Se oculta el muelle de chats y avisos en esta ruta, porque ocupa el sitio del botón de enviar.
+- **Estado de sesión:** texto de color, sin punto ni píldora (`TEXTO_ESTADO`): Trabajando en acento, Espera tu respuesta en `amber-400`, Lista en `green-400`.
+- **Una herramienta** es una línea plegada (icono, nombre, resumen en mono) y se abre al pulsar. Una pregunta de Claude es una tarjeta dentro de la conversación.
+- **Cuadro de escritura:** `textarea.sin-marco` dentro de su franja; acciones abajo. En el teléfono, los selectores en dos columnas encima y los iconos debajo. Intro envía solo en escritorio.
+

@@ -42,6 +42,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 function Panel({ children }: { children: React.ReactNode }) {
   const { tema, oscuro } = useTemaPanel();
   const entrada = useEntrada();
+  // El espacio de trabajo tiene su cuadro de escritura justo donde flotan estos botones.
+  const sinMuelle = usePathname().startsWith('/dashboard/admin/espacio');
   const mainRef = useRef<HTMLElement>(null);
   useEntradaTrasCarga(mainRef);
 
@@ -103,9 +105,9 @@ function Panel({ children }: { children: React.ReactNode }) {
       {/* Muelle inferior derecho, de derecha a izquierda: campanita · Mis chats · Chat
           (y GCC Bot cuando hay cotización). La campanita es el ancla: los demás se miden
           contra ella. Dentro de `.corp` para heredar el tema. */}
-      <NotificationsDock />
+      {!sinMuelle && <NotificationsDock />}
       <AvisoReuniones />
-      <ChatDock />
+      {!sinMuelle && <ChatDock />}
     </div>
   );
 }
