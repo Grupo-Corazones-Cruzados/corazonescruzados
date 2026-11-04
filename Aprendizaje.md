@@ -152,7 +152,8 @@ Fernando valoró bien la primera prueba («excelente aporte») y pidió probar c
 - **Volumen de música:** un número fijo no sirve. La empresarial a 0,1 quedaba a 3,5 LU de la voz; se mide y se deja 10–14 LU por debajo.
 - **Bloque nuevo `tarjeta`:** para listas numeradas. Va bajo la barbilla (y=905–1330) y es casi opaca para que no se transparente la ropa.
 - **Resultado:** de 3:56 a 2:13, 17 gráficos, 65 efectos, 2 músicas; 5,5 min de render y 1,5 GB. Proyecto `prueba-sin-editar-v1` escrito con `lint` limpio
-  y registrado. **Sigue sin abrirse en CapCut real.**
+  y registrado. Sin confirmar si Fernando lo abrió en CapCut real o vio la vista previa.
+- **Veredicto de Fernando (2026-11-04):** «quedó perfecto… yo solo agregaré embellecimiento y los cambios de cámara… está super bien». Queda como referencia de calidad; se aprueban las tarjetas y la limpieza con `cortes`.
 
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
