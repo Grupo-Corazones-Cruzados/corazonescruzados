@@ -209,7 +209,10 @@ revisión de HyperFrames da 0 errores y 1 aviso de estructura, sin efecto en est
   los archivos de CapCut. Una copia de seguridad completa llevaría todos sus datos privados y puede no caber (256 GB de
   capacidad, 82 GB libres), así que no se usa.
 - **Nube de CapCut:** descartada para los dos por peso (6 GB y 1 GB) y lentitud, pero **Fernando decidió el 2026-11-04 subir
-  el de desarrollo humano**, porque su configuración de edición puede servir mucho. El del 1021 sigue sin subirse.
+  el de desarrollo humano**, porque su configuración de edición puede servir mucho. **La subida falló y volvió a empezar
+  desde cero.** Se propone intentarlo con el de 1 GB, y si no, una grabación de pantalla de la línea de tiempo.
+- **«Compartir archivos» de Finder/iTunes no sirve en iOS:** consultado con `pymobiledevice3` el 2026-11-04, CapCut 19.9.0 en
+  el iPad no declara `UIFileSharingEnabled` (20 de sus 302 apps sí). El iPhone no estaba por USB, así que se midió en el iPad.
 - **Vía nueva:** el estilo se estudia con los **videos exportados** por AirDrop (ritmo, efectos, gráficos, audio). Sin
   los identificadores de esos proyectos: no hacen falta, porque los favoritos son referencia de gusto. Las pruebas P1,
   P2, P4 y P5 se hacen con `prueba-ia`, un proyecto pequeño creado en el Mac.
