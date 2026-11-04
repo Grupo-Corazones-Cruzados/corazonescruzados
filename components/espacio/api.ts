@@ -109,6 +109,7 @@ export function hace(ms: number | undefined): string {
 /** Lo escrito en una sesión que aún no existe se guarda a nombre de su proyecto. */
 export const claveBorrador = (proyecto: string, sesion: string | null) => sesion || `nueva-${proyecto}`;
 export const EVENTO_BORRADOR = 'espacio-borrador';
+export const EVENTO_TITULO = 'espacio-titulo';
 
 export const TEXTO_ESTADO: Record<EstadoViva, { texto: string; clase: string }> = {
   iniciando: { texto: 'Iniciando', clase: 'text-digi-muted' },

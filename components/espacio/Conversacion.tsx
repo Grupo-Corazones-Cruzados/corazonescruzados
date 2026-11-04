@@ -6,14 +6,13 @@ import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import MenuMas from '@/components/ui/MenuMas';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelModal from '@/components/ui/PixelModal';
-import PixelInput from '@/components/ui/PixelInput';
-import PieAcciones from '@/components/ui/PieAcciones';
-import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
 import ListaMensajes from './Bloques';
 import TarjetaSolicitud from './Solicitud';
 import Compositor, { SelectoresSesion, type Imagen } from './Compositor';
-import { api, ErrorEspacio, escucharEventos, MODOS, TEXTO_ESTADO, type EstadoViva, type Mensaje, type Proyecto, type Solicitud } from './api';
+import RenombrarSesion from './RenombrarSesion';
+import { api, ErrorEspacio, escucharEventos, EVENTO_TITULO, MODOS, TEXTO_ESTADO, type EstadoViva, type Mensaje, type Proyecto, type Solicitud } from './api';
 
 interface Fin { ok: boolean; duracion: number; error: string | null }
 
@@ -52,7 +51,7 @@ export default function Conversacion({
   const [anteriores, setAnteriores] = useState<number | null>(null);
   const [lejos, setLejos] = useState(false);
   const [confirmar, setConfirmar] = useState<null | (() => void)>(null);
-  const [renombrar, setRenombrar] = useState<string | null>(null);
+  const [renombrar, setRenombrar] = useState(false);
   const [comando, setComando] = useState('');
   const [ajustes, setAjustes] = useState(false);
   const enEscritorio = useConsultaMedia(PANTALLA_LG);
@@ -217,13 +216,11 @@ export default function Conversacion({
     } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo abrir.'); }
   }
 
-  async function guardarTitulo() {
-    if (!renombrar?.trim()) return;
-    try {
-      await api(`/sesiones/${sesionId}/titulo`, { cuerpo: { proyecto: proyecto.id, titulo: renombrar.trim() } });
-      setTitulo(renombrar.trim()); setRenombrar(null); alCambiar();
-    } catch (e) { setError(e instanceof Error ? e.message : 'No se pudo guardar.'); }
-  }
+  useEffect(() => {
+    const alRenombrar = (e: Event) => { const d = (e as CustomEvent).detail; if (d.id === idRef.current) setTitulo(d.titulo); };
+    window.addEventListener(EVENTO_TITULO, alRenombrar);
+    return () => window.removeEventListener(EVENTO_TITULO, alRenombrar);
+  }, []);
 
   const trabajando = estado === 'trabajando' || estado === 'iniciando';
   const lineaEstado = estado && estado !== 'cerrada' ? TEXTO_ESTADO[estado] : null;
@@ -242,7 +239,7 @@ export default function Conversacion({
           <MenuMas className="max-lg:!border-0 max-lg:!w-9 max-lg:!h-9 max-lg:!min-w-9 max-lg:!min-h-9" items={[
             ...(enEscritorio ? [] : [{ label: 'Modelo y permisos', icon: SlidersHorizontal, onClick: () => setAjustes(true) }]),
             ...(!sesionId ? [] : [...(aislada ? [{ label: 'Quitar aislamiento', icon: LockOpen, onClick: () => setQuitarAislamiento(true) }] : []),
-            { label: 'Cambiar nombre', icon: Pencil, onClick: () => setRenombrar(titulo) },
+            { label: 'Cambiar nombre', icon: Pencil, onClick: () => setRenombrar(true) },
             { label: 'Abrir en Terminal', icon: SquareTerminal, onClick: () => terminal(true), disabled: trabajando, hint: 'Primero detén la sesión' },
             { label: 'Copiar comando de terminal', icon: Copy, onClick: () => terminal(false), disabled: trabajando, hint: 'Primero detén la sesión' },
             { label: 'Cerrar el proceso', icon: Power, onClick: () => { api(`/sesiones/${sesionId}/cerrar`, { cuerpo: {} }).then(() => { setEstado(null); alCambiar(); }); }, disabled: !estado }]),
@@ -285,10 +282,7 @@ export default function Conversacion({
         confirmLabel="Quitar aislamiento" cancelLabel="Cancelar" danger
         onConfirm={() => { setQuitarAislamiento(false); api(`/sesiones/${sesionId}/sin-aislamiento`, { cuerpo: {} }).then(() => { setAislada(false); setEstado(null); fuente.current?.(); fuente.current = null; }).catch((e) => setError(e.message)); }}
         onCancel={() => setQuitarAislamiento(false)} />
-      <PixelModal open={renombrar !== null} onClose={() => setRenombrar(null)} title="Cambiar nombre" size="sm"
-        pie={<PieAcciones><button type="button" className={BTN_SECONDARY} onClick={() => setRenombrar(null)}>Cancelar</button><button type="button" className={BTN_PRIMARY} onClick={guardarTitulo}>Guardar</button></PieAcciones>}>
-        <PixelInput label="Nombre" value={renombrar || ''} autoFocus onChange={(e) => setRenombrar(e.target.value)} />
-      </PixelModal>
+      <RenombrarSesion sesion={renombrar && sesionId ? { id: sesionId, proyecto: proyecto.id, titulo } : null} alCerrar={() => setRenombrar(false)} />
       <PixelModal open={ajustes} onClose={() => setAjustes(false)} title="Modelo y permisos" size="sm">
         <SelectoresSesion sesionId={sesionId} modelo={modelo} modo={modo} columna
           alCambiarModelo={(m) => { setModelo(m); ajustar({ modelo: m }); }}
