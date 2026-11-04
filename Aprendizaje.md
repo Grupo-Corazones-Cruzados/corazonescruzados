@@ -1,6 +1,6 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
-## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 55 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5
+## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 62 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5
 
 **Declarado por Fernando el 2026-11-04:** sus videos ya grabados y recortados deben potenciarse con IA (efectos de
 sonido, iconos y gráficos según lo que se dice, música de fondo, transiciones de sonido y de video). Quiere recibir un
@@ -39,10 +39,34 @@ no los documentos completos (más de 26.000 líneas). Falta auditar el diseño c
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?
 - **P3:** MOV ProRes 4444 de HyperFrames importado en CapCut: ¿fondo transparente?
 - **P4:** Fernando mueve algo y guarda: ¿el agente lee el cambio y conserva lo suyo al añadir más?
+- **P5:** con favoritos de sonido y transición colocados por él: ¿el proyecto guarda lo necesario para que el agente los
+  reutilice en otro proyecto, y CapCut los carga bien?
+
+### Favoritos y biblioteca de CapCut (investigado 2026-11-04, solo lectura sobre copias borradas después)
+- **Catálogo local:** `Cache/ressdk_db/<id>/rp.db` es SQLite sin cifrar. Sus tablas `effect` y `favorite_effect` están
+  vacías; las respuestas del servidor están como JSON en `http_cache` (y en su `-wal`, que hay que copiar también).
+  Última escritura: 2026-10-25, antes del 9.5. Hay 3 bases, una por cuenta/dispositivo.
+- **Medido:** 19.146 efectos distintos con `effect_id`, título y `has_favorited`; solo 15 apariciones marcadas como
+  favoritas, sin revisar cuáles. No aparece un grupo claro de efectos de sonido, y el tipo exacto de las transiciones
+  está sin confirmar (el 13 y el 47 lo parecen). Es lo que CapCut ha cargado, no toda la biblioteca.
+- **Ninguno de los 3 proyectos actuales usa audio ni transiciones**, así que falta ver cómo los guarda un proyecto.
+- **Propuesta «proyecto catálogo»:** Fernando coloca sus favoritos en un proyecto de CapCut y el agente lee de ahí id,
+  nombre y archivo. No depende de la API interna ni de que el caché esté al día. **Prueba P5.**
+- **Licencia:** el catálogo trae `commercial_scope`; revisarlo para videos monetizados.
+- **capcut-cli no tiene chat:** es una orden que ejecuta el agente, y hay dos paquetes con ese nombre: npm de
+  renezander030 (MIT) y PyPI de saroby (`sfx add --effect-id`, licencia no indicada). Ninguno es oficial de CapCut.
+
+### Decisiones
+- **APROBADO por Fernando (2026-11-04): proyecto de CapCut por capas** como entregable principal, con un MP4 de vista
+  previa. Acepta el riesgo de que CapCut cambie de formato: si pasa, se actualiza el puente. El MP4 neto queda como plan B.
+- **APROBADO por Fernando (2026-11-04): HyperFrames** para los gráficos.
+- **Propuesto, voz y archivos en la capa de chat:** dictado, imágenes y archivos los resuelve el chat de la aplicación y
+  llegan a Claude Code; no hay que modificar las herramientas de CapCut.
+- **Propuesto, biblioteca en tres niveles** con guía de edición: 1) favoritos (preferidos), 2) resto de CapCut (si el
+  momento lo justifica, verificando que el efecto exista), 3) archivos propios o generados. La guía se afina comparando
+  lo que la IA colocó con lo que Fernando dejó, quitó o movió.
 
 ### Decisiones propuestas (sin aprobar)
-- **El entregable principal es el proyecto de CapCut por capas**, con un MP4 de vista previa. El MP4 neto de ida y
-  vuelta queda como plan B: funde las capas, recomprime en cada vuelta y la IA ya no puede quitar un solo efecto.
 - **Un manifiesto propio (JSON) es la fuente de verdad:** cada elemento se ancla a la palabra en el tiempo de origen, no
   a la línea de tiempo. Si Fernando cambia la duración, se recoloca leyendo su `source_timerange`. Del manifiesto salen
   el proyecto de CapCut y el MP4, así que un cambio de formato de CapCut no pierde el trabajo.

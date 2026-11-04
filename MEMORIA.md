@@ -6977,7 +6977,10 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
 - **Rumbo pedido por Fernando (2026-11-04), aún sin construir:** el sistema pasa a **solo local con
   el Claude Code del equipo** y queda bloqueado en la web, por costo. Flujo: idea → guion → Fernando
   graba y recorta → sube el video → chat con sesión continua que lo potencia con sonido, gráficos,
-  música y transiciones → termina en CapCut. **Los cambios de cámara los hace él.** Investigación,
+  música y transiciones → termina en CapCut. **Los cambios de cámara los hace él.** Decidió el
+  **proyecto de CapCut por capas** (asume que un cambio de formato se arregla actualizando el puente)
+  y **HyperFrames** para los gráficos; quiere priorizar sus favoritos de sonido y transiciones sin
+  cerrar la puerta al resto de la biblioteca. Investigación,
   pruebas pendientes y plan en `Aprendizaje.md` («EDICIÓN DE VIDEO CON IA»).
 
 ## Decisiones y reglas de negocio
