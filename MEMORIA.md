@@ -6974,6 +6974,11 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   del sistema. Fernando irá metiendo ahí sus ejemplos de redacción.
 - **Los tonos son una lista global** (`gd_tonos`), editable en **Encuadre Condiciológico**
   junto a talentos, valores, situaciones y materias.
+- **Rumbo pedido por Fernando (2026-11-04), aún sin construir:** el sistema pasa a **solo local con
+  el Claude Code del equipo** y queda bloqueado en la web, por costo. Flujo: idea → guion → Fernando
+  graba y recorta → sube el video → chat con sesión continua que lo potencia con sonido, gráficos,
+  música y transiciones → termina en CapCut. **Los cambios de cámara los hace él.** Investigación,
+  pruebas pendientes y plan en `Aprendizaje.md` («EDICIÓN DE VIDEO CON IA»).
 
 ## Decisiones y reglas de negocio
 - **«DETALLE DE SERVICIOS»: el documento INFORMATIVO de una factura (Fernando, 2026-08-20).**

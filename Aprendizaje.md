@@ -1,5 +1,68 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 55 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5
+
+**Declarado por Fernando el 2026-11-04:** sus videos ya grabados y recortados deben potenciarse con IA (efectos de
+sonido, iconos y gráficos según lo que se dice, música de fondo, transiciones de sonido y de video). Quiere recibir un
+entregable y poder editarlo en CapCut. Los cambios de cámara prefiere hacerlos él, salvo que la IA los haga bien.
+Generación de Contenido debe pasar a Claude Code local por costo y quedar bloqueada en la web. Sesión continua de chat
+en la aplicación, con voz si se puede.
+
+**Rol asumido:** arquitecto de flujos de postproducción con agentes de IA.
+
+**Alcance leído:** de `MEMORIA.md`, `Aprendizaje.md` y `Diseño.md` solo las secciones de este sistema y de `claude -p`,
+no los documentos completos (más de 26.000 líneas). Falta auditar el diseño cuando haya interfaz que construir.
+
+### Preguntas y respuestas
+- ✅ **¿Hace falta entrar a la cuenta de CapCut?** No. Los proyectos son archivos locales en
+  `~/Library/Containers/com.lemon.lvoverseas/Data/Movies/CapCut/User Data/Projects/com.lveditor.draft/<proyecto>/`,
+  con la línea de tiempo en `draft_info.json` y una copia en `Timelines/<uuid>/`. No se encontró API pública de cuenta.
+  (Fuente: disco de Fernando, solo lectura, y búsqueda web.)
+- 🔎 **¿Sigue siendo JSON legible en 9.5?** Medido legible en un proyecto guardado por 9.0 a las 14:14 del 2026-10-25.
+  La app se actualizó a 9.5.0 a las 14:18, así que ningún proyecto de este equipo lo ha guardado 9.5. Junto al proyecto
+  hay `crypto_key_store.dat`, de función desconocida. **Prueba P1.**
+- 🔎 **¿Acepta un proyecto escrito por una herramienta en Mac?** Sin verificar. `capcut-cli` da 9.x en Mac como
+  «reportado/sin verificar»; `pyCapCut` lista 9.5.0.4050 pero indica abrir los borradores en Windows. **Prueba P2.**
+- ✅ **¿Dónde guardar el material?** CapCut está aislado con sandbox y tiene `assets.movies.read-write`: `~/Movies` lo
+  puede leer sin permiso adicional. Se propone `~/Movies/GCC-Edicion/<idea>/`. (Fuente: `codesign --entitlements`.)
+- 🔎 **¿Respeta CapCut el canal alfa de un MOV ProRes 4444?** HyperFrames lo genera, pero CapCut no lo confirma. **Prueba P3.**
+- ✅ **¿Qué hay para la sesión continua?** `app/api/chat/route.ts` ya lanza `claude` con un búfer por ejecución y
+  `lib/centralized/pesos-agent.ts` usa `claude -p --resume`. Hoy `claude -p` consume los límites del plan: Anthropic
+  anunció créditos aparte y los pausó, así que puede cambiar.
+- ✅ **¿Qué no puede sustituir Claude Code?** Las imágenes del carrusel usan `gpt-image-2`: Claude Code no genera imágenes.
+- ⏸ **¿Algún colaborador usa hoy el sistema en la web?** Bloquearlo también lo deja fuera. La ruta admite `admin` y
+  `member`; no se pudo medir porque `.env.local` no trae `DATABASE_URL`. Se le pregunta a Fernando.
+- ⏸ **¿De dónde sale el audio con licencia?** La biblioteca interna de CapCut no se ha podido usar desde un archivo. Se le pregunta.
+
+### Pruebas pendientes (necesitan a Fernando)
+- **P1:** proyecto vacío creado por CapCut 9.5 con un clip: ¿`draft_info.json` sigue legible?
+- **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?
+- **P3:** MOV ProRes 4444 de HyperFrames importado en CapCut: ¿fondo transparente?
+- **P4:** Fernando mueve algo y guarda: ¿el agente lee el cambio y conserva lo suyo al añadir más?
+
+### Decisiones propuestas (sin aprobar)
+- **El entregable principal es el proyecto de CapCut por capas**, con un MP4 de vista previa. El MP4 neto de ida y
+  vuelta queda como plan B: funde las capas, recomprime en cada vuelta y la IA ya no puede quitar un solo efecto.
+- **Un manifiesto propio (JSON) es la fuente de verdad:** cada elemento se ancla a la palabra en el tiempo de origen, no
+  a la línea de tiempo. Si Fernando cambia la duración, se recoloca leyendo su `source_timerange`. Del manifiesto salen
+  el proyecto de CapCut y el MP4, así que un cambio de formato de CapCut no pierde el trabajo.
+- **La IA solo edita lo que creó** (sus id en el manifiesto) y nunca la pista principal. Respaldo antes de cada escritura,
+  y solo escribe con CapCut cerrado.
+- **Cámara: Fernando.** La IA como mucho propone una lista de cortes en el chat.
+- **Herramientas:** HyperFrames para gráficos (Apache 2.0, MOV con alfa), Whisper local para tiempos por palabra (no
+  instalado aún), `capcut-cli` o un escritor propio sobre una plantilla real para el proyecto. Se elige tras P2.
+- **Orden:** pruebas → skill en Claude Code con un video real → cambio a Claude local y bloqueo web → apartado en la
+  aplicación. No se construye interfaz hasta validar la calidad.
+
+### Riesgos
+| Riesgo | Mitigación |
+|---|---|
+| Una actualización de CapCut cambia el formato | Manifiesto como fuente de verdad, MP4 de respaldo, desactivar autoactualización si es posible |
+| CapCut sobrescribe lo que escribió el agente | Escribir solo con CapCut cerrado; comprobar tras reabrir |
+| `ANTHROPIC_API_KEY` en el entorno hace que `claude` cobre por API | Quitarla al lanzar el proceso; `app/api/chat/route.ts` hoy pasa `process.env` entero |
+| `NODE_ENV` no distingue local de Railway, porque en local también se prueba `next start` | Bloqueo en servidor con una variable explícita solo en `.env.local`, y 404 en cada ruta del sistema |
+| 80 GB libres y ProRes pesa | Solo clips cortos de gráficos con alfa; limpiar al cerrar un video |
+
 ## Objetivo (declarado 2026-10-30) — COBRAR POR LA PLATAFORMA: EL MIEMBRO FACTURA SU SERVICIO Y GCC SU TARIFA · 🔎 35 % — MODELO PROPUESTO; FALTAN DECISIONES DE FERNANDO Y LA CONTADORA
 
 **Declarado por Fernando el 2026-10-30:** los miembros/candidatos venden servicios por la plataforma (p. ej. ticket
