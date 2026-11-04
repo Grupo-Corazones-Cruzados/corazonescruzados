@@ -169,7 +169,7 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
                     linea={lineaSesion(alDia(s), proyectos.find((p) => p.id === s.proyecto)?.nombre)} />
                 </div>
                 <BotonEditar onClick={() => setNombrando(s)} etiqueta={`Cambiar el nombre de ${s.titulo}`} title="Cambiar nombre" className={AL_PASAR} />
-                {!procesando(alDia(s)) && (
+                {procesando(alDia(s)) ? <span aria-hidden className="shrink-0 w-7" /> : (
                   <button type="button" onClick={() => cerrarActiva(s.id)} aria-label={`Cerrar la sesión ${s.titulo}`} title="Cerrar sesión"
                     className={`${BTN_ICONO_FILA} ${AL_PASAR}`}><X className="w-3.5 h-3.5" /></button>
                 )}
