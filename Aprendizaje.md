@@ -84,7 +84,7 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
 1. Prueba de aislamiento y paridad en un proyecto de ensayo. 2. Candado local + servicio + registro de proyectos.
 3. Sesiones múltiples con su estado. 4. Dictado. 5. WhatsApp.
 
-## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 85 % — FALTAN LAS PRUEBAS DE ESCRITURA EN CAPCUT 9.5 Y LA PRUEBA CON UN VIDEO REAL
+## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 90 % — AGENTE LISTO (SKILL `editar-video`); FALTA ABRIR SU PRIMER PROYECTO EN CAPCUT Y LLEVAR GENERACIÓN DE CONTENIDO A LOCAL
 
 **Declarado por Fernando el 2026-11-04:** sus videos ya grabados y recortados deben potenciarse con IA (efectos de
 sonido, iconos y gráficos según lo que se dice, música de fondo, transiciones de sonido y de video). Quiere recibir un
@@ -120,10 +120,28 @@ no los documentos completos (más de 26.000 líneas). Falta auditar el diseño c
 - ✅ **¿De dónde sale el audio con licencia?** Propuesta: Epidemic Sound (ver «Música y efectos»). (Fuente: sus páginas oficiales.)
 - ✅ **¿Imágenes del carrusel?** Siguen con `gpt-image-2` por API: lo único del sistema que no pasa a Claude Code. (Fuente: Fernando, 2026-11-04.)
 
+### Agente construido (2026-11-04)
+**Fernando descartó `prueba-ia`:** «dejemos el agente listo para trabajar y luego voy corrigiendo». P2, P4 y P5 se resuelven con
+el primer uso real. Confirmó que **la pirámide se vio transparente en CapCut (P3 ✅)**, pidió **algo más animado** y que los
+proyectos en la papelera son a propósito: quiere solo proyectos nuevos.
+- **Skill `editar-video`** en `~/.claude/skills/` (fuera del repo, como las demás): `preparar.mjs` (Whisper por palabra, sonoridad,
+  hoja de fotogramas), `buscar-audio.mjs` (Openverse, solo CC0 y CC BY, registra la licencia), `construir.mjs` (de `edicion.json` a
+  capas MOV, MP4 de vista previa y proyecto). Bloques animados: `piramide`, `iconos` (Lucide, licencia ISC) y `barrido`.
+- **El escritor es `capcut-cli` 0.32.0** fijado en la skill, con `compile --out --template`. La plantilla es un proyecto vacío
+  guardado por 9.5, porque según su documentación CapCut 9.3 rechaza la plantilla que trae la herramienta. Dos pistas de video sin
+  nombre se funden y solapan: cada pista lleva nombre propio.
+- **Probado con un tramo real de 80 s:** transcribe en 14 s; 4 gráficos, 8 efectos y 2 músicas en 70 s; `lint` sin errores en una copia
+  de la carpeta de proyectos. **Falta abrirlo en CapCut real:** sigue abierto y no se cierra sin Fernando. Si lo rechaza, la vía es
+  `compile --into` sobre un proyecto vacío creado por él.
+- **Música hasta decidir Epidemic:** CC0/CC BY de Openverse y efectos Pixabay incluidos. La selección es por descripción: nadie la ha escuchado.
+- **Las transiciones van como capa** (barrido + sonido), porque la pista principal es suya.
+- **El chat ya existe:** la skill aparece en Claude Code y debería salir en el Espacio de trabajo. Sin comprobar en esa pantalla.
+- **Falta:** llevar Generación de Contenido a Claude local, bloquearla en la web y conectar el botón de subir video.
+
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?
-- **P3:** MOV ProRes 4444 de HyperFrames importado en CapCut: ¿fondo transparente?
+- **P3 ✅ (Fernando, 2026-11-04):** MOV ProRes 4444 de HyperFrames importado en CapCut: fondo transparente.
 - **P4:** Fernando mueve algo y guarda: ¿el agente lee el cambio y conserva lo suyo al añadir más?
 - **P5:** con favoritos de sonido y transición colocados por él: ¿el proyecto guarda lo necesario para que el agente los
   reutilice en otro proyecto, y CapCut los carga bien?
@@ -195,7 +213,7 @@ HyperFrames 0.9.11 renderizó `~/Movies/GCC-Edicion/pruebas/piramide-fases-trans
 **Falta confirmarlo en CapCut.** Vertical: gráficos y texto en la franja de 168 a 1330 px y sin tapar la cara. La
 revisión de HyperFrames da 0 errores y 1 aviso de estructura, sin efecto en esta prueba. Los colores son provisionales.
 El MOV se importó en el proyecto `1104` del Mac (06:45 del 2026-11-04), pero el proyecto quedó sin clips y con portada
-negra, lo que no demuestra nada: **el resultado solo lo puede decir Fernando.**
+negra, lo que no demuestra nada; **Fernando confirma que se vio transparente.**
 
 ### Herramientas instaladas (2026-11-04)
 `whisper-cpp` por Homebrew y modelo `medium` (1,5 GB) en `~/.cache/whisper-cpp/`. Skills de HyperFrames (`hyperframes`,
@@ -276,8 +294,8 @@ negra, lo que no demuestra nada: **el resultado solo lo puede decir Fernando.**
     Going-Out» no aparecen en ninguna de las 3 bases `rp.db` (última escritura 2026-10-25). Se confirma la vía del «proyecto
     catálogo». «Chill Pop» es de la biblioteca de CapCut: no sirve para publicidad según lo decidido.
 - **Proyectos del Mac en la papelera de CapCut (medido 2026-11-04):** `1014`, `1025` y `1015` pasaron a `.recycle_bin` a las
-  06:48 (con 6 s entre uno y otro) y `1104` a las 08:08, con CapCut abierto. Siguen enteros. Falta que Fernando confirme que
-  fue a propósito. Ninguno es la referencia del iPhone; `1014` del Mac es otro proyecto de una sola pista.
+  06:48 (con 6 s entre uno y otro) y `1104` a las 08:08, con CapCut abierto. Siguen enteros. Fernando confirma que fue a
+  propósito: quiere solo proyectos nuevos. Ninguno es la referencia del iPhone; `1014` del Mac es otro proyecto de una sola pista.
 - **Duplicación del iPhone, «Tiempo agotado» (2026-11-04):** se arregló reiniciando el iPhone. La sesión murió a las 09:09 por
   falta de paquetes y luego el iPhone no contestaba en los 10 s de arranque. **No era Tailscale** (funcionó 11 min con él). Al
   leer el registro en zsh hay que escribir `/usr/bin/log`: `log` a secas es un comando interno y no lee nada.
