@@ -217,6 +217,11 @@ revisión de HyperFrames da 0 errores y 1 aviso de estructura, sin efecto en est
 - **Nube de CapCut:** descartada para los dos por peso (6 GB y 1 GB) y lentitud, pero **Fernando decidió el 2026-11-04 subir
   el de desarrollo humano**, porque su configuración de edición puede servir mucho. **La subida falló y volvió a empezar
   desde cero.** Se propone intentarlo con el de 1 GB, y si no, una grabación de pantalla de la línea de tiempo.
+- **Fernando prefiere que Claude revise el proyecto en el iPhone (2026-11-04):** la nube falla y teme omitir datos en una
+  grabación. Requiere la app de escritorio de Claude con «Uso del ordenador» y la app Duplicación del iPhone. Hacerlo sobre
+  un **duplicado** del proyecto, tocando solo CapCut y sin guardar. Anotar: pistas y su orden; por cada tipo de elemento
+  (zoom/keyframes, texto, sonido, música, transición, efecto), nombre, duración, volumen y ajustes; y dónde cae en el
+  video. Guardar el resultado aquí y seguir con la transparencia y `prueba-ia`.
 - **«Compartir archivos» de Finder/iTunes no sirve en iOS:** consultado con `pymobiledevice3` el 2026-11-04, CapCut 19.9.0 en
   el iPad no declara `UIFileSharingEnabled` (20 de sus 302 apps sí). El iPhone no estaba por USB, así que se midió en el iPad.
 - **Vía nueva:** el estilo se estudia con los **videos exportados** por AirDrop (ritmo, efectos, gráficos, audio). Sin
