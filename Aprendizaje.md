@@ -132,8 +132,10 @@ no los documentos completos (más de 26.000 líneas). Falta auditar el diseño c
 - **El iPhone no se puede leer desde el Mac:** `devicectl` lo ve emparejado, pero lista solo 3 apps y da error al pedir
   los archivos de CapCut. Una copia de seguridad completa llevaría todos sus datos privados y puede no caber (256 GB de
   capacidad, 82 GB libres), así que no se usa.
-- **Vía propuesta:** Fernando sube los dos a la nube de CapCut y los abre en el Mac con la misma cuenta, más el video
-  exportado de cada uno. Abrirlos y guardarlos en 9.5 también resolvería P1 y parte de P5, sin crear `prueba-ia` aún.
+- **~~Subirlos a la nube de CapCut~~ — DESCARTADO el 2026-11-04:** pesan 6 GB y 1 GB, y la subida es muy lenta (Fernando).
+- **Vía nueva:** el estilo se estudia con los **videos exportados** por AirDrop (ritmo, efectos, gráficos, audio). Sin
+  los identificadores de esos proyectos: no hacen falta, porque los favoritos son referencia de gusto. Las pruebas P1,
+  P2, P4 y P5 se hacen con `prueba-ia`, un proyecto pequeño creado en el Mac.
 - **Reutilizar:** otra sesión construye el «Espacio de trabajo local» (Claude Code en Admin). El chat de edición debería
   apoyarse en él, no duplicarlo. Revisar antes de construir.
 
