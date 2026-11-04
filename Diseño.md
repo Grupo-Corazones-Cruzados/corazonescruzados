@@ -4175,6 +4175,8 @@ Ahora la superficie es la del panel y el estado lo dice **una barra de 3 px en e
 izquierdo**. Se distingue igual de rápido y deja de gritar.
 
 ### Las capturas del marketplace salen DESENFOCADAS, y desde el servidor
+> ⛔ **DEROGADO el 2026-11-04** (Fernando: «ya no quiero que se vean borrosas en ningún lado, ni en la página pública ni en la plataforma interna»). Las imágenes del marketplace, de `/soluciones` y de la galería se sirven NÍTIDAS; ya no existen `urlDesenfocada`, `cloudinaryDesenfocada` ni el `blur-[1px]`. Lo de abajo queda como historia.
+
 Son capturas de sistemas funcionando con datos de clientes reales. ⚠️ **No se hace con CSS**:
 un `filter: blur()` se quita en dos clics desde las herramientas del navegador y la imagen
 original sigue descargándose entera. Se desenfoca en los píxeles que salen —`sharp` al
@@ -4903,6 +4905,8 @@ con otra letra es mejor que ninguna miniatura**.
 Y no hay `background-clip: text`: el degradado del titular se aproxima con colores planos.
 
 ### Las capturas públicas también van desenfocadas
+> ⛔ **DEROGADO el 2026-11-04** (Fernando: «ya no quiero que se vean borrosas en ningún lado, ni en la página pública ni en la plataforma interna»). Las imágenes del marketplace, de `/soluciones` y de la galería se sirven NÍTIDAS; ya no existen `urlDesenfocada`, `cloudinaryDesenfocada` ni el `blur-[1px]`. Lo de abajo queda como historia.
+
 `/soluciones` es pública —la ve cualquiera y la indexa Google— y enseña pantallas de
 sistemas reales. Mismo criterio que el marketplace: **se desenfoca en la URL que se sirve**
 (`capturaDifuminada` en `lib/soluciones.ts` → Cloudinary), no con CSS.

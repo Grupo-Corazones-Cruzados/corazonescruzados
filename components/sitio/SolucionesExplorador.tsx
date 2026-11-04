@@ -126,10 +126,7 @@ export function TarjetaProducto({ producto, etiqueta = 'Producto' }: { producto:
       {producto.imagen && (
         <div className="w-full aspect-[16/10] overflow-hidden rounded-t-xl bg-[#f2f0f7]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          {/* Igual que en el marketplace: la captura llega ya desenfocada del servidor y
-              esto es el acabado. La foto del miembro, arriba, NO se toca: es una persona
-              del equipo, no una pantalla con datos de nadie. */}
-          <img src={producto.imagen} alt="" loading="lazy" className="w-full h-full object-cover blur-[1px]" />
+          <img src={producto.imagen} alt="" loading="lazy" className="w-full h-full object-cover" />
         </div>
       )}
       <div className="p-5 flex flex-col gap-2 flex-1">

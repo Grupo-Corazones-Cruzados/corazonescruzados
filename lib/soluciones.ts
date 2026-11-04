@@ -23,28 +23,15 @@
  */
 
 import { pool } from '@/lib/db';
-import { esUrlCloudinary, urlDesenfocada, sigmaPara } from '@/lib/cloudinary-url';
+import { urlRedimensionada } from '@/lib/cloudinary-url';
 
 /**
- * ⇒ LAS CAPTURAS DE /soluciones SALEN DESENFOCADAS, IGUAL QUE EN EL MARKETPLACE.
- *
- * Son pantallas de sistemas que están funcionando, con datos de clientes reales dentro.
- * Enseñan lo que sabemos hacer —ese es su trabajo— pero un vistazo tiene que dejar ver
- * **la forma de la plataforma, no lo que pone en ella**. Y aquí importa más que en el
- * panel: `/soluciones` es página PÚBLICA, la ve cualquiera y la indexa Google.
- *
- * ⚠️ Se desenfoca en la URL que se sirve, no con CSS. Un `filter: blur()` se quita en dos
- * clics desde las herramientas del navegador y la imagen original se sigue descargando
- * entera; si el motivo son datos reales, eso no protege nada. Aquí se le pide a Cloudinary
- * la copia ya borrosa: lo que llega al navegador ya no tiene esos datos.
- *
- * El ancho es el que se enseña —tarjeta y galería— y el radio va en proporción: uno fijo
- * se ve fuerte en una miniatura y no hace nada al ampliar, y ampliar sería justo la forma
- * de leer lo que la miniatura escondía.
+ * Las capturas de /soluciones se sirven NÍTIDAS desde el 2026-11-04 (antes, desenfocadas en
+ * Cloudinary); solo se pide el ancho que se enseña —tarjeta y galería—.
  */
 const ANCHO_CAPTURA = 900;
-function capturaDifuminada(url: string): string {
-  return esUrlCloudinary(url) ? urlDesenfocada(url, ANCHO_CAPTURA, sigmaPara(ANCHO_CAPTURA)) : url;
+function captura(url: string): string {
+  return urlRedimensionada(url, ANCHO_CAPTURA);
 }
 import { TALENTOS_SET } from '@/lib/centralized/talentos';
 
@@ -502,7 +489,7 @@ async function proyectoComoTrabajo(p: any, talentos?: string[]): Promise<Trabajo
     talentos,
     imagenes: (p.images ?? [])
       .filter((x: unknown) => typeof x === 'string' && x)
-      .map((u: string) => capturaDifuminada(u)),
+      .map((u: string) => captura(u)),
     personas: personas.map((m: any) => ({
       memberId: Number(m.member_id),
       nombre: m.name,
@@ -638,7 +625,7 @@ function productoDeFila(r: any): Producto {
     id: Number(r.id),
     nombre: r.name,
     descripcion: r.description ?? null,
-    imagen: r.image_url ? capturaDifuminada(r.image_url) : null,
+    imagen: r.image_url ? captura(r.image_url) : null,
     precio: r.price === null || r.price === undefined ? null : Number(r.price),
     talento: r.talent ?? null,
     creado: r.created_at ? new Date(r.created_at).toISOString() : null,

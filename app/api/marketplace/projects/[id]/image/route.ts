@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { isCloudinaryUrl, cloudinaryDesenfocada } from '@/lib/cloudinary';
+import { isCloudinaryUrl, cloudinaryResized } from '@/lib/cloudinary';
 import sharp from 'sharp';
 import { fileIdDe, leerBytes } from '@/lib/media';
 
@@ -17,28 +17,9 @@ import { fileIdDe, leerBytes } from '@/lib/media';
 const ALLOWED_W = new Set([240, 480, 900, 1600]);
 
 /**
- * ⇒ LAS IMÁGENES DEL MARKETPLACE SALEN DESENFOCADAS, Y SE DESENFOCAN **AQUÍ**.
- *
- * Son capturas de sistemas que están funcionando, con datos de clientes de verdad
- * dentro: nombres, importes, teléfonos. Enseñan lo que sabemos hacer, y ese es su
- * trabajo — pero un vistazo tiene que dejar ver **la forma de la plataforma, no lo que
- * pone en ella**.
- *
- * ⚠️ NO SE HACE CON CSS. Un `filter: blur()` en el navegador es maquillaje: se quita
- * desde las herramientas de desarrollo en dos clics, y la imagen original sigue
- * descargándose entera. Si el motivo es que hay datos reales, el desenfoque tiene que
- * ir en los píxeles que salen del servidor. Lo que llega al navegador ya no tiene esos
- * datos: no hay nada que revelar.
- *
- * El radio va **proporcional al ancho** a propósito. Un desenfoque fijo se ve fuerte en
- * una miniatura de 240 px y no hace nada en una de 1600: lo que el ojo percibe depende
- * del tamaño al que se muestra, no de los píxeles. Así las cuatro medidas se ven igual
- * de suaves.
+ * NÍTIDAS desde el 2026-11-04 (Fernando: «ya no quiero que se vean borrosas en ningún lado»).
+ * Antes salían desenfocadas por llevar datos de clientes; ahora las imágenes son de presentación.
  */
-const DESENFOQUE_BASE = 1.1;   // sigma para 240 px de ancho
-function desenfoqueDe(w: number) {
-  return Math.round((DESENFOQUE_BASE * (w / 240)) * 100) / 100;
-}
 
 // Cache de proceso: evita re-decodificar/reescalar la misma miniatura en cada
 // petición (Railway es persistente). Acotado por FIFO simple.
@@ -71,7 +52,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const raw = String(row.img);
     // Ya migrada a Cloudinary: redirige a la transformación de ancho (WebP/AVIF auto).
-    if (isCloudinaryUrl(raw)) return NextResponse.redirect(cloudinaryDesenfocada(raw, w, desenfoqueDe(w)));
+    if (isCloudinaryUrl(raw)) return NextResponse.redirect(cloudinaryResized(raw, w));
     // Otra URL remota: redirige tal cual.
     if (/^https?:\/\//i.test(raw)) return NextResponse.redirect(raw);
 
@@ -85,11 +66,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     } else {
       input = Buffer.from(raw.replace(/^data:[^;]+;base64,/, ''), 'base64');
     }
-    // El desenfoque va DESPUÉS de reescalar: aplicado antes, el reescalado lo diluiría
-    // y cada ancho quedaría con una suavidad distinta.
     const out = await sharp(input)
       .resize({ width: w, withoutEnlargement: true })
-      .blur(desenfoqueDe(w))
       .webp({ quality: 72 })
       .toBuffer();
 

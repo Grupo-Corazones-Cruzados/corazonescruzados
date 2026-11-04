@@ -160,16 +160,35 @@ export default function PortfolioPanel() {
   }, []);
   useEffect(() => { if (tab === 'project') fetchTeamProjects(); }, [tab, fetchTeamProjects]);
 
-  const openTeamEdit = (p: any) => {
+  /* ⚠️ La lista de proyectos del equipo trae solo `image_count`, no las imágenes. Antes el
+     formulario se abría con la galería vacía y, al guardar, el servidor mandaba a la papelera
+     de Drive todas las que no le llegaban (2026-11-01: cada proyecto se quedó con la última
+     subida). Ahora se piden al abrir y no se puede guardar hasta tenerlas. */
+  const [teamImagesLoading, setTeamImagesLoading] = useState(false);
+  const openTeamEdit = async (p: any) => {
     setTeamEditItem(p);
     setTeamForm({
       title: p.title || '', price: p.final_cost != null ? String(p.final_cost) : '',
-      images: p.images?.length > 0 ? [...p.images] : [''], tags: (p.tags || []).join(', '),
+      images: [''], tags: (p.tags || []).join(', '),
     });
     setTeamEditModal(true);
+    if (!p.image_count) return;
+    setTeamImagesLoading(true);
+    try {
+      const res = await fetch(`/api/marketplace/projects/${p.id}`);
+      if (!res.ok) throw new Error();
+      const d = await res.json();
+      const imgs: string[] = d?.data?.images || [];
+      setTeamForm((f) => ({ ...f, images: imgs.length ? [...imgs, ...f.images.filter(Boolean)] : f.images }));
+      setTeamImagesLoading(false);
+    } catch {
+      toast.error('No se pudieron cargar las imágenes del proyecto');
+      setTeamEditModal(false);
+      setTeamImagesLoading(false);
+    }
   };
   const handleTeamSave = async () => {
-    if (!teamEditItem) return;
+    if (!teamEditItem || teamImagesLoading) return;
     setTeamSaving(true);
     try {
       const cleanImages = teamForm.images.filter((u) => u.trim());
@@ -216,7 +235,8 @@ export default function PortfolioPanel() {
           {images.filter(Boolean).map((img, i) => (
             <div key={i} className="relative w-16 h-16 rounded-md border border-digi-border overflow-hidden group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={img} alt={`${i + 1}`} className="w-full h-full object-cover" />
+              {/* Las de Drive piden la miniatura: el original tarda segundos en llegar. */}
+              <img src={img.startsWith('/api/media/') ? `${img}?w=160` : img} alt={`${i + 1}`} className="w-full h-full object-cover" />
               <button type="button" onClick={() => removeImage(i, setImages, images)} className="acciones-al-pasar destino-tactil absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-3 h-3" /></button>
             </div>
           ))}
@@ -389,7 +409,7 @@ export default function PortfolioPanel() {
             <PixelInput label="Precio (USD)" type="number" value={teamForm.price} onChange={(e) => setTeamForm({ ...teamForm, price: e.target.value })} placeholder="0.00" />
             <PixelInput label="Tags (separados por coma)" value={teamForm.tags} onChange={(e) => setTeamForm({ ...teamForm, tags: e.target.value })} placeholder="RPA, Oracle, Integración de APIs" />
             {dropzone(teamForm.images, (imgs) => setTeamForm({ ...teamForm, images: imgs }))}
-            <button onClick={handleTeamSave} disabled={teamSaving || !teamForm.title.trim()} className={`${BTN_PRIMARY} w-full`}>{teamSaving ? 'Guardando…' : 'Guardar cambios'}</button>
+            <button onClick={handleTeamSave} disabled={teamSaving || teamImagesLoading || !teamForm.title.trim()} className={`${BTN_PRIMARY} w-full`}>{teamSaving ? 'Guardando…' : teamImagesLoading ? 'Cargando imágenes…' : 'Guardar cambios'}</button>
           </div>
         )}
       </PixelModal>

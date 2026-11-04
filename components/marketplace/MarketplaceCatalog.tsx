@@ -55,7 +55,8 @@ const TAB_TO_TYPE: Record<string, string> = {
 
 // URL de una imagen de proyecto redimensionada (WebP). Anchos permitidos por el
 // endpoint: 240 / 480 (tarjeta), 900 (vista previa panel), 1600 (galería completa).
-const projImg = (id: any, i: number, w: number) => `/api/marketplace/projects/${id}/image?i=${i}&w=${w}`;
+// `v=2`: desde el 2026-11-04 la imagen sale nítida; la URL nueva evita la copia borrosa guardada en el navegador.
+const projImg = (id: any, i: number, w: number) => `/api/marketplace/projects/${id}/image?i=${i}&w=${w}&v=2`;
 
 export interface MarketplaceCatalogProps {
   /** Acción del botón principal de cada tarjeta (Comprar / Solicitar / gate público). */
@@ -176,8 +177,6 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [galleryTitle, setGalleryTitle] = useState('');
-  // Solo los proyectos se enseñan desenfocados, también ampliados (Fernando, 2026-09-21).
-  const [galleryDesenfocada, setGalleryDesenfocada] = useState(false);
   const [galleryLoading, setGalleryLoading] = useState(false);
 
   // Right detail panel
@@ -266,7 +265,6 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     setGalleryImages(imgs);
     setGalleryIndex(0);
     setGalleryTitle(item.title || '');
-    setGalleryDesenfocada(item.source_type === 'project');
     setGalleryOpen(true);
   };
 
@@ -365,7 +363,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
     const imgs = galleryImagesFor(selected);
     if (!imgs.length) return;
     setGalleryImages(imgs); setGalleryIndex(k); setGalleryTitle(selected?.title || '');
-    setGalleryDesenfocada(selected?.source_type === 'project'); setGalleryOpen(true);
+    setGalleryOpen(true);
   };
 
   const CardMembers = ({ item }: { item: any }) => {
@@ -422,7 +420,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
         }`}
       >
         {/* media */}
-        <CardMedia src={coverSrc} desenfocar={isProject} placeholder={<CatIcon className="w-9 h-9 text-digi-muted/30" />}>
+        <CardMedia src={coverSrc} placeholder={<CatIcon className="w-9 h-9 text-digi-muted/30" />}>
           <span className="absolute top-2 left-2 px-1.5 py-0.5 rounded-md bg-digi-card/85 text-digi-muted text-[10px] font-medium backdrop-blur-sm">{catLabel}</span>
           {count > 0 && (
             <button onClick={(e) => openGallery(item, e)} title={`Ver ${count} foto(s)`}
@@ -679,7 +677,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
                 alt={`Foto ${galleryIndex + 1}`}
                 /* Mismo criterio que en la tarjeta: el desenfoque de verdad viene ya en
                    los píxeles; esto solo remata, y solo en proyectos. */
-                className={`max-w-full max-h-[50vh] object-contain ${galleryDesenfocada ? 'blur-[1px]' : ''}`}
+                className="max-w-full max-h-[50vh] object-contain"
               />
               {galleryImages.length > 1 && (
                 <>
@@ -715,7 +713,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
                       i === galleryIndex ? 'border-accent' : 'border-digi-border/50 hover:border-digi-border'
                     }`}
                   >
-                    <img src={img} alt={`Thumb ${i + 1}`} className={`w-full h-full object-cover ${galleryDesenfocada ? 'blur-[1px]' : ''}`} />
+                    <img src={img} alt={`Thumb ${i + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>

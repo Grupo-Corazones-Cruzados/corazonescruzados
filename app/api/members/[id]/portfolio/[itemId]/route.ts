@@ -1,6 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { uploadImages, uploadImage, isBase64Image } from '@/lib/cloudinary';
+import { guardarFotosPortafolio, quitarFotos, puedeEditarPortafolio } from '@/lib/media/portafolio';
 import { NextRequest, NextResponse } from 'next/server';
 
 type Params = { params: Promise<{ id: string; itemId: string }> };
@@ -11,6 +11,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { id, itemId } = await params;
+    if (!(await puedeEditarPortafolio(user, id))) return NextResponse.json({ error: 'No es tu portafolio' }, { status: 403 });
     const body = await req.json();
 
     // Verify item belongs to this member
@@ -26,8 +27,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
     const values: any[] = [];
     let idx = 1;
 
-    const folder = `corazones-cruzados/portfolio/${id}`;
-
     // `demo_*` y `es_suscripcion`: los datos de la demostración pública que se
     // enseñan en el marketplace. Se editan desde Portafolio como todo lo demás — un
     // dato que solo se pueda cambiar por SQL acaba desactualizado.
@@ -42,15 +41,6 @@ export async function PUT(req: NextRequest, { params }: Params) {
       }
     }
 
-    // image_url puede venir en base64 → súbelo a Cloudinary.
-    if ('image_url' in body) {
-      const url = body.image_url && isBase64Image(body.image_url)
-        ? await uploadImage(body.image_url, folder)
-        : body.image_url;
-      fields.push(`image_url = $${idx++}`);
-      values.push(url);
-    }
-
     // Handle price -> cost mapping
     if ('price' in body) {
       fields.push(`cost = $${idx++}`);
@@ -63,17 +53,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
       values.push(String(body.talent || '').trim() || null);
     }
 
-    // Handle images array (base64 → Cloudinary)
+    // Las fotos van al Drive de la empresa; la portada es siempre la primera.
+    let quitadas: string[] = [];
     if ('images' in body) {
-      const raw = Array.isArray(body.images) ? body.images.filter(Boolean) : [];
-      const images = await uploadImages(raw, folder);
+      const g = await guardarFotosPortafolio(itemId, body.images);
+      quitadas = g.quitadas;
       fields.push(`images = $${idx++}`);
-      values.push(images);
-      // Also update image_url to first image if present
-      if (!('image_url' in body)) {
-        fields.push(`image_url = $${idx++}`);
-        values.push(images[0] || null);
-      }
+      values.push(g.imagenes);
+      fields.push(`image_url = $${idx++}`);
+      values.push(g.imagenes[0] || null);
     }
 
     if (fields.length === 0) {
@@ -87,6 +75,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       `UPDATE gcc_world.member_portfolio_items SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *, cost as price, item_type as type`,
       values
     );
+    await quitarFotos(quitadas);
 
     return NextResponse.json({ data: rows[0] });
   } catch (err: any) {
@@ -101,11 +90,13 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { id, itemId } = await params;
+    if (!(await puedeEditarPortafolio(user, id))) return NextResponse.json({ error: 'No es tu portafolio' }, { status: 403 });
 
-    await pool.query(
-      `DELETE FROM gcc_world.member_portfolio_items WHERE id = $1 AND member_id = $2`,
+    const { rows: [borrado] } = await pool.query(
+      `DELETE FROM gcc_world.member_portfolio_items WHERE id = $1 AND member_id = $2 RETURNING COALESCE(images, '{}') AS images`,
       [itemId, id]
     );
+    if (borrado) await quitarFotos(borrado.images);
 
     return NextResponse.json({ message: 'Deleted' });
   } catch (err: any) {

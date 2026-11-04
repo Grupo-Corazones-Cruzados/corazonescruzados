@@ -331,6 +331,14 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🖼️ IMÁGENES DEL MARKETPLACE: NÍTIDAS Y EN DRIVE (Fernando, 2026-11-04).** *«ya no quiero que se vean borrosas en
+  ningún lado»* → fuera todo desenfoque (ruta de imagen del marketplace, `/soluciones`, CSS). Dos fallos que encontró al
+  cambiar las fotos el 2026-11-01: (1) **Configuración ▸ Portafolio ▸ proyecto del equipo** abría el formulario SIN las
+  imágenes (la lista solo trae `image_count`) y al guardar el servidor mandaba a la papelera de Drive las que no
+  llegaban: cada proyecto quedó con la última foto subida. Ahora se piden al abrir y no se guarda hasta tenerlas.
+  (2) Los **productos** subían a Cloudinary, que ya no está en producción: el guardado daba 500 y la foto no llegaba.
+  Ahora van a Drive (`lib/media/portafolio.ts`, módulo `portafolio_foto`, carpeta `Portafolio/<id> · <título>/Fotos`), y
+  el portafolio solo lo edita su miembro o un admin (antes bastaba cualquier sesión).
 - **🧾 HASTA 3 DATOS DE FACTURACIÓN POR CLIENTE (Fernando, 2026-10-31).** *«por cada cliente se puedan guardar
   varios datos de facturación hasta 3 máximo… y cuando se vaya a facturar, en todas partes, poder elegirlos mediante
   un selector, que se escoja por defecto lo preregistrado»*. Deroga el «una sola cuenta por cliente» del 2026-08-25.
@@ -1580,7 +1588,7 @@ Stack estándar de la casa, con particularidades de este repo:
   de pestaña» borre la selección) y `onSeleccion` (la página pública refleja el registro en la
   dirección con `history.replaceState`, así copiar la URL es compartirlo; cerrar o cambiar de
   pestaña vuelve a `/marketplace-publico`). La ruta `[slug]/page.tsx` pone `<title>` y `og:image`
-  del registro. Un slug que no existe deja el catálogo normal. **Desenfoque:** solo los PROYECTOS
+  del registro. Un slug que no existe deja el catálogo normal. **Desenfoque (DEROGADO 2026-11-04: todo se ve nítido):** solo los PROYECTOS
   (protegen datos de un cliente); productos y automatizaciones se enseñan nítidos
   (`urlRedimensionada` en `lib/cloudinary-url.ts`, `CardMedia desenfocar`). El sitio público
   (`lib/soluciones.ts`) no se tocó.
