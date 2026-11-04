@@ -1,5 +1,55 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (declarado 2026-11-04) — ESPACIO DE TRABAJO LOCAL CON CLAUDE CODE PARA TODOS LOS PROYECTOS · 🔎 55 %
+
+**Necesidad (Fernando):** una sola interfaz, en el módulo Admin y solo en local (teléfono por Tailscale), para
+trabajar con Claude Code en todos sus proyectos, con varias sesiones por proyecto, igual que hoy en VS Code, más
+dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, nada lúdico. La web queda bloqueada.
+**Rol:** arquitecto de herramientas locales y seguridad.
+
+### Causas comprobadas de los fallos del sistema anterior (código de `app/api/chat/route.ts`, borrado en b10aacac)
+- **Se metía en otros proyectos:** el límite era solo texto en el prompt («PROHIBIDO salir de…») con
+  `--dangerously-skip-permissions`. Nada lo imponía. Si la ruta no existía, seguía en la carpeta temporal.
+- **Perdía sesiones:** un solo id por clave en `data/agent-sessions.json`; si `--resume` fallaba, abría
+  conversación nueva sin contexto («Sesión anterior expirada, reconectando…»). Un proceso por turno colgado de
+  una ruta de Next. Además, mover carpetas deja sesiones atrás: hay 16 carpetas de sesiones con la ruta vieja de OneDrive.
+- **Agujero de seguridad:** la ruta no pedía sesión y `next dev` escucha en `0.0.0.0:3002`: ejecución de comandos
+  desde la red local. Borrada el 2026-11-04.
+
+### Preguntas y respuestas
+- **P1 — ¿Meter los proyectos dentro de GCC WORLD?** ✅ No. Las sesiones van atadas a la ruta, heredaría CLAUDE.md
+  de las carpetas padre y quedaría dentro del repo que despliega Railway. Registro de rutas, cada uno en su sitio.
+  *(Recomendación; pendiente del visto bueno de Fernando.)*
+- **P2 — ¿Cómo imponer el límite por proyecto?** 🔎 `permissions.blockReadsOutsideWorkingDirectories` y
+  `blockWritesOutsideWorkingDirectories` (≥ 2.1.314, valen con bypass; solo herramientas de archivo) + sandbox
+  Seatbelt para el shell + hook PreToolUse. **Falta probar:** si el sandbox sigue activo con bypass, y si el bloqueo
+  de lectura deja cargar skills y memoria de `~/.claude`. También `claudeMdExcludes` para CLAUDE.md de carpetas padre.
+- **P3 — ¿Agent SDK o terminal real (PTY)?** ⏸ Recomendado: Agent SDK con interfaz propia y botón para abrir la
+  misma sesión en terminal. **Falta probar:** `/compact`, `/plan`, skills encadenadas. La doc no aclara si el consumo
+  del SDK cuenta igual que el interactivo; prohíbe a terceros ofrecer el login de claude.ai y permite el binario sin
+  modificar con la suscripción propia. Con el PTY esa duda no existe.
+- **P4 — ¿Quién paga?** ✅ Trampa: `.env.local` tiene `ANTHROPIC_API_KEY` y la doc dice que en `-p` «the key is always
+  used when present». El proceso se lanza sin esa variable, o se cobra por API en vez de la suscripción.
+- **P5 — ¿Dónde viven las sesiones vivas?** ✅ En un servicio local aparte (launchd), no en Next: reiniciar la web no
+  las mata. La verdad son los archivos de Claude Code, leídos con `listSessions`/`getSessionMessages`, no los `.jsonl`.
+- **P6 — ¿Cómo se bloquea la web?** ✅ Cuatro capas: desactivado salvo variable local y sin `RAILWAY_*`; rutas y página
+  dan 404 en producción y no aparece la pestaña; servicio solo en `127.0.0.1`; acceso del teléfono con `tailscale serve`
+  (solo la red privada, HTTPS real, cabeceras de identidad). No basta la sesión de GCC: en local no hay `JWT_SECRET`
+  y se usa el secreto por defecto, así que cualquiera puede fabricar un token de admin.
+- **P7 — ¿Dictado?** ✅ El micrófono del teléfono exige HTTPS, y `tailscale serve` lo da. Transcripción con OpenAI como
+  `/api/transcribe` (esa ruta es pública y gasta la clave: revisar); el texto se revisa antes de enviar.
+- **P8 — ¿WhatsApp?** ⏸ El número del negocio NO está conectado. Canales: `demo`, `grupo` (número de prueba, último
+  mensaje 2026-08-03) y `peter-tours` (cliente de Diego, nunca se lee). Conectarlo a `/grupo` por coexistencia con el
+  bot apagado. **Un mensaje de cliente es entrada no confiable:** jamás llega solo a una sesión con bypass; Fernando
+  lo elige, lo asocia a un proyecto y confirma.
+- **P9 — Teléfono:** ⏸ Tailscale está activo en la Mac y falta el teléfono en la red. Si la Mac duerme, no hay acceso.
+- **P10 — Restos sin borrar:** ⏸ tablas `gcc_world."Project"` (6), `"Module"` (17), `"Section"` (4), `"Subsection"` (0),
+  `"Incident"` (32); `sql/backup-mundo-web-2026-07-27.sql`; hooks a `localhost:4321` en FlowData y TerraSync (2). Esperan su decisión.
+
+### Plan
+1. Prueba de aislamiento y paridad en un proyecto de ensayo. 2. Candado local + servicio + registro de proyectos.
+3. Sesiones múltiples con su estado. 4. Dictado. 5. WhatsApp.
+
 ## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 62 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5
 
 **Declarado por Fernando el 2026-11-04:** sus videos ya grabados y recortados deben potenciarse con IA (efectos de

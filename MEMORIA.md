@@ -7,7 +7,7 @@
 Plataforma interna de gestión para **Grupo Corazones Cruzados (GCC)** — estudio/agencia
 de software en Ecuador. Centraliza documentación de proyectos, tickets/soporte,
 facturación electrónica (SRI Ecuador), calendario/disponibilidad de miembros, portal de
-clientes, y un "mundo" gamificado estilo Digimon (sprites, mapas, NPCs).
+clientes, productos por mensualidad y el videojuego en Godot. El antiguo mundo DigiMundo ya no existe.
 
 ## Fundamentos del proyecto — Grupo Corazones Cruzados (BASE CONCEPTUAL, no omitir)
 > Documentado el 2026-06-23 a partir del relato del usuario (líder del grupo). Es la **base
@@ -6982,6 +6982,11 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   y **HyperFrames** para los gráficos; quiere priorizar sus favoritos de sonido y transiciones sin
   cerrar la puerta al resto de la biblioteca. Investigación,
   pruebas pendientes y plan en `Aprendizaje.md` («EDICIÓN DE VIDEO CON IA»).
+
+- **Espacio de trabajo local con Claude Code (pedido 2026-11-04), aún sin construir:** una interfaz en Admin, solo en
+  local y por Tailscale, para todos los proyectos, con varias sesiones por proyecto, dictado e incidencias de WhatsApp.
+  Sustituye de cero al DigiMundo, cuyos últimos restos se borraron (b10aacac), incluida `/api/chat`, que ejecutaba
+  `claude` sin sesión. Causas, plan y pruebas pendientes en `Aprendizaje.md` («ESPACIO DE TRABAJO LOCAL»).
 
 ## Decisiones y reglas de negocio
 - **«DETALLE DE SERVICIOS»: el documento INFORMATIVO de una factura (Fernando, 2026-08-20).**
