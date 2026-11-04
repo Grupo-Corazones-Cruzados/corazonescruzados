@@ -60,8 +60,10 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
 - **Hallazgo de seguridad:** `app/api/open-vscode` metía el cuerpo de la petición en un comando de shell, sin sesión, también en producción, y `app/api/dev-server` lanzaba procesos. Borradas el 2026-11-04 (b4859bca, 4ae9589f). Estuvieron publicadas desde 2026-03. `/api/transcribe` e `/api/incidents` siguen sin pedir sesión: sin revisar.
 - **Por qué se perdían sesiones también en terminal:** Claude Code borra las transcripciones viejas (`cleanupPeriodDays`): solo quedaban 52 sesiones en total. Se subió a 365 en `~/.claude/settings.json`; lo ya borrado no vuelve.
 
+- **Dentro de las apps (2026-11-04):** probado en Chrome con cookies de terceros bloqueadas y modo app simulado: pide contraseña, entra por token, abre sesión, dicta y no desborda. Sin probar en la app web de Safari ni en la nativa real. Duda abierta: si `limitsNavigationsToAppBoundDomains` deja cargar el marco en iOS sin recompilar; el dominio ya está en `WKAppBoundDomains` para la siguiente compilación.
+
 ### Pendiente
-- Fernando: crear su contraseña, activar HTTPS en Tailscale y añadir el teléfono a la red.
+- ~~Fernando: crear su contraseña, activar HTTPS en Tailscale y añadir el teléfono a la red.~~ Hecho el 2026-11-04.
 - Probar en el iPhone real: micrófono, márgenes seguros y cuadro de escritura.
 - Fernando decide qué hacer con el portal de `Incident` y las páginas `(main)`/`(public)/panel`.
 

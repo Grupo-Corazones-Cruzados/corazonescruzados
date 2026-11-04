@@ -6999,6 +6999,11 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   Web en `/dashboard/admin/espacio`, acceso en `/espacio-acceso`, servicio en `services/espacio-trabajo/` (ver su README).
   Los proyectos se quedan en su ruta. El número del negocio lo conecta Fernando por coexistencia en `/grupo` cuando tenga
   el negocio nuevo; no hace falta código. Pruebas y trampas en `Aprendizaje.md` («ESPACIO DE TRABAJO LOCAL»).
+  **Dentro de las apps (2026-11-04):** en la app web de Safari y en la del teléfono, Admin abre `/dashboard/admin/espacio-app`,
+  un marco hacia `/espacio` de la Mac por Tailscale. No es `localhost` porque en el teléfono sería el propio teléfono y una app
+  web de Safari no abre otro origen en su ventana. Sesión por token en cabecera, porque Safari no da cookies a un marco ajeno.
+  En una pestaña normal de la web la opción no aparece. El dictado en la app del iPhone necesita una compilación nativa nueva
+  (`NSMicrophoneUsageDescription`).
   ⚠️ Las tablas `Project`/`Module`/`Section`/`Subsection`/`Incident` siguen en uso por `/portal`: no borrarlas sin decidirlo.
 
 ## Decisiones y reglas de negocio
