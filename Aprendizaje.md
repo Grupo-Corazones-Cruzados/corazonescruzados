@@ -97,7 +97,7 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
 1. Prueba de aislamiento y paridad en un proyecto de ensayo. 2. Candado local + servicio + registro de proyectos.
 3. Sesiones múltiples con su estado. 4. Dictado. 5. WhatsApp.
 
-## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 90 % — AGENTE LISTO (SKILL `editar-video`); FALTA ABRIR SU PRIMER PROYECTO EN CAPCUT Y LLEVAR GENERACIÓN DE CONTENIDO A LOCAL
+## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 97 % — IMPLEMENTADO EN GENERACIÓN DE CONTENIDO; FALTA EL PRIMER VIDEO REAL POR LA PANTALLA Y DECIDIR EPIDEMIC
 
 **Declarado por Fernando el 2026-11-04:** sus videos ya grabados y recortados deben potenciarse con IA (efectos de
 sonido, iconos y gráficos según lo que se dice, música de fondo, transiciones de sonido y de video). Quiere recibir un
