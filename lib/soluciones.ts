@@ -31,6 +31,8 @@ import { urlRedimensionada } from '@/lib/cloudinary-url';
  */
 const ANCHO_CAPTURA = 900;
 function captura(url: string): string {
+  // Las de Drive (`/api/media/<id>`) piden su miniatura: el original tarda segundos en llegar.
+  if (url.startsWith('/api/media/')) return `${url}?w=${ANCHO_CAPTURA}`;
   return urlRedimensionada(url, ANCHO_CAPTURA);
 }
 import { TALENTOS_SET } from '@/lib/centralized/talentos';
@@ -613,7 +615,10 @@ export interface Producto {
 }
 
 const CONSULTA_PRODUCTOS = `
-  SELECT p.id, p.name, p.description, p.image_url, p.price, p.created_at, i.talent,
+  -- La portada es la del ítem del portafolio, que es donde se cambian las fotos; la de
+  -- products es una copia de cuando se publicó y se quedaba con la imagen vieja (2026-11-04).
+  SELECT p.id, p.name, p.description, COALESCE(i.images[1], i.image_url, p.image_url) AS image_url,
+         p.price, p.created_at, i.talent,
          m.id AS member_id, m.name AS member_name, m.photo_url, m.email, m.phone
     FROM gcc_world.products p
     JOIN gcc_world.member_portfolio_items i ON i.id = p.portfolio_item_id
