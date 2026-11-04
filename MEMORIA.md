@@ -6981,7 +6981,9 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   **proyecto de CapCut por capas** (asume que un cambio de formato se arregla actualizando el puente)
   y **HyperFrames** para los gráficos. Tiene CapCut Pro y seguirá con él. **Los videos son publicidad,
   así que todo se trata como uso comercial:** la música de CapCut no se usa, y de su biblioteca solo
-  entran los materiales marcados de uso dual; sus favoritos marcan el gusto. Investigación,
+  entran los materiales marcados de uso dual; sus favoritos marcan el gusto. Canales: YouTube (horizontal
+  exclusivo y Shorts), TikTok, Instagram, Facebook y LinkedIn según el video. El carrusel sigue con
+  `gpt-image-2`; trabaja solo, así que el bloqueo web no afecta a nadie. Investigación,
   pruebas pendientes y plan en `Aprendizaje.md` («EDICIÓN DE VIDEO CON IA»).
 
 - **Espacio de trabajo local con Claude Code (pedido 2026-11-04), aún sin construir:** una interfaz en Admin, solo en

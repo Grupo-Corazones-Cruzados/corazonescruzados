@@ -50,7 +50,7 @@ dictado por voz e incidencias del WhatsApp de su negocio. Enfoque productivo, na
 1. Prueba de aislamiento y paridad en un proyecto de ensayo. 2. Candado local + servicio + registro de proyectos.
 3. Sesiones múltiples con su estado. 4. Dictado. 5. WhatsApp.
 
-## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 66 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5 Y LOS PROYECTOS DE REFERENCIA
+## Objetivo (declarado 2026-11-04) — EDICIÓN DE VIDEO CON IA, SOLO EN LOCAL Y TERMINADA EN CAPCUT · 🔎 72 % — FALTAN LAS PRUEBAS EN CAPCUT 9.5 Y LOS VIDEOS DE REFERENCIA
 
 **Declarado por Fernando el 2026-11-04:** sus videos ya grabados y recortados deben potenciarse con IA (efectos de
 sonido, iconos y gráficos según lo que se dice, música de fondo, transiciones de sonido y de video). Quiere recibir un
@@ -80,9 +80,10 @@ no los documentos completos (más de 26.000 líneas). Falta auditar el diseño c
   `lib/centralized/pesos-agent.ts` usa `claude -p --resume`. Hoy `claude -p` consume los límites del plan: Anthropic
   anunció créditos aparte y los pausó, así que puede cambiar.
 - ✅ **¿Qué no puede sustituir Claude Code?** Las imágenes del carrusel usan `gpt-image-2`: Claude Code no genera imágenes.
-- ⏸ **¿Algún colaborador usa hoy el sistema en la web?** Bloquearlo también lo deja fuera. La ruta admite `admin` y
-  `member`; no se pudo medir porque `.env.local` no trae `DATABASE_URL`. Se le pregunta a Fernando.
-- ⏸ **¿De dónde sale el audio con licencia?** La biblioteca interna de CapCut no se ha podido usar desde un archivo. Se le pregunta.
+- ✅ **¿Algún colaborador usa hoy el sistema en la web?** No: Fernando trabaja solo, así que se puede bloquear sin más.
+  En un futuro lejano podría dar acceso presencial a alguien en su equipo; no se construye nada para eso. (Fuente: Fernando, 2026-11-04.)
+- ✅ **¿De dónde sale el audio con licencia?** Propuesta: Epidemic Sound (ver «Música y efectos»). (Fuente: sus páginas oficiales.)
+- ✅ **¿Imágenes del carrusel?** Siguen con `gpt-image-2` por API: lo único del sistema que no pasa a Claude Code. (Fuente: Fernando, 2026-11-04.)
 
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1:** proyecto vacío creado por CapCut 9.5 con un clip: ¿`draft_info.json` sigue legible?
@@ -124,6 +125,24 @@ no los documentos completos (más de 26.000 líneas). Falta auditar el diseño c
   - **Favoritos:** referencia de gusto; se usan tal cual solo si llevan la marca. Si no, la IA busca un equivalente con licencia.
   - **CapCut Pro** da acceso a lo pagado, pero el acuerdo no dice que amplíe la licencia. No es consejo legal.
 - La guía de edición se sigue afinando comparando lo que la IA colocó con lo que Fernando dejó, quitó o movió.
+
+### Canales y formatos (Fernando, 2026-11-04)
+- Publica en YouTube, TikTok, Instagram, Facebook y LinkedIn, según el video. **Horizontal: exclusivo de YouTube.**
+  **Vertical:** las demás redes, también en YouTube (Shorts). Cada video lleva su formato y sus canales; no se asume
+  que todo sale en todas partes. Un gráfico hecho para un formato no sirve en el otro: se genera para cada uno, y en
+  vertical respetando la interfaz de cada red. Pendiente saber si habrá anuncios pagados y cuántas cuentas tiene por red.
+
+### Música y efectos: propuesta Epidemic Sound (investigado 2026-11-04)
+- **Por qué:** es la única opción revisada con servidor MCP oficial que admite Claude Code: la IA busca por ánimo, BPM,
+  género, instrumento o pista de referencia, en 55.000 pistas y más de 250.000 efectos. Pide la longitud exacta y da
+  pistas separadas. Buscar es gratis; descargar exige suscripción. De Artlist no se encontró MCP ni API.
+- **Plan propuesto: Business.** Para marcas con menos de 10 M$ de ingresos anuales; cubre redes y anuncios digitales con
+  sonido sincronizado al video; 2 usuarios y un canal por plataforma. Excluye vallas, directos y radio. Según su página,
+  «once a project is published, the license stays with it».
+- **Sin confirmar:** precio (no aparece en la página oficial; terceros dicen 30, 49 o 75 $/mes), si cubre LinkedIn (no
+  lo nombra) y si Pro basta para una marca propia (la tabla oficial permite anuncios en Pro, pero se orienta a autónomos).
+- **Orden:** no pagar hasta que pasen las pruebas técnicas; al activar, añadir cada canal a su lista segura antes de publicar.
+- Resuelve también los efectos de sonido, así que los de CapCut dejan de ser necesarios.
 
 ### Referencias de estilo (Fernando, 2026-11-04)
 - **Proyectos en el iPhone 17:** `1014` (negocio de desarrollo humano) y `1021` (negocio de automatización de procesos,
