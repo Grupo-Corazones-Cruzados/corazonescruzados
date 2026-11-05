@@ -789,6 +789,7 @@ de Apple/Google, firma y distribución) para un titular persona natural en Ecuad
 
 ### Progreso
 - **% de información para el objetivo:** 55 %
+- **Estado (2026-11-05):** Fernando pagó los 25 $ de Google Play (cuenta personal, dueña `lfgonzalezm0@grupocc.org`) y envió la inscripción de Apple, que responde en unos 2 días hábiles. En Play faltan: verificar identidad, declarar estado de operador (se le recomendó «operador», porque cobrará suscripciones; publica teléfono y dirección), verificar un Android real (Android 10+, sin root) y su teléfono. Después, prueba cerrada de 12 personas durante 14 días.
 - **Estado (2026-10-26, tarde):** P3 decidida — cuentas como PERSONA, primero Apple y luego Google. Se le dio a Fernando el paso a paso de la inscripción en Apple.
 - **Estado anterior:** requisitos de las dos tiendas verificados en sus páginas oficiales (2026-10-26). La
   decisión que lo ordena todo es de Fernando: **cuentas como persona ahora** o **constituir una SAS
