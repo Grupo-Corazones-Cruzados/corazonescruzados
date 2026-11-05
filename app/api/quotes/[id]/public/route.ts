@@ -13,6 +13,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!q) return NextResponse.json({ error: 'Cotización no encontrada' }, { status: 404 });
     return NextResponse.json({ data: q });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Error' }, { status: err.status || 500 });
+    return NextResponse.json({ error: err.message || 'Error', motivo: err.motivo, ...err.detalle }, { status: err.status || 500 });
   }
 }

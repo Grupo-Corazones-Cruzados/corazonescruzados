@@ -90,15 +90,37 @@ export function ensureQuoteShareColumns(): Promise<void> {
   return ensuringShare;
 }
 
-/** Valida el token público de una cotización. Devuelve el proyecto o lanza un error tipado. */
+/**
+ * Por qué un enlace ya no abre la cotización. La página pública escribe su aviso según esto:
+ * aceptar saca el proyecto de `cotizacion`, así que volver al enlace no es un error del cliente
+ * sino una cotización que ya cumplió (Fernando, 2026-11-05).
+ */
+export type MotivoEnlaceCotizacion = 'invalido' | 'caducado' | 'aceptada' | 'cerrada';
+
+function errorEnlace(message: string, status: number, motivo: MotivoEnlaceCotizacion, p?: any) {
+  const e: any = new Error(message);
+  e.status = status;
+  e.motivo = motivo;
+  if (p) e.detalle = { titulo: p.title || null, decididaEn: p.quote_decided_at || null };
+  return e;
+}
+
+/**
+ * Valida el token público de una cotización. Devuelve el proyecto o lanza un error tipado.
+ * El token se mira ANTES que el estado: sin el enlace correcto no se sabe qué pasó con ella.
+ */
 export async function validateQuoteToken(projectId: number, token: string): Promise<any> {
   await ensureQuoteShareColumns();
   const { rows: [p] } = await pool.query(
     `SELECT ${await columnasProyecto()} FROM gcc_world.projects WHERE id = $1`, [projectId]);
-  if (!p) { const e: any = new Error('Cotización no encontrada'); e.status = 404; throw e; }
-  if (p.status !== 'cotizacion') { const e: any = new Error('Este enlace ya no corresponde a una cotización'); e.status = 410; throw e; }
-  if (!p.quote_token || !token || token !== p.quote_token) { const e: any = new Error('Enlace inválido'); e.status = 403; throw e; }
-  if (p.quote_token_expires_at && new Date(p.quote_token_expires_at) < new Date()) { const e: any = new Error('El enlace ha expirado'); e.status = 403; throw e; }
+  if (!p) throw errorEnlace('Cotización no encontrada', 404, 'invalido');
+  if (!p.quote_token || !token || token !== p.quote_token) throw errorEnlace('Este enlace no está disponible', 403, 'invalido');
+  if (p.status !== 'cotizacion') {
+    throw p.quote_status === 'accepted'
+      ? errorEnlace('Esta cotización ya fue aceptada', 410, 'aceptada', p)
+      : errorEnlace('Esta cotización ya no está disponible', 410, 'cerrada', p);
+  }
+  if (p.quote_token_expires_at && new Date(p.quote_token_expires_at) < new Date()) throw errorEnlace('Este enlace caducó', 410, 'caducado', p);
   return p;
 }
 

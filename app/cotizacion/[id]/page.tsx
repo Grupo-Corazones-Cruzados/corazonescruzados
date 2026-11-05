@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { Check, X, Calculator, ListChecks, CalendarDays, MessageSquare, Send, Wallet } from 'lucide-react';
+import { Check, X, Calculator, ListChecks, CalendarDays, Clock, Link2Off, MessageSquare, Send, Wallet } from 'lucide-react';
 import MarcoPublico, { AvisoPublico, CargandoPublico } from '@/components/public/MarcoPublico';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { BTN_ACCENT, BTN_DANGER, BTN_PRIMARY } from '@/components/ui/Button';
@@ -12,12 +12,34 @@ import { QUOTE_NOTES } from '@/lib/cotizaciones/notes';
 
 function money(n: number) { return `$${fmt2(Number(n || 0))}`; }
 
+type Cierre = { motivo: 'invalido' | 'caducado' | 'aceptada' | 'cerrada'; titulo?: string | null; decididaEn?: string | null };
+
+/** Lo que ve quien vuelve a un enlace que ya no abre la cotización: dice qué pasó y qué hacer. */
+function AvisoCierre({ motivo, titulo, decididaEn }: Cierre) {
+  const fecha = decididaEn ? new Date(decididaEn).toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  const aviso = {
+    aceptada: { icon: Check, titulo: 'Esta cotización ya fue aceptada', texto: `${fecha ? `Se aceptó el ${fecha}, así que este` : 'Por eso, este'} enlace ya no está disponible. Si necesitas algo, escríbele a tu responsable.` },
+    cerrada: { icon: Link2Off, titulo: 'Esta cotización ya no está disponible', texto: 'Ya no se puede revisar desde este enlace. Si necesitas algo, escríbele a tu responsable.' },
+    caducado: { icon: Clock, titulo: 'Este enlace caducó', texto: 'Pídele a tu responsable un enlace nuevo para revisar la cotización.' },
+    invalido: { icon: Link2Off, titulo: 'Este enlace no está disponible', texto: 'Puede que tu responsable haya enviado uno más reciente. Revisa su último mensaje o pídele uno nuevo.' },
+  }[motivo];
+  return (
+    <AvisoPublico icon={aviso.icon} titulo={aviso.titulo}>
+      {titulo && <p className="text-digi-text font-medium">{titulo}</p>}
+      <p className={titulo ? 'mt-1' : ''}>{aviso.texto}</p>
+    </AvisoPublico>
+  );
+}
+
 export default function PublicQuotePage() {
   const { id } = useParams();
   const token = useSearchParams().get('token') || '';
   const [quote, setQuote] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [cierre, setCierre] = useState<Cierre | null>(null);
+  /** Acaba de aceptarla en esta visita. Si recarga, el servidor ya contesta `aceptada`. */
+  const [aceptada, setAceptada] = useState<{ copiaEnviada: boolean } | null>(null);
   const [deciding, setDeciding] = useState(false);
   const [showBudget, setShowBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
@@ -31,6 +53,7 @@ export default function PublicQuotePage() {
     try {
       const r = await fetch(`/api/quotes/${id}/public?token=${encodeURIComponent(token)}`);
       const d = await r.json();
+      if (d.motivo) { setCierre({ motivo: d.motivo, titulo: d.titulo, decididaEn: d.decididaEn }); return; }
       if (!r.ok) throw new Error(d.error || 'No se pudo cargar la cotización');
       setQuote(d.data);
       setError('');
@@ -57,9 +80,14 @@ export default function PublicQuotePage() {
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'Error');
-      toast.success(action === 'accept' ? '¡Cotización aceptada!' : 'Cotización rechazada');
+      // Aceptada, el proyecto deja de ser cotización: no se recarga, se confirma con lo que ya hay.
+      if (action === 'accept') { setAceptada({ copiaEnviada: !!d.data?.copiaEnviada }); return; }
+      toast.success('Cotización rechazada');
       load();
-    } catch (e: any) { toast.error(e.message || 'Error'); }
+    } catch (e: any) {
+      toast.error(e.message || 'Error');
+      load(); // Pudo cerrarse en otra pestaña: que la página lo refleje.
+    }
     finally { setDeciding(false); }
   };
 
@@ -96,6 +124,17 @@ export default function PublicQuotePage() {
   };
 
   if (loading) return <MarcoPublico ancho="medio"><CargandoPublico texto="Cargando cotización…" /></MarcoPublico>;
+  if (aceptada) return (
+    <MarcoPublico>
+      <AvisoPublico icon={Check} titulo="¡Cotización aceptada!">
+        <p className="text-digi-text font-medium">{quote.title}</p>
+        <p className="titulo-progreso text-[20px] text-digi-text tabular-nums mt-1">{money(quote.total)}</p>
+        <p className="mt-3">Gracias por confirmar. {quote.responsibleName || 'Tu responsable'} se pondrá en contacto contigo para los siguientes pasos.</p>
+        {aceptada.copiaEnviada && <p className="mt-1">Te enviamos a tu correo el PDF con el detalle completo.</p>}
+      </AvisoPublico>
+    </MarcoPublico>
+  );
+  if (cierre) return <MarcoPublico><AvisoCierre {...cierre} /></MarcoPublico>;
   if (error) return (
     <MarcoPublico>
       <AvisoPublico icon={X} titulo="No se pudo abrir la cotización">{error}</AvisoPublico>
@@ -135,7 +174,7 @@ export default function PublicQuotePage() {
         {quote.quoteStatus === 'rejected' && (
           <div className={`${TARJETA} flex items-start gap-2.5`}>
             <X className="w-5 h-5 text-red-400 shrink-0 mt-px" />
-            <p className="text-[14px] font-semibold text-red-400">Rechazaste esta cotización. Puedes pedir cambios al asistente y volver a revisarla.</p>
+            <p className="text-[14px] font-semibold text-red-400">Rechazaste esta cotización. Avisamos a tu responsable para que pueda ajustarla y compartírtela de nuevo.</p>
           </div>
         )}
 

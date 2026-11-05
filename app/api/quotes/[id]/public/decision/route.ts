@@ -74,6 +74,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // Al ACEPTAR: enviar al cliente (correo al que se le compartió) el PDF con toda la
     // cotización aceptada. Best-effort: no bloquea la aceptación si falla el PDF/correo.
+    let copiaEnviada = false;
     if (accepted && p.quote_client_email) {
       try {
         const q2 = await loadQuote(id);
@@ -86,11 +87,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             responsibleName: q2.responsibleName,
             pdf,
           });
+          copiaEnviada = true;
         }
       } catch (e: any) { console.error('accepted quote PDF to client:', e.message); }
     }
 
-    return NextResponse.json({ data: { quoteStatus: accepted ? 'accepted' : 'rejected' } });
+    return NextResponse.json({ data: { quoteStatus: accepted ? 'accepted' : 'rejected', copiaEnviada } });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Error' }, { status: err.status || 500 });
   }
