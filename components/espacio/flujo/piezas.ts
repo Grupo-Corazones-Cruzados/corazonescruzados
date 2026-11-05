@@ -1,4 +1,4 @@
-import { Braces, Cog, Flag, GitBranch, MousePointerClick, Play, Plug, Repeat2, type LucideIcon } from 'lucide-react';
+import { ArrowRightLeft, Braces, Cog, Flag, GitBranch, MousePointerClick, Play, Plug, Repeat2, type LucideIcon } from 'lucide-react';
 import type { TipoNodo } from './colocar';
 
 /**
@@ -15,3 +15,6 @@ export const PIEZAS: Record<TipoNodo, { Icono: LucideIcon; texto: string; borde:
   integracion: { Icono: Plug, texto: 'text-orange-400', borde: 'border-orange-400', radio: 10 },
   fin: { Icono: Flag, texto: 'text-digi-text', borde: 'border-digi-text', radio: 999 },
 };
+
+/** No es del catálogo: lo pone el dibujo cuando una conexión cruza de un rol a otro. El agente no lo usa. */
+export const PIEZA_CONECTOR = { Icono: ArrowRightLeft, nombre: 'Otro rol', uso: 'La conexión sigue en otro rol. Púlsalo para ir allí.' };

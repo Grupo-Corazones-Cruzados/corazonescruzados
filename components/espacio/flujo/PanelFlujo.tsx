@@ -10,7 +10,7 @@ import { TIPOS_NODO } from '@/services/espacio-trabajo/flujo-catalogo.mjs';
 import { api, hace, type Proyecto } from '../api';
 import { colocar, type Colocacion, type DocFlujo, type TipoNodo } from './colocar';
 import type { VistaLienzo } from './Lienzo';
-import { PIEZAS } from './piezas';
+import { PIEZA_CONECTOR, PIEZAS } from './piezas';
 
 const Lienzo = dynamic(() => import('./Lienzo'), { ssr: false, loading: () => <Cargando /> });
 
@@ -55,6 +55,7 @@ function Leyenda() {
         const { Icono, texto } = PIEZAS[t];
         return <span key={t} title={TIPOS_NODO[t].uso} className="inline-flex items-center gap-1.5 text-[11.5px] text-digi-muted"><Icono className={`w-3.5 h-3.5 ${texto}`} />{TIPOS_NODO[t].nombre}</span>;
       })}
+      <span title={PIEZA_CONECTOR.uso} className="inline-flex items-center gap-1.5 text-[11.5px] text-digi-muted"><PIEZA_CONECTOR.Icono className="w-3.5 h-3.5 text-accent" />{PIEZA_CONECTOR.nombre}</span>
     </div>
   );
 }
