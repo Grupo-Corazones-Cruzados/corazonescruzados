@@ -29,6 +29,7 @@ const CLAUDE = process.env.CLAUDE_BIN || path.join(os.homedir(), '.local/bin/cla
 const MODO_DEFECTO = 'bypassPermissions';
 const INACTIVA_MS = 30 * 60_000;
 const MAX_EVENTOS = 4000;
+const PAGINA_MENSAJES = Number(process.env.ESPACIO_PAGINA) || 120;
 const MAX_ADJUNTO = 100 * 1024 * 1024;
 const DIAS_ADJUNTOS = 30;
 /* Probados el 2026-11-04 con Claude Code 2.1.318: responden «isn't available in this environment».
@@ -228,7 +229,7 @@ class SesionViva {
   constructor({ id, proyecto, cwd, modelo, modo, retomar, proyectosTodos, tituloInicial }) {
     Object.assign(this, { id, proyecto, cwd, modelo, modo: modo || MODO_DEFECTO, retomar, tituloInicial });
     this.eventos = []; this.seq = 0; this.clientes = new Set(); this.solicitudes = new Map();
-    this.tareas = new Set(); this.estado = 'iniciando'; this.noVisto = false; this.actividad = Date.now();
+    this.tareas = new Set(); this.enCola = []; this.estado = 'iniciando'; this.noVisto = false; this.actividad = Date.now();
     this.cola = new Cola(); this.comandos = []; this.modelos = []; this.error = null; this.terminada = false;
     this.q = query({ prompt: this.cola, options: this.opciones(proyectosTodos) });
     this.leer();
@@ -302,9 +303,26 @@ class SesionViva {
     if (completo) contenido.push({ type: 'text', text: completo });
     const uuid = crypto.randomUUID();
     this.actividad = Date.now();
+    const mensaje = { tipo: 'mensaje', uuid, rol: 'user', bloques: normalizar('user', { content: contenido }), propio: true };
+    // Con Claude ocupado, el mensaje aún no es parte de la conversación: la toma en el siguiente punto de
+    // parada (ver soltarCola). Si se pinta ya, queda encima de lo que falta del turno y al recargar se mueve.
+    if (this.estado === 'trabajando' || this.estado === 'espera') {
+      this.enCola.push(mensaje);
+      this.emitir({ tipo: 'cola', uuid, bloques: mensaje.bloques });
+    } else this.emitir(mensaje);
     this.cambiarEstado('trabajando');
-    this.emitir({ tipo: 'mensaje', uuid, rol: 'user', bloques: normalizar('user', { content: contenido }), propio: true });
     this.cola.poner({ type: 'user', uuid, session_id: this.id, parent_tool_use_id: null, message: { role: 'user', content: contenido } });
+  }
+
+  /**
+   * Claude toma lo que esté en cola al llegar un resultado de herramienta o al acabar el turno, y el archivo lo
+   * guarda ahí mismo (medido el 2026-11-05: enviado a los 5,5 s, tomado a los 15,0 s tras el resultado). El
+   * directo no avisa de ese momento: por eso se suelta aquí, y así los dos órdenes coinciden.
+   */
+  soltarCola() {
+    const habia = this.enCola.length > 0;
+    for (const m of this.enCola.splice(0)) this.emitir(m);
+    return habia;
   }
 
   async leer() {
@@ -333,6 +351,8 @@ class SesionViva {
       }
       const bloques = normalizar(m.type, m.message);
       if (bloques.length) this.emitir({ tipo: 'mensaje', uuid: m.uuid, rol: m.type, bloques, padre: m.parent_tool_use_id || null });
+      // Lo de un subagente no es un punto de parada de la conversación principal.
+      if (m.type === 'user' && !m.parent_tool_use_id && Array.isArray(m.message?.content) && m.message.content.some((b) => b.type === 'tool_result')) this.soltarCola();
       return;
     }
     if (m.type === 'result') {
@@ -345,7 +365,8 @@ class SesionViva {
         error: m.subtype === 'success' ? null : (m.errors || []).join(' ') || m.subtype,
         tokens: m.usage ? (m.usage.input_tokens || 0) + (m.usage.cache_read_input_tokens || 0) + (m.usage.cache_creation_input_tokens || 0) : null,
       });
-      if (!this.solicitudes.size) this.cambiarEstado('libre');
+      // Si había algo en cola, Claude sigue: empieza otro turno.
+      if (!this.soltarCola() && !this.solicitudes.size) this.cambiarEstado('libre');
       return;
     }
     if (m.type === 'system') {
@@ -386,6 +407,7 @@ class SesionViva {
   terminar(error) {
     if (this.terminada) return;
     this.terminada = true;
+    this.soltarCola();
     for (const s of [...this.solicitudes.values()]) s.resolver({ behavior: 'deny', message: 'La sesión se cerró.' });
     if (error) {
       this.error = error;
@@ -690,13 +712,17 @@ ruta('GET', '/sesiones/:id/mensajes', async ({ p, url }) => {
     .map((m) => ({ uuid: m.uuid, rol: m.type, padre: m.parent_tool_use_id || null, bloques: normalizar(m.type, m.message) }))
     .filter((m) => m.bloques.length && !m.padre);
   const antes = Number(url.searchParams.get('antes') || filas.length);
-  const desde = Math.max(0, antes - 120);
+  const desde = Math.max(0, antes - PAGINA_MENSAJES);
+  // Al reabrir, el directo repite todo lo emitido por este proceso. Lo que el archivo ya tiene, aunque esté fuera
+  // de esta página, no debe añadirse al final: el cliente ignora los mensajes hasta este número.
+  const enArchivo = new Set(filas.map((m) => m.uuid));
+  const corte = viva?.eventos.findLast((e) => e.tipo === 'mensaje' && !e.padre && enArchivo.has(e.uuid))?.seq ?? 0;
   return {
     mensajes: filas.slice(desde, antes), hayAnteriores: desde > 0, inicio: desde,
     titulo: donde?.info?.customTitle || donde?.info?.summary || null,
     carpeta: donde?.dir || viva?.cwd, enTerminal: !!abiertaEnTerminal(p.id), aislada: proyecto.aislado === true || leerAisladas().has(p.id),
     viva: viva ? { ...resumenViva(viva), solicitudes: [...viva.solicitudes].map(([solicitudId, s]) => ({ solicitudId, herramienta: s.herramienta, entrada: recortarEntrada(s.entrada) })) } : null,
-    ultimoSeq: viva?.seq ?? 0,
+    ultimoSeq: viva?.seq ?? 0, corte,
     error: ultimosErrores.get(p.id) || null,
   };
 });

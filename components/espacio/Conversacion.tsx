@@ -33,6 +33,7 @@ export default function Conversacion({
   alCambiar: () => void;
 }) {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
+  const [enCola, setEnCola] = useState<Mensaje[]>([]);
   const [hijos, setHijos] = useState<Record<string, Mensaje[]>>({});
   const [aislada, setAislada] = useState(false);
   const [tareas, setTareas] = useState(0);
@@ -57,6 +58,7 @@ export default function Conversacion({
   const enEscritorio = useConsultaMedia(PANTALLA_LG);
   const fuente = useRef<(() => void) | null>(null);
   const ultimoSeq = useRef(0);
+  const corte = useRef(0);
   const vistos = useRef(new Set<string>());
   const caja = useRef<HTMLDivElement>(null);
   const pegado = useRef(true);
@@ -68,7 +70,7 @@ export default function Conversacion({
     if (c) c.scrollTo({ top: c.scrollHeight, behavior: suave ? 'smooth' : 'auto' });
   }, []);
 
-  useEffect(() => { if (pegado.current) bajar(); }, [mensajes, parcial, solicitudes, fin, bajar]);
+  useEffect(() => { if (pegado.current) bajar(); }, [mensajes, enCola, parcial, solicitudes, fin, bajar]);
 
   const manejar = useCallback((e: any) => {
     if (e.seq <= ultimoSeq.current) return;
@@ -85,10 +87,17 @@ export default function Conversacion({
           break;
         }
         if (e.rol === 'assistant') setParcial('');
-        if (vistos.current.has(e.uuid)) break;
+        setEnCola((l) => (l.some((m) => m.uuid === e.uuid) ? l.filter((m) => m.uuid !== e.uuid) : l));
+        // Por debajo del corte es una repetición de algo que ya está en el archivo, aunque no en esta página.
+        if (vistos.current.has(e.uuid) || e.seq <= corte.current) break;
         vistos.current.add(e.uuid);
         setMensajes((l) => [...l, { uuid: e.uuid, rol: e.rol, bloques: e.bloques }]);
         if (e.propio) { setFin(null); setError(''); }
+        break;
+      case 'cola':
+        if (vistos.current.has(e.uuid) || e.seq <= corte.current) break;
+        setEnCola((l) => (l.some((m) => m.uuid === e.uuid) ? l : [...l, { uuid: e.uuid, rol: 'user', bloques: e.bloques }]));
+        setFin(null); setError('');
         break;
       case 'estado': setEstado(e.estado); break;
       case 'tareas': setTareas(e.activas); break;
@@ -105,10 +114,11 @@ export default function Conversacion({
     }
   }, [alCambiar, proyecto.id]);
 
-  const conectar = useCallback((id: string) => {
+  const conectar = useCallback((id: string, desdeCorte = 0) => {
     fuente.current?.();
     // Cada proceso del servicio numera desde cero; lo ya visto lo descarta el `uuid`.
     ultimoSeq.current = 0;
+    corte.current = desdeCorte;
     const parar = escucharEventos(id, (e) => {
       manejar(e);
       if (e.tipo === 'estado' && e.estado === 'cerrada') { parar(); fuente.current = null; setSolicitudes([]); }
@@ -120,6 +130,8 @@ export default function Conversacion({
     setCargando(true);
     try {
       const j = await api(`/sesiones/${id}/mensajes?proyecto=${proyecto.id}`);
+      // Se cambió de sesión mientras llegaba: esto ya no es lo que se está viendo.
+      if (idRef.current !== id) return;
       vistos.current = new Set(j.mensajes.map((m: Mensaje) => m.uuid));
       setMensajes(j.mensajes);
       setAnteriores(j.hayAnteriores ? j.inicio : null);
@@ -133,19 +145,21 @@ export default function Conversacion({
         setTareas(j.viva.tareas || 0);
         if (j.viva.modo) setModo(j.viva.modo);
         setSolicitudes(j.viva.solicitudes || []);
-        conectar(id);
+        conectar(id, j.corte || 0);
       } else setEstado(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo abrir la sesión.');
     } finally {
-      setCargando(false);
-      pegado.current = true;
-      requestAnimationFrame(() => bajar());
+      if (idRef.current === id) {
+        setCargando(false);
+        pegado.current = true;
+        requestAnimationFrame(() => bajar());
+      }
     }
   }, [proyecto.id, conectar, bajar]);
 
   useEffect(() => {
-    setMensajes([]); setHijos({}); setAislada(false); setTareas(0); setParcial(''); setSolicitudes([]); setEstado(null); setFin(null); setError(''); setTitulo(''); setEnTerminal(false); setAnteriores(null);
+    setMensajes([]); setEnCola([]); setHijos({}); setAislada(false); setTareas(0); setParcial(''); setSolicitudes([]); setEstado(null); setFin(null); setError(''); setTitulo(''); setEnTerminal(false); setAnteriores(null);
     if (sesionId) cargar(sesionId); else { setCargando(false); setCarpeta(proyecto.ruta); }
     return () => { fuente.current?.(); fuente.current = null; };
     // Solo al cambiar de sesión: `cargar` depende del proyecto, que cambia con ella.
@@ -259,6 +273,12 @@ export default function Conversacion({
             {solicitudes.map((s) => <TarjetaSolicitud key={s.solicitudId} s={s} responder={responder} />)}
             {trabajando && !parcial && !solicitudes.length && <p className="flex items-center gap-2 text-[12.5px] text-accent"><Loader2 className="w-3.5 h-3.5 animate-spin" /> Trabajando</p>}
             {tareas > 0 && !trabajando && <p className="flex items-center gap-2 text-[12.5px] text-accent"><Loader2 className="w-3.5 h-3.5 animate-spin" /> {tareas === 1 ? 'Una tarea sigue' : `${tareas} tareas siguen`} en segundo plano. Claude retomará al terminar.</p>}
+            {enCola.length > 0 && (
+              <div className="min-w-0">
+                <div className="opacity-60"><ListaMensajes mensajes={enCola} parcial="" hijos={{}} carpeta={proyecto.ruta} /></div>
+                <p className="text-right text-[11.5px] text-digi-muted mt-1">En cola</p>
+              </div>
+            )}
             {fin && !trabajando && !tareas && <p className={`text-[11.5px] tabular-nums ${fin.ok || fin.detenida ? 'text-digi-muted' : 'text-red-400'}`}>{fin.detenida ? 'Detenida' : fin.ok ? `Terminó en ${segundos(fin.duracion)}` : `Terminó con error: ${fin.error || 'sin detalle'}`}</p>}
             {error && <p className={`rounded-lg border p-3 text-[13px] ${TONO.error.caja} ${TONO.error.texto}`}>{error}</p>}
           </div>
