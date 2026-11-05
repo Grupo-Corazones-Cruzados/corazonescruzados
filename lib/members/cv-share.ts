@@ -25,6 +25,7 @@ import type {
   CvPublico, Educacion, EstadoLaboral, Experiencia, ItemPortafolio, Jornada, Modalidad, TalentoPublico,
 } from '@/lib/members/cv-tipos';
 import { normalizarRed, ORDEN_REDES, REDES, type Red } from '@/lib/members/redes';
+import { miembroEnProyectoSql } from '@/lib/projects/permisos';
 
 /* ── Tipos y etiquetas: en `cv-tipos.ts`, que es puro y lo comparte el navegador.
  * Se re-exportan para que quien ya importaba de aquí no tenga que cambiar. ─────── */
@@ -206,9 +207,10 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
    * publicarlas enseñaría la cartera comercial a un tercero. Los que están en curso
    * tampoco — lo que se ve en el CV, se entregó.
    *
-   * «Trabajó en» son DOS cosas y hacen falta las dos: la **puja aceptada** dice que
-   * entró al proyecto, y la **asignación de requerimientos** que hizo tareas dentro.
-   * Con solo una de las dos se caen proyectos reales.
+   * «Trabajó en» es la misma relación que en el portafolio (`miembroEnProyectoSql`): responsable,
+   * puja aceptada o asignación aceptada. Con solo una de ellas se caen proyectos reales.
+   * Sin requerimientos no hay trabajo que enseñar: son fichas de facturación histórica, con el
+   * pagador en la descripción.
    *
    * Los talentos de los requerimientos hacen de etiquetas: describen el proyecto con
    * el mismo vocabulario que el resto del CV, sin escribir nada a mano.            */
@@ -229,13 +231,8 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
                        WHERE pr.project_id = p.id), '{}') AS talentos_pedidos
        FROM gcc_world.projects p
       WHERE p.status = 'completed'
-        AND (
-          EXISTS (SELECT 1 FROM gcc_world.project_bids b
-                   WHERE b.project_id = p.id AND b.member_id = $1 AND b.status = 'accepted')
-          OR EXISTS (SELECT 1 FROM gcc_world.requirement_assignments ra
-                       JOIN gcc_world.project_requirements pr ON pr.id = ra.requirement_id
-                      WHERE pr.project_id = p.id AND ra.member_id = $1 AND ra.status = 'accepted')
-        )
+        AND ${miembroEnProyectoSql('p', '$1')}
+        AND EXISTS (SELECT 1 FROM gcc_world.project_requirements rq WHERE rq.project_id = p.id)
       ORDER BY p.marketplace_published_at DESC NULLS LAST, p.id DESC`,
     [memberId],
   );
@@ -406,13 +403,8 @@ export async function imagenDePortafolio(
        FROM gcc_world.projects p
       WHERE p.id = $1
         AND p.status = 'completed'
-        AND (
-          EXISTS (SELECT 1 FROM gcc_world.project_bids b
-                   WHERE b.project_id = p.id AND b.member_id = $2 AND b.status = 'accepted')
-          OR EXISTS (SELECT 1 FROM gcc_world.requirement_assignments ra
-                       JOIN gcc_world.project_requirements pr ON pr.id = ra.requirement_id
-                      WHERE pr.project_id = p.id AND ra.member_id = $2 AND ra.status = 'accepted')
-        )`,
+        AND ${miembroEnProyectoSql('p', '$2')}
+        AND EXISTS (SELECT 1 FROM gcc_world.project_requirements rq WHERE rq.project_id = p.id)`,
     [id, memberId, i + 1],
   );
   return r?.img ? String(r.img) : null;

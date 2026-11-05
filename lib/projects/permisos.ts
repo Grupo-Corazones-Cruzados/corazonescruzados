@@ -56,6 +56,14 @@ export async function requerimientoDelProyecto(requirementId: unknown, projectId
 }
 
 /**
+ * Lo que un proyecto que se completa escribe además del estado: se publica en el marketplace, salvo
+ * que venga de él. Solo lo hacía `/complete`; los proyectos completados al cobrar o a mano se quedaban
+ * sin publicar (Imadexa, trajes; Fernando, 2026-11-05). Va dentro de un `SET`.
+ */
+export const PUBLICAR_AL_COMPLETAR_SQL = `is_marketplace_published = (marketplace_source_id IS NULL),
+  marketplace_published_at = CASE WHEN marketplace_source_id IS NULL THEN NOW() END`;
+
+/**
  * ¿Este miembro tiene relación con el proyecto? Responsable (`assigned_member_id` o fila activa en
  * `project_members`), puja aceptada o asignación aceptada en un requerimiento. Mirar solo las pujas
  * dejaba fuera al responsable de los proyectos sin pujas ni asignaciones (Fernando, 2026-11-05).

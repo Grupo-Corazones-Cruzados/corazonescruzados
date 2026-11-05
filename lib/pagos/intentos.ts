@@ -32,6 +32,7 @@ import { sendPaidInvoiceEmail } from '@/lib/integrations/email';
 import { calcularRecargo, tarifaAlCliente, CONCEPTO_RECARGO } from './comision';
 import { TARIFA_TRANSFERENCIA } from './cuentas';
 import { FORMA_PAGO_SRI, FORMA_PAGO_DEBITO, type MetodoPago } from './tipos';
+import { PUBLICAR_AL_COMPLETAR_SQL } from '@/lib/projects/permisos';
 
 export type CanalCobro = 'manual' | 'client' | 'link';
 
@@ -746,7 +747,7 @@ async function completarProyectoPagado(intento: any) {
   try {
     await pool.query(
       `UPDATE gcc_world.projects
-          SET status = 'completed', updated_at = NOW()
+          SET status = 'completed', updated_at = NOW(), ${PUBLICAR_AL_COMPLETAR_SQL}
         WHERE id = ($1)::bigint AND status = 'review'`,
       [String(intento.source_id)],
     );

@@ -66,9 +66,8 @@ export async function GET(req: NextRequest) {
               COALESCE(array_length(p.images, 1), 0)::int as image_count,
               COALESCE(
                 (SELECT json_agg(json_build_object('name', m.name, 'photo_url', m.photo_url))
-                 FROM gcc_world.project_bids pb
-                 JOIN gcc_world.members m ON m.id = pb.member_id
-                 WHERE pb.project_id = p.id AND pb.status = 'accepted'),
+                 FROM gcc_world.members m
+                 WHERE ${miembroEnProyectoSql('p', 'm.id')}),
                 '[]'::json
               ) as team,
               (SELECT COUNT(*) FROM gcc_world.project_requirements r WHERE r.project_id = p.id) as requirements_count,

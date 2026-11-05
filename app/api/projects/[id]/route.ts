@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ensureProjectMembersTable, getProjectMembers } from '@/lib/projects/members';
 import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 import { columnasProyecto } from '@/lib/projects/columnas';
+import { PUBLICAR_AL_COMPLETAR_SQL } from '@/lib/projects/permisos';
 import { quitar, urlMedia } from '@/lib/media';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -243,6 +244,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     if (fields.length === 0) return NextResponse.json({ error: 'No fields' }, { status: 400 });
     fields.push(`updated_at = NOW()`);
+    if (body.status === 'completed' && current.status !== 'completed') fields.push(PUBLICAR_AL_COMPLETAR_SQL);
     values.push(id);
 
     const { rows } = await pool.query(
