@@ -1,20 +1,11 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { decodificarDataUri, guardar, quitar } from '@/lib/media';
+import { esDelEquipoDelProyecto } from '@/lib/projects/permisos';
 import { NextRequest, NextResponse } from 'next/server';
 
 async function ensureImagesColumn() {
   await pool.query(`ALTER TABLE gcc_world.projects ADD COLUMN IF NOT EXISTS images TEXT[]`);
-}
-
-async function isTeamMember(userId: string, projectId: string): Promise<boolean> {
-  const { rows: [u] } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [userId]);
-  if (!u?.member_id) return false;
-  const { rows } = await pool.query(
-    `SELECT 1 FROM gcc_world.project_bids WHERE project_id = $1 AND member_id = $2 AND status = 'accepted' LIMIT 1`,
-    [projectId, u.member_id]
-  );
-  return rows.length > 0;
 }
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -51,17 +42,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params;
     await ensureImagesColumn();
 
-    // Verify project is published
-    const { rows: [project] } = await pool.query(
-      `SELECT is_marketplace_published FROM gcc_world.projects WHERE id = $1`, [id]
-    );
+    const { rows: [project] } = await pool.query(`SELECT 1 FROM gcc_world.projects WHERE id = $1`, [id]);
     if (!project) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
-    if (!project.is_marketplace_published) return NextResponse.json({ error: 'Proyecto no publicado en marketplace' }, { status: 400 });
 
-    // Auth: admin or accepted team member
-    if (user.role !== 'admin') {
-      const isMember = await isTeamMember(user.userId, id);
-      if (!isMember) return NextResponse.json({ error: 'Solo miembros del equipo pueden editar' }, { status: 403 });
+    // Admin, responsable o participante. No hace falta que esté publicado: el portafolio también
+    // enseña los proyectos terminados sin publicar del miembro.
+    if (user.role !== 'admin' && !(await esDelEquipoDelProyecto(user, id))) {
+      return NextResponse.json({ error: 'Solo miembros del equipo pueden editar' }, { status: 403 });
     }
 
     const { title, final_cost, images, tags } = await req.json();

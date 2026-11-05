@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureRequirementColumns, normalizeTalents, talentsAggSql } from '@/lib/projects/requirements';
+import { miembroDe, miembroEnProyectoSql } from '@/lib/projects/permisos';
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,21 +27,24 @@ export async function GET(req: NextRequest) {
     // `baseWhere` = visibilidad + búsqueda. El filtro por TALENTO se añade encima, para
     // poder calcular con la base las opciones del propio filtro (si no, al elegir un
     // talento desaparecerían los demás del desplegable).
-    let where = `WHERE p.is_marketplace_published = true AND p.status = 'completed'`;
     const params: any[] = [];
+
+    // El catálogo enseña lo publicado. El portafolio de un miembro, sus proyectos terminados, estén
+    // publicados o no: editarlos no los publica (el administrador ve además todo lo publicado).
+    let visibles = 'p.is_marketplace_published = true';
+    if (memberOnly) {
+      const yo = await miembroDe(user!.userId);
+      if (yo != null) {
+        params.push(yo);
+        const mio = miembroEnProyectoSql('p', `$${params.length}::bigint`);
+        visibles = user!.role === 'admin' ? `(${visibles} OR ${mio})` : mio;
+      }
+    }
+    let where = `WHERE ${visibles} AND p.status = 'completed'`;
 
     if (search) {
       params.push(`%${search}%`);
       where += ` AND p.title ILIKE $${params.length}`;
-    }
-
-    // Filter by current user's member_id (for portfolio view)
-    if (memberOnly && user!.role !== 'admin') {
-      const { rows: [u] } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user!.userId]);
-      if (u?.member_id) {
-        params.push(u.member_id);
-        where += ` AND EXISTS (SELECT 1 FROM gcc_world.project_bids pb2 WHERE pb2.project_id = p.id AND pb2.member_id = $${params.length} AND pb2.status = 'accepted')`;
-      }
     }
 
     const baseWhere = where;
@@ -72,7 +76,7 @@ export async function GET(req: NextRequest) {
               ${talentsAggSql('p')} as talents
        FROM gcc_world.projects p
        ${where}
-       ORDER BY p.marketplace_published_at DESC`,
+       ORDER BY p.marketplace_published_at DESC NULLS LAST, p.id DESC`,
       params
     );
 

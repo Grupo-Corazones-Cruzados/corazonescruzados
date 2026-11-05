@@ -55,6 +55,33 @@ export async function requerimientoDelProyecto(requirementId: unknown, projectId
   return rows.length > 0;
 }
 
+/**
+ * ¿Este miembro tiene relación con el proyecto? Responsable (`assigned_member_id` o fila activa en
+ * `project_members`), puja aceptada o asignación aceptada en un requerimiento. Mirar solo las pujas
+ * dejaba fuera al responsable de los proyectos sin pujas ni asignaciones (Fernando, 2026-11-05).
+ * `proyecto` y `miembro` son SQL: el alias de la tabla y el parámetro.
+ */
+export const miembroEnProyectoSql = (proyecto: string, miembro: string) => `(
+  ${proyecto}.assigned_member_id = ${miembro}
+  OR EXISTS (SELECT 1 FROM gcc_world.project_members pm
+              WHERE pm.project_id = ${proyecto}.id AND pm.member_id = ${miembro} AND pm.status = 'active')
+  OR EXISTS (SELECT 1 FROM gcc_world.project_bids pb
+              WHERE pb.project_id = ${proyecto}.id AND pb.member_id = ${miembro} AND pb.status = 'accepted')
+  OR EXISTS (SELECT 1 FROM gcc_world.requirement_assignments ra
+               JOIN gcc_world.project_requirements pr ON pr.id = ra.requirement_id
+              WHERE pr.project_id = ${proyecto}.id AND ra.member_id = ${miembro} AND ra.status = 'accepted')
+)`;
+
+export async function esDelEquipoDelProyecto(user: Usuario, projectId: string): Promise<boolean> {
+  const yo = await miembroDe(user.userId);
+  if (yo == null) return false;
+  const { rows } = await pool.query(
+    `SELECT 1 FROM gcc_world.projects p WHERE p.id = ($1)::bigint AND ${miembroEnProyectoSql('p', '$2::bigint')}`,
+    [projectId, yo],
+  );
+  return rows.length > 0;
+}
+
 /** Estados en los que el trabajo ya no se toca (lo que se cobra está cerrado). */
 /**
  * ¿Puede subir, quitar y renombrar las FOTOS del proyecto? Admin, el creador (su ficha es
