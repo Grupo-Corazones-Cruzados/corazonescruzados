@@ -565,6 +565,19 @@ export async function sendQuoteToClient(params: {
   return deliver({ to: params.email, subject: `Tu cotización — ${params.projectTitle}`, html });
 }
 
+/** Diagrama de flujo de un proyecto, por enlace temporal (Espacio de trabajo). */
+export async function sendFlujoCompartidoEmail(params: { email: string; proyecto: string; url: string; vence: Date }) {
+  const vence = params.vence.toLocaleDateString('es-EC', { timeZone: MEMBER_TZ, day: 'numeric', month: 'long', year: 'numeric' });
+  const html = emailShell(
+    emailBadge('DIAGRAMA DE FLUJO', CORP.accent) +
+    emailHeading(escapeHtml(params.proyecto), 'Grupo Corazones Cruzados') +
+    emailParagraph('Te compartimos el diagrama de flujo de tu proyecto: qué puede hacer cada rol y cómo se conecta cada paso.') +
+    emailButton(params.url, 'Ver el diagrama') +
+    emailNote(`Puedes abrirlo hasta el ${escapeHtml(vence)}. Si no reconoces este mensaje, ignóralo.`),
+  );
+  return deliver({ to: params.email, subject: `Diagrama de flujo — ${params.proyecto}`, html });
+}
+
 /** Enlace de un solo uso (Herramientas → Gestión): pide un dato o unos archivos. */
 export async function sendEnlaceUnicoEmail(params: {
   email: string; titulo: string; indicaciones: string; url: string; remitente?: string; exigeCuenta: boolean;

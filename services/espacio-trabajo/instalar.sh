@@ -37,6 +37,13 @@ AHORA="$(git -C "$APP" rev-parse HEAD)"
 cp "$REPO/.env" "$APP/.env"
 cp "$REPO/.env.local" "$APP/.env.local"
 chmod 600 "$APP/.env" "$APP/.env.local"
+# La clave de Google va por ruta relativa y git no la trae: sin ella, aquí no sale ningún correo.
+CLAVE_GOOGLE="$(sed -n 's/^GOOGLE_SA_KEY_PATH=//p' "$REPO/.env.local" | tr -d '"')"
+if [[ -n "$CLAVE_GOOGLE" && "$CLAVE_GOOGLE" != /* && -f "$REPO/$CLAVE_GOOGLE" ]]; then
+  mkdir -p "$APP/$(dirname "$CLAVE_GOOGLE")"
+  cp "$REPO/$CLAVE_GOOGLE" "$APP/$CLAVE_GOOGLE"
+  chmod 600 "$APP/$CLAVE_GOOGLE"
+fi
 
 if [[ -z "$ANTES" ]] || ! git -C "$APP" diff --quiet "$ANTES" "$AHORA" -- package-lock.json || [[ ! -d "$APP/node_modules" ]]; then
   echo "→ Instalando dependencias de la web"
@@ -112,8 +119,9 @@ cargar() {
 }
 
 # La web se reinicia siempre. El servicio solo si cambió, porque reiniciarlo corta lo que esté trabajando.
+# Este instalador no es parte de lo que corre: cambiarlo no es motivo para cortar nada.
 cargar org.grupocc.espacio-web "$plist_web"
-if [[ -z "$ANTES" ]] || ! git -C "$APP" diff --quiet "$ANTES" "$AHORA" -- services/espacio-trabajo || ! cargada org.grupocc.espacio-servicio || ! cmp -s "$plist_servicio.nuevo" "$plist_servicio"; then
+if [[ -z "$ANTES" ]] || ! git -C "$APP" diff --quiet "$ANTES" "$AHORA" -- services/espacio-trabajo ':(exclude)services/espacio-trabajo/instalar.sh' || ! cargada org.grupocc.espacio-servicio || ! cmp -s "$plist_servicio.nuevo" "$plist_servicio"; then
   # Reiniciarlo corta la respuesta en curso: se espera a que no haya ninguna (hasta 15 minutos).
   for i in {1..90}; do
     curl -s -m 5 -H "Authorization: Bearer $(cat "$DATOS/token" 2>/dev/null)" http://127.0.0.1:3791/vivas | grep -q -E '"estado":"(trabajando|espera)"|"tareas":[1-9]' || break

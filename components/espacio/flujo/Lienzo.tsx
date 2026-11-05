@@ -11,7 +11,7 @@
  * Se carga con `dynamic(..., { ssr: false })`: React Flow solo baja si hay un diagrama que mostrar.
  */
 
-import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import {
   Background, BackgroundVariant, Controls, EdgeLabelRenderer, Handle, MarkerType, MiniMap, Position, ReactFlow, ReactFlowProvider, useReactFlow, useStore,
   type Edge, type EdgeProps, type Node, type NodeProps, type Viewport,
@@ -186,7 +186,7 @@ function Burbuja({ nodo, caja, rol, marco, salidas, entradas, alIr }: { nodo: No
       <div className="min-h-0 overflow-y-auto pointer-events-auto">
         <p className="mt-1 text-[13px] font-medium leading-[18px] text-digi-text">{nodo.titulo}</p>
         <p className="mt-1 text-[12.5px] leading-[18px] text-digi-text">{nodo.descripcion}</p>
-        <p className="mt-1.5 text-[11px] font-mono text-digi-muted break-all">{nodo.origen}</p>
+        {nodo.origen && <p className="mt-1.5 text-[11px] font-mono text-digi-muted break-all">{nodo.origen}</p>}
         <ListaVecinos titulo="Va a" vecinos={salidas} alIr={alIr} Flecha={ArrowUpRight} />
         <ListaVecinos titulo="Viene de" vecinos={entradas} alIr={alIr} Flecha={ArrowDownRight} />
       </div>
@@ -196,7 +196,7 @@ function Burbuja({ nodo, caja, rol, marco, salidas, entradas, alIr }: { nodo: No
 
 export interface VistaLienzo { x: number; y: number; zoom: number }
 
-function Interior({ doc, colocacion, elegido, alElegir, rol, vista, alMover, amplio }: LienzoProps) {
+function Interior({ doc, colocacion, elegido, alElegir, rol, sinMover, vista, alMover, amplio }: LienzoProps) {
   const flujo = useReactFlow();
   // En el teléfono, el mapa taparía el lienzo y el diagrama entero no se leería.
   const grande = useConsultaMedia(PANTALLA_LG);
@@ -290,10 +290,11 @@ function Interior({ doc, colocacion, elegido, alElegir, rol, vista, alMover, amp
   useEffect(() => {
     if (rolAnterior.current === rol) return;
     rolAnterior.current = rol;
+    if (sinMover.current) { sinMover.current = false; return; }
     const c = rol ? colocacion.roles.get(rol) : null;
     if (c) flujo.fitBounds({ x: c.x, y: c.y, width: c.ancho, height: c.alto }, { padding: 0.06, duration: 300 });
     else flujo.fitView({ padding: 0.04, duration: 300 });
-  }, [rol, colocacion, flujo]);
+  }, [rol, colocacion, flujo, sinMover]);
 
   /** Elige un nodo y lleva la vista hasta él: queda en el tercio de arriba, para que la burbuja quepa debajo. */
   const irA = useCallback((id: string) => {
@@ -362,6 +363,8 @@ export interface LienzoProps {
   elegido: string | null;
   alElegir: (id: string | null) => void;
   rol: string | null;
+  /** Activado, el próximo cambio de rol no lleva la vista a ninguna parte. */
+  sinMover: RefObject<boolean>;
   /** Lo que se estaba mirando: al maximizar se sigue viendo lo mismo, y más. */
   vista: VistaLienzo | null;
   alMover: (v: VistaLienzo) => void;

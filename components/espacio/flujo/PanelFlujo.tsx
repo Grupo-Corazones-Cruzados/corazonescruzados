@@ -2,15 +2,15 @@
 
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Loader2, Maximize2, Workflow } from 'lucide-react';
+import { Loader2, Maximize2, Share2, Workflow } from 'lucide-react';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 import { BTN_ICONO_FILA, BTN_SECONDARY } from '@/components/ui/Button';
 import { DURACION_APARICION, useAparicion } from '@/lib/hooks/useAparicion';
-import { TIPOS_NODO } from '@/services/espacio-trabajo/flujo-catalogo.mjs';
 import { api, hace, type Proyecto } from '../api';
-import { colocar, type Colocacion, type DocFlujo, type TipoNodo } from './colocar';
+import { colocar, type Colocacion, type DocFlujo } from './colocar';
+import CompartirFlujo from './CompartirFlujo';
+import { BotonQuitarFiltro, Leyenda, SelectorRol, useFiltroFlujo } from './controles';
 import type { VistaLienzo } from './Lienzo';
-import { PIEZA_CONECTOR, PIEZAS } from './piezas';
 
 const Lienzo = dynamic(() => import('./Lienzo'), { ssr: false, loading: () => <Cargando /> });
 
@@ -46,28 +46,6 @@ function useFlujo(proyectoId: string | null) {
     return () => { vivo = false; clearInterval(t); document.removeEventListener('visibilitychange', traer); };
   }, [proyectoId, generando]);
   return { estado, error };
-}
-
-function Leyenda() {
-  return (
-    <div aria-label="Piezas del diagrama" className="hidden md:flex shrink-0 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-2 border-t border-digi-border">
-      {(Object.keys(TIPOS_NODO) as TipoNodo[]).map((t) => {
-        const { Icono, texto } = PIEZAS[t];
-        return <span key={t} title={TIPOS_NODO[t].uso} className="inline-flex items-center gap-1.5 text-[11.5px] text-digi-muted"><Icono className={`w-3.5 h-3.5 ${texto}`} />{TIPOS_NODO[t].nombre}</span>;
-      })}
-      <span title={PIEZA_CONECTOR.uso} className="inline-flex items-center gap-1.5 text-[11.5px] text-digi-muted"><PIEZA_CONECTOR.Icono className="w-3.5 h-3.5 text-accent" />{PIEZA_CONECTOR.nombre}</span>
-    </div>
-  );
-}
-
-function SelectorRol({ doc, rol, alCambiar, className = '' }: { doc: DocFlujo; rol: string | null; alCambiar: (r: string | null) => void; className?: string }) {
-  return (
-    <select aria-label="Rol" value={rol ?? ''} onChange={(e) => alCambiar(e.target.value || null)}
-      className={`select-compacto min-w-0 !text-[16px] lg:!h-7 lg:!min-h-0 lg:!text-[12px] ${className}`}>
-      <option value="">Todos los roles</option>
-      {doc.roles.map((r) => <option key={r.id} value={r.id}>{r.nombre}</option>)}
-    </select>
-  );
 }
 
 function Vacio({ proyecto, estado, error, alActualizar, alVerSesion }: {
@@ -116,11 +94,11 @@ export default function PanelFlujo({ proyecto, forma, abierta, alCerrar, alActua
   const [colocacion, setColocacion] = useState<{ de: DocFlujo; es: Colocacion } | null>(null);
   const [errorColocar, setErrorColocar] = useState('');
   const [maximizado, setMaximizado] = useState(false);
-  const [elegido, setElegido] = useState<string | null>(null);
-  const [rol, setRol] = useState<string | null>(null);
+  const [compartiendo, setCompartiendo] = useState(false);
+  const { elegido, setElegido, rol, cambiarRol, quitarFiltro, limpiar, sinMover, hayFiltro } = useFiltroFlujo();
   const vista = useRef<VistaLienzo | null>(null);
 
-  useEffect(() => { setElegido(null); setRol(null); setMaximizado(false); vista.current = null; }, [proyecto?.id]);
+  useEffect(() => { limpiar(); setMaximizado(false); setCompartiendo(false); vista.current = null; }, [proyecto?.id, limpiar]);
 
   const doc = estado?.flujo ?? null;
   useEffect(() => {
@@ -129,7 +107,7 @@ export default function PanelFlujo({ proyecto, forma, abierta, alCerrar, alActua
     setErrorColocar('');
     colocar(doc).then((es) => { if (vivo) { setColocacion({ de: doc, es }); setElegido(null); } }).catch((e) => { if (vivo) setErrorColocar(`No se pudo dibujar: ${e?.message || e}`); });
     return () => { vivo = false; };
-  }, [doc]);
+  }, [doc, setElegido]);
 
   const verVentana = forma === 'ventana' ? !!abierta : maximizado;
   const cerrarVentana = useCallback(() => { setMaximizado(false); alCerrar?.(); }, [alCerrar]);
@@ -137,11 +115,10 @@ export default function PanelFlujo({ proyecto, forma, abierta, alCerrar, alActua
   const dialogo = useRef<HTMLDialogElement>(null);
   useEffect(() => { if (montado && dialogo.current && !dialogo.current.open) dialogo.current.showModal(); }, [montado]);
 
-  const cambiarRol = useCallback((r: string | null) => { setRol(r); setElegido(null); }, []);
   const moverVista = useCallback((v: VistaLienzo) => { vista.current = v; }, []);
   const listo = !!doc && colocacion?.de === doc;
   const lienzo = (amplio: boolean) => (listo ? (
-    <Lienzo doc={doc!} colocacion={colocacion!.es} elegido={elegido} alElegir={setElegido} rol={rol} vista={vista.current} alMover={moverVista} amplio={amplio} />
+    <Lienzo doc={doc!} colocacion={colocacion!.es} elegido={elegido} alElegir={setElegido} rol={rol} sinMover={sinMover} vista={vista.current} alMover={moverVista} amplio={amplio} />
   ) : doc && !errorColocar ? <Cargando /> : errorColocar ? <p className="p-3 text-[12.5px] text-red-400">{errorColocar}</p> : (
     <Vacio proyecto={proyecto} estado={estado} error={error} alActualizar={alActualizar} alVerSesion={alVerSesion} />
   ));
@@ -151,6 +128,11 @@ export default function PanelFlujo({ proyecto, forma, abierta, alCerrar, alActua
       <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" />
     </button>
   );
+
+  const quitar = listo && <BotonQuitarFiltro activo={hayFiltro} alPulsar={quitarFiltro} />;
+  const compartir = listo && <button type="button" onClick={() => setCompartiendo(true)} aria-label="Compartir el diagrama" title="Compartir" className={BTN_ICONO_FILA}><Share2 className="w-3.5 h-3.5" /></button>;
+  // Es otro `<dialog>`: se abre encima de la ventana maximizada, y al cerrarlo ella sigue ahí.
+  const panelCompartir = proyecto && listo && <CompartirFlujo proyectoId={proyecto.id} nombre={proyecto.nombre} open={compartiendo} onClose={() => setCompartiendo(false)} />;
 
   const ventana = montado && (
     <dialog ref={dialogo} aria-label={`Diagrama de flujo de ${proyecto?.nombre ?? ''}`}
@@ -166,7 +148,9 @@ export default function PanelFlujo({ proyecto, forma, abierta, alCerrar, alActua
             {estado?.actualizado && <p className="hidden lg:block text-[11px] leading-[14px] text-digi-muted truncate">{proyecto?.grupo} · actualizado {hace(estado.actualizado)}</p>}
           </div>
           {marcaGenerando}
-          {doc && <SelectorRol doc={doc} rol={rol} alCambiar={cambiarRol} className="max-w-[45%] lg:max-w-[220px]" />}
+          {doc && <SelectorRol doc={doc} rol={rol} alCambiar={cambiarRol} className="max-w-[38%] lg:max-w-[220px]" />}
+          {quitar}
+          {compartir}
           <BotonCerrar onClick={cerrarVentana} etiqueta="Cerrar el diagrama" />
         </div>
         <div className="flex-1 min-h-0">{lienzo(true)}</div>
@@ -175,12 +159,13 @@ export default function PanelFlujo({ proyecto, forma, abierta, alCerrar, alActua
     </dialog>
   );
 
-  if (forma === 'ventana') return <>{ventana}</>;
+  if (forma === 'ventana') return <>{ventana}{panelCompartir}</>;
   if (forma === 'plegado') {
     return (
       <>
         <button type="button" onClick={() => setMaximizado(true)} aria-label="Abrir el diagrama de flujo" title="Diagrama de flujo" className={BTN_ICONO_FILA}><Workflow className="w-4 h-4" /></button>
         {ventana}
+        {panelCompartir}
       </>
     );
   }
@@ -191,11 +176,14 @@ export default function PanelFlujo({ proyecto, forma, abierta, alCerrar, alActua
         <span className="flex-1 min-w-0 text-[11px] text-digi-muted truncate" title={estado?.actualizado ? `${proyecto?.nombre} · actualizado ${hace(estado.actualizado)}` : proyecto?.nombre}>{proyecto?.nombre}</span>
         {marcaGenerando}
         {listo && <SelectorRol doc={doc!} rol={rol} alCambiar={cambiarRol} className="max-w-[108px]" />}
+        {quitar}
+        {compartir}
         <button type="button" disabled={!proyecto} onClick={() => setMaximizado(true)} aria-label="Maximizar el diagrama" title="Maximizar" className={BTN_ICONO_FILA}><Maximize2 className="w-3.5 h-3.5" /></button>
       </div>
       {/* Al maximizar se desmonta: dos lienzos a la vez gastan el doble y solo se ve uno. */}
       <div className="flex-1 min-h-0">{maximizado ? null : lienzo(false)}</div>
       {ventana}
+      {panelCompartir}
     </section>
   );
 }

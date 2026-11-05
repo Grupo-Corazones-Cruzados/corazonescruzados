@@ -4,7 +4,7 @@ export type TipoNodo = keyof typeof TIPOS_NODO;
 export type ClaseConexion = keyof typeof CLASES_CONEXION;
 
 export interface RolFlujo { id: string; nombre: string; descripcion?: string }
-export interface NodoFlujo { id: string; tipo: TipoNodo; rol: string; titulo: string; descripcion: string; origen: string }
+export interface NodoFlujo { id: string; tipo: TipoNodo; rol: string; titulo: string; descripcion: string; /** No viaja en la copia que se comparte por enlace. */ origen?: string }
 export interface ConexionFlujo { de: string; a: string; clase?: ClaseConexion; etiqueta?: string }
 export interface DocFlujo { version: 1; resumen: string; roles: RolFlujo[]; nodos: NodoFlujo[]; conexiones: ConexionFlujo[] }
 
