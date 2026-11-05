@@ -11571,7 +11571,7 @@ Integrador de WhatsApp Cloud API (Automatizaciones).
 # CONTROL PSICOSOCIAL — rastreo, auxilio y frase de voz (2026-11-04)
 
 **Objetivo:** que los miembros compartan su ubicación en segundo plano, puedan pedir auxilio y llamar al 911, y que una frase dispare
-la alerta a todos. **Rol asumido:** ingeniero móvil y de seguridad. **Información para el objetivo: 80 %** (falta la prueba en teléfono real).
+la alerta a todos. **Rol asumido:** ingeniero móvil y de seguridad. **Información para el objetivo: 90 % (2026-11-05)**; ver «Estado al cerrar la sesión» al final de este bloque.
 
 ## Preguntas y respuestas
 - **P1 ¿Quién es miembro? · ✅** `role` admin/member y `member_id`. Solo `member_id` no basta (candidatos). Fuente: `/api/auth/me` y la base.
@@ -11616,7 +11616,7 @@ claro y oscuro con datos simulados y escrituras bloqueadas. Candidato 403, miemb
 - **Datos de la prueba real (iPhone 17):** 42 posiciones en 1 h 43 min, precisión media de 5 m, 5 alertas por voz, todas cerradas como falsa alarma. El segundo plano y la frase funcionan; los datos no dicen si fue con la pantalla bloqueada.
 - **P11 ¿Basta un punto cada 5 min para un recorrido? · ✅ No:** dibuja rectas sobre la ciudad. Pasa a 60 s. El servidor manda el intervalo, así que cambia sin instalar nada; las instalaciones anteriores tratan cualquier valor < 300 como alta precisión y gastan más hasta actualizarse.
 - **P12 ¿Dónde se detecta la llegada? · ✅ En el servidor.** Geocercas nativas (iOS: 20 regiones) despertarían la app con más precisión de tiempo, pero duplican lógica en dos plataformas y exigen reinstalar. Coste: se conoce con el siguiente punto, hasta 1 min; alguien que cruza un radio pequeño rápido puede no contar.
-- **Antirrebote:** salir exige alejarse radio + max(50 m, precisión); volver en menos de 30 min reabre la misma visita sin avisar; un punto con más error que max(radio, 100 m) no cuenta como llegada.
+- **Antirrebote (lo de los 30 min quedó derogado por P13):** salir exige alejarse radio + max(50 m, precisión); volver en menos de 30 min reabre la misma visita sin avisar; un punto con más error que max(radio, 100 m) no cuenta como llegada.
 - **Trampa de consentimiento:** ampliar lo que se enseña obliga a reaceptar. La versión no se comprueba solo al aceptar: filtra recorrido y llegadas.
 - **Trampa de `?lat=null`:** `Number(null)` es 0 y mandaría el lugar al golfo de Guinea; `datosDeLugar` lo rechaza antes.
 - **Sin probar en teléfono:** gasto de batería a 60 s, llegada real con push al otro teléfono, mapa dentro de la app.
@@ -11698,4 +11698,19 @@ Arquitecto de aplicaciones nativas y audio en tiempo real.
 - **P14 ¿Se puede impedir el apagado con los botones físicos? · ✅ No en un teléfono normal** (respuesta del asistente por conocimiento general, sin probarlo). Una app no puede en iPhone ni en Android; un teléfono gestionado puede ocultar el menú de apagado en Android, pero el reinicio forzado sigue funcionando. Knox quedó sin comprobar.
 - **Decisión de Fernando:** queda como está. A futuro, dispositivos dedicados de la organización.
 - **Hueco conocido que sigue abierto:** desde el propio teléfono se puede cerrar el auxilio y apagar el rastreo, también bajo amenaza; y si se apaga, nadie recibe aviso de la pérdida de señal.
+
+## Control Psicosocial — estado al cerrar la sesión (2026-11-05) · 90 %
+**Datos reales del iPhone 17 (hasta las 15:14 de Ecuador):**
+- Mañana: 42 posiciones en 1 h 43 min, cada 5 min; 5 alertas por voz, cerradas como falsa alarma.
+- Tras aceptar la versión 4 (09:16): 196 posiciones en 3 h 22 min, una por minuto, unos 4 m de precisión. Llegada registrada a un lugar de 150 m. La batería marcó entre 90 y 100 %, pero no se sabe si estaba cargando: no sirve para medir el gasto.
+- ⚠️ El envío se detuvo a las 12:38 y a las 15:14 seguía parado. Causa desconocida: puede ser un cierre de la app, una instalación de otra sesión o un fallo.
+
+**Lecciones:**
+- Lo nativo solo llega reinstalando; lo web, con el push. Reinstalar cierra la app y la protección queda parada hasta abrirla.
+- Con la app cerrada no se avisa a nadie: solo se nota como «Sin señal».
+- Mirar los datos reales (`cp_posiciones`, `cp_visitas`, `cp_alertas`) contesta más que preguntar qué pasó en la prueba.
+
+**Sin probar:** aviso de llegada y salida en un segundo teléfono, voz con pantalla bloqueada, con ruido y con gritos, batería real a un punto por minuto, mapa dentro de la app, `tel:911` en la app, y todo Android.
+
+**Sin decidir:** plazo de lo guardado durante un auxilio (propuesta: 90 días); aviso de señal perdida (Fernando lo dejó como está, igual que el cierre protegido); quién recibe llegadas y salidas (hoy, todos los demás miembros); revisión legal y evaluación de impacto de la LOPDP.
 

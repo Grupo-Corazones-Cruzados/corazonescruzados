@@ -334,7 +334,7 @@ Stack estándar de la casa, con particularidades de este repo:
 - **🛡️ CONTROL PSICOSOCIAL: PRIMERA SECCIÓN, RASTREO (Fernando, 2026-11-04).** Sistema nuevo de Centralizado
   (colaborador · implementación, celda «Planificador», slug `control-psicosocial`, tablas `cp_`, migración 080). Será «máximo
   extenso»; hoy lleva ubicación en segundo plano, botón de auxilio, llamada al 911 y la frase «yo te entrego todo», que avisa
-  a todos los miembros. Funciona en teléfonos con la app instalada por USB (APK 1.6 / iOS 1.2 build 3).
+  a todos los miembros. Funciona en teléfonos con la app instalada por USB (APK 1.7 sin instalar en ningún teléfono / iOS 1.3 build 4, instalada en su iPhone 17).
   - **Miembro = `role` admin o member Y `member_id`.** Un candidato también tiene `member_id` (role client): queda fuera. El
     sistema se ve para todo miembro sea cual sea su piso y paso (excepción en `GET /api/centralized/systems`): la mayoría
     tiene piso y paso nulos.
@@ -357,6 +357,9 @@ Stack estándar de la casa, con particularidades de este repo:
     como está. NO se construyeron el aviso de señal perdida ni el cierre protegido del auxilio: siguen siendo opciones si cambia de idea.
     **Idea a futuro, no ahora:** que la organización fabrique dispositivos dedicados que impidan el apagado y tengan otras funciones,
     cuando tenga las condiciones. Ver `PROPUESTAS.md`.
+  - **Comprobado con datos reales el 2026-11-05 en su iPhone:** aceptó la versión 4 y creó un lugar de 150 m; 196 posiciones en 3 h 22 min (una por minuto, unos 4 m de
+    precisión) y la llegada al lugar quedó registrada. Sin comprobar: el aviso en un segundo teléfono, las salidas, la voz con pantalla bloqueada y Android.
+    ⚠️ El envío se cortó a las 12:38 de Ecuador sin causa conocida; pendiente de que Fernando diga qué pasó (a las 15:14 seguía sin señal).
   - **Consentimiento propio de cada función**, como promete `/legal` §9: `cp_consentimientos` guarda aceptar y retirar. Nadie
     puede activar el rastreo de otro, ni un admin viendo «como otro». El teléfono muestra siempre que está activo. Apagar
     la ubicación borra el historial. Quien abre el mapa queda en `cp_accesos` (una vez cada 30 min por par) y la persona ve quién fue.
