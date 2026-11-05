@@ -1,5 +1,6 @@
 'use client';
 
+import { usePagosEnApp } from '@/lib/hooks/usePagosEnApp';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { useRouter } from 'next/navigation';
@@ -77,6 +78,7 @@ export default function SubscriptionsPage() {
   const enTelefono = !useConsultaMedia(PANTALLA_XL);
 
   const router = useRouter();
+  const pagosEnApp = usePagosEnApp();
   const { user } = useAuth();
   // El cliente entra a este módulo desde el 2026-08-26 (antes veía el enlace y recibía un
   // 403). Ve SOLO sus suscripciones —el filtro está en el servidor— y en vez de «marcar
@@ -350,7 +352,7 @@ export default function SubscriptionsPage() {
                     </button>
                   )}
                 </>
-              ) : esCliente ? (
+              ) : esCliente ? (pagosEnApp &&
                 /* EL CLIENTE PAGA SU MES. Lo suyo no es «marcar pagado»
                    —eso lo hace quien ya cobró por otra vía— sino pagar de
                    verdad, así que va a la pasarela. */

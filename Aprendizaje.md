@@ -877,6 +877,9 @@ de Apple/Google, firma y distribución) para un titular persona natural en Ecuad
 - **Identificadores definitivos (2026-11-05):** `org.grupocc.progreso` y `org.grupocc.centralizado`, registrados en Firebase; `app/google-services.json` trae los dos. Falta iPhone, que espera la cuenta de Apple. La app anterior `org.grupocc.gccworld` sigue en Firebase para quien aún la tiene instalada.
 - **Productos:** Fernando prefiere todo en la misma app, con accesos directos. ⏸ Pendiente de implementar: Android permite anclar iconos; iPhone no deja crearlos desde la app.
 
+#### P11 — Lo que pide la prueba cerrada de Google · 🔎 En curso (2026-11-05)
+- Fernando creó `org.grupocc.progreso` en Play. Pagos con PayPhone ocultos en Progreso hasta tener compras de tienda (`usePagosEnApp`, `middleware.ts`). Eliminación por la web: `https://www.grupocc.org/legal#eliminar-datos`. Son 12 personas, no 15; Apple no pide esa prueba; las cuentas de organización tampoco.
+
 #### P5 — ¿Qué app se publica primero? · ❓ Abierta (retoma P8/P6 del 2026-09-23)
 - GCC World (plataforma + juego) o GCC Productos. Recomendación previa: la más pequeña primero, y GCC
   World sin el juego en su primera versión.

@@ -1,5 +1,6 @@
 'use client';
 
+import { usePagosEnApp } from '@/lib/hooks/usePagosEnApp';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -151,6 +152,7 @@ function Demostracion({ item }: { item: any }) {
 type PartesVentana = { contenido: React.ReactNode; pie: React.ReactNode };
 
 export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], renderExtra, onTabChange, slugInicial, onSeleccion }: MarketplaceCatalogProps) {
+  const pagosEnApp = usePagosEnApp();
   const tabs = [...CATALOG_TABS, ...tabsExtra];
   const [tab, setTabState] = useState('projects');
   // Los productos a los que la cuenta con sesión puede entrar, por anfitrión. Sin
@@ -559,7 +561,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
           <Link href="/dashboard/plataformas" className={`${BTN_SECONDARY} w-full`}>
             <LayoutGrid className="w-4 h-4" /> Ver en Plataformas
           </Link>
-        ) : (
+        ) : (isProject || pagosEnApp) && (
           <button
             onClick={() => onPrimaryAction(t)}
             className={`${t.demo_url ? BTN_SECONDARY : BTN_PRIMARY} w-full`}

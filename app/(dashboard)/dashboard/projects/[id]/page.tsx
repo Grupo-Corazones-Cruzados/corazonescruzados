@@ -1,5 +1,6 @@
 'use client';
 
+import { usePagosEnApp } from '@/lib/hooks/usePagosEnApp';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -62,6 +63,7 @@ const BID_V: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'
 export default function ProjectDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const pagosEnApp = usePagosEnApp();
   const { user } = useAuth();
   const [project, setProject] = useState<any>(null);
   const [payments, setPayments] = useState<any>(null);
@@ -1351,7 +1353,7 @@ export default function ProjectDetailPage() {
 
                   Solo cuando queda algo por facturar: si ya está pagado, ofrecerle pagar
                   otra vez sería mandarle a un error. */}
-              {project.status === 'review' && esCliente && billing?.mode !== 'etapas' && Number(billing?.billable || 0) > 0 && (
+              {pagosEnApp && project.status === 'review' && esCliente && billing?.mode !== 'etapas' && Number(billing?.billable || 0) > 0 && (
                 <button
                   onClick={() => router.push(`/pagar/cobro?tipo=project&id=${id}`)}
                   className={BTN_ICONO_PRIMARIO} title="Completar y pagar" aria-label="Completar y pagar"
@@ -2246,7 +2248,7 @@ export default function ProjectDetailPage() {
                             ? <span className="text-[9px] text-green-600">pagada</span>
                             : e.cobro === 'awaiting'
                             ? <span className="text-[9px] text-digi-muted">en revisión</span>
-                            : (
+                            : pagosEnApp && (
                               <button
                                 onClick={() => router.push(`/pagar/cobro?tipo=project&id=${id}&etapa=${e.id}`)}
                                 className="inline-flex items-center gap-1 rounded bg-accent px-2 py-1 text-[10.5px] font-semibold text-white hover:opacity-90 transition-opacity">

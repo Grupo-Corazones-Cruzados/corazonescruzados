@@ -31,6 +31,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/dashboard/centralized", request.url));
   }
 
+  // En GCC Progreso no se paga con PayPhone (`usePagosEnApp`), ni llegando por un enlace.
+  if (pathname.startsWith("/pagar") && request.cookies.get("gcc_app")?.value === "progreso") {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   if (isProtected && !valid) {
     const url = new URL("/auth", request.url);
     url.searchParams.set("redirect", pathname);

@@ -1,5 +1,6 @@
 'use client';
 
+import { usePagosEnApp } from '@/lib/hooks/usePagosEnApp';
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -71,6 +72,7 @@ type SelectedDates = string[];
 export default function TicketDetailPage() {
   const { id } = useParams();
   const router = useRouter();
+  const pagosEnApp = usePagosEnApp();
   const { user } = useAuth();
   const [ticket, setTicket] = useState<any>(null);
   const [payments, setPayments] = useState<any>(null);
@@ -1108,7 +1110,7 @@ export default function TicketDetailPage() {
                                   <Share2 className="w-3.5 h-3.5" />
                                 </button>
                               )}
-                              {esClienteDelTicket && cobrable && (
+                              {pagosEnApp && esClienteDelTicket && cobrable && (
                                 <button onClick={() => router.push(`/pagar/cobro?tipo=ticket&id=${id}&etapa=${e.id}`)}
                                   className="inline-flex items-center gap-1 rounded bg-accent px-2 py-1 text-[10.5px] font-semibold text-white hover:opacity-90 transition-opacity">
                                   Pagar
@@ -1122,7 +1124,7 @@ export default function TicketDetailPage() {
                   )}
 
                   {/* El cliente paga TODO lo pendiente desde aquí; el enlace del equipo está en la cabecera. */}
-                  {pendienteTicket > 0 && ticket.status !== 'cancelled' && esClienteDelTicket && (
+                  {pagosEnApp && pendienteTicket > 0 && ticket.status !== 'cancelled' && esClienteDelTicket && (
                     <div className="mt-2 pt-2 border-t border-digi-border">
                       <button
                         onClick={() => router.push(`/pagar/cobro?tipo=ticket&id=${id}`)}
