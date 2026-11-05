@@ -85,7 +85,7 @@ export function segundosDe(r: any, ahora = Date.now()): number {
  * `lib/tickets/facturacion.ts`.
  */
 export default function RegistroTrabajo({
-  ticketId, registros, dia, tarifa, puede, bloqueo, onCambio, onSesionMeet, sesionOcupada,
+  ticketId, registros, dia, tarifa, puede, bloqueo, onCambio, onSesionMeet, sesionOcupada, avanceEtapas,
 }: {
   ticketId: string;
   registros: any[];
@@ -99,8 +99,11 @@ export default function RegistroTrabajo({
   onCambio: () => void;
   onSesionMeet?: () => void;
   sesionOcupada?: boolean;
+  /** Con plan de etapas: cuántas lleva facturadas. Un registro «Facturado» aún no está pagado entero. */
+  avanceEtapas?: { facturadas: number; total: number };
 }) {
   const editable = puede && !bloqueo;
+  const parcial = !!avanceEtapas && avanceEtapas.facturadas > 0 && avanceEtapas.facturadas < avanceEtapas.total;
   /** Por qué no se puede tocar el TIEMPO de un registro: el del ticket o su factura. */
   const bloqueoTiempo = (r: any): string | undefined =>
     bloqueo || (r?.facturada ? `Ya facturado en ${r.factura_numero}: su tiempo no cambia` : undefined);
@@ -279,7 +282,11 @@ export default function RegistroTrabajo({
                     {r.timer_started_at && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" aria-label="Reloj en marcha" />}
                     <span className="text-digi-muted">{fmtTiempo(seg)}</span>
                     <span className="text-accent font-semibold">${fmt2(r.timer_started_at ? (seg / 3600) * tarifa : Number(r.cost))}</span>
-                    {r.facturada && <span title={`Facturado en ${r.factura_numero}`} className="text-green-600" style={mf}>· Facturado</span>}
+                    {r.facturada && (
+                      parcial
+                        ? <span title={`Facturado en ${r.factura_numero}. Van ${avanceEtapas!.facturadas} de ${avanceEtapas!.total} etapas: falta por cobrar`} className="text-amber-600" style={mf}>· Facturado {avanceEtapas!.facturadas}/{avanceEtapas!.total}</span>
+                        : <span title={`Facturado en ${r.factura_numero}`} className="text-green-600" style={mf}>· Facturado</span>
+                    )}
                   </p>
                 </button>
                 {puede && (

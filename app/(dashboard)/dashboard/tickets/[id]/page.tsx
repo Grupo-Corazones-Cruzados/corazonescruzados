@@ -8,10 +8,8 @@ import { toast } from 'sonner';
 import DetailHeader from '@/components/ui/DetailHeader';
 import PropertyRail from '@/components/ui/PropertyRail';
 import PixelBadge from '@/components/ui/PixelBadge';
-import PixelInput from '@/components/ui/PixelInput';
-import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
-import { EditPanel, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
+import { EditPanel, QuickEditDialog, EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AdquirenteFactura, { type CuentaFacturable, type ModoAdquirente, TOPE_CONSUMIDOR_FINAL, cuentaPorDefecto, ordenarCuentas } from '@/components/facturacion/AdquirenteFactura';
 import DetalleFactura, { totalFactura } from '@/components/facturacion/DetalleFactura';
 import Segmentado from '@/components/ui/Segmentado';
@@ -25,11 +23,11 @@ import { useSondeo } from '@/lib/hooks/useSondeo';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock, Plus, AlertTriangle, ChevronDown, Building2, DollarSign, CalendarClock, Ban, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock, Plus, AlertTriangle, ChevronDown, Building2, DollarSign, CalendarClock, Ban, Trash2, CircleCheck, Clock, BadgeDollarSign } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, BTN_ICONO_ACENTO } from '@/components/ui/Button';
 import ClientPicker from '@/components/clients/ClientPicker';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
-import CobrosEnEspera from '@/components/pagos/CobrosEnEspera';
+import { useCobrosEnEspera, VentanaTransferencia, type CobroEnEspera } from '@/components/pagos/CobrosEnEspera';
 import { fmt2, fmtNum } from '@/lib/format';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 import BotonEditar from '@/components/ui/BotonEditar';
@@ -100,8 +98,13 @@ export default function TicketDetailPage() {
 
   // Lookups
   const [services, setServices] = useState<any[]>([]);
-  const [members, setMembers] = useState<any[]>([]);
-  const [clients, setClients] = useState<any[]>([]);
+  // Cambiar el cliente: un solo campo, en ventanita centrada, como en el proyecto.
+  const [editingClient, setEditingClient] = useState(false);
+  const [savingClient, setSavingClient] = useState(false);
+  const [editClient, setEditClient] = useState<{ clientId: string; clientEmail: string }>({ clientId: '', clientEmail: '' });
+  // Transferencias por verificar: se confirman desde el icono de Pagos, como en el proyecto.
+  const { cobros: enEspera, recargar: recargarEnEspera } = useCobrosEnEspera('ticket', String(id));
+  const [cobroAbierto, setCobroAbierto] = useState<CobroEnEspera | null>(null);
 
   // Time slots editing
   const [editingSlots, setEditingSlots] = useState(false);
@@ -266,14 +269,8 @@ export default function TicketDetailPage() {
       estimated_cost: ticket.estimated_cost ? String(ticket.estimated_cost) : '',
     });
     setEditing(true);
-    const [sRes, mRes, cRes] = await Promise.all([
-      fetch('/api/services').then(r => r.json()).catch(() => ({ data: [] })),
-      fetch('/api/members/list').then(r => r.json()).catch(() => ({ data: [] })),
-      fetch('/api/clients').then(r => r.json()).catch(() => ({ data: [] })),
-    ]);
+    const sRes = await fetch('/api/services').then(r => r.json()).catch(() => ({ data: [] }));
     setServices(sRes.data || []);
-    setMembers(mRes.data || []);
-    setClients(cRes.data || []);
   };
 
   const handleSave = async () => {
@@ -625,6 +622,30 @@ export default function TicketDetailPage() {
   const abrirEnlacePagoTicket = (etapa: number | null = null) => { setEnlaceEtapa(etapa); setLinkAbierto(true); };
   const pendienteTicket = Number(billing?.pending || 0);
   const conPlan = billing?.mode === 'etapas';
+  // Con plan, un registro «facturado» puede estar cobrado solo en parte: la primera etapa ata a su
+  // factura todos los registros que existen. Sin esto parecía pagado entero (Fernando, 2026-11-05).
+  const etapasPlan: any[] = conPlan ? (billing?.etapas || []) : [];
+  const avanceEtapas = etapasPlan.length > 1
+    ? { facturadas: etapasPlan.filter((e: any) => e.invoiceId).length, total: etapasPlan.length }
+    : undefined;
+  // Las que no cuelgan de una etapa visible: las del ticket sin plan, que cobran el total.
+  const transferenciasSueltas = enEspera.filter((c) => !etapasPlan.some((e: any) => Number(e.id) === Number(c.stage_id)));
+  const filasTransferenciasSueltas = () => transferenciasSueltas.length > 0 && (
+    <div className="mt-2 pt-2 border-t border-digi-border">
+      {transferenciasSueltas.map((c) => (
+        <div key={c.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
+          <span className="min-w-0 truncate text-digi-text">Transferencia</span>
+          <span className="flex items-center gap-1.5 shrink-0">
+            <span className="tabular-nums text-digi-text">${fmt2(Number(c.charge_amount))}</span>
+            <button onClick={() => setCobroAbierto(c)} title="Transferencia por verificar" aria-label="Transferencia por verificar"
+              className="destino-tactil text-amber-600 hover:opacity-70 transition-opacity">
+              <BadgeDollarSign className="w-3.5 h-3.5" />
+            </button>
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 
   const isMember = user?.role === 'member';
   const canEdit = isAdmin || isMember;
@@ -877,6 +898,7 @@ export default function TicketDetailPage() {
                           onCambio={fetchTicket}
                           onSesionMeet={async () => { await handleStartSession(); setDiaSel(hoyEcuadorCliente()); }}
                           sesionOcupada={sessionBusy}
+                          avanceEtapas={avanceEtapas}
                         />
                       ) : (
                         <p className="text-[12px] text-digi-muted py-4 text-center" style={mf}>Sin días de trabajo.</p>
@@ -1016,7 +1038,13 @@ export default function TicketDetailPage() {
           {rightTab === 'propiedades' && (
           <PropertyRail
             items={[
-              { label: 'Cliente', value: ticket.client_name || '-' },
+              // Se edita en una ventanita centrada (un solo campo), como en el proyecto.
+              { label: 'Cliente', value: canEdit && !isClosed ? (
+                <span className="cursor-pointer hover:text-accent"
+                  onClick={() => { setEditClient({ clientId: ticket.client_id ? String(ticket.client_id) : '', clientEmail: '' }); setEditingClient(true); }}>
+                  {ticket.client_name || '-'}
+                </span>
+              ) : (ticket.client_name || '-') },
               { label: 'Miembro', value: ticket.member_name || '-' },
               { label: 'Servicio', value: ticket.service_name || '-' },
               { label: 'Límite', value: ticket.deadline ? new Date(ticket.deadline).toLocaleDateString() : '-' },
@@ -1042,10 +1070,6 @@ export default function TicketDetailPage() {
               { label: 'Creado', value: new Date(ticket.created_at).toLocaleDateString() },
             ]}
           >
-            <CobrosEnEspera tipo="ticket" id={String(id)} alConfirmar={() => {
-              cargarPagos();
-            }} />
-
             {billing && payments && (Number(billing.total) > 0 || (payments.invoices || []).length > 0) && (() => {
               const etapas: any[] = billing.etapas || [];
               return (
@@ -1091,19 +1115,36 @@ export default function TicketDetailPage() {
                       {etapas.map((e: any) => {
                         const cerrada = !!e.invoiceId || !!e.cobro;
                         const cobrable = !cerrada && Number(e.amount) > 0 && ticket.status !== 'cancelled';
+                        const espera = enEspera.find((c) => Number(c.stage_id) === Number(e.id));
+                        const pagada = !!e.invoiceId || e.cobro === 'paid';
+                        const porVerificar = !pagada && (!!espera || e.cobro === 'awaiting');
                         return (
                           <div key={e.id} className="flex items-center justify-between gap-2 text-[11.5px] px-1.5 py-1" style={mf}>
                             <span className="min-w-0 truncate text-digi-text">{e.name}</span>
                             <span className="flex items-center gap-1.5 shrink-0">
                               <span className="tabular-nums text-digi-text">${fmt2(Number(e.amount))}</span>
-                              {e.invoiceId
-                                ? <span className="text-[9px] text-green-600" title={`Facturada en ${e.invoiceNumber}`}>{esClienteDelTicket ? 'pagada' : 'facturada'}</span>
-                                : e.cobro === 'awaiting'
-                                  ? <span className="text-[9px] text-digi-muted">en revisión</span>
-                                  : e.cobro === 'paid'
-                                    ? <span className="text-[9px] text-green-600">pagada</span>
-                                    : <span className="text-[9px] text-amber-600">pendiente</span>}
-                              {!esClienteDelTicket && !cerrada && (
+                              {/* Tres estados, un icono cada uno, como en el proyecto. */}
+                              {pagada ? (
+                                <span title={e.invoiceId ? `Pagada · factura ${e.invoiceNumber}` : 'Pagada'} aria-label="Pagada" className="inline-flex">
+                                  <CircleCheck className="w-3.5 h-3.5 text-green-600" />
+                                </span>
+                              ) : porVerificar ? (
+                                espera ? (
+                                  <button onClick={() => setCobroAbierto(espera)} title="Transferencia por verificar" aria-label="Transferencia por verificar"
+                                    className="destino-tactil text-amber-600 hover:opacity-70 transition-opacity">
+                                    <BadgeDollarSign className="w-3.5 h-3.5" />
+                                  </button>
+                                ) : (
+                                  <span title="Transferencia por verificar" aria-label="Transferencia por verificar" className="inline-flex">
+                                    <BadgeDollarSign className="w-3.5 h-3.5 text-amber-600" />
+                                  </span>
+                                )
+                              ) : (
+                                <span title="Pendiente" aria-label="Pendiente" className="inline-flex">
+                                  <Clock className="w-3.5 h-3.5 text-digi-muted" />
+                                </span>
+                              )}
+                              {!esClienteDelTicket && !cerrada && !porVerificar && (
                                 <button onClick={() => abrirEnlacePagoTicket(Number(e.id))} disabled={!cobrable}
                                   title={cobrable ? 'Compartir enlace de pago de esta etapa' : 'La etapa aún no tiene importe'}
                                   className="destino-tactil text-accent hover:opacity-70 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed">
@@ -1123,6 +1164,8 @@ export default function TicketDetailPage() {
                     </div>
                   )}
 
+                  {filasTransferenciasSueltas()}
+
                   {/* El cliente paga TODO lo pendiente desde aquí; el enlace del equipo está en la cabecera. */}
                   {pagosEnApp && pendienteTicket > 0 && ticket.status !== 'cancelled' && esClienteDelTicket && (
                     <div className="mt-2 pt-2 border-t border-digi-border">
@@ -1137,6 +1180,14 @@ export default function TicketDetailPage() {
                 </div>
               );
             })()}
+
+            {/* Quien puede confirmar una transferencia pero no ve el resumen de pagos. */}
+            {!(billing && payments && (Number(billing.total) > 0 || (payments.invoices || []).length > 0)) && transferenciasSueltas.length > 0 && (
+              <div className="bg-digi-card border border-digi-border rounded-lg p-4 shadow-sm">
+                <h3 className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={pf}>Pagos</h3>
+                {filasTransferenciasSueltas()}
+              </div>
+            )}
           </PropertyRail>
           )}
           </RailDesplegable>
@@ -1168,39 +1219,86 @@ export default function TicketDetailPage() {
       />
 
       {/* ========== Modal de edición del ticket (overlay centrado) ========== */}
-      <PixelModal open={editing} onClose={() => setEditing(false)} title="Editar ticket" size="lg"
-        pie={(
-          <>
-            <button onClick={() => setEditing(false)} className={BTN_SECONDARY}>Cancelar</button>
-            <button onClick={handleSave} disabled={saving || !form.title?.trim()} className={BTN_PRIMARY}>
-              {saving ? 'Guardando...' : 'Guardar cambios'}
-            </button>
-          </>
-        )}>
-        <div className="space-y-4">
-          <PixelInput label="Título *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          <div className="flex flex-col gap-1">
-            <label className="field-label text-[10px] text-accent-glow opacity-70" style={mf}>Descripción</label>
-            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4}
-              className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-none" style={mf} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <PixelSelect label="Estado" value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} options={STATUSES} />
-            <PixelSelect label="Servicio" value={form.service_id} onChange={(e) => setForm({ ...form, service_id: e.target.value })}
-              options={services.map((s: any) => ({ value: String(s.id), label: s.name }))} placeholder="-- Sin servicio --" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <AssigneePicker label="Miembro" sinAsignar value={String(form.member_id || '')} onChange={(id) => setForm({ ...form, member_id: id })} />
-            <ClientPicker clientId={form.client_id} clientEmail={form.client_email || ''}
-              onChange={(v) => setForm({ ...form, client_id: v.clientId, client_email: v.clientEmail })} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <PixelInput label="Fecha limite" type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
-            <PixelInput label="Horas estimadas" type="number" value={form.estimated_hours} onChange={(e) => setForm({ ...form, estimated_hours: e.target.value })} />
-            <PixelInput label="Costo estimado (USD)" type="number" value={form.estimated_cost} onChange={(e) => setForm({ ...form, estimated_cost: e.target.value })} />
-          </div>
+      <EditPanel open={editing} title="Editar ticket" onClose={() => setEditing(false)} onSave={handleSave}
+        saving={saving} canSave={!!form.title?.trim()} saveLabel="Guardar cambios">
+        <EditField label="Título *">
+          <input value={form.title || ''} onChange={(e) => setForm({ ...form, title: e.target.value })} className={EDIT_INPUT} style={mf} />
+        </EditField>
+        <EditField label="Descripción">
+          <textarea value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4}
+            className={`${EDIT_INPUT} resize-y`} style={mf} />
+        </EditField>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <EditField label="Estado">
+            <select value={form.status || ''} onChange={(e) => setForm({ ...form, status: e.target.value })} className={EDIT_INPUT} style={mf}>
+              {STATUSES.map((o: any) => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </EditField>
+          <EditField label="Servicio">
+            <select value={form.service_id || ''} onChange={(e) => setForm({ ...form, service_id: e.target.value })} className={EDIT_INPUT} style={mf}>
+              <option value="">Sin servicio</option>
+              {services.map((v: any) => <option key={v.id} value={String(v.id)}>{v.name}</option>)}
+            </select>
+          </EditField>
         </div>
-      </PixelModal>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <EditField label="Miembro">
+            <AssigneePicker label="" sinAsignar value={String(form.member_id || '')} onChange={(v) => setForm({ ...form, member_id: v })} />
+          </EditField>
+          <EditField label="Cliente">
+            <ClientPicker clientId={form.client_id || ''} clientEmail={form.client_email || ''} label=""
+              onChange={(v) => setForm({ ...form, client_id: v.clientId, client_email: v.clientEmail })} />
+          </EditField>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <EditField label="Fecha límite">
+            <input type="date" value={form.deadline || ''} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className={EDIT_INPUT} style={mf} />
+          </EditField>
+          <EditField label="Horas estimadas">
+            <input type="number" min="0" value={form.estimated_hours || ''} onChange={(e) => setForm({ ...form, estimated_hours: e.target.value })} className={`${EDIT_INPUT} tabular-nums`} style={mf} />
+          </EditField>
+          <EditField label="Costo estimado (USD)">
+            <input type="number" min="0" value={form.estimated_cost || ''} onChange={(e) => setForm({ ...form, estimated_cost: e.target.value })} className={`${EDIT_INPUT} tabular-nums`} style={mf} />
+          </EditField>
+        </div>
+      </EditPanel>
+
+      {/* Cliente (un campo) — ventanita centrada, la misma del proyecto. */}
+      <QuickEditDialog
+        open={editingClient}
+        title="Cambiar cliente"
+        onClose={() => setEditingClient(false)}
+        saving={savingClient}
+        canSave={!!(editClient.clientId || editClient.clientEmail)}
+        onSave={async () => {
+          setSavingClient(true);
+          try {
+            const res = await fetch(`/api/tickets/${id}`, {
+              method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(editClient.clientId ? { client_id: Number(editClient.clientId) } : { client_email: editClient.clientEmail }),
+            });
+            if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Error al guardar');
+            setEditingClient(false); toast.success('Cliente actualizado'); fetchTicket();
+          } catch (e: any) { toast.error(e.message || 'Error al guardar'); }
+          finally { setSavingClient(false); }
+        }}
+      >
+        {/* Alto mínimo para que el desplegable del buscador quepa sin recortarse. */}
+        <div className="min-h-[260px]">
+          <EditField label="Cliente" hint="Si el correo no tiene cuenta, se registra y se le invita a crearla.">
+            <ClientPicker clientId={editClient.clientId} clientEmail={editClient.clientEmail} onChange={setEditClient} label="" />
+          </EditField>
+        </div>
+      </QuickEditDialog>
+
+      {/* Ventanita centrada de la transferencia: se MONTA solo con un cobro elegido. */}
+      {cobroAbierto && (
+        <VentanaTransferencia
+          cobro={cobroAbierto}
+          onClose={() => setCobroAbierto(null)}
+          alDecidir={() => { recargarEnEspera(); fetchTicket(); }}
+        />
+      )}
 
       <PixelModal open={completeModal} onClose={() => !completing && setCompleteModal(false)} title="Completar y facturar" size="lg" busy={completing}
         pie={completing ? undefined : (() => {

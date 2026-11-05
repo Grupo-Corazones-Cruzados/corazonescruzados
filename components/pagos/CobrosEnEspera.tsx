@@ -7,9 +7,9 @@
  * detalle de lo que se esté ofreciendo» (Fernando, 2026-08-26). Este archivo ES esa
  * confirmación, en dos formas que comparten datos, detalle y decisión:
  *
- *  - `CobrosEnEspera` (default) — la tarjeta del ticket y de la suscripción.
+ *  - `CobrosEnEspera` (default) — la tarjeta de quien no tiene etapas donde colgarla (suscripción).
  *  - `VentanaTransferencia` — la ventanita centrada que abre el icono de la etapa en el
- *    detalle del proyecto (Fernando, 2026-10-01: la confirmación vive DENTRO de Pagos, en la
+ *    detalle del proyecto y del ticket (Fernando, 2026-10-01: la confirmación vive DENTRO de Pagos, en la
  *    etapa que se pagó, no en una tarjeta encima).
  *
  * Si cada módulo tuviera la suya, el día que cambie algo del cobro habría tres sitios que
@@ -182,7 +182,7 @@ export function VentanaTransferencia({ cobro, onClose, alDecidir }: {
   );
 }
 
-/** La tarjeta del ticket y de la suscripción: todos los cobros en espera, uno debajo de otro. */
+/** La tarjeta de la suscripción: todos los cobros en espera, uno debajo de otro. */
 export default function CobrosEnEspera({ tipo, id, alConfirmar }: {
   tipo: Tipo;
   id: string | number;
