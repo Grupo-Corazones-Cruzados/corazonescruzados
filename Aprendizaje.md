@@ -183,6 +183,9 @@ Fernando valoró bien la primera prueba («excelente aporte») y pidió probar c
 ### Decisión: primero el iPad (Fernando, 2026-11-04)
 Usa mucho el seguimiento de cara y el embellecimiento, y CapCut de la Mac no tiene seguimiento. Entrega el video ya con eso aplicado en su iPad, lo sube a Generación de Contenido desde la app y las capas se añaden encima. El proyecto final queda en la Mac. La nube de CapCut queda sin probar y el paquete de archivos no se construye. Como la cara cambia de sitio, el agente mira un fotograma antes de colocar cada gráfico y `tarjeta` admite `y`.
 
+### Animación 3D con Blender (2026-11-05)
+Fernando quiere reemplazar la imagen en ciertos momentos por una animación, con su voz siguiendo debajo, y hará su primer video completo así. Blender 5.2.3 instalado con Homebrew: gratis, igual que la vía elegida. Sin MCP: Blender corre sin ventana con un script (`blender/ejecutar.py`, `gcc.py`, `scripts/renderizar-blender.mjs`), sin complemento de terceros y sin depender de MCP en las sesiones de la app. La animación es una capa a pantalla completa en `graficos-ia`, así que el audio no se toca: voz de −31,0 dB en el original y −30,5 dB en la vista, con un efecto sumado. Medido: EEVEE, 146 s para 6 s de video y 8,5 MB; Cycles, 101 s por fotograma, descartado. Perfil Standard, porque AgX lava el morado, y emisión hasta 1,5. Montserrat con licencia OFL. Proyecto validado solo en carpeta de prueba: sin abrir en CapCut real.
+
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?
