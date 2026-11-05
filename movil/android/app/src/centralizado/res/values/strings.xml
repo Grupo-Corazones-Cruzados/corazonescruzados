@@ -2,4 +2,6 @@
 <resources>
     <string name="app_name">GCC Centralizado</string>
     <string name="title_activity_main">GCC Centralizado</string>
+    <string name="package_name">org.grupocc.centralizado</string>
+    <string name="custom_url_scheme">org.grupocc.centralizado</string>
 </resources>

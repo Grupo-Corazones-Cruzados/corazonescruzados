@@ -876,7 +876,7 @@ de Apple/Google, firma y distribución) para un titular persona natural en Ecuad
 #### P10 — Nombres y separación · ✅ Decidido (Fernando, 2026-11-05)
 - **GCC World** es la web; **GCC Progreso**, la app de la plataforma y la primera en publicarse; **GCC Aventura**, la del videojuego; **GCC Centralizado**, la de los miembros (rojo y negro, solo opción «Miembro»). **Deroga las «dos apps GCC World + GCC Productos» del 2026-09-23.**
 - **Hecho en Android:** sabores `progreso` y `centralizado`; `Extras` por sabor; Progreso sin ubicación ni micrófono. Cada app escribe la cookie `gcc_app` antes de cargar la web, y la portada abre sus tarjetas (`lib/sitio/appDeTelefono.ts`). `PuertaCentralizado` lleva de Progreso a Centralizado. Un auxilio en Progreso sale como aviso normal. El APK de Centralizado solo lo bajan miembros y administradores.
-- **Falta:** registrar `org.grupocc.gccworld.centralizado` en Firebase (sin su `google-services.json` no compila), iPhone (espera la cuenta de Apple), decidir el identificador definitivo de Progreso, y publicar el APK.
+- **Identificadores definitivos (2026-11-05):** `org.grupocc.progreso` y `org.grupocc.centralizado`, registrados en Firebase; `app/google-services.json` trae los dos. Falta iPhone, que espera la cuenta de Apple. La app anterior `org.grupocc.gccworld` sigue en Firebase para quien aún la tiene instalada.
 - **Productos:** Fernando prefiere todo en la misma app, con accesos directos. ⏸ Pendiente de implementar: Android permite anclar iconos; iPhone no deja crearlos desde la app.
 
 #### P5 — ¿Qué app se publica primero? · ❓ Abierta (retoma P8/P6 del 2026-09-23)

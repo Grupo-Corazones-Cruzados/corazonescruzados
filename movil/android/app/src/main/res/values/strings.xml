@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">GCC Progreso</string>
     <string name="title_activity_main">GCC Progreso</string>
-    <string name="package_name">org.grupocc.gccworld</string>
-    <string name="custom_url_scheme">org.grupocc.gccworld</string>
+    <string name="package_name">org.grupocc.progreso</string>
+    <string name="custom_url_scheme">org.grupocc.progreso</string>
 </resources>

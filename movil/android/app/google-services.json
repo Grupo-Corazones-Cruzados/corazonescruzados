@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:588476197914:android:fb89df706005d24df2f5a3",
+        "mobilesdk_app_id": "1:588476197914:android:d13766b6e6802ca3f2f5a3",
         "android_client_info": {
-          "package_name": "org.grupocc.gccworld"
+          "package_name": "org.grupocc.centralizado"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "588476197914-0ckjlbht22gdnj9mvuo57f5vq15uh3bg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCfbconCF_1ZXzdQAHcb1qyod0eLzD5Eo4"
@@ -20,7 +25,70 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "588476197914-0ckjlbht22gdnj9mvuo57f5vq15uh3bg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:588476197914:android:fb89df706005d24df2f5a3",
+        "android_client_info": {
+          "package_name": "org.grupocc.gccworld"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "588476197914-0ckjlbht22gdnj9mvuo57f5vq15uh3bg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfbconCF_1ZXzdQAHcb1qyod0eLzD5Eo4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "588476197914-0ckjlbht22gdnj9mvuo57f5vq15uh3bg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:588476197914:android:f00ee2e61cc401c0f2f5a3",
+        "android_client_info": {
+          "package_name": "org.grupocc.progreso"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "588476197914-0ckjlbht22gdnj9mvuo57f5vq15uh3bg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfbconCF_1ZXzdQAHcb1qyod0eLzD5Eo4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "588476197914-0ckjlbht22gdnj9mvuo57f5vq15uh3bg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

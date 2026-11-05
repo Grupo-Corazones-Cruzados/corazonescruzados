@@ -4,7 +4,6 @@ android {
     namespace = "org.grupocc.gccworld"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "org.grupocc.gccworld"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 8
@@ -47,11 +46,12 @@ android {
     productFlavors {
         progreso {
             dimension 'app'
+            applicationId 'org.grupocc.progreso'
             if (firmaSubida) signingConfig signingConfigs.subida
         }
         centralizado {
             dimension 'app'
-            applicationIdSuffix '.centralizado'
+            applicationId 'org.grupocc.centralizado'
             if (firmaCentralizado) signingConfig signingConfigs.herramientas
         }
     }
