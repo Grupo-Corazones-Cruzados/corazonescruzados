@@ -119,9 +119,9 @@ cargar() {
 }
 
 # La web se reinicia siempre. El servicio solo si cambió, porque reiniciarlo corta lo que esté trabajando.
-# Este instalador no es parte de lo que corre: cambiarlo no es motivo para cortar nada.
+# Este instalador y el README no son parte de lo que corre: cambiarlos no es motivo para cortar nada.
 cargar org.grupocc.espacio-web "$plist_web"
-if [[ -z "$ANTES" ]] || ! git -C "$APP" diff --quiet "$ANTES" "$AHORA" -- services/espacio-trabajo ':(exclude)services/espacio-trabajo/instalar.sh' || ! cargada org.grupocc.espacio-servicio || ! cmp -s "$plist_servicio.nuevo" "$plist_servicio"; then
+if [[ -z "$ANTES" ]] || ! git -C "$APP" diff --quiet "$ANTES" "$AHORA" -- services/espacio-trabajo ':(exclude)services/espacio-trabajo/instalar.sh' ':(exclude)services/espacio-trabajo/README.md' || ! cargada org.grupocc.espacio-servicio || ! cmp -s "$plist_servicio.nuevo" "$plist_servicio"; then
   # Reiniciarlo corta la respuesta en curso: se espera a que no haya ninguna (hasta 15 minutos).
   for i in {1..90}; do
     curl -s -m 5 -H "Authorization: Bearer $(cat "$DATOS/token" 2>/dev/null)" http://127.0.0.1:3791/vivas | grep -q -E '"estado":"(trabajando|espera)"|"tareas":[1-9]' || break
