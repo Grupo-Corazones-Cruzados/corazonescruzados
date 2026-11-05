@@ -18,8 +18,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    // Clave de subida a Google Play. Va FUERA del repo (`~/.gradle/gradle.properties`); sin ella
+    // la versión de publicación sale sin firmar y Play la rechaza.
+    def firmaSubida = project.hasProperty('GCC_WORLD_KEYSTORE')
+    signingConfigs {
+        if (firmaSubida) {
+            subida {
+                storeFile file(GCC_WORLD_KEYSTORE)
+                storePassword GCC_WORLD_CLAVE
+                keyAlias 'gcc-world'
+                keyPassword GCC_WORLD_CLAVE
+            }
+        }
+    }
     buildTypes {
         release {
+            if (firmaSubida) signingConfig signingConfigs.subida
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

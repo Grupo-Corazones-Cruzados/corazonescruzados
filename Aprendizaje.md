@@ -862,6 +862,14 @@ de Apple/Google, firma y distribución) para un titular persona natural en Ecuad
 - **Con venta dentro de la app:** se publica para el público que consumirá los servicios. Reafirma lo del 2026-09-23 (StoreKit / Play Billing; PayPhone solo en la web).
 - **Centralizado entra, con su justificación:** solo para miembros internos; cada uno decide si da el acceso; nunca llega a clientes ni candidatos. Esa promesa hay que comprobarla en el código antes de declararla a las tiendas.
 
+#### P8 — ¿Centralizado en una app interna aparte? · 🔎 Propuesta de Fernando (2026-11-05), pendiente de su confirmación
+- **Idea:** la app pública sin permisos especiales; una segunda app interna con lo de Control Psicosocial, y desde la pública los miembros pasan a ella. Es viable: mismo proyecto, dos compilaciones (`org.grupocc.gccworld` y `…interno`).
+- **Matiz:** publicar en la tienda, aunque sea de forma restringida, no evita la revisión. En iPhone, Ad Hoc no pasa revisión (hasta 100 equipos por año, registrados uno a uno). Apple Business Manager queda sin confirmar para una cuenta individual, y exige organización del lado de quien compra.
+- **Riesgo:** el enlace de la app pública a una descarga fuera de la tienda; no se ha confirmado la regla exacta. Se declara en las notas para el revisor, nunca se esconde.
+
+#### P9 — Firma de Android · ✅ Hecha (2026-11-05)
+- Clave de subida propia en `~/.android/gcc-world-subida.jks`, contraseña en `~/.gradle/gradle.properties`, fuera del repo. SHA-256 `FD:46:2B:3F…DB:03:15`. `bundleRelease` da un AAB firmado de 10,4 MB. **No subirlo aún:** declara los permisos de Control Psicosocial y falta decidir P8.
+
 #### P5 — ¿Qué app se publica primero? · ❓ Abierta (retoma P8/P6 del 2026-09-23)
 - GCC World (plataforma + juego) o GCC Productos. Recomendación previa: la más pequeña primero, y GCC
   World sin el juego en su primera versión.

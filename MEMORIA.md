@@ -883,6 +883,7 @@ Stack estándar de la casa, con particularidades de este repo:
   restaurarlas durante 20 días. Helen sigue siendo administradora, con `members.email` en Outlook y `workspace_email` vacío.
   ⚠️ `createWorkspaceUser` en `/Candidatos` asignó Business Standard, y `complete-profile` de los candidatos usa esa función.
 - **🗑️ Borrar la cuenta (Fernando, 2026-11-05; lo exigen las tiendas).** Papelera en Perfil (solo `role = client`, que incluye candidatos), con contraseña. Borra lo personal y anonimiza; la fila de `users` se queda porque facturas, proyectos y tickets cuelgan de su `id`, y las facturas se conservan por ley. Cancela sus suscripciones activas. `billing_clients` no se toca: son datos de facturación. Primera versión de tiendas: **con venta dentro** y **con Centralizado**, justificado como solo para miembros (`Aprendizaje.md`, P6-P7).
+- **🔑 Firma de GCC World para Google Play (2026-11-05).** `~/.android/gcc-world-subida.jks` y su contraseña en `~/.gradle/gradle.properties`, fuera del repo; distinta de la de Herramientas. ⚠️ Respaldarlas. Java: el de Android Studio. Compilar: `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradlew :app:bundleRelease` en `movil/android`.
 - **📲 Herramientas ▸ «Apps para el teléfono» + Descargador GCC (Fernando, 2026-10-21).** Tipo nuevo
   de herramienta: un paquete para instalar fuera de tiendas. Decidido: **solo Android**, descarga del
   APK **con sesión**, app **independiente** (`movil/descargador/`, Kotlin, `org.grupocc.descargador`).
