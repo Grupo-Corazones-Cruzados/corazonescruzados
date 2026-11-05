@@ -28,6 +28,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useNombreApp } from '@/lib/hooks/useNombreApp';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
@@ -39,6 +40,7 @@ import { esAppInstalada } from '@/components/espacio/api';
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export default function CabeceraMovil() {
+  const nombreApp = useNombreApp();
   const { abrir } = useMenuMovil();
   // Se decide tras montar: en el servidor no hay `window` y el HTML tiene que coincidir.
   const [enApp, setEnApp] = useState(false);
@@ -72,7 +74,7 @@ export default function CabeceraMovil() {
           className="rounded-full select-none shrink-0"
         />
         <span className="text-[15px] font-bold text-digi-text tracking-tight truncate" style={mf}>
-          GCC WORLD
+          {nombreApp.toUpperCase()}
         </span>
       </Link>
 

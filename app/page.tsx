@@ -13,6 +13,7 @@ import { sonarUnion, sonarVolver } from '@/lib/sitio/sonidoSeleccion';
 import type { AccionesAcceso } from '@/components/landing/opcionesAcceso';
 import { IconoCorazon, IconoMundo } from '@/components/landing/IconosTitular';
 import { useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
+import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 import PointerCursor from '@/components/landing/PointerCursor';
 // El creador NUEVO: catálogo propio (estilo del prólogo) y composición por
 // bandas. El viejo (LPC) se retira; su tipo `CharacterConfig` solo se conserva
@@ -425,6 +426,18 @@ export default function LandingPage() {
   // El mundo elegido con un CLIC en «Aventura» o «Progreso» (2026-10-26): llena la portada y
   // descubre el titular y el pensamiento. `null` = aún no se ha elegido (pantalla partida).
   const [mundoElegido, setMundoElegido] = useState<'aventura' | 'progreso' | null>(null);
+  /**
+   * LAS APPS NO ELIGEN MUNDO (Fernando, 2026-11-05): GCC Progreso, GCC Aventura y GCC Centralizado
+   * ya son uno, así que abren directamente las opciones de acceso. Elegir solo pasa en GCC World.
+   */
+  const [appTelefono, setAppTelefono] = useState<AppDeTelefono | null>(null);
+  useEffect(() => {
+    const app = appDeTelefono();
+    if (!app) return;
+    setAppTelefono(app);
+    setEntryDestination(app === 'aventura' ? 'game' : 'dashboard');
+    setMundoElegido(app === 'progreso' ? 'progreso' : 'aventura');
+  }, []);
 
   /**
    * ── ENTRAR DIRECTO A UNA PUERTA: `/?acceso=cliente` ─────────────────────────
@@ -467,7 +480,8 @@ export default function LandingPage() {
     // el botón «Plataforma» del héroe antes de subirlo a la barra de navegación
     // (2026-08-17). Aquí llega quien lo pulsa desde `/soluciones`, `/legal` o cualquier
     // otra página, vía `/auth`. El diálogo es el mismo: no hay una segunda copia.
-    else if (acceso === ACCESO_PLATAFORMA) { setEntryDestination('dashboard'); setEntryChoiceOpen(true); }
+    // En una app ese menú sobra: `appTelefono` ya muestra las opciones, con su tema.
+    else if (acceso === ACCESO_PLATAFORMA) { if (!appDeTelefono()) { setEntryDestination('dashboard'); setEntryChoiceOpen(true); } }
     // ⚠️ La única puerta que NO manda al panel. Llega desde el botón «IR» de la tarjeta de
     // Videojuego en `/clientes`: es el mismo diálogo de acceso de cliente, pero al terminar
     // se entra a la aventura. Sin esto, quien pulsaba «IR» en Videojuego acababa en el panel.
@@ -2707,14 +2721,14 @@ export default function LandingPage() {
   useEffect(() => {
     if (!mundoElegido) return;
     const alPulsar = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !document.querySelector('[role="dialog"]')) {
+      if (e.key === 'Escape' && !appTelefono && !document.querySelector('[role="dialog"]')) {
         sonarVolver();
         setMundoElegido(null);
       }
     };
     window.addEventListener('keydown', alPulsar);
     return () => window.removeEventListener('keydown', alPulsar);
-  }, [mundoElegido]);
+  }, [mundoElegido, appTelefono]);
   // Elegir un mundo fija también el DESTINO del acceso: Aventura → juego; Progreso → panel.
   const elegirMundo = (m: 'aventura' | 'progreso') => {
     setEntryDestination(m === 'aventura' ? 'game' : 'dashboard');
@@ -2772,9 +2786,12 @@ export default function LandingPage() {
       className={`landing-page${nativeCursor ? ' auth-screen' : ''}`}
       ref={raizPortadaRef}
       data-modo={modoPortada}
+      data-app={appTelefono ?? undefined}
       // Solo el valor del primer pintado: luego lo anima `useCorteAnimado`, cuadro a cuadro.
       style={{ ['--corte' as string]: '50vw' }}
     >
+      {/* En una app, la portada partida no llega a verse: se esconde hasta que `appTelefono` entra. */}
+      <script dangerouslySetInnerHTML={{ __html: "if(/(?:^|;\\s*)gcc_app=/.test(document.cookie))document.documentElement.dataset.gccApp='1'" }} />
       {/* La misma cabecera que el resto del sitio, en modo FLOTANTE: la portada es una
           experiencia a pantalla completa y una barra sólida encima le corta la escena. */}
       <CabeceraSitio />
@@ -3158,8 +3175,9 @@ export default function LandingPage() {
                 <RolesMundo
                   tema={mundoElegido}
                   acciones={accionesAcceso}
-                  retrasoBase={reducirMovimiento ? 0 : 3400}
-                  onVolver={() => setMundoElegido(null)}
+                  retrasoBase={reducirMovimiento || appTelefono ? 0 : 3400}
+                  onVolver={appTelefono ? undefined : () => setMundoElegido(null)}
+                  soloMiembro={appTelefono === 'centralizado'}
                 />
               </div>
             )}

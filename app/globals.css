@@ -387,6 +387,26 @@ html {
 /* Sobre la escena clara de Progreso, el puntero del sistema, el de la plataforma
    (Fernando, 2026-10-26). La clase la pone `PointerCursor` según de qué lado de la raya
    esté el ratón. */
+html[data-gcc-app] .landing-page:not([data-app]) { visibility: hidden; }
+
+/* GCC Centralizado (Fernando, 2026-11-05): su inicio de sesión es rojo y negro. Parte del cielo
+   de la Aventura y le cambia el color: el resto de la portada es la misma. */
+.landing-page[data-app='centralizado'] { background: #050304; --mundo-cruzar: #ef4444; --mundo-mundo: #fca5a5; }
+.landing-page[data-app='centralizado'] .escena-aventura { filter: hue-rotate(95deg) saturate(1.7) brightness(0.72); }
+.landing-page[data-app='centralizado'] .mundo-aventura { --mundo-cruzar: #ef4444; --mundo-mundo: #fca5a5; }
+.landing-page[data-app='centralizado'] .eslogan-acento { background: none; -webkit-text-fill-color: #ef4444; color: #ef4444; }
+.landing-page[data-app='centralizado'] .eslogan-linea { background: #ef4444; }
+.landing-page[data-app='centralizado'] .tarjeta-mundo-aventura { --tm-selector: #fca5a5; border-color: rgba(239, 68, 68, 0.45); background: rgba(24, 6, 8, 0.82); }
+.landing-page[data-app='centralizado'] .tarjeta-mundo-aventura:hover:not(:disabled) { border-color: #ef4444; box-shadow: 0 0 28px rgba(239, 68, 68, 0.28); }
+.landing-page[data-app='centralizado'] .tarjeta-mundo-aventura .tm-modo { color: #fca5a5; }
+.landing-page[data-app='centralizado'] .tarjeta-mundo-aventura .tm-descripcion { color: #d8b4b4; }
+.landing-page[data-app='centralizado'] .tm-icono { background: #dc2626; color: #ffffff; }
+.landing-page[data-app='centralizado'] .tm-icono * { color: #ffffff; }
+.landing-page[data-app='centralizado'] .border-accent\/30 { border-color: rgba(239, 68, 68, 0.4); }
+.landing-page[data-app='centralizado'] .tarjeta-mundo-aventura svg:last-child { color: #fca5a5; }
+.landing-page[data-app='centralizado'] .corp { --color-accent: #dc2626; --color-accent-light: rgba(220, 38, 38, 0.18); --color-accent-glow: #ef4444; --color-accent-hover: #b91c1c; }
+.landing-page[data-app='centralizado'] .corp .pixel-btn-primary { background: #dc2626; border-color: #dc2626; box-shadow: none; }
+
 .landing-page.cursor-plataforma,
 .landing-page.cursor-plataforma *,
 .landing-page.cursor-plataforma *::before,

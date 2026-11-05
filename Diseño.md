@@ -1808,6 +1808,11 @@ pinta el sistema operativo. Mismos tokens de marca, escritos a mano porque ahí 
 - **Pendiente (iPhone):** la Actividad en Vivo (pantalla de bloqueo + isla dinámica) seguirá esta
   misma ficha: logo, ticket, cliente, reloj grande, tarifa, «Detener».
 
+## Inicio de sesión de cada app (Fernando, 2026-11-05)
+La misma portada, según la cookie `gcc_app`: sin paneles de mundo, sin «Volver» y sin el menú «¿Cómo quieres ingresar?».
+- **GCC Progreso:** mundo claro. **GCC Aventura:** cielo oscuro. **GCC Centralizado:** cielo con `[data-app='centralizado']` en `globals.css`: negro `#050304`, rojo `#dc2626`/`#ef4444`, solo la tarjeta «Miembro». Dentro de cada app el tema se elige como siempre.
+- La marca sale de `useNombreApp()` en cabecera, menú y ventanas de acceso, nunca escrita a mano. En el navegador, GCC World no cambia.
+
 ## Apps sueltas de Herramientas — Descargador GCC (Android 2026-10-21, iPhone 2026-10-22)
 Apps nativas aparte, sin la web dentro: cada plataforma usa SUS controles (Material en Android,
 SwiftUI en iPhone) y lo único compartido es la marca. Mismo flujo y mismos textos en las dos.

@@ -1,5 +1,6 @@
 'use client';
 
+import { useNombreApp } from '@/lib/hooks/useNombreApp';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -56,6 +57,7 @@ const NAV_GROUPS: NavGroup[] = MODULE_GROUPS.map((title) => ({
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export default function DashboardSidebar() {
+  const nombreApp = useNombreApp();
   const { user, signOut, suplantacion } = useAuth();
   const pathname = usePathname();
   // El estado lo comparte con la cabecera del teléfono, que es quien tiene el botón.
@@ -218,7 +220,7 @@ export default function DashboardSidebar() {
             className="rounded-full select-none shrink-0 motion-reduce:animate-none"
             style={{ animation: 'slowSpin 12s linear infinite reverse' }}
           />
-          {!collapsed && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>GCC WORLD</span>}
+          {!collapsed && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>{nombreApp.toUpperCase()}</span>}
         </Link>
 
         {/* Nav */}

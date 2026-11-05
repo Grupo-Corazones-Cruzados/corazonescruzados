@@ -21,6 +21,8 @@ android {
     // Clave de subida a Google Play. Va FUERA del repo (`~/.gradle/gradle.properties`); sin ella
     // la versión de publicación sale sin firmar y Play la rechaza.
     def firmaSubida = project.hasProperty('GCC_WORLD_KEYSTORE')
+    // GCC Centralizado no pasa por Play: se firma con la clave de Herramientas, por donde se distribuye.
+    def firmaCentralizado = project.hasProperty('GCC_HERRAMIENTAS_KEYSTORE')
     signingConfigs {
         if (firmaSubida) {
             subida {
@@ -30,10 +32,31 @@ android {
                 keyPassword GCC_WORLD_CLAVE
             }
         }
+        if (firmaCentralizado) {
+            herramientas {
+                storeFile file(GCC_HERRAMIENTAS_KEYSTORE)
+                storePassword GCC_HERRAMIENTAS_CLAVE
+                keyAlias 'herramientas'
+                keyPassword GCC_HERRAMIENTAS_CLAVE
+            }
+        }
+    }
+    // GCC Progreso: la de las tiendas, sin permisos delicados. GCC Centralizado: la de los miembros,
+    // con Control Psicosocial y fuera de las tiendas. Ambas salen de este mismo proyecto.
+    flavorDimensions = ['app']
+    productFlavors {
+        progreso {
+            dimension 'app'
+            if (firmaSubida) signingConfig signingConfigs.subida
+        }
+        centralizado {
+            dimension 'app'
+            applicationIdSuffix '.centralizado'
+            if (firmaCentralizado) signingConfig signingConfigs.herramientas
+        }
     }
     buildTypes {
         release {
-            if (firmaSubida) signingConfig signingConfigs.subida
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -58,10 +81,10 @@ dependencies {
     // Push (Firebase, proyecto grupo-corazones-cruzados; config en google-services.json).
     implementation platform("com.google.firebase:firebase-bom:34.4.0")
     implementation "com.google.firebase:firebase-messaging"
-    // Control Psicosocial: ubicación y detección de la frase dentro del teléfono.
-    implementation "com.google.android.gms:play-services-location:21.3.0"
-    implementation "com.alphacephei:vosk-android:0.3.47"
-    implementation "net.java.dev.jna:jna:5.13.0@aar"
+    // Control Psicosocial, solo en GCC Centralizado: ubicación y detección de la frase en el teléfono.
+    centralizadoImplementation "com.google.android.gms:play-services-location:21.3.0"
+    centralizadoImplementation "com.alphacephei:vosk-android:0.3.47"
+    centralizadoImplementation "net.java.dev.jna:jna:5.13.0@aar"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"

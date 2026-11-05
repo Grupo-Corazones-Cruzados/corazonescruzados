@@ -11,6 +11,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ slug: stri
   const acceso = await usuarioDeHerramientas();
   if (acceso.error) return acceso.error;
   const { slug } = await ctx.params;
+  // Herramientas la usan también los candidatos; GCC Centralizado es solo de los miembros.
+  if (slug === 'gcc-centralizado' && acceso.rol !== 'member' && acceso.rol !== 'admin') {
+    return NextResponse.json({ error: 'Esta app es solo para miembros' }, { status: 403 });
+  }
   const app = await appVigente(slug);
   if (!app) return NextResponse.json({ error: 'Esta app aún no tiene una versión publicada' }, { status: 404 });
   try {

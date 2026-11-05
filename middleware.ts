@@ -26,6 +26,11 @@ export async function middleware(request: NextRequest) {
   const isProtected = PROTECTED.some((r) => pathname.startsWith(r));
   const isAuth = AUTH_ROUTES.some((r) => pathname.startsWith(r));
 
+  // GCC Centralizado abre directamente su módulo; la web y GCC Progreso, el Inicio.
+  if (valid && pathname === "/dashboard" && request.cookies.get("gcc_app")?.value === "centralizado") {
+    return NextResponse.redirect(new URL("/dashboard/centralized", request.url));
+  }
+
   if (isProtected && !valid) {
     const url = new URL("/auth", request.url);
     url.searchParams.set("redirect", pathname);

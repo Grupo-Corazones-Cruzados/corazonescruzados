@@ -93,6 +93,7 @@ export default function RolesMundo({
   acciones,
   retrasoBase = 0,
   onVolver,
+  soloMiembro = false,
 }: {
   tema: 'aventura' | 'progreso';
   acciones: AccionesAcceso;
@@ -100,8 +101,11 @@ export default function RolesMundo({
   retrasoBase?: number;
   /** Vuelve a la pantalla de inicio, antes de elegir mundo. */
   onVolver?: () => void;
+  /** GCC Centralizado es solo para miembros: las demás cuentas no tienen nada que hacer ahí. */
+  soloMiembro?: boolean;
 }) {
-  const opciones = useOpcionesAcceso(tema === 'aventura' ? 'game' : 'dashboard', acciones);
+  const todas = useOpcionesAcceso(tema === 'aventura' ? 'game' : 'dashboard', acciones);
+  const opciones = soloMiembro ? todas.filter((o) => o.clave === 'miembro') : todas;
 
   /**
    * AL ELEGIR UN ROL (Fernando, 2026-10-28: «una animación para cuando se selecciona»): la

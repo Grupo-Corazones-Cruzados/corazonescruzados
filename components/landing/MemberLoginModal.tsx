@@ -5,6 +5,7 @@
  * credenciales (gcc_world.users) → código de verificación por correo (2FA).
  */
 
+import { useNombreApp } from '@/lib/hooks/useNombreApp';
 import { useState } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
 import { usePasskeyPreparada } from '@/lib/hooks/usePasskeyPreparada';
@@ -23,6 +24,7 @@ export default function MemberLoginModal({
   /** hasCharacter=false → el miembro aún no tiene personaje (debe crearlo). */
   onLoggedIn: (hasCharacter: boolean) => void;
 }) {
+  const nombreApp = useNombreApp();
   const [step, setStep] = useState<'creds' | 'factor' | 'code' | 'passkeyOffer'>('creds');
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
@@ -221,7 +223,7 @@ export default function MemberLoginModal({
           <span
             style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', letterSpacing: '0.2em', color: '#fff' }}
           >
-            GCC WORLD
+            {nombreApp.toUpperCase()}
           </span>
         </div>
 
@@ -239,7 +241,7 @@ export default function MemberLoginModal({
           </h2>
           <p style={{ fontFamily: BODY, fontSize: '0.84rem', color: '#b9b2cf', margin: '0 0 16px' }}>
             {step === 'creds'
-              ? 'Inicia sesión con tu cuenta de miembro o administrador para entrar al juego.'
+              ? `Inicia sesión con tu cuenta de miembro o administrador para entrar ${nombreApp === 'GCC World' || nombreApp === 'GCC Aventura' ? 'al juego' : `a ${nombreApp}`}.`
               : step === 'factor'
                 ? 'Verificamos tus credenciales. Por seguridad, completa un segundo paso.'
                 : step === 'code'
@@ -276,7 +278,7 @@ export default function MemberLoginModal({
                 className="pixel-btn pixel-btn-secondary"
                 style={{ opacity: busy ? 0.6 : 1 }}
               >
-                Ahora no, entrar al juego
+                {nombreApp === 'GCC World' || nombreApp === 'GCC Aventura' ? 'Ahora no, entrar al juego' : 'Ahora no, continuar'}
               </button>
             </div>
           ) : step === 'creds' ? (

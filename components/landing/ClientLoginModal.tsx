@@ -6,6 +6,7 @@
  * su destino es el marketplace.
  */
 
+import { useNombreApp } from '@/lib/hooks/useNombreApp';
 import { useState } from 'react';
 import { horaDeReanudacion, useEstadoRegistro } from './estadoRegistro';
 import { startRegistration } from '@simplewebauthn/browser';
@@ -35,6 +36,7 @@ export default function ClientLoginModal({
    */
   correoInicial?: string;
 }) {
+  const nombreApp = useNombreApp();
   const [step, setStep] = useState<'creds' | 'factor' | 'code' | 'passkeyOffer'>('creds');
   const [email, setEmail] = useState(correoInicial);
   const [pwd, setPwd] = useState('');
@@ -279,7 +281,7 @@ export default function ClientLoginModal({
           <span
             style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', letterSpacing: '0.2em', color: '#fff' }}
           >
-            GCC WORLD
+            {nombreApp.toUpperCase()}
           </span>
         </div>
 

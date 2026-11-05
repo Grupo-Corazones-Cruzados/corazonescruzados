@@ -61,6 +61,7 @@ const TOOLS: Tool[] = [
   { id: 'qr', name: 'Enlace a código QR', Icon: QrCode, category: 'edicion', description: 'Convierte un enlace en un código QR para descargar en PNG o SVG.' },
   { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', soloEquipo: true, description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
   { id: 'descargador-video', name: 'Descargador de video', Icon: MonitorDown, category: 'app', description: 'App para Android que guarda en el teléfono videos o audio a partir de un enlace.' },
+  { id: 'gcc-centralizado', name: 'GCC Centralizado', Icon: MonitorDown, category: 'app', soloEquipo: true, description: 'App para Android de los miembros, con Centralizado y Control Psicosocial.' },
   { id: 'entrega-unica', name: 'Entrega de un solo uso', Icon: PackageOpen, category: 'gestion', soloEquipo: true, description: 'Envía un mensaje y hasta 10 archivos con un enlace que se cierra cuando lo descargan.' },
 ];
 
@@ -310,7 +311,7 @@ export default function ToolsPage() {
   // Se decide qué se MONTA: un <dialog> montado y escondido deja inerte toda la página.
   const enTelefono = !useConsultaMedia(PANTALLA_XL);
   const cuerpoHerramienta = () => !tool ? null
-    : tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'formatos-excel' ? renderFormatosExcel() : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace();
+    : tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'formatos-excel' ? renderFormatosExcel() : tool.id === 'gcc-centralizado' ? renderCentralizado() : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace();
 
   // Panel derecho: usar la herramienta seleccionada.
   const renderToolPanel = () => {
@@ -341,6 +342,18 @@ export default function ToolsPage() {
       </PanelHastaElPie>
     );
   };
+
+  const renderCentralizado = () => (
+    <AppMovil
+      slug="gcc-centralizado"
+      descripcion="La app de los miembros de la organización, con Centralizado y Control Psicosocial."
+      pasos={[
+        'Descarga el archivo desde el teléfono.',
+        'Ábrelo y, si Android lo pide, permite instalar apps de este origen.',
+        'Abre «GCC Centralizado» e inicia sesión como miembro.',
+      ]}
+    />
+  );
 
   // Descargador GCC (`movil/descargador/`): el video se descarga en el propio teléfono, nunca en el servidor.
   const renderDescargador = () => (

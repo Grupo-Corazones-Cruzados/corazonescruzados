@@ -5,7 +5,6 @@ import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 import org.grupocc.gccworld.reloj.RelojTicketPlugin;
 import org.grupocc.gccworld.reloj.Relojes;
-import org.grupocc.gccworld.seguridad.ControlPsicosocialPlugin;
 
 public class MainActivity extends BridgeActivity {
     /** Ruta de la plataforma que abrir (p. ej. el ticket al tocar la notificación del reloj). */
@@ -27,8 +26,12 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Antes de cargar la web: su inicio de sesión depende de qué app es.
+        android.webkit.CookieManager.getInstance().setCookie(Relojes.BASE,
+            "gcc_app=" + Extras.APP + "; Path=/; Max-Age=31536000; Secure; SameSite=Lax");
         registerPlugin(RelojTicketPlugin.class);
-        registerPlugin(ControlPsicosocialPlugin.class);
+        registerPlugin(AbrirFueraPlugin.class);
+        Extras.registrarPlugins(this);
         super.onCreate(savedInstanceState);
         abrirRuta(getIntent());
     }
