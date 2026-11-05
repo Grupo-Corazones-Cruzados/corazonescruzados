@@ -4,6 +4,7 @@ import { ensureCalendarGuestColumns } from '@/lib/calendar/guest';
 import { isGoogleWorkspaceConfigured, fetchRecentMeetTranscripts, patchCalendarEventDescription } from '@/lib/integrations/google-workspace';
 import { analyzeMeetingTranscript } from '@/lib/reminders/meeting-ai';
 import { createNotification } from '@/lib/notifications';
+import { parecidoTranscripciones, UMBRAL_MISMA_REUNION } from '@/lib/reminders/similitud';
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.grupocc.org';
 const WINDOW_MS = 48 * 3600 * 1000;
@@ -34,6 +35,33 @@ export function normalizeMeetCode(url: string): string {
   return (String(url || '').replace(/\/+$/, '').split('/').pop() || '').replace(/-/g, '').toLowerCase();
 }
 
+/** Las sesiones del Copiloto de reuniones se guardan con este prefijo en `source_event_id`. */
+export const PREFIJO_COPILOTO = 'copiloto:';
+const VENTANA_GEMELO_HORAS = 6;
+
+/**
+ * Si el Copiloto ya generó el recordatorio de esta misma reunión, lo devuelve (Fernando, 2026-11-05).
+ * Se mira solo lo cercano en el tiempo y solo de esa persona: dos reuniones parecidas de otro día son
+ * otra reunión aunque hablen de lo mismo.
+ */
+export async function buscarRecordatorioCopiloto(ownerUserId: string, transcript: string, meetingEndISO: string): Promise<{ id: number; title: string; parecido: number } | null> {
+  const { rows } = await pool.query(
+    `SELECT r.id, r.title, a.data
+       FROM gcc_world.reminders r
+       JOIN gcc_world.reminder_attachments a ON a.reminder_id = r.id AND a.kind = 'transcript'
+      WHERE r.user_id = $1 AND r.source = 'meeting' AND r.source_event_id LIKE $2
+        AND r.created_at BETWEEN $3::timestamptz - make_interval(hours => $4) AND $3::timestamptz + make_interval(hours => $4)`,
+    [ownerUserId, `${PREFIJO_COPILOTO}%`, meetingEndISO, VENTANA_GEMELO_HORAS],
+  );
+  let mejor: { id: number; title: string; parecido: number } | null = null;
+  for (const f of rows) {
+    const texto = Buffer.from(String(f.data).split(',')[1] || '', 'base64').toString('utf8');
+    const parecido = parecidoTranscripciones(texto, transcript);
+    if (parecido >= UMBRAL_MISMA_REUNION && (!mejor || parecido > mejor.parecido)) mejor = { id: Number(f.id), title: f.title, parecido };
+  }
+  return mejor;
+}
+
 /**
  * DEFINICIÓN ÚNICA de "crear un recordatorio a partir de una reunión": analiza la
  * transcripción con IA, inserta el recordatorio (`source='meeting'`), le adjunta la
@@ -59,25 +87,44 @@ export async function createMeetingReminder(opts: {
   orphanRecord?: { recordName: string; meetingCode: string | null; endTime: string | null } | null;
   /** Texto del "message" de la notificación. */
   notifyMessage: string;
-}): Promise<{ reminderId: number; title: string }> {
-  const analysis = await analyzeMeetingTranscript(opts.transcript, {
-    meetingTitle: opts.meetingTitle,
-    meetingEndISO: opts.meetingEndISO,
-  });
+}): Promise<{ reminderId: number; title: string; existente?: boolean }> {
+  // La misma reunión ya la generó el Copiloto: la transcripción de Meet se adjunta a ese recordatorio.
+  const gemelo = opts.sourceEventId.startsWith(PREFIJO_COPILOTO)
+    ? null
+    : await buscarRecordatorioCopiloto(opts.ownerUserId, opts.transcript, opts.meetingEndISO);
 
-  const { rows: [r] } = await pool.query(
-    `INSERT INTO gcc_world.reminders (user_id, title, notes, remind_at, tasks, status, source, source_event_id, created_by)
-     VALUES ($1, $2, $3, $4, $5, 'active', 'meeting', $6, $1) RETURNING id`,
-    [opts.ownerUserId, analysis.title, analysis.notes || null, analysis.remind_at, JSON.stringify(analysis.tasks), opts.sourceEventId],
-  );
-  const reminderId = Number(r.id);
+  let reminderId: number;
+  let title: string;
+  if (gemelo) {
+    reminderId = gemelo.id;
+    title = gemelo.title;
+  } else {
+    const analysis = await analyzeMeetingTranscript(opts.transcript, {
+      meetingTitle: opts.meetingTitle,
+      meetingEndISO: opts.meetingEndISO,
+    });
+    title = analysis.title;
+    const { rows: [r] } = await pool.query(
+      `INSERT INTO gcc_world.reminders (user_id, title, notes, remind_at, tasks, status, source, source_event_id, created_by)
+       VALUES ($1, $2, $3, $4, $5, 'active', 'meeting', $6, $1) RETURNING id`,
+      [opts.ownerUserId, analysis.title, analysis.notes || null, analysis.remind_at, JSON.stringify(analysis.tasks), opts.sourceEventId],
+    );
+    reminderId = Number(r.id);
+  }
 
-  const txtData = 'data:text/plain;base64,' + Buffer.from(opts.transcript, 'utf8').toString('base64');
-  await pool.query(
-    `INSERT INTO gcc_world.reminder_attachments (reminder_id, filename, content_type, kind, data, size)
-     VALUES ($1, $2, 'text/plain', 'transcript', $3, $4)`,
-    [reminderId, opts.attachmentName, txtData, Buffer.byteLength(opts.transcript, 'utf8')],
+  // Una misma grabación no se adjunta dos veces, aunque el botón «Generar» se pulse de nuevo.
+  const nombreAdjunto = gemelo ? `transcripcion-google-meet-${opts.sourceEventId.replace(/\W+/g, '-')}.txt` : opts.attachmentName;
+  const { rowCount: yaAdjunta } = await pool.query(
+    `SELECT 1 FROM gcc_world.reminder_attachments WHERE reminder_id = $1 AND filename = $2`, [reminderId, nombreAdjunto],
   );
+  if (!yaAdjunta) {
+    const txtData = 'data:text/plain;base64,' + Buffer.from(opts.transcript, 'utf8').toString('base64');
+    await pool.query(
+      `INSERT INTO gcc_world.reminder_attachments (reminder_id, filename, content_type, kind, data, size)
+       VALUES ($1, $2, 'text/plain', 'transcript', $3, $4)`,
+      [reminderId, nombreAdjunto, txtData, Buffer.byteLength(opts.transcript, 'utf8')],
+    );
+  }
 
   const link = `${APP_URL}/dashboard/recordatorios?open=${reminderId}`;
 
@@ -112,13 +159,13 @@ export async function createMeetingReminder(opts: {
   try {
     await createNotification(opts.ownerUserId, {
       type: 'reminder',
-      title: `Recordatorio de reunión: ${analysis.title}`,
-      message: opts.notifyMessage,
+      title: gemelo ? `Transcripción de Meet añadida: ${title}` : `Recordatorio de reunión: ${title}`,
+      message: gemelo ? 'Era la misma reunión que registró el Copiloto; se adjuntó a su recordatorio.' : opts.notifyMessage,
       link,
     });
   } catch { /* no bloquea */ }
 
-  return { reminderId, title: analysis.title };
+  return { reminderId, title, existente: !!gemelo };
 }
 
 /**
