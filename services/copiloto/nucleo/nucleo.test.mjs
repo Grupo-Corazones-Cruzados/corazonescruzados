@@ -415,7 +415,7 @@ test('el corte forzado cae en un hueco y no pierde audio', () => {
   assert.ok(tramos[0].seguir);
   assert.ok(energia(tramos[0].a.subarray(-960)) < 0.02, 'el corte no cae en plena sílaba');
   const total = tramos.reduce((n, t) => n + t.a.length, 0) / 32000;
-  assert.ok(total > 6.4 && total <= 7, String(total));
+  assert.ok(total > 6.4 && total <= 7.5, String(total)); // entran 7,5 s, incluido el silencio final
 });
 
 test('la transcripción se guarda y sobrevive a un reinicio', () => {
