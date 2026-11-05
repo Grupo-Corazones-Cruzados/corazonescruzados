@@ -12,7 +12,7 @@ import ListaMensajes from './Bloques';
 import TarjetaSolicitud from './Solicitud';
 import Compositor, { SelectoresSesion, type Imagen } from './Compositor';
 import RenombrarSesion from './RenombrarSesion';
-import { api, ErrorEspacio, escucharEventos, EVENTO_TITULO, MODOS, TEXTO_ESTADO, type EstadoViva, type Mensaje, type Proyecto, type Solicitud } from './api';
+import { api, ErrorEspacio, escucharEventos, estadoVisible, EVENTO_TITULO, MODOS, TEXTO_ESTADO, type EstadoViva, type Mensaje, type Proyecto, type Solicitud } from './api';
 
 interface Fin { ok: boolean; detenida?: boolean; duracion: number; error: string | null }
 
@@ -238,7 +238,7 @@ export default function Conversacion({
   }, []);
 
   const trabajando = estado === 'trabajando' || estado === 'iniciando';
-  const lineaEstado = estado && estado !== 'cerrada' ? TEXTO_ESTADO[estado] : null;
+  const lineaEstado = estado && estado !== 'cerrada' ? TEXTO_ESTADO[estadoVisible(estado, tareas)] : null;
 
   return (
     <section className="flex flex-col min-h-0 min-w-0 h-full">

@@ -278,7 +278,12 @@ class SesionViva {
   preguntar(herramienta, entrada, { signal, toolUseID } = {}) {
     return new Promise((resolver) => {
       const solicitudId = crypto.randomUUID();
-      const quitar = () => { this.solicitudes.delete(solicitudId); this.emitir({ tipo: 'solicitud_fin', solicitudId }); };
+      const quitar = () => {
+        this.solicitudes.delete(solicitudId);
+        this.emitir({ tipo: 'solicitud_fin', solicitudId });
+        // Contestada, Claude sigue. Sin esto decía «Espera tu respuesta» hasta el final del turno (2026-11-05).
+        if (!this.solicitudes.size && !this.terminada && this.estado === 'espera') this.cambiarEstado('trabajando');
+      };
       this.solicitudes.set(solicitudId, { herramienta, entrada, resolver: (r) => { quitar(); resolver(r); } });
       signal?.addEventListener('abort', () => { if (this.solicitudes.has(solicitudId)) { quitar(); resolver({ behavior: 'deny', message: 'Cancelado', interrupt: true }); } });
       this.noVisto = true;
@@ -379,6 +384,9 @@ class SesionViva {
           return;
         }
         this.modelo = m.model; this.modo = m.permissionMode;
+        // Cada turno empieza aquí. Al acabar un subagente o un comando en segundo plano, Claude abre uno por su
+        // cuenta, sin mensaje de nadie: sin esto seguía «Lista» mientras trabajaba (medido el 2026-11-05).
+        if (this.estado === 'libre') this.cambiarEstado('trabajando');
         this.emitir({ tipo: 'inicio', modelo: m.model, modo: m.permissionMode, cwd: m.cwd, origenClave: m.apiKeySource });
         if (m.apiKeySource && m.apiKeySource !== 'none') this.emitir({ tipo: 'error', texto: `Esta sesión se está cobrando por API (${m.apiKeySource}), no por la suscripción.` });
         this.cargarListas();

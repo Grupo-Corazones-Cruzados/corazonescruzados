@@ -116,7 +116,7 @@ cargar org.grupocc.espacio-web "$plist_web"
 if [[ -z "$ANTES" ]] || ! git -C "$APP" diff --quiet "$ANTES" "$AHORA" -- services/espacio-trabajo || ! cargada org.grupocc.espacio-servicio || ! cmp -s "$plist_servicio.nuevo" "$plist_servicio"; then
   # Reiniciarlo corta la respuesta en curso: se espera a que no haya ninguna (hasta 15 minutos).
   for i in {1..90}; do
-    curl -s -m 5 -H "Authorization: Bearer $(cat "$DATOS/token" 2>/dev/null)" http://127.0.0.1:3791/vivas | grep -q -E '"estado":"(trabajando|espera)"' || break
+    curl -s -m 5 -H "Authorization: Bearer $(cat "$DATOS/token" 2>/dev/null)" http://127.0.0.1:3791/vivas | grep -q -E '"estado":"(trabajando|espera)"|"tareas":[1-9]' || break
     [[ $i == 1 ]] && echo "→ Hay una sesión trabajando: espero a que termine para reiniciar el servicio"
     sleep 10
   done

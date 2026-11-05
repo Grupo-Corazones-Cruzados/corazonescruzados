@@ -5,7 +5,7 @@ import { AlertCircle, CheckCircle2, ChevronRight, Loader2, MessageCircleQuestion
 import BotonEditar from '@/components/ui/BotonEditar';
 import { BTN_ICONO_FILA } from '@/components/ui/Button';
 import RenombrarSesion, { type SesionARenombrar } from './RenombrarSesion';
-import { api, claveBorrador, EVENTO_BORRADOR, EVENTO_TITULO, hace, TEXTO_ESTADO, type Proyecto, type Sesion, type Viva } from './api';
+import { api, claveBorrador, estadoVisible, EVENTO_BORRADOR, EVENTO_TITULO, hace, TEXTO_ESTADO, type Proyecto, type Sesion, type Viva } from './api';
 
 const SIN_ENVIAR = 'Escrito sin enviar';
 
@@ -50,8 +50,8 @@ export function IconoEstado({ s }: { s: Sesion }) {
   const v = s.viva && s.viva.estado !== 'cerrada' ? s.viva : null;
   const t = v ? null : s.estadoTerminal;
   const [Icono, texto, clase] =
-    procesando(s) ? [Loader2, 'Procesando', 'text-accent animate-spin'] as const
-    : v?.estado === 'espera' || t === 'waiting' ? [MessageCircleQuestion, 'Espera tu respuesta', 'text-amber-400'] as const
+    v?.estado === 'espera' || t === 'waiting' ? [MessageCircleQuestion, 'Espera tu respuesta', 'text-amber-400'] as const
+    : procesando(s) ? [Loader2, 'Procesando', 'text-accent animate-spin'] as const
     : s.error ? [AlertCircle, 'Se detuvo', 'text-red-400'] as const
     : s.enTerminal && !v && !t ? [SquareTerminal, 'En una terminal', 'text-digi-muted'] as const
     : v?.noVisto ? [CheckCircle2, 'Terminó, sin ver', 'text-green-400'] as const
@@ -60,7 +60,7 @@ export function IconoEstado({ s }: { s: Sesion }) {
 }
 
 export function lineaSesion(s: Sesion, detalle = s.rama) {
-  const viva = s.viva && s.viva.estado !== 'cerrada' ? TEXTO_ESTADO[s.viva.estado] : null;
+  const viva = s.viva && s.viva.estado !== 'cerrada' ? TEXTO_ESTADO[estadoVisible(s.viva.estado, s.viva.tareas)] : null;
   return (
     <>
       {viva ? <span className={viva.clase}>{viva.texto}</span> : s.error ? <span className="text-red-400">Se detuvo</span> : s.enTerminal ? 'En una terminal' : hace(s.actualizada)}

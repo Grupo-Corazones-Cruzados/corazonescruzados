@@ -117,6 +117,9 @@ export const claveBorrador = (proyecto: string, sesion: string | null) => sesion
 export const EVENTO_BORRADOR = 'espacio-borrador';
 export const EVENTO_TITULO = 'espacio-titulo';
 
+/** Un turno acabado con subagentes o comandos en segundo plano aún no ha terminado de verdad. */
+export const estadoVisible = (estado: EstadoViva, tareas = 0): EstadoViva => (estado === 'libre' && tareas > 0 ? 'trabajando' : estado);
+
 export const TEXTO_ESTADO: Record<EstadoViva, { texto: string; clase: string }> = {
   iniciando: { texto: 'Iniciando', clase: 'text-digi-muted' },
   trabajando: { texto: 'Trabajando', clase: 'text-accent' },
