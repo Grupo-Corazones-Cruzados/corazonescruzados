@@ -28,7 +28,7 @@ export const metadata: Metadata = {
    *
    * ── DE DÓNDE SALE EL TEXTO NUEVO ─────────────────────────────────────────────
    * No lo he inventado: es **su propia definición del proyecto**, la que escribió a mano en
-   * `DESARROLLO → el-proyecto.descripcion`, comprimida para caber en un resultado de búsqueda:
+   * la presentación del proyecto, comprimida para caber en un resultado de búsqueda:
    *
    *   *«un proyecto de desarrollo humano que propone el reconocimiento y aprovechamiento de
    *   las condiciones; las cuales se usan como ancla para el progreso mental, laboral, social,

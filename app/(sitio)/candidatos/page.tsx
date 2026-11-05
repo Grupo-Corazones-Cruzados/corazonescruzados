@@ -1,7 +1,7 @@
 /**
  * CANDIDATOS — `/candidatos` y `/candidatos/<apartado>` (Fernando, 2026-11-01).
  *
- * Arriba, la presentación (titular de Desarrollo Humano con el cruce del corazón y su texto); debajo,
+ * Arriba, la presentación (titular con el cruce del corazón y su texto); debajo,
  * los apartados del formulario de postulación en su orden, uno por pestaña (`TemasCandidatos`), para
  * revisar todo el contenido desde aquí. Hasta que Fernando lo dé por bueno no se indexa.
  */

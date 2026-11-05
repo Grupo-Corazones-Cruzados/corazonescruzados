@@ -15,7 +15,7 @@ import { SITIO } from '@/lib/sitio/contenido';
  * resplandor violeta. No depende del diseño de ninguna página, así que no vuelve a quedarse vieja.
  *
  * La aplica Next a TODAS las rutas que no declaran su propio `openGraph`, y las que sí lo declaran
- * (`/clientes`, `/desarrollo-humano`, `/soluciones`…) la nombran con `OG_IMAGEN`: una sola imagen.
+ * (`/clientes`, `/candidatos`, `/soluciones`…) la nombran con `OG_IMAGEN`: una sola imagen.
  *
  * El logo sale de `public/logo-gcc-512.png`: el círculo de `LogoApp.png` (1080 px) recortado a
  * 512 px y SIN la marca de agua «miro» de la esquina. El de la cabecera (`logo-gcc.png`, 256 px)

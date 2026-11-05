@@ -1,11 +1,8 @@
 /**
- * EL EXPLORADOR DE SECCIONES — **una definición para `/clientes` y `/desarrollo-humano`**.
+ * EL EXPLORADOR DE SECCIONES — **la definición de las secciones de `/clientes`**.
  *
  * Secciones a la izquierda, contenido en medio, sus preguntas a la derecha. Nació como
- * `ClientesExplorador` el 2026-08-18 y se generalizó el 08-19, cuando Fernando pidió la misma
- * interfaz para Desarrollo Humano. **No se copió**: la lista de secciones y la ruta base
- * entran por prop, y todo lo demás —galería, índice, anclas, pasos— es el mismo código. Dos
- * exploradores que se parecen se separan a la primera corrección que solo se aplica a uno.
+ * `ClientesExplorador` el 2026-08-18. La lista de secciones y la ruta base entran por prop.
  *
  * Fernando lo rediseñó el 2026-08-18: *«dejaremos las 4 tarjetas pero en diseño galería
  * vertical dentro de un panel izquierdo, luego el contenido va a mostrarse dentro de un
@@ -109,13 +106,13 @@ function IndiceEnFila({ temas }: { temas: NonNullable<Acceso['temas']> }) {
 export default function ExploradorSecciones({
   secciones, activa, faqs, base, rotulo, etiquetaNav, presentacion, children,
 }: {
-  /** Las secciones de las puertas. `ACCESOS` en `/clientes`, `DESARROLLO` en la otra. */
+  /** Las secciones de las puertas. `ACCESOS` de `/clientes`. */
   secciones: Acceso[];
   /** El `id` de la sección abierta. En la portada de cada rama es la primera. */
   activa: string;
   /** Las preguntas frecuentes de esa sección, ya leídas en el servidor. */
   faqs: Faq[];
-  /** La ruta de la que cuelgan las secciones: `/clientes` o `/desarrollo-humano`. */
+  /** La ruta de la que cuelgan las secciones: `/clientes`. */
   base: string;
   /** El rótulo en versalitas sobre el nombre de la sección. */
   rotulo: string;

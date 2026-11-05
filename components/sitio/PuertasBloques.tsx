@@ -1,5 +1,5 @@
 /**
- * LAS PUERTAS EN BLOQUES — una definición para Clientes, Desarrollo Humano y Soluciones (2026-10-30).
+ * LAS PUERTAS EN BLOQUES — una definición para Clientes y Soluciones (2026-10-30).
  *
  * Eran filas de tarjetas (`.puertas-seccion`) y se encogían al crecer: con seis secciones, ~200 px
  * por tarjeta, títulos partidos y la frase con «…». Fernando: *«todas las tarjetas se ven muy

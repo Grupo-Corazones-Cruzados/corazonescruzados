@@ -2,7 +2,7 @@
 
 /**
  * LA TABLA DEL MODELO 4P y EL RECORRIDO DE LA METODOLOGÍA — compartidos por el formulario de
- * postulación (pasos 1 y 2) y las páginas públicas de Desarrollo Humano. Los textos salen de
+ * postulación (pasos 1 y 2) y la página Candidatos. Los textos salen de
  * `lib/sitio/modeloGcc.ts`; los estilos (`.modelo-4p`, `.m4p-*`, `.cond-*`) de `app/globals.css`,
  * con los tokens `--color-digi-*` / `--color-accent*` (en el sitio público los reasigna
  * `.modelo-gcc-publico` a la paleta clara).

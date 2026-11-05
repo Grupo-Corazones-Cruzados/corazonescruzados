@@ -6,8 +6,8 @@
  * Fernando, 2026-10-30: «iconos con accesos rápidos a las redes sociales»).
  *
  * ── QUÉ NO LLEVA, Y POR QUÉ ────────────────────────────────────────────────────
- * · **La navegación.** La versión anterior repetía Inicio · Soluciones · Desarrollo Humano ·
- *   Contacto, que es **exactamente** lo que hay en la cabecera — y la cabecera está fija
+ * · **La navegación.** La versión anterior repetía los enlaces del menú,
+ *   que es **exactamente** lo que hay en la cabecera — y la cabecera está fija
  *   arriba, siempre visible. Repetir cuatro enlaces a sesenta píxeles del original no ayuda
  *   a nadie: solo hace el pie más alto. Lo vio Fernando en una captura donde las dos filas
  *   quedaban una encima de otra, casi idénticas.

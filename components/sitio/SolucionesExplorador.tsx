@@ -262,7 +262,7 @@ export default function SolucionesExplorador({
       {/* ── LOS TALENTOS, COMO PUERTAS (Fernando, 2026-10-29: «el diseño está muy mal para mostrar
           el contenido… usa tu reformulación») ──────────────────────────────────────────────
           Sustituye a las carpetas del panel izquierdo. Desde el 2026-10-30, `PuertasBloques` como en
-          Clientes y Desarrollo Humano: un bloque por SOLUCIÓN con sus talentos en filas y la cuenta
+          Clientes: un bloque por SOLUCIÓN con sus talentos en filas y la cuenta
           de trabajos, para que crezca sin encogerse («a futuro se va a llegar a crear más
           soluciones», Fernando). Cada talento sigue siendo una URL. Para la versión con carpetas y tres
           paneles: `git show 8d23d58e:components/sitio/SolucionesExplorador.tsx`. */}

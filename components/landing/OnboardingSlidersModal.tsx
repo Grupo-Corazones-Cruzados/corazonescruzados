@@ -105,7 +105,7 @@ function SlideModelo() {
 /* ------------------------------------------------------------------ */
 
 // Textos de Fernando (2026-10-29), literales, en `lib/sitio/modeloGcc.ts`: los comparten las
-// páginas públicas de Desarrollo Humano. La Metodología lleva su recorrido tras el primer párrafo.
+// página Candidatos. La Metodología lleva su recorrido tras el primer párrafo.
 const TOOLS: AccordionItem[] = HERRAMIENTAS.map((h) => ({
   name: h.nombre,
   summary: h.resumen,

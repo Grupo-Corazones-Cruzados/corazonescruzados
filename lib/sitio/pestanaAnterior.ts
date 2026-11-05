@@ -1,7 +1,7 @@
 /**
  * DE QUÉ PESTAÑA SE VIENE — memoria de la navegación del sitio público (Fernando, 2026-10-29).
  *
- * La transición entre Inicio, Soluciones, Clientes y Desarrollo Humano necesita saber de dónde
+ * La transición entre las pestañas del sitio necesita saber de dónde
  * se viene: la cápsula de la cabecera se desliza DESDE la pestaña anterior, y el cuerpo entra
  * desde el lado hacia el que se avanzó. Vive en el módulo (no en un estado de React) porque la
  * cabecera se REMONTA al pasar de la portada (`app/page.tsx`) al marco de `app/(sitio)` y

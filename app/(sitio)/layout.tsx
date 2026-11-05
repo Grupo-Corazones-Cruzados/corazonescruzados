@@ -1,5 +1,5 @@
 /**
- * MARCO DEL SITIO PÚBLICO — cabecera y pie compartidos por `/clientes`, `/desarrollo-humano` y
+ * MARCO DEL SITIO PÚBLICO — cabecera y pie compartidos por `/clientes`, `/candidatos` y
  * `/contacto`.
  *
  * La portada (`app/page.tsx`) NO está aquí a propósito: es una experiencia a pantalla
@@ -8,8 +8,7 @@
  *
  * ── EL CUERPO ES CLARO; LA CABECERA Y EL PIE SIGUEN OSCUROS (2026-08-17) ───────
  * Fernando: *«la cabecera y el pie de páginas se quedan igual, solo cambia de tema el
- * contenido de las páginas»*. Aplica a las CINCO que cuelgan de aquí: Soluciones,
- * Desarrollo Humano, Contacto y los dos documentos legales.
+ * contenido de las páginas»*. Aplica a todas las que cuelgan de aquí.
  *
  * Que el tema claro viva **en el `<main>`** y no en este `<div>` es lo que hace que salga
  * gratis: `CabeceraSitio` y `PieSitio` son los mismos componentes que usa la portada, y no
@@ -34,7 +33,7 @@ import TransicionSeccion from '@/components/sitio/TransicionSeccion';
  * bloquear el pellizco en una página de leer deja fuera a quien necesita agrandar el texto.
  * Es un fallo de accesibilidad que además pesa: Google evalúa el sitio por su versión móvil.
  *
- * Sobrescribe el `viewport` de `app/layout.tsx` solo para `/clientes`, `/desarrollo-humano`,
+ * Sobrescribe el `viewport` de `app/layout.tsx` solo para `/clientes`, `/candidatos`,
  * `/contacto` y los legales.
  */
 /**
@@ -90,7 +89,7 @@ export default function SitioLayout({ children }: { children: ReactNode }) {
           antes que la página y dejaba una franja del papel `#f6f5f9` debajo. Se veía como un
           cambio de color a media pantalla; lo vio Fernando. */}
       {/* EL MUNDO «PROGRESO» (Fernando, 2026-10-29: «aprendamos de la página de inicio el estilo
-          de la sección de Plataforma / Progreso para Soluciones, Clientes y Desarrollo Humano»).
+          de la sección de Plataforma / Progreso»).
           El fondo es el de la Plataforma de la portada —degradado lavanda, rejilla de puntos y
           manchas violetas difuminadas—, fijo detrás del contenido y QUIETO (son páginas de leer:
           sin la deriva animada de la portada). Las secciones ya no pintan blanco encima. Los

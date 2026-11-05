@@ -1,7 +1,7 @@
 /**
  * EL CONTENIDO DEL SITIO PÚBLICO — fuente única.
  *
- * Las páginas de `/clientes` y `/desarrollo-humano` **no llevan texto escrito dentro**:
+ * Las páginas de `/clientes` **no llevan texto escrito dentro**:
  * lo leen de aquí. Así se edita en un sitio, se traduce de una vez si algún día hace falta,
  * y no hay dos versiones del mismo servicio en dos páginas distintas.
  *
@@ -20,7 +20,6 @@
  *    candidatos—, que son los tres públicos del proyecto.
  */
 
-import { HERRAMIENTAS, HERRAMIENTAS_INTRO, MODELO_INTRO } from '@/lib/sitio/modeloGcc';
 import { NOMBRE_COMERCIAL, RAZON_SOCIAL, RUC, DIRECCION, CONTACTO } from '@/lib/negocio/datos';
 import type { Red } from '@/lib/members/redes';
 
@@ -65,8 +64,8 @@ export const SITIO = {
  * LA IMAGEN QUE SALE AL COMPARTIR — hay que nombrarla en cada página, y no es obvio.
  *
  * `app/opengraph-image.tsx` se aplica sola a la portada y a cualquier ruta que **no**
- * declare su propio `openGraph`. Pero `/clientes` y `/desarrollo-humano` sí lo declaran
- * —cada una con su título y su descripción—, y Next **sustituye** el bloque `openGraph`
+ * declare su propio `openGraph`. Pero `/clientes` sí lo declara
+ * —con su título y su descripción—, y Next **sustituye** el bloque `openGraph`
  * entero en vez de completarlo: al no llevar `images`, se quedaban sin imagen.
  *
  * Comprobado en producción el 2026-08-04: la portada traía `og:image` y las otras tres no.
@@ -124,10 +123,8 @@ export const NAVEGACION = [
    */
   { href: '/', label: 'Inicio' },
   /**
-   * LAS PESTAÑAS NUEVAS (Fernando, 2026-10-31): el sitio pasa a Inicio · Candidatos · Clientes ·
-   * Miembros. Candidatos y Miembros nacen VACÍAS, y Clientes queda solo con su titular y su texto;
-   * él irá dictando qué llevan. Soluciones y Desarrollo Humano siguen visibles mientras tanto,
-   * porque de ellas se recuperará lo que vaya a las nuevas; al final se quitarán.
+   * LAS PESTAÑAS (Fernando, 2026-10-31 y 2026-11-05): Inicio · Candidatos · Clientes · Miembros.
+   * `/soluciones` sigue existiendo, pero ya no es una pestaña.
    */
   { href: '/candidatos', label: 'Candidatos' },
   /**
@@ -136,25 +133,6 @@ export const NAVEGACION = [
    */
   { href: '/clientes', label: 'Clientes' },
   { href: '/miembros', label: 'Miembros' },
-  /**
-   * ⚠️ ESTAS DOS PESTAÑAS **INTERCAMBIARON SUS NOMBRES** EL 2026-08-18. Que conste el
-   * orden, porque leer el historial sin esto despista:
-   *
-   *   | Página                          | 08-17        | 08-18 (hoy)  |
-   *   |---------------------------------|--------------|--------------|
-   *   | soluciones + trabajo terminado     | `/soluciones`   | `/soluciones`|
-   *   | las cinco puertas               | `/soluciones`| `/clientes`  |
-   *
-   * Fernando: *«esta página en la que hemos estado trabajando realmente tiene el contenido
-   * pensado para lo que sería de soluciones»*. El concepto interno de la primera sigue
-   * llamándose **solución** —tabla `soluciones`, Admin → Soluciones—: lo que cambió es su nombre de
-   * cara al público, no el modelo.
-   */
-  { href: '/soluciones', label: 'Soluciones' },
-  // La etiqueta ya decía «Desarrollo Humano» mientras la ruta seguía siendo `/recursos`, que
-  // era el nombre viejo. El 2026-08-17 se igualaron: titular, pestaña, menú y URL dicen lo
-  // mismo. La ruta vieja redirige (308) desde `next.config.ts`.
-  { href: '/desarrollo-humano', label: 'Desarrollo Humano' },
   /* ⚠️ AQUÍ ESTABA LA PESTAÑA «Contacto», y la página se borró el 2026-08-20 a petición de
      Fernando. `/contacto` **no muere**: redirige a `/legal` (`next.config.ts`), que es donde
      siguen el RUC y los correos. Recuperable con:
@@ -230,8 +208,8 @@ export interface Acceso {
   grupo?: string;
   /* ⚠️ AQUÍ ESTABA `enlaceExterno`, EL BOTÓN GRANDE DENTRO DEL CONTENIDO — borrado el
      2026-08-20 al quedarse **sin un solo uso**. Lo tuvieron Marketplace («Ver el
-     marketplace», retirado el 08-19) y «Cómo se entra» de Desarrollo Humano («Postularme»,
-     retirado hoy por Fernando). Los dos destinos siguen vivos: el del marketplace pasó al
+     marketplace», retirado el 08-19) y otra sección («Postularme», retirado hoy por
+     Fernando). Los dos destinos siguen vivos: el del marketplace pasó al
      botón «Ir» de la tarjeta, y la postulación se hace desde la portada.
 
      No se deja el campo «por si vuelve»: un dato que nadie rellena y un `if` que nunca se
@@ -844,380 +822,6 @@ export const ACCESOS: Acceso[] = [
             titulo: 'Se hace lo que se votó',
             texto: 'No es una encuesta de opinión: la opción elegida es la que se lleva a cabo, y después se reporta los resultados.',
             imagen: { src: '/clientes/dem-3-se-hace.webp', ancho: 760, alto: 279 },
-          },
-        ],
-      },
-    ],
-  },
-];
-
-/**
- * ═══════════ DESARROLLO HUMANO — de estar perdido a decidir sobre el proyecto ═══════════
- *
- * ⭐ **LA VISIÓN, DICTADA POR FERNANDO EL 2026-08-19**, y es la que ordena toda esta página:
- *
- *   *«personas sin oficio y perdidos en su vida puedan encontrar en este proyecto una guía y
- *   orientación, en donde se hacen entrevistas iniciales para estudiar su condición o caso, y
- *   luego se plantean alternativas de solución para cada problemática identificada. Y luego ir
- *   tratando su caso mediante diferentes sistemas y se vaya desarrollando un progreso que
- *   luego le permita resolver sus necesidades básicas; y cuando tiene determinada condición se
- *   le puede convertir a miembro. Y cuando es miembro, colaborar en sistemas internos de la
- *   organización, y seguir haciendo su negocio […] y colaborar de cierta forma con la
- *   organización, ya sea por cada producto vendido en la plataforma una tasa de beneficio a la
- *   organización. Y que ellos sean quienes, tras ciertos sistemas, puedan observar el estado
- *   global del negocio, votar y tomar decisiones para realizar mejoras conjuntas, y ser
- *   partícipes activos de las necesidades del negocio.»*
- *
- * ── POR QUÉ ESTO CAMBIÓ LA PÁGINA ENTERA (dos veces en el mismo día) ──────────
- * La primera versión reordenaba sus bloques antiguos. La segunda contaba el camino de un
- * candidato que toma tickets. **Las dos estaban mirando el sitio equivocado.** El proyecto no
- * empieza cuando alguien ya sabe lo que sabe hacer: empieza cuando alguien **no lo sabe**, y
- * lo primero que recibe no es trabajo, es una entrevista donde se estudia su caso.
- *
- * Con la visión encima, las cuatro secciones son los cuatro tramos del mismo camino:
- *
- *   El proyecto  ·  Cómo se entra  ·  Tu progreso  ·  Ser miembro
- *   (para quién) ·  (diagnóstico)  ·  (tratamiento) ·  (autonomía y co-gobierno)
- *
- * ⚠️ **`tu-talento` y `como-se-crece` cambiaron de nombre** al reescribirse: ya no describían
- * lo que hay dentro. Las dos direcciones viejas redirigen (`next.config.ts`) — llevaban
- * publicadas menos de una hora, pero la regla del sitio es que ninguna URL publicada muere.
- *
- * ── DÓNDE ENCAJA LA CONDICIOLOGÍA, QUE ES LO QUE HACE QUE ESTO SE SOSTENGA ────
- * «Estudiar su condición» no es una manera de hablar: es el método del proyecto aplicado a una
- * persona. Reconocer qué la frena, controlarlo, predecir, probar, y cambiar la condición para
- * cambiar el resultado. Por eso el diagnóstico no es una entrevista de trabajo — no busca si
- * sirves, busca **qué te está pasando**.
- *
- * ⚠️ **TODO EL TEXTO ES MÍO** y está para que Fernando lo corrija. Habla de personas en
- * situación difícil, así que se ha escrito con dos cuidados: **nada de condescendencia** —no
- * se les trata como a un problema que resolver— y **ninguna promesa**: ni plazos, ni ingresos,
- * ni «te cambiamos la vida». Se cuenta qué hace el proyecto, no qué le va a pasar a nadie.
- */
-export const DESARROLLO: Acceso[] = [
-  {
-    id: 'el-proyecto', icono: 'pulso', grupo: 'Conoce el modelo',
-    titulo: 'El proyecto',
-    texto: 'Para quién es el Grupo Corazones Cruzados, y por qué existe.',
-    descripcion:
-      'El Grupo Corazones Cruzados es un proyecto de desarrollo humano que propone el reconocimiento y aprovechamiento de las condiciones; las cuales se usan como ancla para el progreso mental, laboral, social, y corporal de los sujetos; buscando logros de forma individual como colectiva.',
-    temas: [
-      {
-        id: 'para-quien-es',
-        etiqueta: 'Para quién',
-        pregunta: '¿Esto es para mí?',
-        texto:
-          'Si no sabes a qué dedicarte, si lo que haces no te alcanza para vivir, o si llevas tiempo dando vueltas sin encontrar por dónde seguir; entonces, únete a este proyecto. Para nosotros, no hace falta traer un título, ni experiencia, ni tener claro tu talento: eso es precisamente lo que descubriremos juntos.',
-        pasos: [
-          {
-            titulo: 'Inicias desde cero',
-            texto: 'No se te pide un perfil impecable ni que domines algún conocimiento. Se te pide únicamente que tus acciones e intenciones sean sinceras.',
-            imagen: { src: '/desarrollo-humano/dh-proyecto-1-cero.webp', ancho: 680, alto: 760 },
-          },
-          {
-            titulo: 'Se estudia tu caso',
-            texto: 'Una entrevista para entender de dónde vienes y qué estás afrontando. Se definen situaciones causantes de problemas, causas específicas, y alternativas de solución',
-            imagen: { src: '/desarrollo-humano/dh-proyecto-2-caso.webp', ancho: 740, alto: 760 },
-          },
-          {
-            titulo: 'Acciones diarias',
-            texto: 'Las alternativas se convierten en tareas dentro de la plataforma. Con esto podrás afrontar las dificultades que tienes y percibir el progreso.',
-            imagen: { src: '/desarrollo-humano/dh-proyecto-3-acciones.webp', ancho: 692, alto: 760 },
-          },
-        ],
-      },
-      {
-        id: 'por-que-ayudar',
-        etiqueta: 'Unión',
-        pregunta: '¿Por qué me van a ayudar a mí?',
-        texto:
-          'El servicio de este proyecto, no tiene costo debido a que nosotros operamos en base a una apuesta grande, y es que cada candidato de este proyecto se convierta en lo que quiera ser, para que sus frutos puedan traerle beneficio a sí mismo; como también al grupo. Nuestro apuesta radica en que el acto de sacar provecho de un talento, es lo mismo a minar en busca de minerales en una cueva, debes gastar recursos, materiales, para que la recompensa nos ayude a compensar los gastos y sacar beneficios para seguir creciendo como organización.',
-        pasos: [
-          {
-            titulo: 'Primero recibes',
-            texto: 'Orientación, acompañamiento y acceso a los sistemas del grupo. Invertimos $50 por persona para empezar con su proyecto.',
-            imagen: { src: '/desarrollo-humano/dh-proyecto-4-recibes.webp', ancho: 686, alto: 760 },
-          },
-          {
-            titulo: 'Sostenibilidad',
-            texto: 'Planificamos y ejecutamos una estrategia de desarrollo humano que incluye un método de monetización para obtener beneficios de tu talento y así colaborar en la organización.',
-            imagen: { src: '/desarrollo-humano/dh-proyecto-5-sostenibilidad.webp', ancho: 494, alto: 760 },
-          },
-          {
-            titulo: 'Apoyo y Autoayuda',
-            texto: 'Empoderarte permite registrar datos que luego son reutilizados en otros casos similares al tuyo. De esa manera recolectar datos, nos permiten crear y generar oportunidades para ti y para los demás miembros.',
-            imagen: { src: '/desarrollo-humano/dh-proyecto-6-apoyo.webp', ancho: 760, alto: 648 },
-          },
-        ],
-      },
-    ],
-  },
-
-  /**
-   * ⭐ EL MODELO DE GRUPO Y SUS HERRAMIENTAS, PÚBLICOS (Fernando, 2026-10-30).
-   *
-   * Hasta hoy vivían solo dentro del formulario de postulación, y los buscadores no los veían:
-   * al hablar del grupo, Google y Bing repetían la descripción general. Fernando: *«que los
-   * buscadores recolecten esta información como parte fundamental de lo que es nuestro
-   * negocio»*. Son los MISMOS textos del formulario (`lib/sitio/modeloGcc.ts`): se corrigen en
-   * un sitio y cambian en los dos. La tabla y las reglas las pone la página de la sección.
-   */
-  {
-    id: 'modelo-organizacional-4p', icono: 'capas', grupo: 'Conoce el modelo',
-    titulo: 'Modelo Organizacional 4P',
-    texto: 'Los cuatro pisos y los cuatro pasos con los que se organiza cada proyecto del grupo.',
-    descripcion: MODELO_INTRO,
-  },
-  {
-    id: 'herramientas-del-modelo', icono: 'herramienta', grupo: 'Conoce el modelo',
-    titulo: 'Herramientas del Modelo',
-    texto: 'Metodología Condiciológica, Sistema de Control Psicosocial, Proyecto Centralizado y Violeta.',
-    descripcion: HERRAMIENTAS_INTRO,
-    temas: HERRAMIENTAS.map((h, i) => ({
-      id: h.id,
-      etiqueta: `Herramienta ${i + 1}`,
-      pregunta: h.pregunta,
-      texto: h.parrafos.join('\n\n'),
-      conPasosCondiciologia: h.conPasos,
-    })),
-  },
-
-  {
-    id: 'como-se-entra', icono: 'acuerdo', grupo: 'Tu camino',
-    titulo: 'Cómo se entra',
-    texto: 'La entrevista inicial, el estudio de tu caso y las alternativas que salen de ahí.',
-    descripcion:
-      'Para ser candidato de este proyecto, los postulantes deberán rellenar un formulario en donde deberán leer y aceptar las condiciones que tenemos para pertenecer a esta organización. Adicional deberás redactar tus motivos, razones, y situación actual que te lleva a querer ser candidato.',
-    temas: [
-      {
-        id: 'la-entrevista',
-        etiqueta: 'La entrevista',
-        pregunta: '¿Cómo empieza todo?',
-        texto:
-          'Después de enviar tu postulación, analizaremos tus datos y se determinará si eres un candidato o no. En caso de serlo, iniciarás con una entrevista inicial, analizamos tu condición, y como resultado de esto, se desarrollará un plan de desarrollo en el cual recibirás tareas diarias que han sido pensadas para ti.',
-        pasos: [
-          {
-            titulo: 'Te postulas',
-            texto: 'Hazlo desde la página de inicio, contando tu situación con tus palabras. No hay preguntas trampa ni pruebas que superar.',
-            imagen: { src: '/desarrollo-humano/dh-entra-1-postulas.webp', ancho: 760, alto: 744 },
-          },
-          {
-            titulo: 'Hablemos de ti',
-            texto: 'Una conversación para entender lo que pasa, no es para juzgarte. Lo que cuentes ahí queda entre el entrevistador y tú.',
-            imagen: { src: '/desarrollo-humano/dh-entra-2-hablemos.webp', ancho: 760, alto: 558 },
-          },
-          {
-            titulo: 'Se reconoce tu caso',
-            texto: 'Se nombran los problemas concretos, uno por uno. Cuando un problema es identificado y tiene nombre, veremos la manera de tratar y resolverlo juntos.',
-            imagen: { src: '/desarrollo-humano/dh-entra-3-reconoce.webp', ancho: 760, alto: 515 },
-          },
-        ],
-      },
-      {
-        id: 'alternativas',
-        etiqueta: 'Alternativas',
-        pregunta: '¿Y qué sale de esa entrevista?',
-        texto:
-          'Según el caso, generamos alternativas de solución; las cuales representan registros fundamentados que nos dicen una tasa de éxito para atender el problema que experimentas, dependiendo del caso nosotros te preparamos la estrategia, y tú la ejecutas.',
-        pasos: [
-          {
-            titulo: 'Se plantean los caminos',
-            texto: 'Para cada problema identificado, pueden existir más de una forma de responder. Con lo que se te pide ejecutar, vamos a revisar si el efecto, y cómo abordar el siguiente paso según lo que suceda.',
-            imagen: { src: '/desarrollo-humano/dh-entra-4-caminos.webp', ancho: 760, alto: 584 },
-          },
-          {
-            titulo: 'Eliges por dónde empezar',
-            texto: 'Nosotros desarrollamos la estrategia, pero tú recibes las tareas, y desde la plataforma escoges la fecha u hora de ejecución. Ten en cuenta que cada tarea tiene una valoración dentro de tu perfil, en caso de que no cumplas con tu tarea existe un castigo, y si se percibe una falta de compromiso recurrente, entonces se considera el rechazo de tu candidatura.',
-            imagen: { src: '/desarrollo-humano/dh-entra-5-eliges.webp', ancho: 740, alto: 760 },
-          },
-          {
-            titulo: 'Empiezas acompañado',
-            texto: 'Desde el primer día tienes tu cuenta, acceso a los sistemas del grupo y a un espacio en donde puedes preguntar y conversar sobre tus dificultades. Los logros o el éxito que tú tengas, los compartimos y festejamos todos los miembros, ya que es el resultado también del esfuerzo que todos hacemos para que funcione esta organización.',
-            imagen: { src: '/desarrollo-humano/dh-entra-6-acompanado.webp', ancho: 592, alto: 760 },
-          },
-        ],
-      },
-    ],
-  },
-
-  {
-    id: 'tu-progreso', icono: 'tendencia', grupo: 'Tu camino',
-    titulo: 'Tu progreso',
-    texto: 'Cómo se trata tu caso, cómo se mide el avance y cuándo te conviertes en miembro.',
-    descripcion:
-      'A partir de aquí se trabaja tu caso con los sistemas del grupo. Cada paso que das para resolver tus necesidades, servirá para mejorar tu perfil, el cual será usado como métrica de confianza (prospección) para que los clientes y miembros decidan invertir en ti. Algunos de los beneficios pueden ser: promociones a tu perfil, oportunidades para tu negocio, e incluso convertirte en miembro de la organización.',
-    temas: [
-      {
-        id: 'tratar-tu-caso',
-        etiqueta: 'El tratamiento',
-        pregunta: '¿Cómo se resuelven tus necesidades?',
-        texto:
-          'Mediante el método del propio proyecto; es decir, la Condiciología pero aplicado a tu caso. 1) Se reconoce la condición; 2) se prueba algo sobre ella y se mira el resultado; 3) Si cambió, se sigue; si no, se escoge otra alternativa de solución.',
-        pasos: [
-          {
-            titulo: 'Se usa el sistema',
-            texto: 'La plataforma tiene varios sistemas desde el cual puedes trabajar en tu perfil, no solo las tareas que se te asignan para abordar tus problemas, hay eventos u otras herramientas que te permitirán obtener ingresos, o experiencias nuevas.',
-            imagen: { src: '/desarrollo-humano/dh-prog-1-sistema.webp', ancho: 760, alto: 683 },
-          },
-          {
-            titulo: 'Se mira el resultado',
-            texto: 'Qué cambió de verdad en tu situación. De acuerdo a las acciones realizadas se tiene un registro completo de todos tus pasos, y se puede analizar y obtener datos que permitan observar lo que sirvió para tu caso, y lo que no.',
-            imagen: { src: '/desarrollo-humano/dh-prog-2-resultado.webp', ancho: 760, alto: 674 },
-          },
-          {
-            titulo: 'Se corrige y se sigue',
-            texto: 'Si funcionó, se avanza al siguiente paso, necesidad o problema. Si no, se cambia la condición y se vuelve a probar. Equivocarse forma parte del método.',
-            imagen: { src: '/desarrollo-humano/dh-prog-3-corrige.webp', ancho: 760, alto: 748 },
-          },
-        ],
-      },
-      {
-        id: 'paso-a-miembro',
-        etiqueta: 'El paso a miembro',
-        pregunta: '¿Cuándo te conviertes en miembro?',
-        texto:
-          'Esto sucede cuando haz resuelto tus problemas, y lo que haces ya cubre tus necesidades y puedes sostenerte. Dicho de otra manera, no es cuando se cumple algún plazo de tiempo, o se aprueba algún examen, o que lo pueda exigir un criterio humano. El paso de convertirse en miembro sucede cuando un candidato es capaz de resolver sus necesidades y además el perfil logra adherirse a los criterios internos de la organización. A partir de ese momento, un miembro global del paso de Implementación decide el momento de la selección.',
-        pasos: [
-          {
-            titulo: 'Empiezas a resolver',
-            texto: 'Los primeros problemas por lo que empezamos, ya logras manejarlos y sabes usar tus herramientas para resolver si tuvieras que volver a afrontarlos.',
-            imagen: { src: '/desarrollo-humano/dh-prog-4-resolver.webp', ancho: 760, alto: 282 },
-          },
-          {
-            titulo: 'Cubres lo básico',
-            texto: 'Además de los problemas, ya lograr obtener lo que necesitas para vivir, y sentir tranquilidad o felicidad en tu día a día.',
-            imagen: { src: '/desarrollo-humano/dh-prog-5-basico.webp', ancho: 760, alto: 739 },
-          },
-          {
-            titulo: 'Se te convierte en miembro',
-            texto: 'Porque ya representas al grupo ante los demás, y porque estás en condición de sostener a otro. Es un reconocimiento que se realiza con tu consentimiento, el cual conlleva mayor responsabilidad y compromiso.',
-            imagen: { src: '/desarrollo-humano/dh-prog-6-miembro.webp', ancho: 571, alto: 760 },
-          },
-        ],
-      },
-    ],
-  },
-
-  /**
-   * ⚠️ REESCRITA EL 2026-08-20 PARA QUE SUENE COMO ÉL, no como yo.
-   *
-   * Fernando reescribió a mano «El proyecto», «Cómo se entra» y «Tu progreso», y me pidió que
-   * aprendiera de ahí: *«el estilo de escritura tuya es muy diferente […] es más humano diría
-   * lo mío y lo tuyo es más una presentación para vender algo»*. Tenía razón. Lo que le separa
-   * de lo mío, leído en sus tres secciones:
-   *
-   * 1. **Él habla en «nosotros»** —«analizaremos tus datos», «invertimos $50 por persona»,
-   *    «nosotros te preparamos la estrategia, y tú la ejecutas»—. Yo escribía en impersonal
-   *    («se estudia», «se te da»), y eso suena a folleto: no hay nadie detrás de la frase.
-   * 2. **Usa el vocabulario del proyecto sin traducirlo**: condición, alternativas de
-   *    solución, prospección, gestor, paso de Implementación. Yo lo traducía a lenguaje llano
-   *    y perdía el término propio, que es justo lo que hace suyo al proyecto.
-   * 3. **Se moja**: pone cifras y nombres concretos. Yo los esquivaba por prudencia.
-   * 4. **No usa la fórmula «No es X: es Y»** ni remata cada paso con una frase ingeniosa. Yo
-   *    lo hacía en casi todos, y es lo que más olía a presentación de ventas.
-   *
-   * Esta sección se ha reescrito con esas cuatro reglas. **Sigue siendo mía y sigue estando
-   * para que la corrija**, pero al menos ya no habla otro idioma que sus vecinas.
-   *
-   * ⚠️ Lo que NO he hecho es inventarme cifras al modo suyo —el «$50 por persona» es un dato
-   * que solo él puede dar—. Donde haría falta un número, la frase se queda en el mecanismo.
-   */
-  {
-    id: 'ser-miembro', icono: 'institucion', grupo: 'Tu camino',
-    titulo: 'Ser miembro',
-    texto: 'Qué haces, qué aportas y cómo participas en las decisiones de la organización.',
-    descripcion:
-      'Ser miembro significa que ya resolviste lo tuyo y ahora formas parte de quienes sostienen la organización. Mantienes tu negocio y tus actividades, y a la vez colaboras con tu talento en los sistemas internos.',
-    temas: [
-      {
-        id: 'que-cambia',
-        etiqueta: 'Qué cambia',
-        pregunta: '¿Qué cambia cuando eres miembro?',
-        texto:
-          'Cambia tu relación con nosotros. Cuando eras candidato, no tienes acceso a sistemas internos, y oportunidades más específicas; como miembro, tú pasas a ser parte de los sistemas internos; según el rol asignado. A la vez, mantienes tu negocio, tus clientes y tus actividades.',
-        pasos: [
-          {
-            titulo: 'Mantienes lo tuyo',
-            texto: 'Tu negocio, tus clientes y tus actividades siguen siendo tuyos. Este proyecto se creó para que existan, y para que sigan creciendo.',
-            imagen: { src: '/desarrollo-humano/dh-miem-1-mantienes.webp', ancho: 760, alto: 607 },
-          },
-          {
-            titulo: 'Aportas con tu talento',
-            texto: 'Tu talento entra en los sistemas internos de la organización, te asignamos algo en aquello que ya dominas y que nos hace falta para que sigamos creciendo.',
-            imagen: { src: '/desarrollo-humano/dh-miem-2-aportas.webp', ancho: 600, alto: 760 },
-          },
-          {
-            titulo: 'Compartes el beneficio',
-            texto: 'Los miembros tienen acceso exclusivo a oportunidades que ofrecemos a nuestros clientes por la confianza que existe en el grupo. La expectativa que tenemos sobre nuestros miembros es muy alta debido a todos los retos que sabemos tuvieron que pasar para llegar hasta aquí.',
-            imagen: { src: '/desarrollo-humano/dh-miem-3-beneficio.webp', ancho: 417, alto: 760 },
-          },
-        ],
-      },
-      {
-        id: 'trabajo-para-el-grupo',
-        etiqueta: 'Trabajo interno',
-        pregunta: '¿Qué haces para la organización?',
-        texto:
-          'Depende de tu talento, los miembros con rol global del paso de implementación deciden mediante el sistema de reclutamiento y selección, el paso y piso que vas a trabajar; sin embargo, si tu interés lo requiere, siempre podrás solicitar el cambio de tu posición.',
-        pasos: [
-          {
-            titulo: 'Ejecutamos roles',
-            texto: 'Lo que hacemos depende del paso y piso asignado. Ya sea que tu área sea la investigación, la creación, la implementación, o la gestión, cada persona colabora en donde mejor se adapta.',
-            imagen: { src: '/desarrollo-humano/dh-miem-4-roles.webp', ancho: 660, alto: 760 },
-          },
-          {
-            titulo: 'Tomas lo que va contigo',
-            texto: 'Existen tickets y proyectos que se promocionan internamente las cuales se puedes tomar y aceptar según tu interés, y más allá de tu rol, según tu necesidad.',
-            imagen: { src: '/desarrollo-humano/dh-miem-5-tomas.webp', ancho: 760, alto: 703 },
-          },
-          {
-            titulo: 'Queda bajo tu responsabilidad',
-            texto: 'Mientras pertenezcas al grupo, todas tus acciones e intenciones representan lo que somos y lo que queremos construir para nuestros hijos. Si un miembro olvida sus raíces, o sus valores, y prioriza los intereses de poder, será expulsado del grupo.',
-            imagen: { src: '/desarrollo-humano/dh-miem-6-responsabilidad.webp', ancho: 622, alto: 760 },
-          },
-        ],
-      },
-      {
-        id: 'decidir',
-        etiqueta: 'Decisiones',
-        pregunta: '¿Puedes decidir sobre la organización?',
-        texto:
-          'Sí. Desde los sistemas internos puedes observar el estado global del negocio, cómo se invierte o gasta el dinero, qué nos falta para progresar, y en dónde estamos creciendo. Sobre esa información, y las solicitudes que se hacen, los miembros discuten, votan y toman decisiones conjuntas, mejorando así nuestra organización, solo en caso las votaciones sean inseguras en <80% de parcialidad, la decisión final la toma el líder del grupo según toda la información recolectada.',
-        /**
-         * Pasos rehechos el 2026-08-20 sobre el texto que reescribió Fernando. Los anteriores
-         * eran míos y se quedaban cortos: su versión añade tres cosas que ninguno recogía.
-         *
-         *  · **Se discute ANTES de votar** —«los miembros discuten, votan y toman
-         *    decisiones»—. Mi paso saltaba directo a la votación.
-         *  · Entran a decisión también **las solicitudes** que se hacen, no solo lo que se ve
-         *    en los datos.
-         *  · **El umbral del 80%**, que es lo más importante de todo: cuando la votación no es
-         *    concluyente, decide el líder con toda la información recolectada.
-         *
-         * ⭐ Ese umbral es lo que **enlaza esta sección con el fundamento del proyecto**. En
-         * `MEMORIA.md`: *«el poder se construye, no se decide»*, con crítica explícita a la
-         * democracia por voto. Aquí se ve cómo conviven las dos ideas sin contradecirse — se
-         * vota entre opciones, y cuando el voto no es concluyente no gana una mayoría
-         * dudosa: decide quien responde por el grupo. Merecía ser un paso y no una nota al pie.
-         *
-         * El paso que se retiró, «Te haces cargo de una parte», no se pierde: eso mismo lo
-         * cuenta «Queda bajo tu responsabilidad», en la pregunta de trabajo interno.
-         */
-        pasos: [
-          {
-            titulo: 'Observas el estado del negocio',
-            texto: 'Desde los sistemas internos ves cómo va la organización de verdad: en qué se invierte, en qué se gasta, qué nos falta para progresar y en dónde estamos creciendo.',
-            imagen: { src: '/desarrollo-humano/dh-miem-7-observas.webp', ancho: 760, alto: 516 },
-          },
-          {
-            titulo: 'Se discute y se vota',
-            texto: 'Sobre esa información y sobre las solicitudes que llegan, primero discutimos entre los miembros y después votamos. Tu voto vale lo mismo que el de cualquier otro miembro.',
-            imagen: { src: '/desarrollo-humano/dh-miem-8-discute.webp', ancho: 651, alto: 760 },
-          },
-          {
-            titulo: 'Se toma la decisión',
-            texto: 'Cuando la votación es clara, la mejora se ejecuta tal como se votó. Si queda por debajo del 80% de parcialidad, la decisión final la toma el líder del grupo con toda la información recolectada.',
-            imagen: { src: '/desarrollo-humano/dh-miem-9-decision.webp', ancho: 760, alto: 546 },
           },
         ],
       },

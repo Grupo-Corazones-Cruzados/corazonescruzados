@@ -2,7 +2,7 @@
  * MIEMBROS — pestaña nueva, VACÍA a propósito (Fernando, 2026-10-31).
  *
  * El sitio pasa a Inicio · Candidatos · Clientes · Miembros y Fernando dictará qué va aquí;
- * buena parte saldrá de Soluciones y Desarrollo Humano. Hasta entonces no se indexa: una página
+ * buena parte saldrá de Soluciones. Hasta entonces no se indexa: una página
  * vacía en Google es peor que ninguna.
  */
 

@@ -72,7 +72,7 @@ function useColumnas(): number | null {
 
 export default function GaleriaFiltrable<T>({
   items, clave, texto, filtros = [], render, unidad, buscar, vacio, porPagina = 12,
-  rejilla = 'rejilla-trabajos', lista = false,
+  rejilla = 'rejilla-trabajos', lista = false, flotante,
 }: {
   items: T[];
   clave: (x: T) => string | number;
@@ -90,6 +90,8 @@ export default function GaleriaFiltrable<T>({
   rejilla?: string;
   /** `true`: la rejilla es un `<ol>` y cada tarjeta trae su `<li>`. */
   lista?: boolean;
+  /** Lo que depende de los filtros elegidos y vive fuera de las tarjetas. */
+  flotante?: (elegidos: Record<string, string>) => ReactNode;
 }) {
   const [elegidos, setElegidos] = useState<Record<string, string>>({});
   const [busca, setBusca] = useState('');
@@ -211,6 +213,7 @@ export default function GaleriaFiltrable<T>({
           <b>{n(vistos.length)}</b> {vistos.length === 1 ? unidad[0] : unidad[1]}
         </p>
       </div>
+      {flotante?.(elegidos)}
     </section>
   );
 }

@@ -47,8 +47,8 @@ export const ACCESO_VIDEOJUEGO = 'videojuego';
  *
  * ── EL FALLO QUE ESTO CIERRA (Fernando, 2026-08-23) ────────────────────────────
  * El botón «Plataforma» de la barra mandaba la página en la que estabas como `?redirect=`.
- * Resultado: desde `/desarrollo-humano/ser-miembro` pulsabas «Plataforma», iniciabas sesión
- * como miembro… **y volvías a `/desarrollo-humano/ser-miembro`**, que es exactamente lo
+ * Resultado: desde una sección del sitio pulsabas «Plataforma», iniciabas sesión
+ * como miembro… **y volvías a esa sección**, que es exactamente lo
  * contrario de lo que pide ese botón. El destino de «Plataforma» es la plataforma.
  *
  * Se comprueba aquí y no en cada pantalla porque el valor entra por la URL: cualquiera puede

@@ -23,7 +23,7 @@
  * ── USO ───────────────────────────────────────────────────────────────────────
  *     node scripts/ilustrar-pasos.mjs <archivo> "<escena>" [<archivo> "<escena>" …]
  *
- * `<archivo>` puede llevar carpeta: `clientes/mi-paso` o `desarrollo-humano/mi-paso`. Escribe
+ * `<archivo>` puede llevar carpeta: `clientes/mi-paso`. Escribe
  * en `public/<archivo>.webp` y crea la carpeta si hace falta. No toca `contenido.ts`: enlazar
  * la imagen con su paso se hace a mano, porque a qué paso corresponde lo decide quien escribe
  * el texto.

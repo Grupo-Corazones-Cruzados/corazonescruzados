@@ -37,21 +37,10 @@ import { EditPanel, EditField } from '@/components/ui/EditDialog';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import BarraLista from '@/components/ui/BarraLista';
 import { ICONOS } from '@/components/sitio/piezas';
-import { ACCESOS, DESARROLLO } from '@/lib/sitio/contenido';
+import { ACCESOS } from '@/lib/sitio/contenido';
 
-/**
- * TODAS las secciones que pueden tener preguntas frecuentes, con la ruta de la que cuelgan.
- *
- * ⚠️ Desde el 2026-08-19 son **dos ramas**: `/clientes` y `/desarrollo-humano`. Si esta lista
- * se quedara solo con `ACCESOS`, las preguntas de Desarrollo Humano no se podrían crear desde
- * aquí — y el fallo sería mudo: la web las leería sin problema, pero nadie tendría cómo
- * escribirlas. Se arma a partir de las dos fuentes para que **añadir una sección al sitio la
- * traiga aquí sola**.
- */
-const SECCIONES_CON_FAQS = [
-  ...ACCESOS.map((a) => ({ ...a, base: '/clientes' })),
-  ...DESARROLLO.map((a) => ({ ...a, base: '/desarrollo-humano' })),
-];
+/** Las secciones que pueden tener preguntas frecuentes, con la ruta de la que cuelgan. */
+const SECCIONES_CON_FAQS = ACCESOS.map((a) => ({ ...a, base: '/clientes' }));
 import type { Faq } from '@/lib/faqs';
 import PieAcciones from '@/components/ui/PieAcciones';
 

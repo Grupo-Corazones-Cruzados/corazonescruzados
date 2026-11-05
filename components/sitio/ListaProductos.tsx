@@ -15,15 +15,18 @@ import { useMemo } from 'react';
 import type { Producto } from '@/lib/soluciones';
 import GaleriaFiltrable, { type FiltroGaleria } from './GaleriaFiltrable';
 import { TarjetaProducto } from './SolucionesExplorador';
+import InvitacionSolucion from './InvitacionSolucion';
 
 const precio = (v: number) => `${v.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
 
 export default function ListaProductos({
-  productos, solucionDe,
+  productos, solucionDe, slugDe,
 }: {
   productos: Producto[];
   /** Talento → nombre de su solución. */
   solucionDe: Record<string, string>;
+  /** Nombre de la solución → su `slug`, el de `/clientes/soluciones/<slug>`. */
+  slugDe: Record<string, string>;
 }) {
   const filtros = useMemo<FiltroGaleria<Producto>[]>(() => [
     { clave: 'solucion', todos: 'Todas las soluciones',
@@ -47,6 +50,10 @@ export default function ListaProductos({
       unidad={['solución', 'soluciones']}
       buscar="Buscar soluciones…"
       vacio="Todavía no hay soluciones publicadas."
+      flotante={(e) => {
+        const nombre = e.solucion;
+        return <InvitacionSolucion solucion={nombre && slugDe[nombre] ? { nombre, slug: slugDe[nombre] } : null} />;
+      }}
     />
   );
 }

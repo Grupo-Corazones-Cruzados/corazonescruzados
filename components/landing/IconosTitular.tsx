@@ -56,7 +56,7 @@ const MAPA = [
 /**
  * `idRecorte`: el `id` del círculo que recorta el mapa. Debe ser ÚNICO en la página: con dos
  * Tierras y el mismo `id`, la segunda usa el recorte de la primera, y si esa está oculta
- * (`display:none`) no recorta nada y la Tierra sale cuadrada (Desarrollo Humano, 2026-10-29).
+ * (`display:none`) no recorta nada y la Tierra sale cuadrada (2026-10-29).
  */
 export function IconoMundo({ idRecorte = 'icono-mundo-disco' }: { idRecorte?: string } = {}) {
   return (

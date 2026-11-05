@@ -6,7 +6,7 @@
  *
  * Los textos salen de lo que ya dice el sitio (las secciones de `lib/sitio/contenido.ts`): nada
  * que no sea verificable, la regla de siempre. Van en `.tsx` y no en `contenido.ts` porque
- * Desarrollo Humano lleva un sello con los iconos de la portada.
+ * Candidatos lleva un sello con los iconos de la portada.
  */
 
 import type { ComponentProps } from 'react';
@@ -26,8 +26,7 @@ export const PRESENTACION_CLIENTES: Presentacion = {
 };
 
 /**
- * Candidatos (Fernando, 2026-11-01): el titular de Desarrollo Humano, su misma pieza a la derecha y
- * su texto, literal.
+ * Candidatos (Fernando, 2026-11-01): el corazón sobre la Tierra a la derecha y su texto, literal.
  */
 export const PRESENTACION_CANDIDATOS: Presentacion = {
   etiqueta: 'Candidatos',
@@ -41,33 +40,6 @@ export const PRESENTACION_CANDIDATOS: Presentacion = {
         <span className="sello-mundo"><IconoMundo idRecorte="mundo-candidatos" /></span>
         <span className="sello-corazon"><IconoCorazon /></span>
       </span>
-    </span>
-  ),
-};
-
-/**
- * Desarrollo Humano abre con la frase de la portada y su imagen: el corazón ya posado sobre la
- * Tierra, como queda tras «el cruce del corazón».
- */
-export const PRESENTACION_DESARROLLO: Presentacion = {
-  etiqueta: 'Proyecto de desarrollo humano',
-  titulo: 'Un corazón puede cruzar al mundo',
-  texto:
-    'Un proyecto que usa tus condiciones como ancla para tu progreso mental, laboral, social y corporal, con logros individuales y colectivos. No hace falta un título ni experiencia: tu talento lo descubrimos juntos.',
-  // La pieza de Desarrollo Humano: el cruce del corazón en grande, ya posado sobre la Tierra.
-  visual: (
-    <span className="visual-cruce" aria-hidden>
-      <span className="visual-cruce-halo" />
-      <span className="sello-cruce">
-        <span className="sello-mundo"><IconoMundo idRecorte="mundo-presentacion" /></span>
-        <span className="sello-corazon"><IconoCorazon /></span>
-      </span>
-    </span>
-  ),
-  sello: (
-    <span className="sello-cruce" aria-hidden>
-      <span className="sello-mundo"><IconoMundo idRecorte="mundo-sello" /></span>
-      <span className="sello-corazon"><IconoCorazon /></span>
     </span>
   ),
 };

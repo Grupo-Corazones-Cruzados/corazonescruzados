@@ -3,7 +3,7 @@
 /**
  * LA TRANSICIÓN AL CAMBIAR DE PESTAÑA DEL MENÚ (Fernando, 2026-08-17).
  *
- * Pasar de «Soluciones» a «Desarrollo Humano» era un corte seco: desaparecía una página y
+ * Pasar de una pestaña a otra era un corte seco: desaparecía una página y
  * aparecía la otra de golpe, sin que nada dijera que había ocurrido algo. Ahora el cuerpo
  * entra subiendo.
  *

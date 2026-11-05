@@ -110,7 +110,7 @@ export function conNegritas(texto: string): ReactNode[] {
  *
  * · **`lectura`** (por omisión, 1152 px) — para páginas de LEER. Una línea de texto muy
  *   larga se lee mal: el ojo pierde el renglón al volver. Es el ancho de Clientes,
- *   Desarrollo Humano y Contacto.
+ *   y Legal.
  * · **`amplio`** (1560 px) — para pantallas que **no se leen, se recorren**: `/soluciones`
  *   es un explorador de tres columnas —carpetas, contenido, conceptos—, y ahí el ancho no
  *   alarga renglones, reparte columnas. Fernando lo pidió el 2026-08-18: *«aprovecha todo el

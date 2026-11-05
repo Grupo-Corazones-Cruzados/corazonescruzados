@@ -2,7 +2,7 @@
 
 /**
  * CABECERA DEL SITIO PÚBLICO — definición ÚNICA, compartida por la portada y las páginas
- * de Soluciones, Desarrollo Humano y Contacto.
+ * del resto de páginas públicas.
  *
  * ── DOS MODOS, Y POR QUÉ ───────────────────────────────────────────────────────
  * · `flotante` — para la PORTADA. Va superpuesta y transparente, y solo se opaca al

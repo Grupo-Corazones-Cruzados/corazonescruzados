@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { SITIO, ACCESOS, DESARROLLO, TEMAS_CLIENTES } from '@/lib/sitio/contenido';
+import { SITIO, ACCESOS, TEMAS_CLIENTES } from '@/lib/sitio/contenido';
 import { listarSoluciones } from '@/lib/soluciones';
 import { DOCUMENTOS_LEGALES } from '@/lib/negocio/legal';
 
@@ -36,9 +36,6 @@ const ULTIMO_CAMBIO = {
    */
   /** Las cinco puertas: `/negocio` → `/soluciones` → `/clientes` (08-17 y 08-18). */
   clientes: '2026-10-31',
-  /** `/recursos` → `/desarrollo-humano` el 2026-08-17, y de paso pasó a tema claro. */
-  /** 2026-10-30: dos secciones nuevas (Modelo 4P y Herramientas) cambian sus puertas. */
-  desarrolloHumano: '2026-10-30',
   /**
    * La página de los ámbitos. Nació vacía en `/soluciones` el 2026-08-17, se llenó el 08-18 y
    * ese mismo día pasó a llamarse **Soluciones** y a vivir en `/soluciones`.
@@ -48,15 +45,6 @@ const ULTIMO_CAMBIO = {
   /** Los documentos legales, que se mueven en bloque. */
   legales: '2026-08-02',
 } as const;
-
-/**
- * Las secciones del Modelo de Grupo y sus herramientas (2026-10-30), con los textos del
- * formulario de postulación. Al cambiar esos textos (`lib/sitio/modeloGcc.ts`), su fecha aquí.
- */
-const ULTIMO_CAMBIO_MODELO: Record<string, string> = {
-  'modelo-organizacional-4p': '2026-10-30',
-  'herramientas-del-modelo': '2026-10-30',
-};
 
 /**
  * ⚠️ ASÍNCRONO DESDE EL 2026-08-18, porque las páginas de talento salen de la BASE.
@@ -72,7 +60,8 @@ async function paginasDeTalento(): Promise<MetadataRoute.Sitemap> {
       ({ url: `${SITIO.url}${ruta}`, lastModified, changeFrequency: 'weekly' as const, priority: 0.7 });
     return soluciones.flatMap((a) => [
       ...a.talentos.map((t) => entrada(`/soluciones/${t.slug}`, ULTIMO_CAMBIO.soluciones)),
-      // Las páginas de Clientes (2026-10-31): la de cada talento. La de la solución redirige a la lista.
+      // Las páginas de Clientes: la de cada solución y la de cada uno de sus talentos.
+      entrada(`/clientes/soluciones/${a.slug}`, ULTIMO_CAMBIO.clientes),
       ...a.talentos.map((t) => entrada(`/clientes/soluciones/${a.slug}/${t.slug}`, ULTIMO_CAMBIO.clientes)),
     ]);
   } catch {
@@ -117,15 +106,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: ULTIMO_CAMBIO.clientes,
       changeFrequency: 'monthly' as const,
       priority: 0.8,
-    })),
-    { url: `${SITIO.url}/desarrollo-humano`, lastModified: ULTIMO_CAMBIO.desarrolloHumano, changeFrequency: 'monthly', priority: 0.8 },
-    // Sus cuatro secciones, igual que las de `/clientes`: desde el 2026-08-19 cada una es su
-    // propia página con su contenido, y no un bloque escondido detrás de un clic.
-    ...DESARROLLO.map((a) => ({
-      url: `${SITIO.url}/desarrollo-humano/${a.id}`,
-      lastModified: a.id in ULTIMO_CAMBIO_MODELO ? ULTIMO_CAMBIO_MODELO[a.id] : ULTIMO_CAMBIO.desarrolloHumano,
-      changeFrequency: 'monthly' as const,
-      priority: 0.7,
     })),
     // Entra ahora, no antes: hasta el 2026-08-18 era un titular sin contenido, y
     // ofrecerle a Google una página vacía resta al dominio entero.

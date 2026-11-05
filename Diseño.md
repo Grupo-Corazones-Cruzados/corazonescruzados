@@ -6336,3 +6336,7 @@ Pantalla de alto completo con `PanelHastaElPie desdeAncho={0}`: raíl de 300 px 
 - **Interruptores:** `Interruptor`, solo donde funcionan: en el navegador no salen, porque la activación es del teléfono.
 - **Notificación de la detección de voz:** «GCC World · Procesando aviso», sin la palabra auxilio, porque la pantalla puede estar a la vista de quien amenaza. Es una decisión de seguridad; no «mejorar» ese texto.
 - **Canal Android «Auxilio de un miembro»:** alarma, vibración y pantalla de bloqueo. Rojo `0xFFB3261E`, copia del rojo del tema, como el morado de `Relojes`.
+
+## Invitación flotante del sitio público (2026-11-05)
+`components/sitio/InvitacionSolucion.tsx`, `.invitacion*` en `app/globals.css`. Una acción opcional que depende de un filtro flota abajo en el centro, sobre el pie (`--alto-pie` + 16 px), con ilustración (puerta entreabierta), «×» para retirarla y un hueco en el flujo para que no tape la paginación. Va en un portal al `body`: un `fixed` dentro de un elemento animado se coloca respecto a él. Entra y sale animada; respeta `prefers-reduced-motion`.
+Nota: `/desarrollo-humano` se eliminó ese mismo día; lo que este documento diga de ella es historia.

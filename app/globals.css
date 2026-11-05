@@ -1698,7 +1698,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 /* ═══════════════════════════════════════════════════════════════════════════════
    SITIO PÚBLICO — la transición al cambiar de PESTAÑA DEL MENÚ (2026-08-17)
 
-   Pedida por Fernando. Ir de «Soluciones» a «Desarrollo Humano» era un corte seco.
+   Pedida por Fernando. Ir de una pestaña a otra era un corte seco.
    Ahora el cuerpo de la página entra subiendo.
 
    La pone `components/sitio/TransicionSeccion.tsx`, dentro del `<main>` de
@@ -1884,8 +1884,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    PALETA CLARA PÚBLICA — FUENTE ÚNICA DEL COLOR DE TODO LO QUE SE COMPARTE
 
    Nació con el CV público el 2026-08-14 (`app/cv/cv-publico.css`) y el 2026-08-17
-   pasó a gobernar también el sitio público entero —Soluciones, Desarrollo Humano,
-   Contacto y los dos documentos legales—, cuando Fernando pidió que el cuerpo de
+   pasó a gobernar también el sitio público entero, cuando Fernando pidió que el cuerpo de
    esas páginas dejara de ser oscuro.
 
    Estaba escrita dos veces en cuanto la segunda página la necesitó, así que vive
@@ -1985,8 +1984,8 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    altavoz del chat del mundo y el copyright, y quedarían por detrás de la barra. */
 .landing-page { padding-bottom: var(--alto-pie); }
 
-/* La tira de conceptos y el armazón de tres paneles de `/soluciones`, `/clientes` y
-   `/desarrollo-humano` se borraron el 2026-10-29 al rehacer esas páginas como sitio web.
+/* La tira de conceptos y el armazón de tres paneles de `/soluciones` y `/clientes`
+   se borraron el 2026-10-29 al rehacer esas páginas como sitio web.
    Para recuperarlos: `git show 8d23d58e:app/globals.css`. */
 
 /* =====================================================
@@ -3096,7 +3095,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .m4p-piso .m4p-nombre { font-size: 0.76rem; }
   .m4p-cruce { height: 46px; }
 }
-/* LA MISMA TABLA, RECORRIDO Y REGLAS EN EL SITIO PÚBLICO (Desarrollo Humano, 2026-10-30). Las
+/* LA MISMA TABLA, RECORRIDO Y REGLAS EN EL SITIO PÚBLICO (2026-10-30). Las
    piezas se pintan con los tokens del formulario; aquí se reasignan a la paleta clara de
    `.claro-publico`, sin una segunda copia de las reglas. Y el texto, al tamaño de lectura del sitio. */
 .claro-publico .modelo-4p,
@@ -4159,7 +4158,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 /* El cuerpo entra de lado: que no asome una barra de desplazamiento horizontal mientras tanto. */
 .claro-publico { overflow-x: clip; }
 
-/* ═══ EL MUNDO «PROGRESO» EN SOLUCIONES, CLIENTES Y DESARROLLO HUMANO (Fernando, 2026-10-29) ═══
+/* ═══ EL MUNDO «PROGRESO» EN EL SITIO PÚBLICO (Fernando, 2026-10-29) ═══
    Lo aprendido del panel «Progreso» de la portada (`.panel-mundo-progreso`, `.escena-progreso`,
    `.ep-tarjeta`), aplicado al marco de `app/(sitio)`: el fondo lavanda con puntos (en el
    layout), los TOKENS de su paleta, los títulos en Space Grotesk apretados y las tarjetas de
@@ -4231,7 +4230,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .presentacion-cifras dd { margin: 0; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: clamp(1.8rem, 2.6vw, 2.4rem); line-height: 1; letter-spacing: -0.03em; color: var(--texto); font-variant-numeric: tabular-nums; }
 @keyframes presentacionEntra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 
-/* El sello de Desarrollo Humano: la Tierra con el corazón posado encima, latiendo. */
+/* El sello de Candidatos: la Tierra con el corazón posado encima, latiendo. */
 .sello-cruce { position: relative; display: inline-flex; width: 30px; height: 30px; }
 .sello-cruce .titular-icono { width: 100%; height: 100%; }
 .sello-mundo { position: absolute; inset: 0; }
@@ -4272,7 +4271,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 }
 @media (hover: none), (pointer: coarse) { .puerta-seccion:hover { transform: none; } }
 
-/* ── Las puertas en bloques: Clientes y Desarrollo Humano (2026-10-30) ──
+/* ── Las puertas en bloques: Clientes (2026-10-30) ──
    Seis tarjetas en fila quedaban en ~200 px («muy encogidas», Fernando). Cada puerta es una FILA
    ancha dentro de la tarjeta de su bloque; los bloques con nombre van en columnas desde `lg`.
    `.puertas-seccion`/`.puerta-seccion` siguen vivas: las usan los talentos de Soluciones. */
@@ -4351,7 +4350,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
     box-shadow: 0 30px 60px -34px rgba(75, 45, 142, 0.5); backdrop-filter: blur(6px);
   }
 }
-/* Desarrollo Humano: el corazón posado sobre la Tierra, en grande, con un halo que respira. */
+/* Candidatos: el corazón posado sobre la Tierra, en grande, con un halo que respira. */
 .visual-cruce { position: relative; display: flex; align-items: center; justify-content: center; height: 300px; }
 .visual-cruce .sello-cruce { width: 170px; height: 170px; animation: cruceFlota 6s ease-in-out infinite alternate; }
 .visual-cruce-halo { position: absolute; width: 280px; height: 280px; border-radius: 9999px; background: radial-gradient(circle, rgba(236, 72, 153, 0.22), rgba(124, 58, 237, 0.12) 45%, transparent 70%); animation: cruceHalo 4s ease-in-out infinite alternate; }
@@ -4390,6 +4389,9 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: 14px;
   background: rgba(255, 255, 255, 0.72); border: 1px solid var(--linea);
 }
+.concepto-celda-enlace { transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), border-color 260ms ease, background-color 260ms ease, box-shadow 260ms ease; }
+.concepto-celda-enlace:hover { transform: translateY(-2px); background: rgba(255, 255, 255, 0.95); border-color: rgba(124, 58, 237, 0.28); box-shadow: 0 16px 34px -24px rgba(75, 45, 142, 0.45); }
+.concepto-celda-enlace:focus-visible { outline: 2px solid #a78bfa; outline-offset: 3px; }
 .concepto-celda .puerta-icono { width: 34px; height: 34px; border-radius: 10px; flex: none; }
 .concepto-celda .puerta-icono svg { width: 17px; height: 17px; }
 .concepto-titulo { display: block; font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif; font-weight: 700; font-size: 0.95rem; letter-spacing: -0.015em; color: var(--texto); }
@@ -4912,3 +4914,75 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   padding: 1px 6px;
 }
 .leaflet-tooltip.cp-lugar::before { display: none; }
+
+/* ═══ LA INVITACIÓN A UNA SOLUCIÓN (Fernando, 2026-11-05) ═══
+   Flota abajo en el centro al filtrar por solución. La puerta entreabierta es la de las «puertas»
+   del sitio. Va en un portal al `body`, fuera de `.claro-publico`: colores literales. */
+.invitacion-hueco { height: 92px; }
+.invitacion {
+  position: fixed; z-index: 45; left: 50%; bottom: calc(var(--alto-pie) + 16px);
+  width: max-content; max-width: calc(100vw - 24px);
+  opacity: 0; transform: translate(-50%, 28px) scale(0.92);
+  transition: opacity 220ms ease-out, transform 420ms cubic-bezier(0.22, 1.3, 0.36, 1);
+  pointer-events: none;
+}
+.invitacion.es-visible { opacity: 1; transform: translate(-50%, 0) scale(1); pointer-events: auto; }
+.invitacion-flota { position: relative; animation: invitacionFlota 3.6s ease-in-out infinite alternate; }
+.invitacion-halo {
+  position: absolute; inset: 0; border-radius: 9999px; pointer-events: none;
+  box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.55); animation: invitacionHalo 2.8s ease-out infinite;
+}
+.invitacion-enlace {
+  position: relative; display: flex; align-items: center; gap: 12px; padding: 8px 10px 8px 8px; border-radius: 9999px;
+  color: #fff; text-decoration: none; overflow: hidden;
+  background: linear-gradient(120deg, #2d1b69 0%, #5b3aae 55%, #7c3aed 100%);
+  box-shadow: 0 22px 44px -16px rgba(45, 27, 105, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transition: transform 220ms ease, box-shadow 220ms ease;
+}
+.invitacion-enlace::after {
+  content: ''; position: absolute; inset: 0 auto 0 -40%; width: 30%; pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  animation: invitacionBrillo 4.8s ease-in-out infinite;
+}
+.invitacion-enlace:hover { transform: translateY(-2px); box-shadow: 0 28px 52px -16px rgba(45, 27, 105, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.22); }
+.invitacion-enlace:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 3px; }
+.invitacion-puerta { flex: none; width: 52px; height: 52px; }
+.invitacion-hoja { transform-box: fill-box; transform-origin: left center; transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1); }
+.invitacion-enlace:hover .invitacion-hoja { transform: scaleX(0.62); }
+.invitacion-chispa { transform-box: fill-box; transform-origin: center; animation: invitacionChispa 2.4s ease-in-out infinite; }
+.invitacion-chispa:nth-of-type(2) { animation-delay: 0.8s; }
+.invitacion-chispa:nth-of-type(3) { animation-delay: 1.6s; }
+.invitacion-texto { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.invitacion-rotulo { font: 500 0.72rem/1.2 'Inter', system-ui, sans-serif; color: rgba(255, 255, 255, 0.78); }
+.invitacion-nombre {
+  font: 700 1rem/1.2 'Space Grotesk', 'Inter', system-ui, sans-serif; letter-spacing: -0.01em;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.invitacion-ir {
+  flex: none; display: grid; place-items: center; width: 38px; height: 38px; margin-left: 4px; border-radius: 9999px;
+  color: #4c2a9e; background: #fff; transition: transform 220ms ease;
+}
+.invitacion-ir svg { width: 18px; height: 18px; }
+.invitacion-enlace:hover .invitacion-ir { transform: translateX(3px); }
+.invitacion-cerrar {
+  position: absolute; top: -8px; right: -6px; z-index: 1; display: grid; place-items: center; width: 26px; height: 26px; padding: 0;
+  border: 0; border-radius: 9999px; cursor: pointer; color: #4c2a9e; background: #fff;
+  box-shadow: 0 6px 14px -6px rgba(45, 27, 105, 0.6);
+}
+.invitacion-cerrar svg { width: 14px; height: 14px; }
+.invitacion-cerrar:focus-visible { outline: 2px solid #c4b5fd; outline-offset: 2px; }
+@keyframes invitacionFlota { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+@keyframes invitacionHalo { 0% { box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.55); } 70%, 100% { box-shadow: 0 0 0 16px rgba(167, 139, 250, 0); } }
+@keyframes invitacionBrillo { 0%, 62% { left: -40%; } 100% { left: 120%; } }
+@keyframes invitacionChispa { 0%, 100% { opacity: 0.25; transform: scale(0.7); } 50% { opacity: 1; transform: scale(1.1); } }
+@media (max-width: 639.98px) {
+  .invitacion { bottom: calc(var(--alto-pie) + 12px); }
+  .invitacion-puerta { width: 44px; height: 44px; }
+  .invitacion-nombre { font-size: 0.92rem; }
+  .invitacion-ir { width: 34px; height: 34px; }
+  .invitacion-cerrar::before { content: ''; position: absolute; inset: -8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .invitacion, .invitacion-enlace, .invitacion-hoja, .invitacion-ir { transition: none; }
+  .invitacion-flota, .invitacion-halo, .invitacion-enlace::after, .invitacion-chispa { animation: none; }
+}

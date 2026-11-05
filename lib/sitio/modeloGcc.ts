@@ -1,13 +1,8 @@
 /**
  * EL MODELO DE GRUPO Y SUS HERRAMIENTAS — fuente ÚNICA de los textos (Fernando, 2026-10-29/30).
  *
- * Los leen DOS sitios y por eso viven aquí, fuera de los dos:
- * · el formulario de postulación (`components/landing/OnboardingSlidersModal.tsx`, pasos 1 y 2);
- * · las páginas públicas `/desarrollo-humano/modelo-organizacional-4p` y
- *   `/desarrollo-humano/herramientas-del-modelo`, que existen para que Google, Bing y sus modos
- *   con IA lean lo que define al grupo (*«que los buscadores recolecten esta información como
- *   parte fundamental de lo que es nuestro negocio»*). Dentro del formulario no lo veían: un
- *   buscador no pulsa el botón que lo abre.
+ * Los leen la página Candidatos (`components/landing/OnboardingSlidersModal.tsx`, pasos 1 y 2) y
+ * `/llms.txt`.
  *
  * Una copia en cada sitio se separaría a la primera corrección. Cambiar un texto aquí lo cambia en
  * los dos (y en `/llms.txt`).
@@ -81,7 +76,7 @@ export const HERRAMIENTAS_INTRO =
 export const PASOS_CONDICIOLOGIA = ['Reconocer', 'Controlar', 'Predecir', 'Experimentar', 'Convertir', 'Cambiar'];
 
 export interface Herramienta {
-  /** Ancla pública: `/desarrollo-humano/herramientas-del-modelo#<id>`. No se cambia a la ligera. */
+  /** Identificador de la herramienta. */
   id: string;
   nombre: string;
   /** El titular en la página pública: «¿Qué es…?», que es como lo pregunta la gente al buscador. */
