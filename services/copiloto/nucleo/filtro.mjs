@@ -36,9 +36,9 @@ const palabrasDe = (t) => normalizar(t).match(/[\p{L}\p{N}]+/gu) || [];
  * Con altavoces, el micrófono también oye al cliente. Si lo que entró por el micrófono coincide con lo
  * que acaba de sonar en el equipo, es eco y no lo dijo Fernando.
  */
-export function esEco(textoMic, recienteSistema) {
+export function esEco(textoMic, recienteSistema, minimo = 3) {
   const mic = palabrasDe(textoMic);
-  if (mic.length < 3) return false;
+  if (mic.length < minimo) return false;
   const sistema = new Set(palabrasDe(recienteSistema));
   if (!sistema.size) return false;
   return mic.filter((p) => sistema.has(p)).length / mic.length >= 0.7;

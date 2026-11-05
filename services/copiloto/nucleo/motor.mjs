@@ -17,6 +17,8 @@ const ESPERA_CLAVE_MS = 8000; // tras «GUMDRAMON», cuánto se espera a que emp
 const FIN_DICTADO_MS = 4000;
 const MAXIMO_DICTADO_MS = 90000;
 const ESPERA_ECO_MS = 2500;
+const VOZ_PROPIA_MS = 90000; // lo que tarda en leerse una respuesta, con margen
+const MINIMO_VOZ_PROPIA = 5; // palabras: un cliente puede repetir tres de una respuesta sin que sea eco
 const SUENA_MS = 3000;
 const LARGO_SIN_PAUSA = 500; // si alguien habla sin parar, no se espera para siempre a que acabe
 
@@ -25,6 +27,7 @@ export class Motor {
     Object.assign(this, { transcriptor, agente, clasificar, sesion, emitir, terminar, ahora, esperar });
     this.ultimaVozSistema = 0;
     this.activo = false;
+    this.respuestasRecientes = [];
     this.dictado = null;
     this.ultimaVozMic = 0;
     this.micPendientes = 0;
@@ -91,6 +94,9 @@ export class Motor {
   async texto(canal, texto, { seguir = false } = {}) {
     const limpio = String(texto || '').trim();
     if (esAlucinacion(limpio)) return;
+    // Su propia voz: la captura del equipo la excluye, pero por altavoces la oye el micrófono. Sin esto
+    // se tomaría por algo dicho en la reunión y podría acabar respondiéndose a sí mismo.
+    if (esEco(limpio, this.#loQueDijo(), MINIMO_VOZ_PROPIA)) return;
 
     if (canal === 'mic') {
       // Con altavoces, el micrófono acaba antes que el equipo: su eco llegaba primero y se anotaba como
@@ -106,6 +112,12 @@ export class Motor {
     // A media frase todavía no se pregunta: gastaría una consulta con la pregunta incompleta.
     if (seguir && this.sinResponder.length < LARGO_SIN_PAUSA) return;
     if (parecePregunta(this.sinResponder)) this.#consultarAutomatico();
+  }
+
+  #loQueDijo() {
+    const desde = this.ahora() - VOZ_PROPIA_MS;
+    this.respuestasRecientes = this.respuestasRecientes.filter((r) => r.en >= desde);
+    return this.respuestasRecientes.map((r) => r.texto).join(' ');
   }
 
   #registrar(quien, texto) {
@@ -202,6 +214,7 @@ export class Motor {
         alTexto: (texto) => this.emitir('parcial', { id, texto }),
         alBuscar: (detalle) => this.emitir('buscando', { id, detalle }),
       });
+      this.respuestasRecientes.push({ texto: respuesta, en: this.ahora() });
       this.emitir('respuesta', { id, texto: respuesta.trim(), ms: this.ahora() - inicio });
     } catch (e) {
       if (e.detenida) this.emitir('descartada', { id });

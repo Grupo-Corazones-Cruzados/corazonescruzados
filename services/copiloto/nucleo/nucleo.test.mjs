@@ -418,6 +418,22 @@ test('el corte forzado cae en un hueco y no pierde audio', () => {
   assert.ok(total > 6.4 && total <= 7.5, String(total)); // entran 7,5 s, incluido el silencio final
 });
 
+test('Gumdramon no se oye a sí mismo por ninguna de las dos entradas', async () => {
+  const r = reunion({ respuestas: ['Gestión de Reservas cuesta cinco dólares al mes e incluye reportes en Excel.'] });
+  await r.motor.texto('sistema', '¿Cuánto cuesta el sistema de reservas?');
+  await espera();
+  const antes = r.sesion.lineas.length;
+  await r.motor.texto('mic', 'Gestión de Reservas cuesta cinco dólares al mes');
+  await r.motor.texto('sistema', 'cuesta cinco dólares al mes e incluye reportes');
+  assert.equal(r.sesion.lineas.length, antes);
+  assert.equal(r.preguntas.length, 1);
+  await r.motor.texto('sistema', 'cinco dólares'); // el cliente lo repite: eso sí se dijo
+  assert.equal(r.sesion.lineas.length, antes + 1);
+  r.avanzar(100000);
+  await r.motor.texto('mic', 'Gestión de Reservas cuesta cinco dólares al mes');
+  assert.equal(r.sesion.lineas.at(-1).quien, 'Fernando', 'pasado el rato ya no es eco');
+});
+
 test('la transcripción se guarda y sobrevive a un reinicio', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'copiloto-'));
   const a = new Sesion(dir);

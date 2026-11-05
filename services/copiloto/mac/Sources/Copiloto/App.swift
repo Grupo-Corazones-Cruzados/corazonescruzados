@@ -51,12 +51,20 @@ final class Delegado: NSObject, NSApplicationDelegate {
     menu.addItem(withTitle: "Mostrar u ocultar", action: #selector(alternarPanel), keyEquivalent: "")
     menu.addItem(withTitle: "Activar o desactivar", action: #selector(alternarActivo), keyEquivalent: "")
     menu.addItem(.separator())
+    menu.addItem(withTitle: "Activar o apagar la voz", action: #selector(alternarVoz), keyEquivalent: "")
+    menu.addItem(withTitle: "Probar la voz", action: #selector(probarVoz), keyEquivalent: "")
+    for t in TonoVoz.allCases {
+      let i = menu.addItem(withTitle: "Tono: \(t.nombre)", action: #selector(elegirTono(_:)), keyEquivalent: "")
+      i.representedObject = t.rawValue
+    }
+    menu.addItem(.separator())
     menu.addItem(withTitle: "Salir", action: #selector(salir), keyEquivalent: "q")
     menu.items.forEach { $0.target = self }
     icono.menu = menu
 
     modelo.conectar()
     if CommandLine.arguments.contains("--activar") { modelo.activar() }
+    if CommandLine.arguments.contains("--probar-voz") { DispatchQueue.main.asyncAfter(deadline: .now() + 6) { self.modelo.probarVoz() } }
   }
 
   private func plegar(_ plegar: Bool) {
@@ -71,6 +79,11 @@ final class Delegado: NSObject, NSApplicationDelegate {
   }
 
   @objc private func alternarPanel() { panel.isVisible ? panel.orderOut(nil) : panel.orderFrontRegardless() }
+  @objc private func alternarVoz() { modelo.vozActiva.toggle() }
+  @objc private func probarVoz() { modelo.probarVoz() }
+  @objc private func elegirTono(_ i: NSMenuItem) {
+    if let v = i.representedObject as? String, let t = TonoVoz(rawValue: v) { modelo.tonoVoz = t; modelo.probarVoz() }
+  }
   @objc private func alternarActivo() { modelo.alternar() }
   @objc private func salir() { modelo.desactivar(); DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { NSApp.terminate(nil) } }
 }

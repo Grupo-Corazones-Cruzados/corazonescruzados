@@ -126,6 +126,13 @@ struct Widget: View {
         Medidor(nombre: "Cliente", nivel: m.nivelSistema)
       }
       Spacer(minLength: 0)
+      Button { m.vozActiva.toggle() } label: {
+        Image(systemName: m.vozActiva ? "speaker.wave.2.fill" : "speaker.slash").font(.system(size: 11))
+          .foregroundStyle(m.vozActiva ? violeta : .secondary).frame(width: 18)
+      }
+      .buttonStyle(.plain)
+      .help(m.vozActiva ? "Voz activada: leer las respuestas" : "Voz apagada")
+      .accessibilityLabel(m.vozActiva ? "Apagar la voz" : "Activar la voz")
       Toggle("", isOn: Binding(get: { m.activo }, set: { _ in m.alternar() }))
         .toggleStyle(.switch).tint(violeta).controlSize(.mini).labelsHidden().disabled(!m.conectado)
         .help(m.activo ? "Desactivar" : "Activar")

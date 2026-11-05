@@ -43,13 +43,26 @@ final class Modelo: ObservableObject {
   private let sistema = CapturaSistema()
   private var tareaEventos: Task<Void, Never>?
   private let envio = Enviador()
+  let voz = VozGumdramon()
+  /// Apagada al instalar: una voz inesperada en plena reunión la oiría también el cliente por altavoces.
+  @Published var vozActiva = UserDefaults.standard.bool(forKey: "vozActiva") {
+    didSet {
+      UserDefaults.standard.set(vozActiva, forKey: "vozActiva")
+      if !vozActiva { voz.callar() }
+    }
+  }
+  @Published var tonoVoz = TonoVoz(rawValue: UserDefaults.standard.string(forKey: "tonoVoz") ?? "") ?? .agudo {
+    didSet { UserDefaults.standard.set(tonoVoz.rawValue, forKey: "tonoVoz"); voz.tono = tonoVoz }
+  }
 
   private var token: String {
-    let ruta = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".gcc-copiloto/token")
+    let ruta = ProcessInfo.processInfo.environment["COPILOTO_TOKEN"].map { URL(fileURLWithPath: $0) }
+      ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".gcc-copiloto/token")
     return (try? String(contentsOf: ruta, encoding: .utf8))?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
   }
 
   func conectar() {
+    voz.tono = tonoVoz
     tareaEventos?.cancel()
     tareaEventos = Task { await bucleEventos() }
   }
@@ -125,7 +138,11 @@ final class Modelo: ObservableObject {
     nivelSistema = 0
   }
 
+  /// Para oír la voz sin gastar una consulta.
+  func probarVoz() { voz.decir("Hola, soy Gumdramon. Gestión de Reservas cuesta 5 dólares al mes.") }
+
   func desactivar() {
+    voz.callar()
     detenerCaptura()
     Task { await llamar("desactivar") }
   }
@@ -202,10 +219,12 @@ final class Modelo: ObservableObject {
         consultas[i].buscando = false
         consultas[i].terminada = true
         consultas[i].ms = j["ms"] as? Int
+        if vozActiva { voz.decir(consultas[i].respuesta) }
       }
     case "descartada":
       if let i = consultaIndice(j) { consultas.remove(at: i) }
     case "terminada":
+      voz.callar()
       detenerCaptura()
       activo = false
       nota = (j["conTranscripcion"] as? Bool ?? false) ? "Sesión terminada. Creando el recordatorio…" : "Sesión terminada, sin nada que guardar."

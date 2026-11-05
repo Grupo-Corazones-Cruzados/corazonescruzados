@@ -78,6 +78,15 @@ final class CapturaSistema {
     if estado != noErr { throw NSError(domain: "Copiloto", code: Int(estado), userInfo: [NSLocalizedDescriptionKey: "\(que) (\(estado))"]) }
   }
 
+  private func procesoPropio() -> AudioObjectID? {
+    var pid = getpid()
+    var objeto = AudioObjectID(kAudioObjectUnknown)
+    var t = UInt32(MemoryLayout<AudioObjectID>.size)
+    var dir = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyTranslatePIDToProcessObject, mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+    let e = AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &dir, UInt32(MemoryLayout<pid_t>.size), &pid, &t, &objeto)
+    return e == noErr && objeto != kAudioObjectUnknown ? objeto : nil
+  }
+
   private func salidaPorDefecto() throws -> String {
     var d = AudioDeviceID(0)
     var t = UInt32(MemoryLayout<AudioDeviceID>.size)
@@ -91,7 +100,8 @@ final class CapturaSistema {
   }
 
   func iniciar() throws {
-    let descripcion = CATapDescription(stereoGlobalTapButExcludeProcesses: [])
+    // Sin la voz de la propia app: se oiría como si fuera el cliente y podría responderse a sí misma.
+    let descripcion = CATapDescription(stereoGlobalTapButExcludeProcesses: procesoPropio().map { [$0] } ?? [])
     descripcion.uuid = UUID()
     descripcion.muteBehavior = .unmuted
     descripcion.isPrivate = true
