@@ -6310,7 +6310,10 @@ Pantalla de alto completo con `PanelHastaElPie desdeAncho={0}`: raíl de 300 px 
 `components/centralized/systems/ControlPsicosocialSystem.tsx`. Tres columnas: tarjeta «Rastreo» (300 px) · mapa (`MapaMiembros`, 46 dvh) sobre `PixelDataTable singleLine` · `PanelDetalle` (340 px, desde `xl`). Por debajo de `xl`, el detalle
 es `PixelModal` encima de la lista; en el teléfono la tabla es galería y las emergencias quedan arriba en dos columnas.
 - **Emergencias:** «Pedir auxilio» (`BTN_DANGER`) y «Llamar al 911» (`BTN_SECONDARY`, enlace `tel:911`), de 48 px de alto. Se quedan al principio, excepción consciente a la barra inferior: es lo primero que debe encontrarse.
-- **Marcas del mapa:** círculo de 34 px con iniciales y aro: acento = señal activa, gris = sin señal, rojo que late = auxilio. Tocarla abre su detalle. Los mosaicos de OpenStreetMap no cambian con el tema oscuro.
+- **Barra del mapa:** `<select>` «Recorrido: Hoy» (7 días) a la izquierda y «Lugares» (solo admin) a la derecha; en el teléfono una fila. **Lugares** y su formulario: `PixelModal md`; el punto se marca tocando `MapaElegirPunto`, sin campos de coordenadas.
+- **Colores por persona (`COLORES` en `MapaMiembros`):** única paleta fuera de los tokens, porque el mapa no cambia con el tema; todos ≥ 4,5:1 con blanco. El recorrido y la marca comparten color; elegir a alguien atenúa al resto. Línea con círculo hueco al inicio del día.
+- **Lugar en el mapa:** círculo morado discontinuo y nombre en su borde norte (`.cp-lugar`), nunca al centro: taparía la marca de quien está allí.
+- **Marcas del mapa:** círculo de 34 px con iniciales y aro blanco: color de la persona = señal activa, gris = sin señal, rojo que late = auxilio. Tocarla abre su detalle. Los mosaicos de OpenStreetMap no cambian con el tema oscuro.
 - **Estado:** texto de color sin relleno (rojo auxilio, verde activa, ámbar sin señal, tenue no comparte).
 - **Interruptores:** `Interruptor`, y solo donde funcionan: en el navegador no salen, porque la activación es del teléfono.
 - **Consentimiento:** `PixelModal md` con los puntos y pie `No acepto · Acepto y activar`. Los textos son un primer borrador para que los corrija Fernando (`CONSENTIMIENTO`).

@@ -15,6 +15,7 @@
  * `alcance` decide quién VE el aviso en sus preferencias y quién puede recibirlo:
  * - `todos`: cualquiera con cuenta.
  * - `equipo`: candidatos, miembros y admin (no los clientes puros).
+ * - `miembros`: miembros y admin, sin candidatos (Control Psicosocial es solo de miembros).
  * - `reclutamiento`: quien accede al sistema «Reclutamiento y Selección» del Centralizado
  *   (admin y miembros por piso/paso o acceso compartido; Fernando, 2026-10-29).
  *
@@ -22,7 +23,7 @@
  */
 
 export type Canal = 'push' | 'campana';
-export type Alcance = 'todos' | 'equipo' | 'reclutamiento';
+export type Alcance = 'todos' | 'equipo' | 'miembros' | 'reclutamiento';
 
 export type ClaseAviso =
   | 'postulacion_nueva' | 'postulacion_verificada' | 'postulacion_decidida' | 'candidato_perfil'
@@ -33,7 +34,8 @@ export type ClaseAviso =
   | 'reunion' | 'calendar_proposal'
   | 'reminder'
   | 'chat'
-  | 'subscription';
+  | 'subscription'
+  | 'cp_llegada';
 
 export type DefinicionAviso = {
   clase: ClaseAviso;
@@ -63,6 +65,8 @@ export const AVISOS: DefinicionAviso[] = [
 
   { clase: 'quote_decided', grupo: 'Cotizaciones', nombre: 'Cliente aceptó o rechazó una cotización', canales: ['push', 'campana'], alcance: 'equipo' },
   { clase: 'quote_budget', grupo: 'Cotizaciones', nombre: 'Cliente envió su presupuesto', canales: ['push', 'campana'], alcance: 'equipo' },
+
+  { clase: 'cp_llegada', grupo: 'Control Psicosocial', nombre: 'Un miembro llegó a un punto de reunión', canales: ['push', 'campana'], alcance: 'miembros' },
 
   { clase: 'reunion', grupo: 'Mi día', nombre: 'Reunión a punto de empezar', canales: ['push'], alcance: 'todos' },
   { clase: 'calendar_proposal', grupo: 'Mi día', nombre: 'Propuesta de reunión', canales: ['push', 'campana'], alcance: 'equipo' },

@@ -19,7 +19,7 @@ import UserNotifications
 final class Proteccion: NSObject, CLLocationManagerDelegate {
     static let compartida = Proteccion()
     static let categoriaCancelar = "AUXILIO_CANCELAR"
-    private static let intervaloNormal: TimeInterval = 300
+    private static let intervaloNormal: TimeInterval = 60
     private static let base = URL(string: "https://app.grupocc.org/api/centralized/control-psicosocial")!
 
     private let ubicacion = CLLocationManager()

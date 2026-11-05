@@ -46,7 +46,7 @@ export async function avisosDe(user: { userId: string; role: string }): Promise<
     `SELECT 1 FROM gcc_world.clients WHERE user_id = $1::uuid AND account_type = 'candidate' LIMIT 1`, [user.userId],
   )).rows.length > 0;
   const reclutamiento = await canAccessSystem(user.userId, user.role, SLUG_RECLUTAMIENTO).catch(() => false);
-  return AVISOS.filter((a) => a.alcance === 'todos' || (a.alcance === 'equipo' && equipo) || (a.alcance === 'reclutamiento' && reclutamiento));
+  return AVISOS.filter((a) => a.alcance === 'todos' || (a.alcance === 'equipo' && equipo) || (a.alcance === 'miembros' && (user.role === 'admin' || user.role === 'member')) || (a.alcance === 'reclutamiento' && reclutamiento));
 }
 
 export async function leerPreferencias(userId: string): Promise<Record<string, boolean>> {

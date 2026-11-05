@@ -96,7 +96,7 @@ public class ProteccionService extends Service implements DetectorVoz.Oyente {
         return START_STICKY;
     }
 
-    private static final long INTERVALO_NORMAL = 300;
+    private static final long INTERVALO_NORMAL = 60;
 
     private boolean tiene(String permiso) {
         return ContextCompat.checkSelfPermission(this, permiso) == PackageManager.PERMISSION_GRANTED;
@@ -148,8 +148,8 @@ public class ProteccionService extends Service implements DetectorVoz.Oyente {
         if (alRecibir != null && intervaloS == segundos) return;
         if (alRecibir != null) ubicacion.removeLocationUpdates(alRecibir);
         intervaloS = segundos;
-        int prioridad = segundos < INTERVALO_NORMAL ? Priority.PRIORITY_HIGH_ACCURACY : Priority.PRIORITY_BALANCED_POWER_ACCURACY;
-        LocationRequest pedido = new LocationRequest.Builder(prioridad, segundos * 1000).build();
+        // Alta precisión siempre: con la de ahorro, el recorrido salta entre antenas y las llegadas fallan.
+        LocationRequest pedido = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, segundos * 1000).build();
         alRecibir = new LocationCallback() {
             @Override public void onLocationResult(LocationResult r) {
                 Location l = r.getLastLocation();

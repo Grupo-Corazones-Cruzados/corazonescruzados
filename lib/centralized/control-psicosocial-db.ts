@@ -4,10 +4,11 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { enviarDatosFcm } from '@/lib/push/fcm';
 import { enviarAvisoApns, type EntornoApns } from '@/lib/push/apns';
 import { enviarPush } from '@/lib/push';
+import { avisarUsuarios } from '@/lib/push/avisos';
 import { createNotification } from '@/lib/notifications';
 import {
-  DIAS_HISTORIAL, INTERVALO_AUXILIO_S, INTERVALO_NORMAL_S, RUTA_CONTROL_PSICOSOCIAL,
-  VERSION_CONSENTIMIENTO, type FilaRastreo, type FuncionCp,
+  DIAS_HISTORIAL, INTERVALO_AUXILIO_S, INTERVALO_NORMAL_S, RUTA_CONTROL_PSICOSOCIAL, VERSION_CONSENTIMIENTO, ZONA_HORARIA,
+  distanciaM, type FilaRastreo, type FuncionCp, type Lugar, type RecorridoMiembro,
 } from '@/lib/centralized/control-psicosocial';
 
 /**
@@ -16,8 +17,9 @@ import {
  * MIEMBRO = `role` admin o member Y `member_id`. Solo `member_id` no basta: un candidato
  * (role client) también lo tiene, para su hoja de vida.
  *
- * QUIÉN VE QUÉ (Fernando, 2026-11-04): todo miembro ve a todos los que aceptaron compartir, incluido
- * el administrador, y queda registrado. Nadie puede activar el rastreo de otro.
+ * QUIÉN VE QUÉ (Fernando, 2026-11-04/05): todo miembro ve a todos los que aceptaron compartir, incluido
+ * el administrador, con su recorrido, y queda registrado. Nadie puede activar el rastreo de otro. Los
+ * puntos de reunión los ven todos y solo los administradores los crean, cambian o borran.
  */
 
 const NOMBRE = `COALESCE(NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), m.name, u.email)`;
@@ -62,6 +64,9 @@ export async function fijarConsentimiento(userId: string, funcion: FuncionCp, ac
        ON CONFLICT (user_id) DO UPDATE SET ${columna} = EXCLUDED.${columna}, actualizado_en = NOW()`,
       [userId, activo],
     );
+    if (funcion === 'ubicacion' && activo) {
+      await c.query(`UPDATE gcc_world.cp_miembros SET ubicacion_version = $2 WHERE user_id = $1`, [userId, VERSION_CONSENTIMIENTO]);
+    }
     await c.query(
       `INSERT INTO gcc_world.cp_consentimientos (user_id, funcion, accion, version, plataforma) VALUES ($1, $2, $3, $4, $5)`,
       [userId, funcion, activo ? 'otorgado' : 'retirado', VERSION_CONSENTIMIENTO, plataforma],
@@ -69,6 +74,7 @@ export async function fijarConsentimiento(userId: string, funcion: FuncionCp, ac
     // Apagar la ubicación borra el recorrido. Lo registrado durante un auxilio queda con él.
     if (funcion === 'ubicacion' && !activo) {
       await c.query(`DELETE FROM gcc_world.cp_posiciones WHERE user_id = $1 AND alerta_id IS NULL`, [userId]);
+      await c.query(`DELETE FROM gcc_world.cp_visitas WHERE user_id = $1`, [userId]);
     }
     await c.query('COMMIT');
   } catch (e) {
@@ -124,12 +130,16 @@ function purgarSiToca() {
     `DELETE FROM gcc_world.cp_posiciones WHERE alerta_id IS NULL AND registrada_en < NOW() - make_interval(days => $1)`,
     [DIAS_HISTORIAL],
   ).catch((e: any) => console.error('Purga de posiciones:', e?.message));
+  pool.query(
+    `DELETE FROM gcc_world.cp_visitas WHERE salida_en IS NOT NULL AND salida_en < NOW() - make_interval(days => $1)`,
+    [DIAS_HISTORIAL],
+  ).catch((e: any) => console.error('Purga de visitas:', e?.message));
 }
 
 /** `consentida: false` le dice al teléfono que debe parar: nada se guarda sin consentimiento. */
 export async function guardarPosiciones(m: Miembro, puntos: Punto[]) {
   const { rows: [e] } = await pool.query(
-    `SELECT c.ubicacion_activa, c.voz_activa,
+    `SELECT c.ubicacion_activa, c.voz_activa, c.ubicacion_version,
             (SELECT a.id FROM gcc_world.cp_alertas a WHERE a.user_id = $1 AND a.estado = 'activa') AS alerta_id
        FROM gcc_world.cp_miembros c WHERE c.user_id = $1`,
     [m.userId],
@@ -142,6 +152,10 @@ export async function guardarPosiciones(m: Miembro, puntos: Punto[]) {
       [m.userId, m.dispositivoId, e.alerta_id, puntos.map((p) => p.lat), puntos.map((p) => p.lng),
         puntos.map((p) => p.precision), puntos.map((p) => p.bateria), puntos.map((p) => p.en.toISOString())],
     );
+    // Una llegada que falla no puede costar la posición, que ya está guardada.
+    if (e.ubicacion_version >= VERSION_CONSENTIMIENTO) {
+      await detectarLlegadas(m.userId, puntos).catch((err: any) => console.error('Llegadas:', err?.message));
+    }
   }
   purgarSiToca();
   return {
@@ -150,12 +164,111 @@ export async function guardarPosiciones(m: Miembro, puntos: Punto[]) {
   };
 }
 
+/* ── Puntos de reunión ────────────────────────────────────────────────────── */
+
+/** Lo inválido devuelve `null`: la ruta responde 400. */
+export function datosDeLugar(b: any): Omit<Lugar, 'id'> | null {
+  const nombre = String(b?.nombre ?? '').trim();
+  const lat = Number(b?.lat); const lng = Number(b?.lng); const radio_m = Number(b?.radio_m);
+  if (!nombre || nombre.length > 80) return null;
+  if (b?.lat == null || b?.lng == null || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  if (!Number.isInteger(radio_m) || radio_m < 30 || radio_m > 5000) return null;
+  return { nombre, lat, lng, radio_m };
+}
+
+export async function crearLugar(userId: string, d: Omit<Lugar, 'id'>): Promise<number> {
+  const { rows: [r] } = await pool.query(
+    `INSERT INTO gcc_world.cp_lugares (nombre, lat, lng, radio_m, creado_por) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+    [d.nombre, d.lat, d.lng, d.radio_m, userId]);
+  return r.id;
+}
+
+export async function editarLugar(id: number, d: Omit<Lugar, 'id'>): Promise<boolean> {
+  const r = await pool.query(
+    `UPDATE gcc_world.cp_lugares SET nombre = $2, lat = $3, lng = $4, radio_m = $5, actualizado_en = NOW() WHERE id = $1`,
+    [id, d.nombre, d.lat, d.lng, d.radio_m]);
+  return r.rowCount > 0;
+}
+
+export async function borrarLugar(id: number): Promise<boolean> {
+  return (await pool.query(`DELETE FROM gcc_world.cp_lugares WHERE id = $1`, [id])).rowCount > 0;
+}
+
+/** Salir exige alejarse más de lo que pide entrar: si no, el error del GPS en el borde abre y cierra. */
+const MARGEN_SALIDA_M = 50;
+/** Volver antes de esto es la misma estancia (el GPS saltó, o salió un momento): no se avisa otra vez. */
+const MINUTOS_MISMA_VISITA = 30;
+
+/**
+ * Las llegadas se detectan AQUÍ y no en el teléfono: valen igual en iPhone y Android, y un lugar
+ * nuevo funciona sin instalar nada. A cambio, una llegada se conoce cuando llega un punto.
+ */
+export async function detectarLlegadas(userId: string, puntos: Punto[]) {
+  const { rows: lugares } = await pool.query(`SELECT id, nombre, lat, lng, radio_m FROM gcc_world.cp_lugares`);
+  if (!lugares.length) return;
+  const { rows: abiertas } = await pool.query(
+    `SELECT lugar_id, llegada_en FROM gcc_world.cp_visitas WHERE user_id = $1 AND salida_en IS NULL`, [userId]);
+  const dentro = new Map<number, Date>(abiertas.map((v: any) => [v.lugar_id, new Date(v.llegada_en)]));
+  const llegadas: { lugar: string; en: Date }[] = [];
+
+  for (const p of [...puntos].sort((a, b) => a.en.getTime() - b.en.getTime())) {
+    for (const l of lugares as Lugar[]) {
+      const d = distanciaM(p.lat, p.lng, l.lat, l.lng);
+      const desde = dentro.get(l.id);
+      if (desde) {
+        if (p.en > desde && d > l.radio_m + Math.max(MARGEN_SALIDA_M, p.precision ?? 0)) {
+          await pool.query(
+            `UPDATE gcc_world.cp_visitas SET salida_en = $3 WHERE user_id = $1 AND lugar_id = $2 AND salida_en IS NULL`,
+            [userId, l.id, p.en.toISOString()]);
+          dentro.delete(l.id);
+        }
+        continue;
+      }
+      // Un punto impreciso no basta para decir que llegó.
+      if (d > l.radio_m || (p.precision ?? 0) > Math.max(l.radio_m, 100)) continue;
+      const { rows: [reabierta] } = await pool.query(
+        `UPDATE gcc_world.cp_visitas v SET salida_en = NULL
+          WHERE v.id = (SELECT id FROM gcc_world.cp_visitas
+                         WHERE user_id = $1 AND lugar_id = $2 ORDER BY llegada_en DESC LIMIT 1)
+            AND v.salida_en > $3::timestamptz - make_interval(mins => $4)
+          RETURNING v.llegada_en`,
+        [userId, l.id, p.en.toISOString(), MINUTOS_MISMA_VISITA]);
+      if (reabierta) { dentro.set(l.id, new Date(reabierta.llegada_en)); continue; }
+      const { rows: [nueva] } = await pool.query(
+        `INSERT INTO gcc_world.cp_visitas (user_id, lugar_id, llegada_en) VALUES ($1, $2, $3)
+         ON CONFLICT (user_id, lugar_id) WHERE salida_en IS NULL DO NOTHING RETURNING id`,
+        [userId, l.id, p.en.toISOString()]);
+      dentro.set(l.id, p.en);
+      if (nueva) llegadas.push({ lugar: l.nombre, en: p.en });
+    }
+  }
+  if (llegadas.length) await avisarLlegadas(userId, llegadas);
+}
+
+/** A diferencia del auxilio, esto sí respeta lo que cada uno apagó en Configuración → Notificaciones. */
+async function avisarLlegadas(userId: string, llegadas: { lugar: string; en: Date }[]) {
+  const { rows } = await pool.query(`SELECT u.id FROM gcc_world.users u WHERE ${ES_MIEMBRO} AND u.id <> $1`, [userId]);
+  const ids: string[] = rows.map((r: any) => r.id);
+  if (!ids.length) return;
+  const nombre = await nombreDe(userId);
+  const ruta = `${RUTA_CONTROL_PSICOSOCIAL}?miembro=${userId}`;
+  for (const { lugar, en } of llegadas) {
+    const titulo = `${nombre} llegó a ${lugar}`;
+    const cuerpo = `A las ${en.toLocaleTimeString('es-EC', { timeZone: ZONA_HORARIA, hour: '2-digit', minute: '2-digit' })}.`;
+    await Promise.all(ids.map((id) => createNotification(id, { type: 'cp_llegada', title: titulo, message: cuerpo, link: ruta }, { push: false })
+      .catch((e: any) => console.error('Llegada a la campana:', e?.message))));
+    await avisarUsuarios(ids, { clase: 'cp_llegada', titulo, cuerpo, ruta, hilo: 'cp-llegadas' });
+  }
+}
+
 /* ── Lo que enseña la pantalla ─────────────────────────────────────────────── */
 
 const FILA = `
   SELECT u.id AS user_id, ${NOMBRE} AS nombre,
          COALESCE(c.ubicacion_activa, false) AS ubicacion_activa, COALESCE(c.voz_activa, false) AS voz_activa,
-         p.lat, p.lng, p.precision_m, p.bateria, p.registrada_en, a.id AS alerta_id
+         p.lat, p.lng, p.precision_m, p.bateria, p.registrada_en, a.id AS alerta_id,
+         (SELECT l.nombre FROM gcc_world.cp_visitas v JOIN gcc_world.cp_lugares l ON l.id = v.lugar_id
+           WHERE v.user_id = u.id AND v.salida_en IS NULL ORDER BY v.llegada_en DESC LIMIT 1) AS lugar_actual
     FROM gcc_world.users u
     LEFT JOIN gcc_world.members m ON m.id = u.member_id
     LEFT JOIN gcc_world.cp_miembros c ON c.user_id = u.id
@@ -190,15 +303,73 @@ export async function estadoRastreo(m: Miembro, soloMio = false) {
     [m.userId],
   );
   const yo = (filas as FilaRastreo[]).find((f) => f.user_id === m.userId);
+  const { rows: [version] } = await pool.query(`SELECT ubicacion_version FROM gcc_world.cp_miembros WHERE user_id = $1`, [m.userId]);
+  const { rows: lugares } = soloMio ? { rows: [] } : await pool.query(
+    `SELECT id, nombre, lat, lng, radio_m FROM gcc_world.cp_lugares ORDER BY nombre`);
   return {
     user_id: m.userId,
     es_admin: m.isAdmin,
     ubicacion_activa: !!yo?.ubicacion_activa,
+    // Aceptó un texto anterior: sigue compartiendo lo que aceptó, y se le pide revisar el nuevo.
+    ubicacion_al_dia: (version?.ubicacion_version ?? 0) >= VERSION_CONSENTIMIENTO,
     voz_activa: !!yo?.voz_activa,
     mi_alerta_id: yo?.alerta_id ?? null,
     filas,
     accesos,
+    lugares,
   };
+}
+
+/** Separa dos puntos por debajo de esto y solo engorda la línea: el GPS nunca está quieto del todo. */
+const METROS_ENTRE_PUNTOS = 40;
+/** Un punto con más error que esto dibuja saltos que nadie hizo. */
+const PRECISION_MAXIMA_M = 150;
+
+/** El recorrido de cada miembro en un día. Solo de quien aceptó enseñarlo (versión 3 en adelante). */
+export async function recorridosDelDia(m: Miembro, dia: string): Promise<RecorridoMiembro[]> {
+  const { rows: gente } = await pool.query(
+    `SELECT u.id AS user_id, ${NOMBRE} AS nombre
+       FROM gcc_world.users u
+       LEFT JOIN gcc_world.members m ON m.id = u.member_id
+       JOIN gcc_world.cp_miembros c ON c.user_id = u.id
+      WHERE ${ES_MIEMBRO} AND c.ubicacion_activa AND c.ubicacion_version >= $1`,
+    [VERSION_CONSENTIMIENTO]);
+  if (!gente.length) return [];
+  const ids = gente.map((g: any) => g.user_id);
+  const rango = `($2::date::timestamp AT TIME ZONE '${ZONA_HORARIA}')`;
+  const { rows: puntos } = await pool.query(
+    `SELECT user_id, lat, lng, precision_m, registrada_en FROM gcc_world.cp_posiciones
+      WHERE user_id = ANY($1::uuid[])
+        AND registrada_en >= ${rango} AND registrada_en < ${rango} + INTERVAL '1 day'
+      ORDER BY user_id, registrada_en`,
+    [ids, dia]);
+  const { rows: visitas } = await pool.query(
+    `SELECT v.user_id, l.nombre AS lugar, v.llegada_en, v.salida_en
+       FROM gcc_world.cp_visitas v JOIN gcc_world.cp_lugares l ON l.id = v.lugar_id
+      WHERE v.user_id = ANY($1::uuid[])
+        AND v.llegada_en < ${rango} + INTERVAL '1 day' AND (v.salida_en IS NULL OR v.salida_en >= ${rango})
+      ORDER BY v.llegada_en`,
+    [ids, dia]);
+
+  const salida: RecorridoMiembro[] = gente.map((g: any) => {
+    const crudos = puntos.filter((p: any) => p.user_id === g.user_id && (p.precision_m == null || p.precision_m <= PRECISION_MAXIMA_M));
+    const finos: RecorridoMiembro['puntos'] = [];
+    crudos.forEach((p: any, i: number) => {
+      const u = finos[finos.length - 1];
+      if (!u || i === crudos.length - 1 || distanciaM(u.lat, u.lng, p.lat, p.lng) >= METROS_ENTRE_PUNTOS) {
+        finos.push({ lat: p.lat, lng: p.lng, en: new Date(p.registrada_en).toISOString() });
+      }
+    });
+    return {
+      user_id: g.user_id,
+      nombre: g.nombre,
+      puntos: finos,
+      visitas: visitas.filter((v: any) => v.user_id === g.user_id)
+        .map((v: any) => ({ lugar: v.lugar, llegada_en: v.llegada_en, salida_en: v.salida_en })),
+    };
+  });
+  await registrarAccesos(m.userId, salida.filter((r) => r.user_id !== m.userId && r.puntos.length).map((r) => r.user_id));
+  return salida;
 }
 
 /** La pantalla refresca cada pocos segundos: una misma consulta cuenta una vez cada media hora. */

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { ExternalLink, MapPin, Mic, Phone, ShieldAlert, Siren } from 'lucide-react';
+import { ExternalLink, Flag, LocateFixed, MapPin, Mic, Phone, ShieldAlert, Siren } from 'lucide-react';
 import { BTN_DANGER, BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import Interruptor from '@/components/ui/Interruptor';
 import PanelDetalle from '@/components/ui/PanelDetalle';
@@ -13,11 +13,15 @@ import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
 import MapaMiembros from '@/components/centralized/control-psicosocial/MapaMiembros';
+import MapaElegirPunto from '@/components/centralized/control-psicosocial/MapaElegirPunto';
+import BotonEditar from '@/components/ui/BotonEditar';
+import { EDIT_INPUT, EditField } from '@/components/ui/EditDialog';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { useSondeo } from '@/lib/hooks/useSondeo';
 import { fmtInt } from '@/lib/format';
 import {
-  CONSENTIMIENTO, estadoSenal, type EstadoSenal, type FilaRastreo, type FuncionCp,
+  CONSENTIMIENTO, ZONA_HORARIA, diasConHistorial, estadoSenal, type EstadoSenal, type FilaRastreo, type FuncionCp,
+  type Lugar, type RecorridoMiembro,
 } from '@/lib/centralized/control-psicosocial';
 import {
   apagarProteccionNativa, appSinRastreo, configurarNativo, enviarPosicionAhora, estadoNativo, pedirPermisosNativos,
@@ -31,11 +35,14 @@ type Estado = {
   user_id: string;
   es_admin: boolean;
   ubicacion_activa: boolean;
+  ubicacion_al_dia: boolean;
   voz_activa: boolean;
   mi_alerta_id: number | null;
   filas: FilaRastreo[];
   accesos: { nombre: string; creado_en: string }[];
+  lugares: Lugar[];
 };
+type FormLugar = { id: number | null; nombre: string; radio: string; lat: number | null; lng: number | null };
 type Detalle = FilaRastreo & {
   alerta: { id: number; origen: 'boton' | 'voz'; lat: number | null; lng: number | null; creada_en: string } | null;
   recorrido: { lat: number; lng: number; precision_m: number | null; registrada_en: string }[];
@@ -51,6 +58,14 @@ const SENAL: Record<EstadoSenal, { texto: string; clase: string }> = {
 const fecha = (iso: string | null) => (iso
   ? new Date(iso).toLocaleString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
   : '—');
+
+const hora = (iso: string) => new Date(iso).toLocaleTimeString('es-EC', { timeZone: ZONA_HORARIA, hour: '2-digit', minute: '2-digit' });
+
+function etiquetaDia(dia: string, i: number) {
+  if (i === 0) return 'Hoy';
+  if (i === 1) return 'Ayer';
+  return new Date(`${dia}T12:00:00Z`).toLocaleDateString('es-EC', { timeZone: 'UTC', weekday: 'short', day: '2-digit', month: 'short' });
+}
 
 /** Pedir la posición no puede retrasar un auxilio: pasados 3 s, se envía sin ella. */
 function posicionRapida(): Promise<{ lat: number; lng: number } | null> {
@@ -78,6 +93,12 @@ export default function ControlPsicosocialSystem() {
   const [elegido, setElegido] = useState<string | null>(params.get('miembro'));
   const [detalle, setDetalle] = useState<Detalle | null>(null);
   const conColumna = useConsultaMedia(PANTALLA_XL);
+  const dias = useMemo(() => diasConHistorial(), []);
+  const [dia, setDia] = useState(dias[0]);
+  const [recorridos, setRecorridos] = useState<RecorridoMiembro[]>([]);
+  const [verLugares, setVerLugares] = useState(false);
+  const [formLugar, setFormLugar] = useState<FormLugar | null>(null);
+  const [borrarLugar, setBorrarLugar] = useState<Lugar | null>(null);
 
   const cargar = useCallback(async () => {
     const r = await fetch(API, { cache: 'no-store' });
@@ -94,6 +115,14 @@ export default function ControlPsicosocialSystem() {
     if (r.status === 404 || r.status === 403) { setElegido(null); setDetalle(null); return; }
     if (r.ok) setDetalle((await r.json()).data);
   }, [elegido]);
+
+  const cargarRecorridos = useCallback(async () => {
+    const r = await fetch(`${API}/recorridos?dia=${dia}`, { cache: 'no-store' });
+    if (r.ok) setRecorridos((await r.json()).data);
+  }, [dia]);
+
+  useEffect(() => { cargarRecorridos(); }, [cargarRecorridos]);
+  useSondeo(cargarRecorridos, 60_000);
 
   useEffect(() => { cargar(); plataformaNativa().then(setPlataforma); appSinRastreo().then(setSinRastreo); }, [cargar]);
   useEffect(() => { setDetalle(null); cargarDetalle(); }, [cargarDetalle]);
@@ -164,6 +193,44 @@ export default function ControlPsicosocialSystem() {
     }
   };
 
+  const guardarLugar = async () => {
+    if (!formLugar) return;
+    if (!formLugar.nombre.trim()) { toast.error('Escribe el nombre del lugar.'); return; }
+    if (formLugar.lat == null || formLugar.lng == null) { toast.error('Toca el mapa para marcar el punto.'); return; }
+    setOcupado(true);
+    try {
+      const r = await fetch(formLugar.id ? `${API}/lugares/${formLugar.id}` : `${API}/lugares`, {
+        method: formLugar.id ? 'PATCH' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: formLugar.nombre, lat: formLugar.lat, lng: formLugar.lng, radio_m: Number(formLugar.radio) }),
+      });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'No se pudo guardar');
+      setFormLugar(null);
+      await cargar();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setOcupado(false);
+    }
+  };
+
+  const confirmarBorrarLugar = async () => {
+    if (!borrarLugar) return;
+    const id = borrarLugar.id;
+    setBorrarLugar(null);
+    setOcupado(true);
+    try {
+      const r = await fetch(`${API}/lugares/${id}`, { method: 'DELETE' });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'No se pudo borrar');
+      setFormLugar(null);
+      await Promise.all([cargar(), cargarRecorridos()]);
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setOcupado(false);
+    }
+  };
+
   const pedirAuxilio = async () => {
     setConfirmarAuxilio(false);
     setOcupado(true);
@@ -204,18 +271,22 @@ export default function ControlPsicosocialSystem() {
 
   const columnas = useMemo(() => [
     {
-      key: 'miembro', header: 'Miembro', width: '28%',
+      key: 'miembro', header: 'Miembro', width: '24%',
       render: (f: FilaRastreo) => <span className="block truncate font-medium text-digi-text" title={f.nombre}>{f.nombre}</span>,
     },
     {
       key: 'estado', header: 'Estado', width: '18%',
       render: (f: FilaRastreo) => { const s = SENAL[estadoSenal(f)]; return <span className={s.clase}>{s.texto}</span>; },
     },
-    { key: 'senal', header: 'Última señal', width: '28%', render: (f: FilaRastreo) => fecha(f.registrada_en) },
     {
-      key: 'precision', header: 'Precisión', width: '13%',
-      render: (f: FilaRastreo) => (f.precision_m == null ? '—' : `${fmtInt(f.precision_m)} m`),
+      key: 'lugar', header: 'Lugar', width: '18%',
+      render: (f: FilaRastreo) => {
+        const e = estadoSenal(f);
+        const lugar = e === 'activa' || e === 'auxilio' ? f.lugar_actual : null;
+        return lugar ? <span className="block truncate" title={lugar}>{lugar}</span> : '—';
+      },
     },
+    { key: 'senal', header: 'Última señal', width: '27%', render: (f: FilaRastreo) => fecha(f.registrada_en) },
     {
       key: 'bateria', header: 'Batería', width: '13%',
       render: (f: FilaRastreo) => (f.bateria == null ? '—' : `${fmtInt(f.bateria)} %`),
@@ -233,12 +304,18 @@ export default function ControlPsicosocialSystem() {
       : detalle.alerta?.lat != null && detalle.alerta?.lng != null ? { lat: detalle.alerta.lat, lng: detalle.alerta.lng } : null)
     : null;
 
+  const miRecorrido = detalle ? recorridos.find((r) => r.user_id === detalle.user_id) : undefined;
+  const miPunto = estado.filas.find((f) => f.user_id === estado.user_id && f.lat != null);
+  const inicioMapa: [number, number] = miPunto
+    ? [miPunto.lat!, miPunto.lng!]
+    : estado.lugares[0] ? [estado.lugares[0].lat, estado.lugares[0].lng] : [-2.17, -79.92];
+
   const cuerpoDetalle = detalle && (
     <div className="space-y-3 text-[13px]" style={mf}>
       <p className={SENAL[estadoSenal(detalle)].clase}>{SENAL[estadoSenal(detalle)].texto}</p>
       {punto ? (
         <>
-          {!conColumna && <MapaMiembros filas={[{ ...detalle, lat: punto.lat, lng: punto.lng }]} elegido={detalle.user_id} className="h-64" />}
+          {!conColumna && <MapaMiembros filas={[{ ...detalle, lat: punto.lat, lng: punto.lng }]} lugares={estado.lugares} recorridos={miRecorrido ? [miRecorrido] : []} elegido={detalle.user_id} className="h-64" />}
           <a
             href={`https://www.google.com/maps/search/?api=1&query=${punto.lat},${punto.lng}`}
             target="_blank" rel="noreferrer"
@@ -256,6 +333,19 @@ export default function ControlPsicosocialSystem() {
           <div><dt className="text-[11px] text-digi-muted">Auxilio desde</dt><dd className="text-digi-text">{fecha(detalle.alerta.creada_en)} · {detalle.alerta.origen === 'voz' ? 'voz' : 'botón'}</dd></div>
         )}
       </dl>
+      {miRecorrido && miRecorrido.visitas.length > 0 && (
+        <div>
+          <h4 className="text-[11px] uppercase tracking-wide text-digi-muted mb-1">Llegadas · {etiquetaDia(dia, dias.indexOf(dia))}</h4>
+          <ul className="divide-y divide-digi-border">
+            {miRecorrido.visitas.map((v) => (
+              <li key={`${v.lugar}-${v.llegada_en}`} className="flex items-center justify-between gap-2 py-1.5">
+                <span className="truncate min-w-0 text-digi-text" title={v.lugar}>{v.lugar}</span>
+                <span className="shrink-0 text-[12px] text-digi-muted">{hora(v.llegada_en)} – {v.salida_en ? hora(v.salida_en) : 'sigue allí'}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {detalle.recorrido.length > 0 && (
         <div>
           <h4 className="text-[11px] uppercase tracking-wide text-digi-muted mb-1">Recorrido del auxilio</h4>
@@ -314,6 +404,13 @@ export default function ControlPsicosocialSystem() {
           )}
         </div>
 
+        {estado.ubicacion_activa && !estado.ubicacion_al_dia && (
+          <div className="rounded-md border border-amber-400/40 p-3" style={mf}>
+            <p className="text-[13px] text-digi-text">Cambió lo que se comparte. Revísalo para que se vea tu recorrido y se avisen tus llegadas.</p>
+            <button className={`${BTN_SECONDARY} w-full mt-2`} disabled={ocupado} onClick={() => setConsentir('ubicacion')}>Revisar</button>
+          </div>
+        )}
+
         {plataforma ? (
           <div className="divide-y divide-digi-border border-y border-digi-border" style={mf}>
             {([['ubicacion', MapPin, estado.ubicacion_activa], ['voz', Mic, estado.voz_activa]] as const).map(([f, Icono, activo]) => (
@@ -356,8 +453,26 @@ export default function ControlPsicosocialSystem() {
       </PanelHastaElPie>
 
       <div className="min-w-0 space-y-4">
+        <div className="flex items-center gap-2">
+          <select
+            aria-label="Día del recorrido"
+            value={dia}
+            onChange={(e) => setDia(e.target.value)}
+            className={`${EDIT_INPUT} flex-1 sm:flex-none sm:w-52`}
+            style={mf}
+          >
+            {dias.map((d, i) => <option key={d} value={d}>Recorrido: {etiquetaDia(d, i)}</option>)}
+          </select>
+          {estado.es_admin && (
+            <button className={`${BTN_SECONDARY} shrink-0 sm:ml-auto`} onClick={() => setVerLugares(true)}>
+              <Flag className="w-4 h-4" /> Lugares
+            </button>
+          )}
+        </div>
         <MapaMiembros
           filas={estado.filas}
+          lugares={estado.lugares}
+          recorridos={recorridos}
           elegido={elegido}
           onElegir={setElegido}
           className="h-80 lg:h-[46dvh]"
@@ -409,6 +524,93 @@ export default function ControlPsicosocialSystem() {
           </ul>
         )}
       </PixelModal>
+
+      <PixelModal
+        open={verLugares && !formLugar}
+        onClose={() => setVerLugares(false)}
+        title="Lugares"
+        size="md"
+        pie={(
+          <PieAcciones>
+            <button className={BTN_PRIMARY} onClick={() => setFormLugar({ id: null, nombre: '', radio: '150', lat: null, lng: null })}>Nuevo lugar</button>
+          </PieAcciones>
+        )}
+      >
+        {estado.lugares.length === 0 ? (
+          <p className="py-8 text-center text-[13px] text-digi-muted" style={mf}>Todavía no hay puntos de reunión.</p>
+        ) : (
+          <ul className="divide-y divide-digi-border" style={mf}>
+            {estado.lugares.map((l) => (
+              <li key={l.id} className="flex items-center gap-3 py-2.5">
+                <Flag className="w-4 h-4 text-digi-muted shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="truncate text-[13px] font-medium text-digi-text" title={l.nombre}>{l.nombre}</p>
+                  <p className="text-[12px] text-digi-muted">Radio de {fmtInt(l.radio_m)} m</p>
+                </div>
+                <BotonEditar
+                  etiqueta={`Editar ${l.nombre}`}
+                  onClick={() => setFormLugar({ id: l.id, nombre: l.nombre, radio: String(l.radio_m), lat: l.lat, lng: l.lng })}
+                />
+              </li>
+            ))}
+          </ul>
+        )}
+      </PixelModal>
+
+      <PixelModal
+        open={!!formLugar}
+        onClose={() => setFormLugar(null)}
+        busy={ocupado}
+        title={formLugar?.id ? 'Editar lugar' : 'Nuevo lugar'}
+        size="md"
+        pie={formLugar ? (
+          <PieAcciones
+            onEliminar={formLugar.id ? () => setBorrarLugar(estado.lugares.find((l) => l.id === formLugar.id) ?? null) : undefined}
+            etiquetaEliminar="Eliminar lugar"
+          >
+            <button className={BTN_SECONDARY} disabled={ocupado} onClick={() => setFormLugar(null)}>Cancelar</button>
+            <button className={BTN_PRIMARY} disabled={ocupado} onClick={guardarLugar}>Guardar</button>
+          </PieAcciones>
+        ) : undefined}
+      >
+        {formLugar && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_140px] gap-3">
+              <EditField label="Nombre">
+                <input className={EDIT_INPUT} maxLength={80} value={formLugar.nombre} onChange={(e) => setFormLugar({ ...formLugar, nombre: e.target.value })} />
+              </EditField>
+              <EditField label="Radio en metros">
+                <input className={EDIT_INPUT} type="number" inputMode="numeric" min={30} max={5000} step={10} value={formLugar.radio} onChange={(e) => setFormLugar({ ...formLugar, radio: e.target.value })} />
+              </EditField>
+            </div>
+            <div className="flex items-center justify-between gap-2" style={mf}>
+              <span className="text-[12px] font-semibold text-digi-text opacity-70">Punto en el mapa</span>
+              {miPunto && (
+                <button className={BTN_SECONDARY} onClick={() => setFormLugar({ ...formLugar, lat: miPunto.lat, lng: miPunto.lng })}>
+                  <LocateFixed className="w-4 h-4" /> Mi ubicación
+                </button>
+              )}
+            </div>
+            <MapaElegirPunto
+              lat={formLugar.lat}
+              lng={formLugar.lng}
+              radio={Number(formLugar.radio) || 0}
+              inicio={inicioMapa}
+              onCambiar={(lat, lng) => setFormLugar((f) => (f ? { ...f, lat, lng } : f))}
+            />
+          </div>
+        )}
+      </PixelModal>
+
+      <PixelConfirm
+        open={!!borrarLugar}
+        title="Eliminar lugar"
+        message={`Se borrará «${borrarLugar?.nombre ?? ''}» y sus llegadas registradas.`}
+        confirmLabel="Eliminar"
+        danger
+        onConfirm={confirmarBorrarLugar}
+        onCancel={() => setBorrarLugar(null)}
+      />
 
       <PixelConfirm
         open={confirmarAuxilio}

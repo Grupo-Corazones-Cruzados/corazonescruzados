@@ -11586,3 +11586,14 @@ claro y oscuro con datos simulados y escrituras bloqueadas. Candidato 403, miemb
 - **Registrar quién mira:** ahora mirar es abrir el mapa, no un detalle. Se registra en `estadoRastreo`, y `?solo=mio` deja fuera la sincronización del teléfono al abrirse, que no es mirar a nadie.
 - **Verificación:** 12 comprobaciones con ROLLBACK; Chrome con mapa real a 1440, 1000 y 390 px. **Sin comprobar:** que el mapa cargue dentro de la app del iPhone (`limitsNavigationsToAppBoundDomains`).
 
+## Control Psicosocial — recorrido y llegadas (2026-11-05)
+**Objetivo añadido:** recorrido de todos los miembros en el mapa y aviso al llegar a puntos que marcan los administradores.
+- **Datos de la prueba real (iPhone 17):** 42 posiciones en 1 h 43 min, precisión media de 5 m, 5 alertas por voz, todas cerradas como falsa alarma. El segundo plano y la frase funcionan; los datos no dicen si fue con la pantalla bloqueada.
+- **P11 ¿Basta un punto cada 5 min para un recorrido? · ✅ No:** dibuja rectas sobre la ciudad. Pasa a 60 s. El servidor manda el intervalo, así que cambia sin instalar nada; las instalaciones anteriores tratan cualquier valor < 300 como alta precisión y gastan más hasta actualizarse.
+- **P12 ¿Dónde se detecta la llegada? · ✅ En el servidor.** Geocercas nativas (iOS: 20 regiones) despertarían la app con más precisión de tiempo, pero duplican lógica en dos plataformas y exigen reinstalar. Coste: se conoce con el siguiente punto, hasta 1 min; alguien que cruza un radio pequeño rápido puede no contar.
+- **Antirrebote:** salir exige alejarse radio + max(50 m, precisión); volver en menos de 30 min reabre la misma visita sin avisar; un punto con más error que max(radio, 100 m) no cuenta como llegada.
+- **Trampa de consentimiento:** ampliar lo que se enseña obliga a reaceptar. La versión no se comprueba solo al aceptar: filtra recorrido y llegadas.
+- **Trampa de `?lat=null`:** `Number(null)` es 0 y mandaría el lugar al golfo de Guinea; `datosDeLugar` lo rechaza antes.
+- **Sin probar en teléfono:** gasto de batería a 60 s, llegada real con push al otro teléfono, mapa dentro de la app.
+- **Verificación:** comprobaciones con ROLLBACK de llegadas, rebote, día de Ecuador y consentimiento; Chrome a 1440 y 390 px en oscuro con datos simulados; un miembro recibe 403 al crear, editar o borrar lugares.
+

@@ -3,13 +3,20 @@
 import { useEffect, useRef, useState } from 'react';
 import type { LayerGroup, Map as MapaLeaflet } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { estadoSenal, type FilaRastreo } from '@/lib/centralized/control-psicosocial';
+import { estadoSenal, type FilaRastreo, type Lugar, type RecorridoMiembro } from '@/lib/centralized/control-psicosocial';
 
-const COLOR: Record<string, string> = {
-  auxilio: 'bg-red-600 ring-red-300',
-  activa: 'bg-accent ring-white',
-  sin_senal: 'bg-gray-500 ring-white',
-};
+/**
+ * Un color por persona, el mismo en su marca y en su recorrido. Es la única paleta fuera de los tokens
+ * del tema: el mapa no cambia con el tema y todos dan al menos 4,5:1 con texto blanco.
+ */
+const COLORES = ['#4B2D8E', '#0F766E', '#B45309', '#1D4ED8', '#BE185D', '#4D7C0F', '#7C2D12', '#0E7490'];
+const ROJO_AUXILIO = '#B3261E';
+const GRIS_SIN_SENAL = '#6B7280';
+export function colorDe(userId: string): string {
+  let h = 0;
+  for (const c of userId) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return COLORES[h % COLORES.length];
+}
 
 const INICIO: [number, number] = [-2.17, -79.92]; // Guayaquil, hasta que alguien comparta.
 
@@ -23,9 +30,11 @@ const iniciales = (nombre: string) => nombre.trim().split(/\s+/).slice(0, 2).map
  * al entrar alguien nuevo o al elegir a alguien.
  */
 export default function MapaMiembros({
-  filas, elegido, onElegir, className = '',
+  filas, lugares = [], recorridos = [], elegido, onElegir, className = '',
 }: {
   filas: FilaRastreo[];
+  lugares?: Lugar[];
+  recorridos?: RecorridoMiembro[];
   elegido?: string | null;
   onElegir?: (userId: string) => void;
   className?: string;
@@ -33,6 +42,7 @@ export default function MapaMiembros({
   const caja = useRef<HTMLDivElement>(null);
   const mapa = useRef<MapaLeaflet | null>(null);
   const capa = useRef<LayerGroup | null>(null);
+  const capaFondo = useRef<LayerGroup | null>(null);
   const leaflet = useRef<typeof import('leaflet') | null>(null);
   const encuadrados = useRef('');
   const [listo, setListo] = useState(false);
@@ -49,6 +59,7 @@ export default function MapaMiembros({
         maxZoom: 19,
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       }).addTo(m);
+      capaFondo.current = L.layerGroup().addTo(m);
       capa.current = L.layerGroup().addTo(m);
       mapa.current = m;
       setListo(true);
@@ -81,12 +92,36 @@ export default function MapaMiembros({
           className: '',
           iconSize: [34, 34],
           iconAnchor: [17, 17],
-          html: `<span class="flex items-center justify-center w-[34px] h-[34px] rounded-full ring-2 shadow-md text-white text-[11px] font-semibold ${COLOR[estado] || COLOR.sin_senal} ${estado === 'auxilio' ? 'animate-pulse' : ''}">${escapar(iniciales(f.nombre))}</span>`,
+          html: `<span style="background:${estado === 'auxilio' ? ROJO_AUXILIO : estado === 'activa' ? colorDe(f.user_id) : GRIS_SIN_SENAL}" class="flex items-center justify-center w-[34px] h-[34px] rounded-full ring-2 ring-white shadow-md text-white text-[11px] font-semibold ${estado === 'auxilio' ? 'animate-pulse' : ''}">${escapar(iniciales(f.nombre))}</span>`,
         }),
       });
       marca.bindTooltip(escapar(f.nombre), { direction: 'top', offset: [0, -18] });
       if (onElegir) marca.on('click', () => onElegir(f.user_id));
       marca.addTo(c);
+    }
+    const fondo = capaFondo.current;
+    fondo?.clearLayers();
+    if (fondo) {
+      for (const l of lugares) {
+        L.circle([l.lat, l.lng], { radius: l.radio_m, color: '#4B2D8E', weight: 2, dashArray: '6 4', fillOpacity: 0.1, interactive: false }).addTo(fondo);
+        // En el borde norte del círculo: en el centro taparía la marca de quien está allí.
+        L.tooltip({ permanent: true, direction: 'top', className: 'cp-lugar' })
+          .setLatLng([l.lat + l.radio_m / 111_000, l.lng]).setContent(escapar(l.nombre)).addTo(fondo);
+      }
+      for (const r of recorridos) {
+        if (r.puntos.length < 2) continue;
+        const destacada = !elegido || elegido === r.user_id;
+        const linea = L.polyline(r.puntos.map((p) => [p.lat, p.lng] as [number, number]), {
+          color: colorDe(r.user_id), weight: elegido === r.user_id ? 5 : 3, opacity: destacada ? 0.85 : 0.2,
+        });
+        linea.bindTooltip(escapar(r.nombre), { sticky: true });
+        if (onElegir) linea.on('click', () => onElegir(r.user_id));
+        linea.addTo(fondo);
+        // Dónde empezó el día: un círculo hueco.
+        L.circleMarker([r.puntos[0].lat, r.puntos[0].lng], {
+          radius: 5, color: colorDe(r.user_id), weight: 3, fillColor: '#ffffff', fillOpacity: 1, opacity: destacada ? 1 : 0.2, interactive: false,
+        }).addTo(fondo);
+      }
     }
     const quienes = conPunto.map((f) => f.user_id).sort().join();
     if (quienes && quienes !== encuadrados.current && !elegido) {
@@ -95,7 +130,7 @@ export default function MapaMiembros({
     encuadrados.current = quienes;
     // `conPunto` es nuevo en cada render: lo que cambia de verdad son las filas.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listo, filas, onElegir]);
+  }, [listo, filas, lugares, recorridos, elegido, onElegir]);
 
   // Ir a quien se eligió, una vez por elección: el refresco no debe volver a mover el mapa.
   const yaElegido = useRef<string | null>(null);
@@ -103,7 +138,10 @@ export default function MapaMiembros({
     if (!listo || elegido === yaElegido.current) return;
     const f = conPunto.find((x) => x.user_id === elegido);
     if (!elegido || f) yaElegido.current = elegido ?? null;
-    if (f) mapa.current?.setView([f.lat!, f.lng!], Math.max(mapa.current.getZoom(), 15));
+    const r = recorridos.find((x) => x.user_id === elegido);
+    if (r && r.puntos.length > 1 && leaflet.current) {
+      mapa.current?.fitBounds(leaflet.current.latLngBounds(r.puntos.map((p) => [p.lat, p.lng] as [number, number])), { padding: [48, 48], maxZoom: 16 });
+    } else if (f) mapa.current?.setView([f.lat!, f.lng!], Math.max(mapa.current.getZoom(), 15));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listo, elegido, filas]);
 

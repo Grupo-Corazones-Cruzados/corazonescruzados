@@ -4872,3 +4872,15 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .pago-paso-adelante { animation: pagoPasoAdelante 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
 .pago-paso-atras { animation: pagoPasoAtras 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
 @media (prefers-reduced-motion: reduce) { .pago-paso-adelante, .pago-paso-atras { animation: none; } }
+
+/* Control Psicosocial: el nombre de un punto de reunión sobre el mapa, sin la caja de Leaflet. */
+.leaflet-tooltip.cp-lugar {
+  background: rgb(255 255 255 / 0.85);
+  border: 0;
+  box-shadow: none;
+  color: #4b2d8e;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 6px;
+}
+.leaflet-tooltip.cp-lugar::before { display: none; }
