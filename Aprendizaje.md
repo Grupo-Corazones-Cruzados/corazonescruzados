@@ -187,6 +187,14 @@ Usa mucho el seguimiento de cara y el embellecimiento, y CapCut de la Mac no tie
 Fernando quiere reemplazar la imagen en ciertos momentos por una animación, con su voz siguiendo debajo, y hará su primer video completo así. Blender 5.2.3 instalado con Homebrew: gratis, igual que la vía elegida. Sin MCP: Blender corre sin ventana con un script (`blender/ejecutar.py`, `gcc.py`, `scripts/renderizar-blender.mjs`), sin complemento de terceros y sin depender de MCP en las sesiones de la app. La animación es una capa a pantalla completa en `graficos-ia`, así que el audio no se toca: voz de −31,0 dB en el original y −30,5 dB en la vista, con un efecto sumado. Medido: EEVEE, 146 s para 6 s de video y 8,5 MB; Cycles, 101 s por fotograma, descartado. Perfil Standard, porque AgX lava el morado, y emisión hasta 1,5. Montserrat con licencia OFL. Proyecto validado solo en carpeta de prueba: sin abrir en CapCut real.
 **Corrección de Fernando (2026-11-05):** le encantó la transición, pero la animación de facturas no correspondía a lo que decía (hablaba de un chatbot). La causa fue que la escena se escribió antes de leer la transcripción. Regla nueva: guion palabra por palabra, con los sustantivos que él dice, y la prueba de si se entiende sin audio. Rehecha con su frase: 10,3 s, 4:36 de render, 15,7 MB.
 
+### Primera prueba real: correcciones de Fernando (2026-11-05)
+Subió su video por la app. Cuatro problemas, todos con causa en cómo se dejó el agente:
+- **Salió igual a las pruebas:** el agente abrió `prueba-sin-editar/edicion.json` y lo siguió, porque la guía lo llamaba «referencia de calidad». Ahora una regla le prohíbe leer planes de otros videos, y la guía recoge ideas, no una plantilla.
+- **Efectos fuertes:** el volumen se fijaba por número, y los archivos varían. Medido contra su voz: `impact-bass-1` +14,7 dB, `riser` +8,5 dB, `sparkle` +7,2 dB (15 veces). Ahora se pide `nivel` y `construir.mjs` lo calcula midiendo el archivo: suave −9, medio −6, fuerte −3 frente a la voz, porque −14 quedaría bajo la música.
+- **Ruido en «Minutas de Teams»:** `riser` de 10 s en 60,12 y `impact-bass` en 60,95, heredados de una receta de la prueba. Ahora se rechazan efectos de más de 3 s.
+- **Sin Blender:** era opcional y el agente no leyó su guía. Ahora, en videos de 45 s o más, `construir.mjs` exige una animación o una explicación en `sinAnimacion`, y cada gráfico y efecto necesita `motivo`.
+**Lección:** una regla escrita no bastó; lo que importa se comprueba en `construir.mjs`. Y llamar «referencia» a un resultado aprobado lo convierte en plantilla.
+
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?
