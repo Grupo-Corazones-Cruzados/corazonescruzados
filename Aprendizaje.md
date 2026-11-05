@@ -11715,3 +11715,19 @@ Arquitecto de aplicaciones nativas y audio en tiempo real.
 
 **Sin decidir:** plazo de lo guardado durante un auxilio (propuesta: 90 días); aviso de señal perdida (Fernando lo dejó como está, igual que el cierre protegido); quién recibe llegadas y salidas (hoy, todos los demás miembros); revisión legal y evaluación de impacto de la LOPDP.
 
+## Copiloto — primera versión para la Mac (2026-11-05) · 75 %
+**Decisiones de Fernando:** consulta todo el negocio; micrófono = él, audio del equipo = cliente; responde solo al cliente, y a él con la palabra clave «GUMDRAMON»; «GUMDRAMON, la sesión ha terminado» o un botón cierran y llevan la transcripción a Recordatorios; la transcripción de Meet se adjunta si es la misma reunión; no se oculta al compartir pantalla; Windows queda fuera por no tener equipo; sí tiene Android.
+
+**Medido (P4 ✅):** sesión viva, arranque 4,2 s; pregunta real por el altavoz con captura real, respuesta en 2,1-2,8 s; con búsqueda 8-14 s. El catálogo en el contexto bajó «¿han hecho algo de…?» de 23 s a 3,2 s. Whisper con modelo cargado: ~0,5 s.
+
+**Lo que enseñaron las pruebas con audio real, no los tests:**
+- El eco de los altavoces llega por el micrófono ANTES que por el equipo. Los canales llevan fila propia y el micrófono espera 2,5 s, solo si está sonando el equipo.
+- Cortar a los 5 s partió «sistema de reservas» y salió «cilindro». Se corta en el punto más callado del último segundo y no se pregunta a media frase.
+- Whisper repite el vocabulario de orientación con ruido: «Grupo Corazones Cruzados» aparecía como dicho por Fernando. Se filtra; la clave sola no.
+- Claude cortó con el límite de 5 horas durante las pruebas: el widget lo avisa y la transcripción sigue guardándose.
+
+**P5 ✅** el tap global de Core Audio capturó audio real en macOS 27, sin controladores.
+**Unión con Meet:** se compara por pares de palabras sobre el texto más corto, ventana de 6 h. 12 transcripciones reales: distintas 0,29 de mediana y 0,46 de máximo; la misma pasada por Whisper 0,93 con voz sintética. Umbral 0,65. **Sin calibrar con una reunión real.** Por debajo se crea otro recordatorio: nada se pierde.
+
+**Sin probar:** crear un recordatorio de verdad al terminar (solo portero, 401/400/404 en producción; se evitó escribir en producción), adjuntar Meet de verdad, voz real de Fernando con la clave, una reunión real.
+**Falta:** Android (P7), iPhone/iPad (P6), Windows sin equipo (P8), consentimiento (P9).
