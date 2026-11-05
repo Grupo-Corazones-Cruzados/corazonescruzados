@@ -864,10 +864,13 @@ Stack estándar de la casa, con particularidades de este repo:
 - **👤 Segunda administradora (Fernando, 2026-11-05).** Helen Mabel Cárdenas Coloma: ya tenía cuenta de cliente con su
   correo personal, así que se promovió esa misma fila a `admin` con miembro 6 (no se duplicó) y se cerraron sus
   sesiones para que el rol nuevo entre al volver a acceder. Sigue entrando con el correo personal, porque el código de acceso
-  llega al correo de la cuenta. `hmcardenasc0@grupocc.org` lo creó Fernando en la consola (unidad raíz, con Business
-  Standard de pago, buzón y Calendar) y está en `workspace_email` y `members.email`.
-  ⚠️ `createWorkspaceUser` en `/Candidatos` también asignó Business Standard: ahí no es gratis, y `complete-profile`
-  de los candidatos usa esa función. Falta decidir si se apaga la licencia automática en esa unidad.
+  llega al correo de la cuenta.
+- **💸 Un correo `@grupocc.org` solo para quien ya es rentable (Fernando, 2026-11-05).** *«estos correos deben crearse
+  cuando un miembro realmente es rentable»*. Cada cuenta de Google cuesta una licencia Business Standard. Se eliminaron
+  `hmcardenasc0@`, `negocios@` y `lfgonzalezm1@`; queda solo `lfgonzalezm0@grupocc.org`. Antes se revisó: sin uso en
+  código, variables de producción ni base, y Drive vacío; el contenido de sus buzones no se pudo revisar. Google permite
+  restaurarlas durante 20 días. Helen sigue siendo administradora, con `members.email` en Outlook y `workspace_email` vacío.
+  ⚠️ `createWorkspaceUser` en `/Candidatos` asignó Business Standard, y `complete-profile` de los candidatos usa esa función.
 - **📲 Herramientas ▸ «Apps para el teléfono» + Descargador GCC (Fernando, 2026-10-21).** Tipo nuevo
   de herramienta: un paquete para instalar fuera de tiendas. Decidido: **solo Android**, descarga del
   APK **con sesión**, app **independiente** (`movil/descargador/`, Kotlin, `org.grupocc.descargador`).
