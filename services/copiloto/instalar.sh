@@ -29,6 +29,38 @@ grep '^DATABASE_URL=' "$REPO/.env" > "$DATOS/.env"
 chmod 600 "$DATOS/.env"
 (cd "$APP" && npm ci --no-audit --no-fund --silent)
 
+echo "→ Preparando la sesión de Claude Code"
+SESION="$DATOS/sesion"
+mkdir -p "$SESION/.claude"
+cp "$ORIGEN/sesion/CLAUDE.md" "$SESION/CLAUDE.md"
+# Con `dontAsk`, solo se puede lo que esté aquí y nunca se pide permiso. Investiga todo, pero solo lee.
+cat > "$SESION/.claude/settings.json" <<AJUSTES
+{
+  "permissions": {
+    "defaultMode": "dontAsk",
+    "additionalDirectories": ["$HOME/Documents/02_Clientes", "$HOME/Library/CloudStorage/OneDrive-GCC/02_Clientes", "$HOME/corazonescruzados"],
+    "allow": ["Read", "WebSearch", "Task", "Agent", "Bash(node $APP/nucleo/consultar-bd.mjs *)", "Bash(node ~/.gcc-copiloto/app/nucleo/consultar-bd.mjs *)", "Bash(node $APP/nucleo/buscar.mjs *)", "Bash(node ~/.gcc-copiloto/app/nucleo/buscar.mjs *)"],
+    "deny": ["Read(//**/.env*)", "Read(//**/.ssh/**)", "Read(//**/.aws/**)", "Read(//**/.gnupg/**)", "Read(//**/certificates/**)", "Read(//**/*.pem)", "Read(//**/*.p12)", "Read(//**/*.jks)", "Read(//**/*.key)", "Read(//**/*.keystore)", "Read(//**/*peter*tours*/**)", "Read($DATOS/token)", "Read($DATOS/.env)", "Read($HOME/.gcc-espacio/**)", "WebFetch"]
+  }
+}
+AJUSTES
+# Sin confianza, Claude Code ignora esos permisos y lo deniega todo. Es lo mismo que aceptar el aviso de
+# confianza en una terminal, y solo para esta carpeta, que es nuestra.
+python3 - "$SESION" <<'CONFIANZA'
+import json, os, sys, tempfile
+ruta = os.path.expanduser('~/.claude.json')
+with open(ruta, encoding='utf8') as f:
+    d = json.load(f)
+p = d.setdefault('projects', {}).setdefault(sys.argv[1], {})
+if not p.get('hasTrustDialogAccepted'):
+    p['hasTrustDialogAccepted'] = True
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(ruta))
+    with os.fdopen(fd, 'w', encoding='utf8') as f:
+        json.dump(d, f, indent=2, ensure_ascii=False)
+    os.chmod(tmp, os.stat(ruta).st_mode)
+    os.replace(tmp, ruta)
+CONFIANZA
+
 echo "→ Compilando el widget"
 (cd "$ORIGEN/mac" && swift build -c release 2>&1 | tail -1)
 BINARIO="$(cd "$ORIGEN/mac" && swift build -c release --show-bin-path)/Copiloto"

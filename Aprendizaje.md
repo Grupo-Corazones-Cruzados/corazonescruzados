@@ -11738,3 +11738,17 @@ Comprobado con audio sintético real por el canal del micrófono: 18 s con pausa
 Como el 2,5 s añade espera tras cada pregunta, puede que haya que ajustarlo con su uso.
 El identificador `org.grupocc.copiloto` no cambia, para conservar los permisos de macOS. El repositorio es público: el arte del personaje no se sube.
 
+## Copiloto — sesión real de Claude Code (2026-11-05) · 85 %
+Fernando: debe ser una sesión de Claude Code como la de Admin ▸ Espacio de trabajo; esperar al menos 4 s de silencio con un contador visible; y no investigaba lo suficiente en los proyectos de los clientes.
+
+**Hecho:** el núcleo crea la sesión por la API del Espacio, sin tocar su servicio, con la primera pregunta real, y la conserva toda la reunión; `clasificador.mjs` (haiku, sin herramientas) filtra lo del cliente para no llenar la sesión de «NADA». La carpeta del proyecto es `~/.gcc-copiloto/sesion`, con `CLAUDE.md` y los permisos.
+
+**Trampas que costaron pruebas reales:**
+- Claude Code **ignora `permissions.allow` y `additionalDirectories` de un proyecto no marcado de confianza**, y en `dontAsk` lo deniega todo. Lo avisa solo por stderr. El instalador pone `hasTrustDialogAccepted` en `~/.claude.json`, solo para esa carpeta.
+- **Claude Code 2.1.318 no trae `Grep` ni `Glob`:** busca por Bash con un `grep` propio. Permitir `grep` por Bash leería los `.env`, porque las reglas de `Read` no lo frenan. Por eso `nucleo/buscar.mjs`, sin shell, dentro de las raíces y sin llaves.
+- `execFile` con `maxBuffer` cortó el `grep` en silencio tras los primeros clientes alfabéticos: «Sistema de Camiones» no aparecía aunque existía. Se lee por líneas y se reparte entre clientes, documentos primero. Un resultado vacío o parcial no se nota: comprobar con un dato que se sabe que está.
+
+**Medido con audio real, sintético:** pregunta con 3 s de pausa llegó entera; encontró Transportes Morales y el sistema de Deyby; 2 min 12 s de investigación con 17 pasos, frente a 2-3 s del agente anterior, que no los veía. **Ese tiempo es el precio de investigar:** puede que haya que acotarlo.
+
+**Sin probar:** la voz de Fernando, el recordatorio real, varias preguntas seguidas en una reunión, el gasto de límite en una reunión larga.
+

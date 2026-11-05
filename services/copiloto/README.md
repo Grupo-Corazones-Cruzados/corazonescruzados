@@ -9,12 +9,13 @@ Widget flotante que escucha una reunión, detecta preguntas y responde con lo qu
 ```
 Micrófono (Fernando) ─┐
 Audio del equipo (Cliente) ─┴→ Gumdramon.app → núcleo en 127.0.0.1:3793 → whisper-server (local)
-                                                      ├→ filtro local → Claude Code (suscripción, solo lectura)
+                                                      ├→ filtro local → clasificador (haiku) → sesión real del Espacio de trabajo
                                                       └→ al terminar → Next local :3792 → Recordatorios
 ```
 
 - **Instalar o actualizar:** `services/copiloto/instalar.sh`. El recordatorio necesita además el Espacio de trabajo al día (`services/espacio-trabajo/instalar.sh`).
 - **Datos:** `~/.gcc-copiloto/` (token, `.env`, `sesiones/`, `servicio.log`). La transcripción se escribe línea a línea y se borra al confirmarse el recordatorio. El audio no se guarda.
 - **Pruebas:** `npm test` en esta carpeta.
-- **Órdenes de voz (solo micrófono):** «GUMDRAMON, …» pregunta, y la pregunta acaba tras 2,5 s de silencio (máximo 90 s); «GUMDRAMON, la sesión ha terminado» cierra y crea el recordatorio.
-- **Seguridad:** lo que se oye lo puede decir cualquiera, así que el agente solo tiene `Read`, `Grep`, `Glob`, `WebSearch` y un SELECT de solo lectura (`nucleo/bd.mjs`). Sin `Bash`, sin escritura y sin `WebFetch`. `peter-tours` y las llaves están vedados.
+- **Órdenes de voz (solo micrófono):** «GUMDRAMON, …» pregunta, y la pregunta acaba tras 4 s de silencio, con cuenta atrás en el widget (máximo 90 s); «GUMDRAMON, la sesión ha terminado» cierra y crea el recordatorio.
+- **La sesión:** es una sesión normal de Claude Code en el proyecto Gumdramon del Espacio de trabajo (carpeta `~/.gcc-copiloto/sesion`, con su `CLAUDE.md`). Se abre desde el widget y se puede seguir allí.
+- **Seguridad:** lo que se oye lo puede decir cualquiera, como el WhatsApp de las incidencias. Por eso va en modo `dontAsk` con los permisos que escribe `instalar.sh`: `Read`, `WebSearch`, subagentes, la búsqueda en todos los proyectos (`nucleo/buscar.mjs`, porque esta versión de Claude Code no trae `Grep` ni `Glob` y un `grep` libre leería los `.env`) y un SELECT de solo lectura (`nucleo/bd.mjs`). Sin escritura y sin `WebFetch`. `peter-tours` y las llaves están vedados.

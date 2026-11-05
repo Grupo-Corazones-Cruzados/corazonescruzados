@@ -6,9 +6,10 @@ import path from 'node:path';
 import { buscarClave, ordenaTerminar } from './palabra-clave.mjs';
 import { esAlucinacion, esEco, parecePregunta } from './filtro.mjs';
 import { limpiarFilas, validarConsulta } from './bd.mjs';
-import { revisarHerramienta } from './agente.mjs';
+import { SesionClaude, describirHerramienta } from './sesion-claude.mjs';
 import { Segmentador } from './segmentador.mjs';
 import { Sesion, leerPendiente } from './sesion.mjs';
+import { buscar, rutaSegura } from './buscar.mjs';
 import { Motor } from './motor.mjs';
 
 test('la clave se reconoce aunque Whisper la escriba mal', () => {
@@ -51,13 +52,72 @@ test('la base: solo un SELECT y nada de credenciales', () => {
   assert.deepEqual(limpiarFilas([{ id: 1, password_hash: 'x', api_key: 'y', nombre: 'z' }]), [{ id: 1, nombre: 'z' }]);
 });
 
-test('el agente solo lee, y no lee las llaves', () => {
-  for (const n of ['Bash', 'Write', 'Edit', 'WebFetch', 'Task']) assert.ok(revisarHerramienta(n, {}), n);
-  assert.equal(revisarHerramienta('Read', { file_path: '/a/MEMORIA.md' }), null);
-  assert.equal(revisarHerramienta('mcp__negocio__consultar_bd', { sql: 'select 1' }), null);
-  for (const r of ['/a/.env', '/a/.env.local', '/a/peter-tours/x.md', '/a/x.jks', '/u/.ssh/id', '/a/certificates/f.p12']) assert.ok(revisarHerramienta('Read', { file_path: r }), r);
-  assert.ok(revisarHerramienta('Grep', { path: '/a/.env.local', pattern: 'x' }));
-  assert.ok(revisarHerramienta('Glob', { pattern: '**/.env*' }));
+test('el turno de la sesión devuelve el último texto, no la narración previa', async () => {
+  const c = new SesionClaude();
+  const buscando = [];
+  const r = new Promise((ok, mal) => { c.turno = { ok, mal, texto: '', ultimo: '', alBuscar: (d) => buscando.push(d) }; });
+  c.evento({ seq: 1, tipo: 'delta', texto: 'Voy a buscar en los proyectos' });
+  c.evento({ seq: 2, tipo: 'mensaje', rol: 'assistant', bloques: [{ tipo: 'texto', texto: 'Voy a buscar en los proyectos' }, { tipo: 'herramienta', nombre: 'Bash', entrada: { command: 'node ~/.gcc-copiloto/app/nucleo/buscar.mjs contenido "flota"' } }] });
+  c.evento({ seq: 3, tipo: 'mensaje', rol: 'assistant', padre: 'x', bloques: [{ tipo: 'texto', texto: 'lo de un subagente' }] });
+  c.evento({ seq: 4, tipo: 'mensaje', rol: 'assistant', bloques: [{ tipo: 'texto', texto: 'Hicimos dos proyectos de flota.' }] });
+  c.evento({ seq: 5, tipo: 'fin', ok: true });
+  assert.equal(await r, 'Hicimos dos proyectos de flota.');
+  assert.deepEqual(buscando, ['Buscando en los proyectos: flota']);
+  assert.equal(c.visto, 5);
+});
+
+test('un turno fallido llega como error', async () => {
+  const c = new SesionClaude();
+  const r = new Promise((ok, mal) => { c.turno = { ok, mal, texto: '', ultimo: '' }; });
+  c.evento({ tipo: 'fin', ok: false, error: 'You hit your limit' });
+  await assert.rejects(r, /limit/);
+});
+
+test('el widget dice qué se está mirando', () => {
+  assert.equal(describirHerramienta('Read', { file_path: '/a/b/MEMORIA.md' }), 'Leyendo MEMORIA.md');
+  assert.equal(describirHerramienta('Bash', { command: 'node x/consultar-bd.mjs "SELECT 1"' }), 'Consultando la base del negocio');
+});
+
+test('un cliente con mucho no tapa a los demás, y los documentos van primero', async () => {
+  const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'raiz-'));
+  process.env.COPILOTO_RAICES = raiz;
+  fs.mkdirSync(path.join(raiz, 'Aaa/x'), { recursive: true });
+  fs.mkdirSync(path.join(raiz, 'Zzz/y'), { recursive: true });
+  // Más de 16 MB de coincidencias: así se cortaba antes, sin llegar a Zzz.
+  fs.writeFileSync(path.join(raiz, 'Aaa/x/datos.sql'), `camion ${'x'.repeat(2000)}\n`.repeat(9000));
+  fs.writeFileSync(path.join(raiz, 'Zzz/y/MEMORIA.md'), 'Sistema de camiones\n');
+  fs.writeFileSync(path.join(raiz, 'Zzz/y/app.ts'), Array(40).fill('camion').join('\n'));
+  const l = await buscar('contenido', 'camion');
+  assert.ok(l.some((x) => x.includes('Zzz/y/MEMORIA.md')), 'llega al último cliente');
+  const zzz = l.filter((x) => x.includes('/Zzz/'));
+  assert.match(zzz[0], /MEMORIA\.md/);
+  assert.ok(l.filter((x) => x.includes('/Aaa/')).length <= 3, 'un archivo no acapara');
+  assert.ok(l.every((x) => x.length <= 300));
+  delete process.env.COPILOTO_RAICES;
+});
+
+test('la búsqueda recorre los proyectos y nunca toca llaves', async () => {
+  const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'raiz-'));
+  process.env.COPILOTO_RAICES = raiz;
+  fs.mkdirSync(path.join(raiz, 'ClienteA/app'), { recursive: true });
+  fs.mkdirSync(path.join(raiz, 'ClienteB/node_modules/x'), { recursive: true });
+  fs.mkdirSync(path.join(raiz, 'Peter Tours/peter-tours'), { recursive: true });
+  fs.writeFileSync(path.join(raiz, 'ClienteA/app/flota.md'), 'Sistema de camiones y flota\npassword=flota123\n');
+  fs.writeFileSync(path.join(raiz, 'ClienteA/.env'), 'DATABASE_URL=postgres://u:flota@h/x\n');
+  fs.writeFileSync(path.join(raiz, 'ClienteA/.env.local'), 'flota=secreta\n');
+  fs.writeFileSync(path.join(raiz, 'ClienteB/node_modules/x/a.md'), 'flota\n');
+  fs.writeFileSync(path.join(raiz, 'Peter Tours/peter-tours/a.md'), 'flota\n');
+  const lineas = await buscar('contenido', 'flota');
+  assert.equal(lineas.length, 1, lineas.join(' | '));
+  assert.match(lineas[0], /flota\.md:1:Sistema de camiones/);
+  assert.deepEqual((await buscar('archivos', 'flota')).map((f) => path.basename(f)), ['flota.md']);
+  assert.deepEqual(await buscar('archivos', '.env'), []);
+  assert.ok(!(await buscar('carpeta', path.join(raiz, 'ClienteA'))).some((x) => x.includes('.env')));
+  assert.throws(() => rutaSegura(path.join(raiz, 'ClienteA/.env')));
+  assert.throws(() => rutaSegura('/etc'));
+  assert.throws(() => rutaSegura(path.join(raiz, '../..')));
+  assert.equal(await buscar('contenido', '--version', '../..').catch(() => 'rechazada'), 'rechazada');
+  delete process.env.COPILOTO_RAICES;
 });
 
 const pcm = (seg, amp) => {
@@ -79,7 +139,8 @@ test('el segmentador corta en la pausa y a los 5 s, sin mandar silencios', () =>
   assert.ok(Math.abs(tramos.reduce((a, b) => a + b, 0) - 12) < 1, 'sin perder audio ni repetirlo');
 });
 
-function reunion({ respuestas = [], r_espera = null } = {}) {
+function reunion({ respuestas = [], r_espera = null, nada = false } = {}) {
+  const clasificadas = [];
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'copiloto-'));
   const eventos = [];
   const preguntas = [];
@@ -88,14 +149,15 @@ function reunion({ respuestas = [], r_espera = null } = {}) {
   const motor = new Motor({
     sesion,
     transcriptor: { iniciar: async () => {}, detener() {}, transcribir: async () => '' },
-    agente: { iniciar() {}, detener() {}, preguntar: async (m, a) => { preguntas.push(m); const r = respuestas.shift() ?? 'NADA'; a.alTexto?.(r); return r; } },
+    agente: { iniciar() {}, detener() {}, preguntar: async (m, a) => { preguntas.push(m); const r = respuestas.shift() ?? 'x'; a.alTexto?.(r); return r; } },
+    clasificar: async (t) => { clasificadas.push(t); return nada ? null : t.split('Lo nuevo:\n')[1]; },
     emitir: (e, d) => eventos.push([e, d]),
     terminar: async () => { eventos.push(['terminar', {}]); },
     ahora: () => reloj,
     esperar: async (ms) => { if (r_espera) await r_espera(ms); },
   });
   motor.activar();
-  return { motor, eventos, preguntas, sesion, avanzar: (ms) => { reloj += ms; } };
+  return { motor, eventos, preguntas, clasificadas, sesion, avanzar: (ms) => { reloj += ms; } };
 }
 const espera = () => new Promise((r) => setTimeout(r, 5));
 const nombres = (ev) => ev.map(([e]) => e);
@@ -106,23 +168,43 @@ test('una pregunta del cliente se responde', async () => {
   await espera();
   assert.equal(r.preguntas.length, 1);
   assert.match(r.preguntas[0], /MODO automático/);
+  assert.equal(r.clasificadas.length, 1);
   assert.ok(nombres(r.eventos).includes('respuesta'));
 });
 
-test('sin pregunta, ni Claude se entera', async () => {
+test('sin forma de pregunta no se gasta ni la clasificación', async () => {
   const r = reunion();
   await r.motor.texto('sistema', 'Perfecto, muy bien, seguimos con el tema.');
   await espera();
+  assert.equal(r.clasificadas.length, 0);
   assert.equal(r.preguntas.length, 0);
   assert.ok(!nombres(r.eventos).includes('consulta'));
 });
 
-test('si Claude dice NADA, el widget no muestra nada', async () => {
-  const r = reunion({ respuestas: ['NADA'] });
+test('si el clasificador dice NADA, ni la sesión ni el widget se enteran', async () => {
+  const r = reunion({ nada: true });
   await r.motor.texto('sistema', '¿Qué tal, cómo están todos?');
   await espera();
-  assert.equal(r.preguntas.length, 1);
+  assert.equal(r.clasificadas.length, 1);
+  assert.equal(r.preguntas.length, 0);
   for (const e of ['consulta', 'respuesta', 'parcial']) assert.ok(!nombres(r.eventos).includes(e), e);
+});
+
+test('la cuenta atrás baja de 4 s y se reinicia al volver a hablar', async () => {
+  const r = reunion({ respuestas: ['Listo.'] });
+  const restantes = () => r.eventos.filter(([e, d]) => e === 'escuchando' && d.restante != null).map(([, d]) => d.restante);
+  await r.motor.texto('mic', 'GUMDRAMON, una pregunta larga');
+  r.avanzar(1000); await r.motor.revisarDictado();
+  r.avanzar(2000); await r.motor.revisarDictado();
+  assert.deepEqual(restantes(), [3, 1]);
+  r.motor.audio('mic', pcm(0.3, 0.2)); // vuelve a hablar
+  await r.motor.revisarDictado();
+  assert.equal(restantes().at(-1), 4);
+  assert.equal(r.preguntas.length, 0);
+  r.avanzar(3900); await r.motor.revisarDictado();
+  assert.equal(r.preguntas.length, 0, 'a los 3,9 s todavía espera');
+  r.avanzar(200); await r.motor.revisarDictado(); await espera();
+  assert.equal(r.preguntas.length, 1);
 });
 
 test('lo que dice Fernando sin la clave no dispara nada, aunque sea pregunta', async () => {
@@ -133,7 +215,7 @@ test('lo que dice Fernando sin la clave no dispara nada, aunque sea pregunta', a
   assert.equal(r.sesion.lineas[0].quien, 'Fernando');
 });
 
-const cierra = async (r) => { r.avanzar(3000); await r.motor.revisarDictado(); await espera(); };
+const cierra = async (r) => { r.avanzar(4500); await r.motor.revisarDictado(); await espera(); };
 
 test('Fernando pregunta con la clave y recibe respuesta cuando se calla', async () => {
   const r = reunion({ respuestas: ['Entregamos en 4 semanas.'] });
@@ -149,7 +231,7 @@ test('una pregunta larga, en varios tramos y con pausas, llega entera', async ()
   const r = reunion({ respuestas: ['Listo.'] });
   await r.motor.texto('mic', 'GUMDRAMON, necesito saber si en el proyecto de flota');
   for (const t of ['que hicimos el año pasado incluimos reportes', 'y además cuánto tardamos en entregarlo', 'y quién fue el responsable']) {
-    r.avanzar(2000); // pausa para pensar, menor que el silencio de cierre
+    r.avanzar(3500); // pausa para pensar, menor que el silencio de cierre
     await r.motor.revisarDictado();
     assert.equal(r.preguntas.length, 0, t);
     await r.motor.texto('mic', t);
@@ -195,7 +277,7 @@ test('a los 90 s se envía aunque no pare de hablar', async () => {
 test('la clave sola espera a que empiece a hablar', async () => {
   const r = reunion({ respuestas: ['Listo.'] });
   await r.motor.texto('mic', 'GUMDRAMON.');
-  r.avanzar(3000);
+  r.avanzar(5000);
   await r.motor.revisarDictado();
   assert.equal(r.preguntas.length, 0, 'sin texto no hay nada que enviar');
   await r.motor.texto('mic', 'cuál fue el último proyecto de Motordesa');

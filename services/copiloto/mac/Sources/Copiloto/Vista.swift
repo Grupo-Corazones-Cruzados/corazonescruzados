@@ -29,7 +29,7 @@ struct TarjetaConsulta: View {
       if c.respuesta.isEmpty && !c.terminada {
         HStack(spacing: 6) {
           ProgressView().controlSize(.mini)
-          Text(c.buscando ? "Buscando…" : "Pensando…").font(.system(size: 12)).foregroundStyle(.secondary)
+          Text(c.buscando ? (c.detalle ?? "Investigando…") : "Pensando…").font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
         }
       } else {
         Text(c.respuesta).font(.system(size: 14, weight: .medium)).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
@@ -38,6 +38,35 @@ struct TarjetaConsulta: View {
     .padding(10)
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(.white.opacity(0.06), in: RoundedRectangle(cornerRadius: 9))
+  }
+}
+
+/// La cuenta atrás: se llena mientras hablas y se vacía cuando callas; al acabar, se envía.
+struct TarjetaDictado: View {
+  let texto: String
+  let restante: Double?
+  let total: Double
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 7) {
+      HStack(spacing: 8) {
+        ZStack {
+          Circle().stroke(.white.opacity(0.15), lineWidth: 3)
+          Circle().trim(from: 0, to: CGFloat(min(1, (restante ?? total) / total)))
+            .stroke(violeta, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+            .rotationEffect(.degrees(-90))
+            .animation(.linear(duration: 0.12), value: restante)
+          Text(String(Int((restante ?? total).rounded(.up)))).font(.system(size: 11, weight: .semibold)).monospacedDigit()
+        }
+        .frame(width: 28, height: 28)
+        Text(restante == nil ? "Te escucho" : "Envío al llegar a 0. Si sigues hablando, vuelve a empezar.")
+          .font(.system(size: 11)).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+      }
+      if !texto.isEmpty { Text(texto).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true) }
+    }
+    .padding(10)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .overlay(RoundedRectangle(cornerRadius: 9).stroke(violeta, lineWidth: 1))
   }
 }
 
@@ -116,14 +145,7 @@ struct Widget: View {
             }
             ForEach(m.consultas) { TarjetaConsulta(c: $0).id($0.id) }
             if let d = m.dictando {
-              VStack(alignment: .leading, spacing: 5) {
-                Label("Te escucho. Cuando termines, haz una pausa.", systemImage: "waveform").font(.system(size: 11)).foregroundStyle(.secondary)
-                if !d.isEmpty { Text(d).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true) }
-              }
-              .padding(10)
-              .frame(maxWidth: .infinity, alignment: .leading)
-              .overlay(RoundedRectangle(cornerRadius: 9).stroke(violeta, lineWidth: 1))
-              .id("dictado")
+              TarjetaDictado(texto: d, restante: m.restante, total: m.totalEspera).id("dictado")
             }
           } else {
             ForEach(m.lineas) { l in
@@ -160,6 +182,10 @@ struct Widget: View {
             let t = texto.trimmingCharacters(in: .whitespacesAndNewlines)
             if !t.isEmpty { m.enviar(t); texto = "" }
           }
+        if let u = m.sesionURL {
+          Button { NSWorkspace.shared.open(u) } label: { Image(systemName: "arrow.up.right.square") }
+            .controlSize(.small).help("Abrir esta sesión en el Espacio de trabajo")
+        }
         Button("Terminar") { confirmar = true }.controlSize(.small).disabled(!m.activo && m.lineas.isEmpty)
           .help("Termina la reunión y guarda la transcripción en Recordatorios")
       }

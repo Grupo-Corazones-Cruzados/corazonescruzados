@@ -8,6 +8,7 @@ struct Consulta: Identifiable {
   var modo: String
   var respuesta: String = ""
   var buscando = false
+  var detalle: String?
   var terminada = false
   var ms: Int?
 }
@@ -28,6 +29,11 @@ final class Modelo: ObservableObject {
   @Published var nota: String?
   /// Lo que lleva dicho Fernando tras la palabra clave; nil si no está dictando.
   @Published var dictando: String?
+  /// Segundos que faltan para enviar la pregunta; nil mientras sigue hablando.
+  @Published var restante: Double?
+  @Published var totalEspera: Double = 4
+  /// La sesión de Claude Code de esta reunión, para abrirla en el Espacio de trabajo.
+  @Published var sesionURL: URL?
   @Published var nivelMic: Float = 0
   @Published var nivelSistema: Float = 0
   @Published var sinAudioSistema = false
@@ -172,12 +178,19 @@ final class Modelo: ObservableObject {
       lineas.append(Linea(quien: j["quien"] as? String ?? "", texto: j["texto"] as? String ?? ""))
       if lineas.count > 400 { lineas.removeFirst(lineas.count - 400) }
     case "escuchando":
-      dictando = (j["activo"] as? Bool ?? false) ? (j["texto"] as? String ?? "") : nil
+      let sigue = j["activo"] as? Bool ?? false
+      dictando = sigue ? (j["texto"] as? String ?? "") : nil
+      restante = sigue ? (j["restante"] as? Double ?? (j["restante"] as? Int).map(Double.init)) : nil
+      if let t = j["total"] as? Double ?? (j["total"] as? Int).map(Double.init) { totalEspera = t }
+    case "sesion":
+      if let id = j["id"] as? String, let p = j["proyecto"] as? String {
+        sesionURL = URL(string: "http://localhost:3792/dashboard/admin/espacio?p=\(p)&s=\(id)")
+      }
     case "consulta":
       guard let id = j["id"] as? Int else { return }
       consultas.append(Consulta(id: id, pregunta: j["pregunta"] as? String ?? "", modo: j["modo"] as? String ?? ""))
     case "buscando":
-      if let i = consultaIndice(j) { consultas[i].buscando = true }
+      if let i = consultaIndice(j) { consultas[i].buscando = true; consultas[i].respuesta = ""; consultas[i].detalle = j["detalle"] as? String }
     case "parcial":
       if let i = consultaIndice(j) { consultas[i].respuesta = j["texto"] as? String ?? ""; consultas[i].buscando = false }
     case "respuesta":
@@ -198,7 +211,7 @@ final class Modelo: ObservableObject {
       nota = "Recordatorio creado: \(titulo)"
     case "error":
       let mensaje = j["mensaje"] as? String ?? "Error"
-      if let i = consultaIndice(j) { consultas[i].terminada = true; consultas[i].buscando = false; consultas[i].respuesta = "" }
+      if let i = consultaIndice(j) { consultas.remove(at: i) }
       aviso = mensaje.lowercased().contains("limit") ? "Se alcanzó el límite de Claude: no habrá respuestas hasta que se libere. La transcripción sigue guardándose." : mensaje
     default: break
     }

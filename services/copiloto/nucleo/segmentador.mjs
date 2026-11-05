@@ -52,7 +52,8 @@ export class Segmentador {
     const e = energia(cuadro);
     const umbral = Math.max(UMBRAL_MINIMO, this.piso * 3);
     const voz = e > umbral;
-    if (voz) this.alVoz();
+    // Más sensible que el corte: una voz baja al final de una frase también cuenta como seguir hablando.
+    if (e > Math.max(UMBRAL_MINIMO / 2, this.piso * 2)) this.alVoz();
     if (!voz) this.piso = this.piso * 0.98 + e * 0.02; // el ruido de fondo se aprende solo en lo que no es voz
 
     if (!this.bytes) {

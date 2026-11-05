@@ -12,9 +12,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import pg from 'pg';
 import { Transcriptor } from './transcripcion.mjs';
-import { Agente } from './agente.mjs';
+import { SesionClaude } from './sesion-claude.mjs';
+import { clasificar } from './clasificador.mjs';
 import { Sesion } from './sesion.mjs';
 import { Motor } from './motor.mjs';
 import { enviarPendiente } from './plataforma.mjs';
@@ -27,19 +27,6 @@ const rutaToken = path.join(DATOS, 'token');
 if (!fs.existsSync(rutaToken)) fs.writeFileSync(rutaToken, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
 const TOKEN = fs.readFileSync(rutaToken, 'utf8').trim();
 
-function leerEnv(ruta) {
-  try {
-    for (const l of fs.readFileSync(ruta, 'utf8').split('\n')) {
-      const m = l.match(/^([A-Z0-9_]+)=(.*)$/);
-      if (m && m[1] === 'DATABASE_URL') return m[2].replace(/^["']|["']$/g, '');
-    }
-  } catch { /* sin archivo */ }
-  return '';
-}
-const cadena = process.env.DATABASE_URL || leerEnv(path.join(DATOS, '.env'));
-const pool = new pg.Pool({ connectionString: cadena, max: 2, ssl: /localhost|127\.0\.0\.1/.test(cadena) || /sslmode=disable/.test(cadena) ? false : { rejectUnauthorized: false }, options: '-c search_path=gcc_world' });
-pool.on('error', () => {});
-
 const clientes = new Set();
 function emitir(evento, datos) {
   const trozo = `event: ${evento}\ndata: ${JSON.stringify(datos)}\n\n`;
@@ -48,7 +35,7 @@ function emitir(evento, datos) {
 
 const sesion = new Sesion(DATOS);
 const transcriptor = new Transcriptor();
-const agente = new Agente({ pool });
+const agente = new SesionClaude({ alSesion: (d) => emitir('sesion', d) });
 
 async function enviarTodo() {
   for (const ruta of sesion.pendientes()) {
@@ -63,12 +50,13 @@ async function enviarTodo() {
 
 async function terminar() {
   motor.desactivar();
+  agente.olvidar();
   const ruta = sesion.cerrar();
   emitir('terminada', { conTranscripcion: !!ruta });
   if (ruta) await enviarTodo();
 }
 
-const motor = new Motor({ transcriptor, agente, sesion, emitir, terminar });
+const motor = new Motor({ transcriptor, agente, clasificar, sesion, emitir, terminar });
 const reintento = setInterval(() => { if (sesion.pendientes().length) enviarTodo(); }, 5 * 60 * 1000);
 reintento.unref();
 setTimeout(() => { if (sesion.pendientes().length) enviarTodo(); }, 5000).unref();
