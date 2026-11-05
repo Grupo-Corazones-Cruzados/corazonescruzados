@@ -865,13 +865,11 @@ de Apple/Google, firma y distribución) para un titular persona natural en Ecuad
 - **Con venta dentro de la app:** se publica para el público que consumirá los servicios. Reafirma lo del 2026-09-23 (StoreKit / Play Billing; PayPhone solo en la web).
 - **Centralizado entra, con su justificación:** solo para miembros internos; cada uno decide si da el acceso; nunca llega a clientes ni candidatos. Esa promesa hay que comprobarla en el código antes de declararla a las tiendas.
 
-#### P8 — ¿Centralizado en una app interna aparte? · 🔎 Propuesta de Fernando (2026-11-05), pendiente de su confirmación
-- **Idea:** la app pública sin permisos especiales; una segunda app interna con lo de Control Psicosocial, y desde la pública los miembros pasan a ella. Es viable: mismo proyecto, dos compilaciones (`org.grupocc.gccworld` y `…interno`).
-- **Matiz:** publicar en la tienda, aunque sea de forma restringida, no evita la revisión. En iPhone, Ad Hoc no pasa revisión (hasta 100 equipos por año, registrados uno a uno). Apple Business Manager queda sin confirmar para una cuenta individual, y exige organización del lado de quien compra.
-- **Riesgo:** el enlace de la app pública a una descarga fuera de la tienda; no se ha confirmado la regla exacta. Se declara en las notas para el revisor, nunca se esconde.
+#### P8 — ¿Centralizado en una app aparte? · ✅ Sí, fuera de las tiendas (Fernando, 2026-11-05)
+- Mismo proyecto, dos compilaciones. Publicar en una tienda, aunque sea de forma restringida, no evita la revisión: en iPhone va por Ad Hoc (hasta 100 equipos por año, registrados uno a uno) y en Android por Herramientas. Riesgo: el enlace de Progreso a una descarga fuera de la tienda; se declara en las notas para el revisor, nunca se esconde.
 
 #### P9 — Firma de Android · ✅ Hecha (2026-11-05)
-- Clave de subida propia en `~/.android/gcc-world-subida.jks`, contraseña en `~/.gradle/gradle.properties`, fuera del repo. SHA-256 `FD:46:2B:3F…DB:03:15`. `bundleRelease` da un AAB firmado de 10,4 MB. **No subirlo aún:** declara los permisos de Control Psicosocial y falta decidir P8.
+- Clave de subida propia en `~/.android/gcc-world-subida.jks`, contraseña en `~/.gradle/gradle.properties`, fuera del repo; copia en `/Volumes/GCC-Respaldos/claves-apps` del M1. SHA-256 `FD:46:2B:3F…DB:03:15`. Centralizado se firma con la clave de Herramientas.
 
 #### P10 — Nombres y separación · ✅ Decidido (Fernando, 2026-11-05)
 - **GCC World** es la web; **GCC Progreso**, la app de la plataforma y la primera en publicarse; **GCC Aventura**, la del videojuego; **GCC Centralizado**, la de los miembros (rojo y negro, solo opción «Miembro»). **Deroga las «dos apps GCC World + GCC Productos» del 2026-09-23.**
@@ -11627,4 +11625,74 @@ claro y oscuro con datos simulados y escrituras bloqueadas. Candidato 403, miemb
 - **Abierto:** lo registrado durante un auxilio no tiene plazo de borrado; `/legal` lo dice tal cual. Falta decidirlo.
 - **Rediseño con el mapa a pantalla completa:** una clase `relative` por defecto ganaba a `absolute inset-0` y el mapa medía 0 de alto; solo se vio midiendo. Las clases nuevas no llegaron por la caché de `.next-*/cache` (`rm -rf` antes de probar diseño).
 - **Reinstalar cierra la app:** el iPhone dejó de enviar posiciones justo al instalar la 1.3 (última 12:41 UTC del 2026-11-05) y una hora después seguía sin enviar. Hay que abrirla tras cada instalación. A falta de aviso, «Sin señal» es lo único que lo delata.
+
+
+---
+
+# COPILOTO DE REUNIONES — widget flotante que escucha y responde preguntas (2026-11-05) · 55 %
+
+## Objetivo
+Herramienta local con Claude Code: un widget flotante, que se activa y desactiva, escucha el audio del equipo y el micrófono, detecta cada ~5 s si se formuló una pregunta, la investiga en los proyectos, el contexto del negocio, la web y lo que sabe el agente, y da una respuesta corta y rápida. Si no hay pregunta, no dice nada. Para reuniones en vivo con clientes. MacBook, iPhone, iPad, Android y Windows; en Apple, instalación directa sin tiendas.
+
+## Rol asumido
+Arquitecto de aplicaciones nativas y audio en tiempo real.
+
+## Progreso
+- **% de información para el objetivo:** 55 %
+- **Estado:** arquitectura propuesta y latencias medidas. Falta probar la captura real en cada sistema y las decisiones de Fernando.
+
+## Fuentes consultadas
+- Esta Mac (2026-11-05): macOS 27.0.1, M4, 24 GB, Xcode 27, Android Studio, adb, Claude Code 2.1.318, `whisper-cli` con `ggml-medium`, Tailscale con el iPhone en la red. Dos identidades Apple Development.
+- Notas: `gcc-espacio-trabajo-local`, `gcc-ios-firma-equipos`, `gcc-control-psicosocial`.
+- Documentación de Android (playback capture) y de Apple (Core Audio taps); notas de Twilio sobre ReplayKit; prensa y fuentes secundarias sobre el art. 178 del COIP.
+
+## Preguntas y respuestas
+### P1 — ¿Cuánto tarda transcribir? · ✅ Resuelta
+- **Respuesta:** `whisper-cli` medium con un audio de 7,5 s: 3,2 s la primera vez y 1,3 s con el modelo ya en caché. Transcribió bien una voz sintética; falta medir con voz real, ruido y varias personas.
+
+### P2 — ¿Cuánto tarda Claude Code en detectar una pregunta? · ✅ Resuelta
+- **Respuesta:** un `claude -p` nuevo por llamada, sin `ANTHROPIC_API_KEY`: 2,5 a 4,2 s, sin diferencia clara entre haiku y sonnet ni con menos herramientas (una sola muestra por caso). Casi todo es arranque y red.
+
+### P3 — ¿Se puede llamar a Claude cada 5 s? · ✅ Resuelta: no conviene
+- **Respuesta:** serían 720 llamadas por hora de reunión contra el límite de la suscripción, y cada una tarda casi lo que dura la ventana. Un filtro local decide primero si hay algo con forma de pregunta, y solo entonces se llama a Claude. La ventana debe solaparse para no cortar frases.
+
+### P4 — ¿Cuánto tarda una respuesta con búsqueda? · ❓ Abierta
+- **Por qué importa:** es la promesa de «corta y rápida». Sin medir con proyectos y web.
+
+### P5 — macOS: audio del sistema y widget · 🔎 Investigando
+- **Respuesta parcial:** Core Audio taps capturan el audio de otros procesos; exigen `NSAudioCaptureUsageDescription` y permiso, y sin la clave entregan silencio sin dar error. Falta probarlo aquí. El panel flotante es estándar (`NSPanel`).
+- **Sin confirmar:** si `sharingType = .none` oculta el widget al compartir pantalla.
+
+### P6 — iPhone y iPad · 🔎 Investigando
+- **Respuesta parcial:** ReplayKit obliga a iniciar la transmisión a mano y limita la extensión a ~50 MB. Twilio documenta que no captura audio de AVPlayer, Safari ni Música. Sin confirmar: audio de Zoom o Meet, y si una ventana flotante (Picture in Picture) puede servir para esto. Esperar: micrófono sí; audio de otras apps y flotante, dudosos.
+- **Firma:** Motordesa bloqueada; equipo personal gratis con 7 días y sin push. Actividad en Vivo exige cuenta de pago.
+
+### P7 — Android · 🔎 Investigando
+- **Respuesta parcial:** la guía solo admite capturar audio con uso MEDIA, GAME o UNKNOWN y si la app lo permite. La referencia de la API acepta VOICE_COMMUNICATION, así que hay contradicción: probar con Meet y Zoom en un equipo real. Tampoco se confirmó el micrófono durante una llamada.
+
+### P8 — Windows · ❓ Abierta
+- WASAPI loopback es la vía esperada, sin verificar aquí. En Tailscale no hay ningún equipo Windows para probarlo.
+
+### P9 — Consentimiento y datos · ⏸ Bloqueada (espera a Fernando y, de preferirlo, a un abogado)
+- Fuentes secundarias dicen que un participante puede grabar su propia conversación (art. 178 COIP); no se contrastó con el texto oficial ni se resolvió la LOPDP. La transcripción de reuniones con clientes saldría hacia Anthropic.
+
+### P10 — Decisiones de Fernando · ⏸ Bloqueada
+- Qué fuentes consulta, si responde solo a lo que pregunta el cliente, y si se guarda transcripción.
+
+## Decisiones de diseño (propuestas, sin aprobar)
+- **Cerebro único en la Mac:** transcribe, filtra y llama a Claude Code; los demás equipos llegan por Tailscale. La Mac debe estar encendida.
+- **Dos canales:** micrófono (Fernando) y sistema (el cliente) van por separado, para saber quién preguntó.
+- **Dos pasos:** filtro local → Claude solo si hay pregunta; respuesta sin arrancar un proceso nuevo si se puede.
+- **Sin audio en disco** por defecto.
+- **Orden:** Mac primero; después Android, iPhone/iPad y Windows, con prueba de captura antes de prometer cada uno.
+
+## Riesgos
+- La sesión de `claude` local avisa que caduca entre el 2026-11-11 y el 2026-11-14: sin renovar con `claude auth login`, la herramienta se calla.
+- Datos de un cliente en pantalla ante otro cliente si las fuentes no se acotan. `peter-tours` no se lee.
+- Una falsa alarma en plena reunión distrae más que un silencio: ante la duda, no responder.
+
+## Control Psicosocial — impedir el apagado durante un auxilio (2026-11-05)
+- **P14 ¿Se puede impedir el apagado con los botones físicos? · ✅ No en un teléfono normal** (respuesta del asistente por conocimiento general, sin probarlo). Una app no puede en iPhone ni en Android; un teléfono gestionado puede ocultar el menú de apagado en Android, pero el reinicio forzado sigue funcionando. Knox quedó sin comprobar.
+- **Decisión de Fernando:** queda como está. A futuro, dispositivos dedicados de la organización.
+- **Hueco conocido que sigue abierto:** desde el propio teléfono se puede cerrar el auxilio y apagar el rastreo, también bajo amenaza; y si se apaga, nadie recibe aviso de la pérdida de señal.
 

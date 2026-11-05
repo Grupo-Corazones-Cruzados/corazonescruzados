@@ -353,6 +353,10 @@ Stack estándar de la casa, con particularidades de este repo:
     nuevo sigue compartiendo su posición, pero sin recorrido ni llegadas (`cp_miembros.ubicacion_version`).
   - **Interfaz (Fernando, 2026-11-05):** el mapa ocupa casi toda la pantalla, en teléfono y computador; dentro van Pedir auxilio, 911 y «Más», que abre
     Miembros, Recorrido, Lugares, Mi protección y Quién vio mi ubicación. La emergencia no entra en «Más» a propósito. Detalle en `Diseño.md`.
+  - **Apagado durante un auxilio (Fernando, 2026-11-05):** se le explicó que en un teléfono normal no se puede impedir y decidió dejarlo
+    como está. NO se construyeron el aviso de señal perdida ni el cierre protegido del auxilio: siguen siendo opciones si cambia de idea.
+    **Idea a futuro, no ahora:** que la organización fabrique dispositivos dedicados que impidan el apagado y tengan otras funciones,
+    cuando tenga las condiciones. Ver `PROPUESTAS.md`.
   - **Consentimiento propio de cada función**, como promete `/legal` §9: `cp_consentimientos` guarda aceptar y retirar. Nadie
     puede activar el rastreo de otro, ni un admin viendo «como otro». El teléfono muestra siempre que está activo. Apagar
     la ubicación borra el historial. Quien abre el mapa queda en `cp_accesos` (una vez cada 30 min por par) y la persona ve quién fue.
@@ -9146,3 +9150,11 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
     guardada, sin arrastrar el regateo anterior, y la sesión vuelve a `active`.
   - En las **aceptadas** el chat ya estaba cerrado por otra vía (el proyecto pasa a `draft` y la
     ruta interna exige `status = 'cotizacion'`).
+
+## Portafolio: quién ve y edita un proyecto (2026-11-05)
+Configuración ▸ Portafolio enseña los proyectos terminados con los que el miembro tiene relación, publicados o no: responsable, puja aceptada o asignación aceptada (`miembroEnProyectoSql` y `esDelEquipoDelProyecto` en `lib/projects/permisos.ts`). Editarlos no los publica. El CV público y el equipo de las tarjetas del marketplace usan la misma relación; el CV excluye los proyectos sin requerimientos (fichas de facturación como Mármoles el Diamante, con el pagador en la descripción).
+
+Completar un proyecto publica siempre (`PUBLICAR_AL_COMPLETAR_SQL`), también al cobrar o a mano; refacturar no republica. Reparación del 2026-11-05 en producción: responsable fijado en los proyectos 6, 8, 10, 11, 17, 18, 19 y fila de responsable en 4, 5, 6, 7, 8, 10, 11, 15, 17, 18, 19, 46.
+
+## Fichas de proyectos reconstruidas desde el código (2026-11-05)
+Fernando pidió corregir nombres y descripciones de todos los proyectos. Se leyó la carpeta real de cada uno (`02_Clientes`) y se reescribieron título, descripción y descripción de requerimientos; los títulos de requerimiento no se tocan (son lo que se facturó). Originales en `titulo_original`/`descripcion_original` y en `../respaldos-gcc/*-antes-2026-11-05.json`. Correspondencias: #4, #46 y #5 y #11 → `Daniel/FlowData`; #6 y #29 → `Freddy Erazo/BellaFlor`; #7 → `Cristian/Catering`; #8 → `Daniel Viteri`; #10 → `Rafael Mendez/guilmon` (deducido); #15 y #19 → `Diego`; #17 → `Eliel Canales/Minutas Teams`; #18 → `Diana/EnvioMasivo`; #36 → `Diana/Proyecto de Agentes IA`; #37 → `Motordesa`. Cotizaciones y proyectos en curso se renombran al pagarse, no antes.

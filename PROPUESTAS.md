@@ -88,3 +88,9 @@ con 2 tareas completadas y alguien con 200 pueden mostrar ambos "Cocinar — 40%
 los presenta como si fueran comparables, y `api/tickets/assignees` ordena candidatos con ese dato.
 **Propuesta:** mostrar también el volumen (nº de tareas resueltas) junto al %, como ya hace
 `valuesBalance` con sus conteos crudos.
+
+## Dispositivos de seguridad dedicados — idea de Fernando, a futuro (2026-11-05)
+**Estado:** idea, sin trabajo previsto hasta que la organización tenga las condiciones.
+Que la organización fabrique sus propios dispositivos, con un nivel de seguridad que impida apagarlos durante un auxilio y con otras funciones por definir. Nace de que un teléfono normal no lo permite.
+**Sin decidir:** qué funciones llevará y cómo se integra con Control Psicosocial. Se apagaría aun así con la batería agotada o el equipo roto, así que el aviso de señal perdida seguiría haciendo falta.
+
