@@ -25,7 +25,8 @@ export function energia(cuadro) {
 }
 
 export class Segmentador {
-  constructor({ maximoS = 5, alCerrar }) {
+  constructor({ maximoS = 5, alCerrar, alVoz = () => {} }) {
+    this.alVoz = alVoz;
     this.maximo = Math.round(maximoS * BYTES_S);
     this.alCerrar = alCerrar;
     this.pendiente = Buffer.alloc(0);
@@ -51,6 +52,7 @@ export class Segmentador {
     const e = energia(cuadro);
     const umbral = Math.max(UMBRAL_MINIMO, this.piso * 3);
     const voz = e > umbral;
+    if (voz) this.alVoz();
     if (!voz) this.piso = this.piso * 0.98 + e * 0.02; // el ruido de fondo se aprende solo en lo que no es voz
 
     if (!this.bytes) {

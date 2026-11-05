@@ -43,7 +43,10 @@ final class Delegado: NSObject, NSApplicationDelegate {
     panel.orderFrontRegardless()
 
     icono = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-    icono.button?.image = NSImage(systemSymbolName: "waveform.circle", accessibilityDescription: "Copiloto")
+    let barra = (imagenPersonaje?.copy() as? NSImage) ?? NSImage(systemSymbolName: "waveform.circle", accessibilityDescription: "Gumdramon")
+    barra?.size = NSSize(width: 18, height: 18)
+    icono.button?.image = barra
+    icono.button?.toolTip = "Gumdramon"
     let menu = NSMenu()
     menu.addItem(withTitle: "Mostrar u ocultar", action: #selector(alternarPanel), keyEquivalent: "")
     menu.addItem(withTitle: "Activar o desactivar", action: #selector(alternarActivo), keyEquivalent: "")

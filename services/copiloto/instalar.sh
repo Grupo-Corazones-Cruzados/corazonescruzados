@@ -1,5 +1,5 @@
 #!/bin/zsh
-# Instala o actualiza el Copiloto de reuniones en esta Mac. Se puede repetir.
+# Instala o actualiza Gumdramon (el Copiloto de reuniones) en esta Mac. Se puede repetir.
 #
 #   services/copiloto/instalar.sh
 #
@@ -32,11 +32,29 @@ chmod 600 "$DATOS/.env"
 echo "→ Compilando el widget"
 (cd "$ORIGEN/mac" && swift build -c release 2>&1 | tail -1)
 BINARIO="$(cd "$ORIGEN/mac" && swift build -c release --show-bin-path)/Copiloto"
-PAQUETE="$DATOS/Copiloto.app"
+PAQUETE="$DATOS/Gumdramon.app"
 rm -rf "$PAQUETE"
-mkdir -p "$PAQUETE/Contents/MacOS"
-cp "$BINARIO" "$PAQUETE/Contents/MacOS/Copiloto"
+mkdir -p "$PAQUETE/Contents/MacOS" "$PAQUETE/Contents/Resources"
+cp "$BINARIO" "$PAQUETE/Contents/MacOS/Gumdramon"
 cp "$ORIGEN/mac/Info.plist" "$PAQUETE/Contents/Info.plist"
+
+# La imagen del personaje no va en el repositorio, que es público: tiene dueños y es solo para uso interno.
+IMAGEN="$DATOS/recursos/gumdramon.png"
+if [[ -f "$IMAGEN" ]]; then
+  echo "→ Generando el icono"
+  cp "$IMAGEN" "$PAQUETE/Contents/Resources/gumdramon.png"
+  TEMP="$(mktemp -d)"
+  python3 "$ORIGEN/mac/icono/generar.py" "$IMAGEN" "$TEMP/1024.png"
+  mkdir "$TEMP/AppIcon.iconset"
+  for t in 16 32 128 256 512; do
+    sips -z $t $t "$TEMP/1024.png" --out "$TEMP/AppIcon.iconset/icon_${t}x${t}.png" >/dev/null
+    sips -z $((t * 2)) $((t * 2)) "$TEMP/1024.png" --out "$TEMP/AppIcon.iconset/icon_${t}x${t}@2x.png" >/dev/null
+  done
+  iconutil -c icns "$TEMP/AppIcon.iconset" -o "$PAQUETE/Contents/Resources/AppIcon.icns"
+  rm -rf "$TEMP"
+else
+  echo "⚠️ Sin $IMAGEN: la app se instala sin icono. Ver README."
+fi
 
 # Firmar con una identidad fija: si cambia, macOS olvida los permisos de micrófono y audio. La de
 # Fernando, no la de Motordesa, que es de un cliente.
@@ -50,9 +68,11 @@ else
 fi
 
 pkill -x Copiloto 2>/dev/null || true
-rm -rf /Applications/Copiloto.app
-cp -R "$PAQUETE" /Applications/Copiloto.app
+pkill -x Gumdramon 2>/dev/null || true
+rm -rf /Applications/Copiloto.app /Applications/Gumdramon.app
+cp -R "$PAQUETE" /Applications/Gumdramon.app
 rm -rf "$PAQUETE"
+touch /Applications/Gumdramon.app # para que Finder vea el icono nuevo
 
 RUTA="$(dirname "$NODO"):$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 cat > "$PLIST.nuevo" <<PLIST
@@ -83,4 +103,4 @@ else
   done
 fi
 
-echo "✓ Listo. Abre Copiloto desde Aplicaciones."
+echo "✓ Listo. Abre Gumdramon desde Aplicaciones."

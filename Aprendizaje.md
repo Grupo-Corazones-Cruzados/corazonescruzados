@@ -11731,3 +11731,10 @@ Arquitecto de aplicaciones nativas y audio en tiempo real.
 
 **Sin probar:** crear un recordatorio de verdad al terminar (solo portero, 401/400/404 en producción; se evitó escribir en producción), adjuntar Meet de verdad, voz real de Fernando con la clave, una reunión real.
 **Falta:** Android (P7), iPhone/iPad (P6), Windows sin equipo (P8), consentimiento (P9).
+
+## Copiloto — preguntas largas, nombre e icono (2026-11-05)
+Fernando: tras llamar a Gumdramon dejaba de escuchar a los pocos segundos. Causa: la consulta salía con el primer tramo de voz, que se cierra con 0,7 s de pausa o a los 5 s. Ahora la clave abre un dictado que junta los tramos y se cierra con 2,5 s de silencio y nada pendiente en Whisper, o a los 90 s. La orden de terminar se evalúa al cerrar, así «la sesión | ha terminado» partida también vale.
+Comprobado con audio sintético real por el canal del micrófono: 18 s con pausas de 1,8 s y 1,5 s llegaron enteros. Sin probar con la voz de Fernando.
+Como el 2,5 s añade espera tras cada pregunta, puede que haya que ajustarlo con su uso.
+El identificador `org.grupocc.copiloto` no cambia, para conservar los permisos de macOS. El repositorio es público: el arte del personaje no se sube.
+

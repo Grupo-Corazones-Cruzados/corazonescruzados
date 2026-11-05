@@ -26,7 +26,8 @@ final class Modelo: ObservableObject {
   @Published var lineas: [Linea] = []
   @Published var aviso: String?
   @Published var nota: String?
-  @Published var escuchando = false
+  /// Lo que lleva dicho Fernando tras la palabra clave; nil si no está dictando.
+  @Published var dictando: String?
   @Published var nivelMic: Float = 0
   @Published var nivelSistema: Float = 0
   @Published var sinAudioSistema = false
@@ -66,7 +67,7 @@ final class Modelo: ObservableObject {
       }
       return true
     } catch {
-      aviso = "El núcleo del Copiloto no responde."
+      aviso = "El núcleo de Gumdramon no responde."
       return false
     }
   }
@@ -171,10 +172,8 @@ final class Modelo: ObservableObject {
       lineas.append(Linea(quien: j["quien"] as? String ?? "", texto: j["texto"] as? String ?? ""))
       if lineas.count > 400 { lineas.removeFirst(lineas.count - 400) }
     case "escuchando":
-      escuchando = true
-      Task { try? await Task.sleep(for: .seconds(8)); escuchando = false }
+      dictando = (j["activo"] as? Bool ?? false) ? (j["texto"] as? String ?? "") : nil
     case "consulta":
-      escuchando = false
       guard let id = j["id"] as? Int else { return }
       consultas.append(Consulta(id: id, pregunta: j["pregunta"] as? String ?? "", modo: j["modo"] as? String ?? ""))
     case "buscando":

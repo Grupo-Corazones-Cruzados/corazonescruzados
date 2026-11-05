@@ -1,6 +1,7 @@
 import SwiftUI
 
 private let violeta = Color(red: 0.48, green: 0.37, blue: 0.75)
+let imagenPersonaje: NSImage? = Bundle.main.url(forResource: "gumdramon", withExtension: "png").flatMap { NSImage(contentsOf: $0) }
 
 struct Medidor: View {
   let nombre: String
@@ -86,7 +87,8 @@ struct Widget: View {
     HStack(spacing: 9) {
       Circle().fill(!m.conectado ? .red : m.activo ? .green : .gray).frame(width: 8, height: 8)
         .help(!m.conectado ? "El núcleo no responde" : m.activo ? "Escuchando" : "Desactivado")
-      Text(m.escuchando ? "Te escucho…" : "Copiloto").font(.system(size: 13, weight: .semibold))
+      if let i = imagenPersonaje { Image(nsImage: i).resizable().scaledToFit().frame(width: 20, height: 20) }
+      Text(m.dictando != nil ? "Te escucho…" : "Gumdramon").font(.system(size: 13, weight: .semibold))
       if m.activo && !plegado {
         Medidor(nombre: "Tú", nivel: m.nivelMic)
         Medidor(nombre: "Cliente", nivel: m.nivelSistema)
@@ -113,6 +115,16 @@ struct Widget: View {
                 .font(.system(size: 12)).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 34)
             }
             ForEach(m.consultas) { TarjetaConsulta(c: $0).id($0.id) }
+            if let d = m.dictando {
+              VStack(alignment: .leading, spacing: 5) {
+                Label("Te escucho. Cuando termines, haz una pausa.", systemImage: "waveform").font(.system(size: 11)).foregroundStyle(.secondary)
+                if !d.isEmpty { Text(d).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true) }
+              }
+              .padding(10)
+              .frame(maxWidth: .infinity, alignment: .leading)
+              .overlay(RoundedRectangle(cornerRadius: 9).stroke(violeta, lineWidth: 1))
+              .id("dictado")
+            }
           } else {
             ForEach(m.lineas) { l in
               (Text("\(l.quien): ").font(.system(size: 11.5, weight: .semibold)).foregroundColor(l.quien == "Cliente" ? violeta : .secondary)
@@ -125,6 +137,9 @@ struct Widget: View {
       }
       .onChange(of: m.consultas.last?.respuesta) { _, _ in
         if vista == 0, let u = m.consultas.last { withAnimation(.easeOut(duration: 0.2)) { lector.scrollTo(u.id, anchor: .bottom) } }
+      }
+      .onChange(of: m.dictando) { _, nuevo in
+        if vista == 0, nuevo != nil { lector.scrollTo("dictado", anchor: .bottom) }
       }
       .onChange(of: m.lineas.count) { _, _ in
         if vista == 1, let u = m.lineas.last { lector.scrollTo(u.id, anchor: .bottom) }

@@ -133,31 +133,91 @@ test('lo que dice Fernando sin la clave no dispara nada, aunque sea pregunta', a
   assert.equal(r.sesion.lineas[0].quien, 'Fernando');
 });
 
-test('Fernando pregunta con la clave y siempre recibe respuesta', async () => {
+const cierra = async (r) => { r.avanzar(3000); await r.motor.revisarDictado(); await espera(); };
+
+test('Fernando pregunta con la clave y recibe respuesta cuando se calla', async () => {
   const r = reunion({ respuestas: ['Entregamos en 4 semanas.'] });
   await r.motor.texto('mic', 'Gundramón, cuánto tardamos en un proyecto así');
-  await espera();
+  await r.motor.revisarDictado();
+  assert.equal(r.preguntas.length, 0, 'recién hablando no se envía');
+  await cierra(r);
   assert.match(r.preguntas[0], /MODO pedido/);
   assert.ok(nombres(r.eventos).includes('respuesta'));
 });
 
-test('la clave sola espera la pregunta en el tramo siguiente', async () => {
+test('una pregunta larga, en varios tramos y con pausas, llega entera', async () => {
   const r = reunion({ respuestas: ['Listo.'] });
-  await r.motor.texto('mic', 'GUMDRAMON.');
+  await r.motor.texto('mic', 'GUMDRAMON, necesito saber si en el proyecto de flota');
+  for (const t of ['que hicimos el año pasado incluimos reportes', 'y además cuánto tardamos en entregarlo', 'y quién fue el responsable']) {
+    r.avanzar(2000); // pausa para pensar, menor que el silencio de cierre
+    await r.motor.revisarDictado();
+    assert.equal(r.preguntas.length, 0, t);
+    await r.motor.texto('mic', t);
+  }
+  await cierra(r);
+  assert.equal(r.preguntas.length, 1);
+  assert.match(r.preguntas[0], /si en el proyecto de flota que hicimos el año pasado incluimos reportes y además cuánto tardamos en entregarlo y quién fue el responsable/);
+});
+
+test('mientras siga hablando no se envía, aunque aún no haya llegado su texto', async () => {
+  const r = reunion({ respuestas: ['Listo.'] });
+  await r.motor.texto('mic', 'GUMDRAMON, una pregunta larga');
+  r.avanzar(10000);
+  r.motor.audio('mic', pcm(1, 0.2)); // hablando: Whisper todavía no devuelve nada
+  await r.motor.revisarDictado();
   assert.equal(r.preguntas.length, 0);
-  r.avanzar(3000);
-  await r.motor.texto('mic', 'cuál fue el último proyecto de Motordesa');
+  await cierra(r);
+  assert.equal(r.preguntas.length, 1);
+});
+
+test('tampoco se envía con un tramo aún en Whisper', async () => {
+  const r = reunion({ respuestas: ['Listo.'] });
+  await r.motor.texto('mic', 'GUMDRAMON, una pregunta larga');
+  r.motor.micPendientes = 1;
+  r.avanzar(5000);
+  await r.motor.revisarDictado();
+  assert.equal(r.preguntas.length, 0);
+  r.motor.micPendientes = 0;
+  await r.motor.revisarDictado();
+  assert.equal(r.preguntas.length, 1);
+});
+
+test('a los 90 s se envía aunque no pare de hablar', async () => {
+  const r = reunion({ respuestas: ['Listo.'] });
+  await r.motor.texto('mic', 'GUMDRAMON, habla y habla sin parar');
+  r.avanzar(91000);
+  r.motor.audio('mic', pcm(1, 0.2));
+  await r.motor.revisarDictado();
   await espera();
   assert.equal(r.preguntas.length, 1);
 });
 
-test('la clave no vale pasada la espera', async () => {
+test('la clave sola espera a que empiece a hablar', async () => {
+  const r = reunion({ respuestas: ['Listo.'] });
+  await r.motor.texto('mic', 'GUMDRAMON.');
+  r.avanzar(3000);
+  await r.motor.revisarDictado();
+  assert.equal(r.preguntas.length, 0, 'sin texto no hay nada que enviar');
+  await r.motor.texto('mic', 'cuál fue el último proyecto de Motordesa');
+  await cierra(r);
+  assert.equal(r.preguntas.length, 1);
+});
+
+test('la clave sola caduca si no dice nada', async () => {
   const r = reunion();
   await r.motor.texto('mic', 'GUMDRAMON.');
   r.avanzar(20000);
+  await r.motor.revisarDictado();
   await r.motor.texto('mic', 'cuál es su presupuesto');
-  await espera();
+  await cierra(r);
   assert.equal(r.preguntas.length, 0);
+  assert.deepEqual(r.eventos.filter(([e]) => e === 'escuchando').at(-1)[1], { activo: false });
+});
+
+test('sin clave, lo de Fernando nunca abre el dictado', async () => {
+  const r = reunion();
+  await r.motor.texto('mic', '¿Cuál es su presupuesto?');
+  assert.equal(r.motor.dictado, null);
 });
 
 test('terminar por voz, solo desde el micrófono', async () => {
@@ -167,10 +227,23 @@ test('terminar por voz, solo desde el micrófono', async () => {
   assert.ok(!nombres(r.eventos).includes('terminar'), 'el cliente no puede terminar la sesión');
   // Lo mismo por los altavoces, un instante después, tampoco: es eco y no lo dijo Fernando.
   await r.motor.texto('mic', 'GUMDRAMON la sesión ha terminado.');
+  await cierra(r);
   assert.ok(!nombres(r.eventos).includes('terminar'), 'el eco del cliente no puede terminar la sesión');
   r.avanzar(20000);
-  await r.motor.texto('mic', 'GUMDRAMON, la sesión ha terminado.');
+  await r.motor.texto('mic', 'GUMDRAMON, la sesión');
+  r.avanzar(1000);
+  await r.motor.texto('mic', 'ha terminado.');
+  await cierra(r);
   assert.ok(nombres(r.eventos).includes('terminar'));
+});
+
+test('una pregunta larga que empieza como la orden de terminar no cierra la sesión', async () => {
+  const r = reunion({ respuestas: ['Listo.'] });
+  await r.motor.texto('mic', 'GUMDRAMON, la sesión de ayer terminó tarde');
+  await r.motor.texto('mic', 'y necesito saber qué acordamos con el cliente sobre el presupuesto');
+  await cierra(r);
+  assert.ok(!nombres(r.eventos).includes('terminar'));
+  assert.equal(r.preguntas.length, 1);
 });
 
 test('lo que oye por los altavoces no se atribuye a Fernando', async () => {

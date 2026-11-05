@@ -11,7 +11,11 @@ import { Segmentador, energia } from './segmentador.mjs';
 
 const FERNANDO = 'Fernando';
 const CLIENTE = 'Cliente';
-const ESPERA_CLAVE_MS = 8000; // «GUMDRAMON…» y la pregunta en el tramo siguiente
+const ESPERA_CLAVE_MS = 8000; // tras «GUMDRAMON», cuánto se espera a que empiece a hablar
+// La pregunta se da por terminada tras este silencio. Antes bastaba el primer tramo y las preguntas
+// largas se cortaban a los pocos segundos (Fernando, 2026-11-05).
+const FIN_DICTADO_MS = 2500;
+const MAXIMO_DICTADO_MS = 90000;
 const ESPERA_ECO_MS = 2500;
 const SUENA_MS = 3000;
 const LARGO_SIN_PAUSA = 500; // si alguien habla sin parar, no se espera para siempre a que acabe
@@ -21,14 +25,16 @@ export class Motor {
     Object.assign(this, { transcriptor, agente, sesion, emitir, terminar, ahora, esperar });
     this.ultimaVozSistema = 0;
     this.activo = false;
-    this.claveHasta = 0;
+    this.dictado = null;
+    this.ultimaVozMic = 0;
+    this.micPendientes = 0;
     this.previoMic = '';
     this.sinResponder = '';
     this.ocupado = false;
     this.nConsulta = 0;
     this.orden = { mic: Promise.resolve(), sistema: Promise.resolve() };
     this.segmentos = {
-      mic: new Segmentador({ alCerrar: (a, seguir) => this.#tramo('mic', a, seguir) }),
+      mic: new Segmentador({ alCerrar: (a, seguir) => this.#tramo('mic', a, seguir), alVoz: () => { this.ultimaVozMic = this.ahora(); } }),
       sistema: new Segmentador({ alCerrar: (a, seguir) => this.#tramo('sistema', a, seguir) }),
     };
   }
@@ -39,12 +45,16 @@ export class Motor {
     this.sesion.abrir();
     this.transcriptor.iniciar().catch((e) => this.emitir('error', { mensaje: e.message }));
     Promise.resolve(this.agente.iniciar()).catch((e) => this.emitir('error', { mensaje: e.message }));
+    this.relojDictado = setInterval(() => this.revisarDictado().catch((e) => this.emitir('error', { mensaje: e.message })), 250);
+    this.relojDictado.unref?.();
     this.emitir('estado', this.estado());
   }
 
   desactivar() {
     if (!this.activo) return;
     this.activo = false;
+    clearInterval(this.relojDictado);
+    if (this.dictado) { this.dictado = null; this.emitir('escuchando', { activo: false }); }
     this.segmentos.mic.cerrar();
     this.segmentos.sistema.cerrar();
     this.transcriptor.detener();
@@ -68,9 +78,11 @@ export class Motor {
    */
   #tramo(canal, audio, seguir) {
     const texto = this.transcriptor.transcribir(audio);
+    if (canal === 'mic') this.micPendientes++;
     this.orden[canal] = this.orden[canal].then(async () => {
       try { await this.texto(canal, await texto, { seguir }); }
       catch (e) { this.emitir('error', { mensaje: e.message }); }
+      finally { if (canal === 'mic') this.micPendientes--; }
     });
   }
 
@@ -105,21 +117,42 @@ export class Motor {
     const hallada = buscarClave(texto) || buscarClave(`${this.previoMic} ${texto}`);
     this.previoMic = texto;
 
-    if (hallada) {
+    this.#registrar(FERNANDO, texto);
+
+    if (hallada && !this.dictado) {
       this.previoMic = '';
-      if (ordenaTerminar(hallada.resto)) { await this.terminar(); return; }
-      this.#registrar(FERNANDO, texto);
-      if (hallada.resto.length >= 4) this.#consultar(hallada.resto, 'pedido');
-      else { this.claveHasta = this.ahora() + ESPERA_CLAVE_MS; this.emitir('escuchando', {}); }
+      this.dictado = { texto: hallada.resto, inicio: this.ahora(), ultima: this.ahora() };
+      this.emitir('escuchando', { activo: true, texto: hallada.resto });
+    } else if (this.dictado) {
+      this.dictado.texto = `${this.dictado.texto} ${texto}`.trim();
+      this.dictado.ultima = this.ahora();
+      this.emitir('escuchando', { activo: true, texto: this.dictado.texto });
+    }
+  }
+
+  /**
+   * Lo mira un reloj: la pregunta acaba cuando Fernando se calla, no cuando acaba un tramo. También la
+   * orden de terminar pasa por aquí, para no confundirla con una pregunta larga que empieza parecido.
+   */
+  async revisarDictado() {
+    const d = this.dictado;
+    if (!d) return;
+    const ahora = this.ahora();
+    const agotado = ahora - d.inicio >= MAXIMO_DICTADO_MS;
+    const hablo = Math.max(d.ultima, this.ultimaVozMic);
+
+    if (!d.texto && !agotado && this.micPendientes === 0 && ahora - hablo >= ESPERA_CLAVE_MS) {
+      this.dictado = null;
+      this.emitir('escuchando', { activo: false });
       return;
     }
+    if (!d.texto && !agotado) return;
+    if (!agotado && (this.micPendientes > 0 || ahora - hablo < FIN_DICTADO_MS)) return;
 
-    this.#registrar(FERNANDO, texto);
-    if (this.ahora() < this.claveHasta) {
-      this.claveHasta = 0;
-      if (ordenaTerminar(texto)) { await this.terminar(); return; }
-      this.#consultar(texto, 'pedido');
-    }
+    this.dictado = null;
+    this.emitir('escuchando', { activo: false });
+    if (ordenaTerminar(d.texto)) { await this.terminar(); return; }
+    if (d.texto.length >= 4) this.#consultar(d.texto, 'pedido');
   }
 
   #consultarAutomatico() {
