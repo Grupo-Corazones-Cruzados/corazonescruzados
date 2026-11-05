@@ -35,7 +35,7 @@ export type ClaseAviso =
   | 'reminder'
   | 'chat'
   | 'subscription'
-  | 'cp_llegada';
+  | 'cp_llegada' | 'cp_salida';
 
 export type DefinicionAviso = {
   clase: ClaseAviso;
@@ -67,6 +67,7 @@ export const AVISOS: DefinicionAviso[] = [
   { clase: 'quote_budget', grupo: 'Cotizaciones', nombre: 'Cliente envió su presupuesto', canales: ['push', 'campana'], alcance: 'equipo' },
 
   { clase: 'cp_llegada', grupo: 'Control Psicosocial', nombre: 'Un miembro llegó a un punto de reunión', canales: ['push', 'campana'], alcance: 'miembros' },
+  { clase: 'cp_salida', grupo: 'Control Psicosocial', nombre: 'Un miembro salió de un punto de reunión', canales: ['push', 'campana'], alcance: 'miembros' },
 
   { clase: 'reunion', grupo: 'Mi día', nombre: 'Reunión a punto de empezar', canales: ['push'], alcance: 'todos' },
   { clase: 'calendar_proposal', grupo: 'Mi día', nombre: 'Propuesta de reunión', canales: ['push', 'campana'], alcance: 'equipo' },

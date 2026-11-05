@@ -196,68 +196,75 @@ export async function borrarLugar(id: number): Promise<boolean> {
 
 /** Salir exige alejarse más de lo que pide entrar: si no, el error del GPS en el borde abre y cierra. */
 const MARGEN_SALIDA_M = 50;
-/** Volver antes de esto es la misma estancia (el GPS saltó, o salió un momento): no se avisa otra vez. */
-const MINUTOS_MISMA_VISITA = 30;
+/** Un salto del GPS no es irse: la salida se avisa solo si sigue fuera este tiempo. */
+const MINUTOS_CONFIRMAR_SALIDA = 3;
+
+type Cambio = { tipo: 'llego' | 'salio'; lugar: string; en: Date };
 
 /**
- * Las llegadas se detectan AQUÍ y no en el teléfono: valen igual en iPhone y Android, y un lugar
- * nuevo funciona sin instalar nada. A cambio, una llegada se conoce cuando llega un punto.
+ * Llegadas y salidas se detectan AQUÍ y no en el teléfono: valen igual en iPhone y Android, y un lugar
+ * nuevo funciona sin instalar nada. A cambio, se conocen cuando llega un punto.
  */
 export async function detectarLlegadas(userId: string, puntos: Punto[]) {
   const { rows: lugares } = await pool.query(`SELECT id, nombre, lat, lng, radio_m FROM gcc_world.cp_lugares`);
   if (!lugares.length) return;
   const { rows: abiertas } = await pool.query(
-    `SELECT lugar_id, llegada_en FROM gcc_world.cp_visitas WHERE user_id = $1 AND salida_en IS NULL`, [userId]);
-  const dentro = new Map<number, Date>(abiertas.map((v: any) => [v.lugar_id, new Date(v.llegada_en)]));
-  const llegadas: { lugar: string; en: Date }[] = [];
+    `SELECT lugar_id, llegada_en, fuera_desde FROM gcc_world.cp_visitas WHERE user_id = $1 AND salida_en IS NULL`, [userId]);
+  const dentro = new Map<number, { llegada: Date; fuera: Date | null }>(abiertas.map((v: any) => [
+    v.lugar_id, { llegada: new Date(v.llegada_en), fuera: v.fuera_desde ? new Date(v.fuera_desde) : null },
+  ]));
+  const cambios: Cambio[] = [];
+  const fijarFuera = (lugarId: number, valor: Date | null) => pool.query(
+    `UPDATE gcc_world.cp_visitas SET fuera_desde = $3 WHERE user_id = $1 AND lugar_id = $2 AND salida_en IS NULL`,
+    [userId, lugarId, valor ? valor.toISOString() : null]);
 
   for (const p of [...puntos].sort((a, b) => a.en.getTime() - b.en.getTime())) {
     for (const l of lugares as Lugar[]) {
       const d = distanciaM(p.lat, p.lng, l.lat, l.lng);
-      const desde = dentro.get(l.id);
-      if (desde) {
-        if (p.en > desde && d > l.radio_m + Math.max(MARGEN_SALIDA_M, p.precision ?? 0)) {
+      const visita = dentro.get(l.id);
+      if (visita) {
+        if (p.en <= visita.llegada) continue;
+        if (d <= l.radio_m + Math.max(MARGEN_SALIDA_M, p.precision ?? 0)) {
+          if (visita.fuera) { await fijarFuera(l.id, null); visita.fuera = null; }
+        } else if (!visita.fuera) {
+          await fijarFuera(l.id, p.en);
+          visita.fuera = p.en;
+        } else if (p.en.getTime() - visita.fuera.getTime() >= MINUTOS_CONFIRMAR_SALIDA * 60_000) {
           await pool.query(
-            `UPDATE gcc_world.cp_visitas SET salida_en = $3 WHERE user_id = $1 AND lugar_id = $2 AND salida_en IS NULL`,
-            [userId, l.id, p.en.toISOString()]);
+            `UPDATE gcc_world.cp_visitas SET salida_en = fuera_desde WHERE user_id = $1 AND lugar_id = $2 AND salida_en IS NULL`,
+            [userId, l.id]);
+          cambios.push({ tipo: 'salio', lugar: l.nombre, en: visita.fuera });
           dentro.delete(l.id);
         }
         continue;
       }
       // Un punto impreciso no basta para decir que llegó.
       if (d > l.radio_m || (p.precision ?? 0) > Math.max(l.radio_m, 100)) continue;
-      const { rows: [reabierta] } = await pool.query(
-        `UPDATE gcc_world.cp_visitas v SET salida_en = NULL
-          WHERE v.id = (SELECT id FROM gcc_world.cp_visitas
-                         WHERE user_id = $1 AND lugar_id = $2 ORDER BY llegada_en DESC LIMIT 1)
-            AND v.salida_en > $3::timestamptz - make_interval(mins => $4)
-          RETURNING v.llegada_en`,
-        [userId, l.id, p.en.toISOString(), MINUTOS_MISMA_VISITA]);
-      if (reabierta) { dentro.set(l.id, new Date(reabierta.llegada_en)); continue; }
       const { rows: [nueva] } = await pool.query(
         `INSERT INTO gcc_world.cp_visitas (user_id, lugar_id, llegada_en) VALUES ($1, $2, $3)
          ON CONFLICT (user_id, lugar_id) WHERE salida_en IS NULL DO NOTHING RETURNING id`,
         [userId, l.id, p.en.toISOString()]);
-      dentro.set(l.id, p.en);
-      if (nueva) llegadas.push({ lugar: l.nombre, en: p.en });
+      dentro.set(l.id, { llegada: p.en, fuera: null });
+      if (nueva) cambios.push({ tipo: 'llego', lugar: l.nombre, en: p.en });
     }
   }
-  if (llegadas.length) await avisarLlegadas(userId, llegadas);
+  if (cambios.length) await avisarCambios(userId, cambios);
 }
 
 /** A diferencia del auxilio, esto sí respeta lo que cada uno apagó en Configuración → Notificaciones. */
-async function avisarLlegadas(userId: string, llegadas: { lugar: string; en: Date }[]) {
+async function avisarCambios(userId: string, cambios: Cambio[]) {
   const { rows } = await pool.query(`SELECT u.id FROM gcc_world.users u WHERE ${ES_MIEMBRO} AND u.id <> $1`, [userId]);
   const ids: string[] = rows.map((r: any) => r.id);
   if (!ids.length) return;
   const nombre = await nombreDe(userId);
   const ruta = `${RUTA_CONTROL_PSICOSOCIAL}?miembro=${userId}`;
-  for (const { lugar, en } of llegadas) {
-    const titulo = `${nombre} llegó a ${lugar}`;
+  for (const { tipo, lugar, en } of cambios) {
+    const clase = tipo === 'llego' ? 'cp_llegada' : 'cp_salida';
+    const titulo = tipo === 'llego' ? `${nombre} llegó a ${lugar}` : `${nombre} salió de ${lugar}`;
     const cuerpo = `A las ${en.toLocaleTimeString('es-EC', { timeZone: ZONA_HORARIA, hour: '2-digit', minute: '2-digit' })}.`;
-    await Promise.all(ids.map((id) => createNotification(id, { type: 'cp_llegada', title: titulo, message: cuerpo, link: ruta }, { push: false })
-      .catch((e: any) => console.error('Llegada a la campana:', e?.message))));
-    await avisarUsuarios(ids, { clase: 'cp_llegada', titulo, cuerpo, ruta, hilo: 'cp-llegadas' });
+    await Promise.all(ids.map((id) => createNotification(id, { type: clase, title: titulo, message: cuerpo, link: ruta }, { push: false })
+      .catch((e: any) => console.error('Aviso de lugar a la campana:', e?.message))));
+    await avisarUsuarios(ids, { clase, titulo, cuerpo, ruta, hilo: 'cp-lugares' });
   }
 }
 

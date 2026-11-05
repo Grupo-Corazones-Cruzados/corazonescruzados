@@ -4873,6 +4873,14 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .pago-paso-atras { animation: pagoPasoAtras 0.32s cubic-bezier(0.22, 1, 0.36, 1); }
 @media (prefers-reduced-motion: reduce) { .pago-paso-adelante, .pago-paso-atras { animation: none; } }
 
+/* Control Psicosocial: lo que flota sobre el mapa es opaco. Los temas translúcidos dejaban ver las calles
+   detrás del texto, y sobre un mapa eso no se lee. */
+.corp .cp-opaco {
+  background-color: var(--color-digi-card) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
 /* Control Psicosocial: el nombre de un punto de reunión sobre el mapa, sin la caja de Leaflet. */
 .leaflet-tooltip.cp-lugar {
   background: rgb(255 255 255 / 0.85);

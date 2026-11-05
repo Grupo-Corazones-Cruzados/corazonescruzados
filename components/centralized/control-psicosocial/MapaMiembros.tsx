@@ -30,8 +30,12 @@ const iniciales = (nombre: string) => nombre.trim().split(/\s+/).slice(0, 2).map
  * al entrar alguien nuevo o al elegir a alguien.
  */
 export default function MapaMiembros({
-  filas, lugares = [], recorridos = [], elegido, onElegir, className = '',
+  filas, lugares = [], recorridos = [], elegido, onElegir, panelAbierto = false, enfocar, className = '',
 }: {
+  /** Un panel tapa parte del mapa: al ir a alguien, se encuadra en lo que queda libre. */
+  panelAbierto?: boolean;
+  /** Llevar el mapa a un punto (al elegir un lugar). `n` cambia en cada petición. */
+  enfocar?: { lat: number; lng: number; n: number } | null;
   filas: FilaRastreo[];
   lugares?: Lugar[];
   recorridos?: RecorridoMiembro[];
@@ -53,7 +57,9 @@ export default function MapaMiembros({
     import('leaflet').then((L) => {
       if (!vivo || !caja.current || mapa.current) return;
       leaflet.current = L;
-      const m = L.map(caja.current, { zoomControl: true, attributionControl: true }).setView(INICIO, 12);
+      // En el teléfono se acerca con los dedos: los botones solo quitarían mapa.
+      const m = L.map(caja.current, { zoomControl: false, attributionControl: true }).setView(INICIO, 12);
+      if (!L.Browser.mobile) L.control.zoom({ position: 'topright' }).addTo(m);
       m.attributionControl.setPrefix(false);
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -125,7 +131,7 @@ export default function MapaMiembros({
     }
     const quienes = conPunto.map((f) => f.user_id).sort().join();
     if (quienes && quienes !== encuadrados.current && !elegido) {
-      m.fitBounds(L.latLngBounds(conPunto.map((f) => [f.lat!, f.lng!] as [number, number])), { padding: [48, 48], maxZoom: 15 });
+      m.fitBounds(L.latLngBounds(conPunto.map((f) => [f.lat!, f.lng!] as [number, number])), { paddingTopLeft: [48, 48], paddingBottomRight: [48, 96], maxZoom: 15 });
     }
     encuadrados.current = quienes;
     // `conPunto` es nuevo en cada render: lo que cambia de verdad son las filas.
@@ -139,18 +145,34 @@ export default function MapaMiembros({
     const f = conPunto.find((x) => x.user_id === elegido);
     if (!elegido || f) yaElegido.current = elegido ?? null;
     const r = recorridos.find((x) => x.user_id === elegido);
-    if (r && r.puntos.length > 1 && leaflet.current) {
-      mapa.current?.fitBounds(leaflet.current.latLngBounds(r.puntos.map((p) => [p.lat, p.lng] as [number, number])), { padding: [48, 48], maxZoom: 16 });
-    } else if (f) mapa.current?.setView([f.lat!, f.lng!], Math.max(mapa.current.getZoom(), 15));
+    const L = leaflet.current;
+    const puntos: [number, number][] = r && r.puntos.length > 1
+      ? r.puntos.map((p) => [p.lat, p.lng])
+      : f ? [[f.lat!, f.lng!]] : [];
+    if (puntos.length && L && mapa.current && caja.current) {
+      const ancho = window.matchMedia('(min-width: 48rem)').matches;
+      mapa.current.fitBounds(L.latLngBounds(puntos), {
+        paddingTopLeft: [48, 48],
+        // Columna de 360 px a la derecha, o la hoja de abajo (hasta el 58 % del alto).
+        paddingBottomRight: panelAbierto
+          ? (ancho ? [400, 48] : [48, caja.current.clientHeight * 0.58 + 76])
+          : [48, 96],
+        maxZoom: 16,
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listo, elegido, filas]);
 
+  useEffect(() => {
+    if (enfocar && mapa.current) mapa.current.setView([enfocar.lat, enfocar.lng], Math.max(mapa.current.getZoom(), 16));
+  }, [enfocar]);
+
   return (
     // `isolate`: las capas de Leaflet usan z-index de hasta 1000 y no deben pasar sobre el panel.
-    <div className={`relative isolate overflow-hidden rounded-lg border border-digi-border bg-digi-card ${className}`}>
+    <div className={`isolate overflow-hidden bg-digi-card ${className}`}>
       <div ref={caja} className="absolute inset-0" />
       {listo && conPunto.length === 0 && (
-        <p className="absolute left-3 right-3 bottom-8 z-[1000] rounded-md border border-digi-border bg-digi-card px-3 py-2 text-center text-[13px] text-digi-muted" style={{ fontFamily: 'var(--font-body)' }}>
+        <p className="absolute left-3 right-3 top-16 z-[1000] md:left-1/2 md:right-auto md:-translate-x-1/2 rounded-md border border-digi-border bg-digi-card px-3 py-2 text-center text-[13px] text-digi-muted" style={{ fontFamily: 'var(--font-body)' }}>
           Ningún miembro comparte su ubicación todavía.
         </p>
       )}

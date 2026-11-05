@@ -11604,3 +11604,10 @@ claro y oscuro con datos simulados y escrituras bloqueadas. Candidato 403, miemb
 - **Sin probar en teléfono:** gasto de batería a 60 s, llegada real con push al otro teléfono, mapa dentro de la app.
 - **Verificación:** comprobaciones con ROLLBACK de llegadas, rebote, día de Ecuador y consentimiento; Chrome a 1440 y 390 px en oscuro con datos simulados; un miembro recibe 403 al crear, editar o borrar lugares.
 
+## Control Psicosocial — aviso de salida y texto legal (2026-11-05)
+- **P13 ¿Cómo avisar al salir sin falsas alarmas? · ✅** Con un minuto entre puntos, un salto del GPS diría «salió» a todos. La salida se confirma si sigue fuera 3 min (`cp_visitas.fuera_desde`) y lleva la hora de la primera vez fuera. Volver dentro de esos 3 min cancela. Se retira la regla de «volver en 30 min es la misma visita»: si se anunció la salida, callar la vuelta dejaría a los demás creyendo que se fue.
+- **`/legal` es público:** no lleva la frase de auxilio. Quien amenaza a un miembro podría conocerla e impedir que la diga.
+- **Abierto:** lo registrado durante un auxilio no tiene plazo de borrado; `/legal` lo dice tal cual. Falta decidirlo.
+- **Rediseño con el mapa a pantalla completa:** una clase `relative` por defecto ganaba a `absolute inset-0` y el mapa medía 0 de alto; solo se vio midiendo. Las clases nuevas no llegaron por la caché de `.next-*/cache` (`rm -rf` antes de probar diseño).
+- **Reinstalar cierra la app:** el iPhone dejó de enviar posiciones justo al instalar la 1.3 (última 12:41 UTC del 2026-11-05) y una hora después seguía sin enviar. Hay que abrirla tras cada instalación. A falta de aviso, «Sin señal» es lo único que lo delata.
+

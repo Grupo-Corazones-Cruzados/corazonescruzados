@@ -1,22 +1,21 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
-import { ExternalLink, Flag, LocateFixed, MapPin, Mic, Phone, ShieldAlert, Siren } from 'lucide-react';
+import { CalendarDays, ChevronLeft, Eye, ExternalLink, Flag, LocateFixed, MapPin, Menu, Mic, Phone, Shield, ShieldAlert, Siren, Users } from 'lucide-react';
 import { BTN_DANGER, BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import Interruptor from '@/components/ui/Interruptor';
-import PanelDetalle from '@/components/ui/PanelDetalle';
-import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PieAcciones from '@/components/ui/PieAcciones';
 import PixelConfirm from '@/components/ui/PixelConfirm';
-import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
+import MenuMas from '@/components/ui/MenuMas';
+import PanelMapa from '@/components/centralized/control-psicosocial/PanelMapa';
 import MapaMiembros from '@/components/centralized/control-psicosocial/MapaMiembros';
 import MapaElegirPunto from '@/components/centralized/control-psicosocial/MapaElegirPunto';
 import BotonEditar from '@/components/ui/BotonEditar';
 import { EDIT_INPUT, EditField } from '@/components/ui/EditDialog';
-import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { useSondeo } from '@/lib/hooks/useSondeo';
 import { fmtInt } from '@/lib/format';
 import {
@@ -42,6 +41,7 @@ type Estado = {
   accesos: { nombre: string; creado_en: string }[];
   lugares: Lugar[];
 };
+type Vista = 'miembros' | 'recorrido' | 'lugares' | 'proteccion' | 'accesos';
 type FormLugar = { id: number | null; nombre: string; radio: string; lat: number | null; lng: number | null };
 type Detalle = FilaRastreo & {
   alerta: { id: number; origen: 'boton' | 'voz'; lat: number | null; lng: number | null; creada_en: string } | null;
@@ -92,11 +92,31 @@ export default function ControlPsicosocialSystem() {
   const [confirmarAuxilio, setConfirmarAuxilio] = useState(false);
   const [elegido, setElegido] = useState<string | null>(params.get('miembro'));
   const [detalle, setDetalle] = useState<Detalle | null>(null);
-  const conColumna = useConsultaMedia(PANTALLA_XL);
+  // El mapa llega justo hasta el pie, en cualquier ancho. Se mide en vez de usar `useAltoHastaElPie`
+  // porque aquel descuenta el relleno de `main`, y aquí ese relleno se anula para ir de borde a borde.
+  const [alto, setAlto] = useState<number | null>(null);
+  const nodoMapa = useRef<HTMLDivElement | null>(null);
+  const medirAlto = useCallback(() => {
+    if (!nodoMapa.current) return;
+    const pie = document.querySelector('[data-app-footer]')?.getBoundingClientRect().top ?? window.innerHeight;
+    setAlto(Math.floor(pie - nodoMapa.current.getBoundingClientRect().top));
+  }, []);
+  // Se repite al acabar la animación de entrada de la página: durante ella, todo está desplazado.
+  const refAlto = useCallback((n: HTMLDivElement | null) => {
+    nodoMapa.current = n;
+    medirAlto();
+    if (n) window.setTimeout(medirAlto, 400);
+  }, [medirAlto]);
+  useEffect(() => {
+    window.addEventListener('resize', medirAlto);
+    return () => window.removeEventListener('resize', medirAlto);
+  }, [medirAlto]);
   const dias = useMemo(() => diasConHistorial(), []);
   const [dia, setDia] = useState(dias[0]);
   const [recorridos, setRecorridos] = useState<RecorridoMiembro[]>([]);
-  const [verLugares, setVerLugares] = useState(false);
+  // La opción abierta desde «Más». Un miembro elegido se abre encima y la flecha vuelve a ella.
+  const [vista, setVista] = useState<Vista | null>(null);
+  const [enfocar, setEnfocar] = useState<{ lat: number; lng: number; n: number } | null>(null);
   const [formLugar, setFormLugar] = useState<FormLugar | null>(null);
   const [borrarLugar, setBorrarLugar] = useState<Lugar | null>(null);
 
@@ -269,29 +289,6 @@ export default function ControlPsicosocialSystem() {
     }
   };
 
-  const columnas = useMemo(() => [
-    {
-      key: 'miembro', header: 'Miembro', width: '24%',
-      render: (f: FilaRastreo) => <span className="block truncate font-medium text-digi-text" title={f.nombre}>{f.nombre}</span>,
-    },
-    {
-      key: 'estado', header: 'Estado', width: '18%',
-      render: (f: FilaRastreo) => { const s = SENAL[estadoSenal(f)]; return <span className={s.clase}>{s.texto}</span>; },
-    },
-    {
-      key: 'lugar', header: 'Lugar', width: '18%',
-      render: (f: FilaRastreo) => {
-        const e = estadoSenal(f);
-        const lugar = e === 'activa' || e === 'auxilio' ? f.lugar_actual : null;
-        return lugar ? <span className="block truncate" title={lugar}>{lugar}</span> : '—';
-      },
-    },
-    { key: 'senal', header: 'Última señal', width: '27%', render: (f: FilaRastreo) => fecha(f.registrada_en) },
-    {
-      key: 'bateria', header: 'Batería', width: '13%',
-      render: (f: FilaRastreo) => (f.bateria == null ? '—' : `${fmtInt(f.bateria)} %`),
-    },
-  ], []);
 
   if (error && !estado) {
     return <div className="bg-digi-card border border-digi-border rounded-lg py-12 text-center text-[13px] text-digi-muted" style={mf}>{error}</div>;
@@ -303,19 +300,26 @@ export default function ControlPsicosocialSystem() {
     ? (detalle.lat != null && detalle.lng != null ? { lat: detalle.lat, lng: detalle.lng }
       : detalle.alerta?.lat != null && detalle.alerta?.lng != null ? { lat: detalle.alerta.lat, lng: detalle.alerta.lng } : null)
     : null;
-
   const miRecorrido = detalle ? recorridos.find((r) => r.user_id === detalle.user_id) : undefined;
   const miPunto = estado.filas.find((f) => f.user_id === estado.user_id && f.lat != null);
   const inicioMapa: [number, number] = miPunto
     ? [miPunto.lat!, miPunto.lng!]
     : estado.lugares[0] ? [estado.lugares[0].lat, estado.lugares[0].lng] : [-2.17, -79.92];
+  const nombreDia = etiquetaDia(dia, dias.indexOf(dia));
+  const hayAuxilioAjeno = estado.filas.filter((f) => f.alerta_id && f.user_id !== estado.user_id).length;
 
-  const cuerpoDetalle = detalle && (
-    <div className="space-y-3 text-[13px]" style={mf}>
-      <p className={SENAL[estadoSenal(detalle)].clase}>{SENAL[estadoSenal(detalle)].texto}</p>
-      {punto ? (
-        <>
-          {!conColumna && <MapaMiembros filas={[{ ...detalle, lat: punto.lat, lng: punto.lng }]} lugares={estado.lugares} recorridos={miRecorrido ? [miRecorrido] : []} elegido={detalle.user_id} className="h-64" />}
+  const panelDetalle = detalle && {
+    titulo: detalle.nombre,
+    subtitulo: <span className={SENAL[estadoSenal(detalle)].clase}>{SENAL[estadoSenal(detalle)].texto}</span>,
+    pie: puedeCerrar ? (
+      <PieAcciones>
+        <button className={BTN_SECONDARY} disabled={ocupado} onClick={() => cerrarAuxilio(detalle.alerta!.id, 'falsa')}>Falsa alarma</button>
+        <button className={BTN_PRIMARY} disabled={ocupado} onClick={() => cerrarAuxilio(detalle.alerta!.id, 'resuelta')}>Resuelta</button>
+      </PieAcciones>
+    ) : undefined,
+    cuerpo: (
+      <div className="space-y-3 text-[13px]">
+        {punto ? (
           <a
             href={`https://www.google.com/maps/search/?api=1&query=${punto.lat},${punto.lng}`}
             target="_blank" rel="noreferrer"
@@ -323,187 +327,260 @@ export default function ControlPsicosocialSystem() {
           >
             <ExternalLink className="w-4 h-4" /> Abrir en Google Maps
           </a>
-        </>
-      ) : <p className="text-digi-muted">Sin ubicación registrada.</p>}
-      <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
-        <div><dt className="text-[11px] text-digi-muted">Última señal</dt><dd className="text-digi-text">{fecha(detalle.registrada_en)}</dd></div>
-        <div><dt className="text-[11px] text-digi-muted">Precisión</dt><dd className="text-digi-text">{detalle.precision_m == null ? '—' : `${fmtInt(detalle.precision_m)} m`}</dd></div>
-        <div><dt className="text-[11px] text-digi-muted">Batería</dt><dd className="text-digi-text">{detalle.bateria == null ? '—' : `${fmtInt(detalle.bateria)} %`}</dd></div>
-        {detalle.alerta && (
-          <div><dt className="text-[11px] text-digi-muted">Auxilio desde</dt><dd className="text-digi-text">{fecha(detalle.alerta.creada_en)} · {detalle.alerta.origen === 'voz' ? 'voz' : 'botón'}</dd></div>
-        )}
-      </dl>
-      {miRecorrido && miRecorrido.visitas.length > 0 && (
-        <div>
-          <h4 className="text-[11px] uppercase tracking-wide text-digi-muted mb-1">Llegadas · {etiquetaDia(dia, dias.indexOf(dia))}</h4>
-          <ul className="divide-y divide-digi-border">
-            {miRecorrido.visitas.map((v) => (
-              <li key={`${v.lugar}-${v.llegada_en}`} className="flex items-center justify-between gap-2 py-1.5">
-                <span className="truncate min-w-0 text-digi-text" title={v.lugar}>{v.lugar}</span>
-                <span className="shrink-0 text-[12px] text-digi-muted">{hora(v.llegada_en)} – {v.salida_en ? hora(v.salida_en) : 'sigue allí'}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      {detalle.recorrido.length > 0 && (
-        <div>
-          <h4 className="text-[11px] uppercase tracking-wide text-digi-muted mb-1">Recorrido del auxilio</h4>
-          <ul className="divide-y divide-digi-border">
-            {detalle.recorrido.slice(0, 20).map((p) => (
-              <li key={p.registrada_en}>
-                <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`}
-                  target="_blank" rel="noreferrer"
-                  className="flex items-center justify-between gap-2 py-1.5 text-digi-text hover:text-accent"
-                >
-                  <span>{fecha(p.registrada_en)}</span>
-                  <span className="text-[11px] text-digi-muted">{p.precision_m == null ? '' : `${fmtInt(p.precision_m)} m`}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  );
-  const pieDetalle = detalle && puedeCerrar ? (
-    <PieAcciones>
-      <button className={BTN_SECONDARY} disabled={ocupado} onClick={() => cerrarAuxilio(detalle.alerta!.id, 'falsa')}>Falsa alarma</button>
-      <button className={BTN_PRIMARY} disabled={ocupado} onClick={() => cerrarAuxilio(detalle.alerta!.id, 'resuelta')}>Resuelta</button>
-    </PieAcciones>
-  ) : undefined;
-
-  return (
-    <div className={`grid gap-4 grid-cols-1 lg:grid-cols-[300px_minmax(0,1fr)] ${conColumna && detalle ? 'xl:grid-cols-[300px_minmax(0,1fr)_340px]' : ''}`}>
-      <PanelHastaElPie desdeAncho={1024} className="bg-digi-card border border-digi-border rounded-lg shadow-sm p-4 space-y-4" >
-        <div style={mf}>
-          <h2 className="text-[14px] font-semibold text-digi-text mb-3">Rastreo</h2>
-
-          <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
-            <button
-              className={`${BTN_DANGER} w-full min-h-12 font-semibold`}
-              disabled={ocupado || !!estado.mi_alerta_id}
-              onClick={() => setConfirmarAuxilio(true)}
-            >
-              <Siren className="w-4 h-4" /> Pedir auxilio
-            </button>
-            <a href="tel:911" className={`${BTN_SECONDARY} w-full min-h-12 font-semibold`}>
-              <Phone className="w-4 h-4" /> Llamar al 911
-            </a>
-          </div>
-
-          {estado.mi_alerta_id && (
-            <div className="mt-3 rounded-md border border-red-400/40 p-3">
-              <p className="text-[13px] font-semibold text-red-400 flex items-center gap-1.5"><ShieldAlert className="w-4 h-4" /> Tu auxilio está activo</p>
-              <div className="grid grid-cols-2 gap-2 mt-2">
-                <button className={BTN_SECONDARY} disabled={ocupado} onClick={() => cerrarAuxilio(estado.mi_alerta_id!, 'falsa')}>Falsa alarma</button>
-                <button className={BTN_PRIMARY} disabled={ocupado} onClick={() => cerrarAuxilio(estado.mi_alerta_id!, 'resuelta')}>Resuelta</button>
-              </div>
-            </div>
+        ) : <p className="text-digi-muted">Sin ubicación registrada.</p>}
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-2">
+          <div><dt className="text-[11px] text-digi-muted">Última señal</dt><dd className="text-digi-text">{fecha(detalle.registrada_en)}</dd></div>
+          <div><dt className="text-[11px] text-digi-muted">Lugar</dt><dd className="text-digi-text truncate">{detalle.lugar_actual || '—'}</dd></div>
+          <div><dt className="text-[11px] text-digi-muted">Precisión</dt><dd className="text-digi-text">{detalle.precision_m == null ? '—' : `${fmtInt(detalle.precision_m)} m`}</dd></div>
+          <div><dt className="text-[11px] text-digi-muted">Batería</dt><dd className="text-digi-text">{detalle.bateria == null ? '—' : `${fmtInt(detalle.bateria)} %`}</dd></div>
+          {detalle.alerta && (
+            <div className="col-span-2"><dt className="text-[11px] text-digi-muted">Auxilio desde</dt><dd className="text-digi-text">{fecha(detalle.alerta.creada_en)} · {detalle.alerta.origen === 'voz' ? 'voz' : 'botón'}</dd></div>
           )}
-        </div>
-
-        {estado.ubicacion_activa && !estado.ubicacion_al_dia && (
-          <div className="rounded-md border border-amber-400/40 p-3" style={mf}>
-            <p className="text-[13px] text-digi-text">Cambió lo que se comparte. Revísalo para que se vea tu recorrido y se avisen tus llegadas.</p>
-            <button className={`${BTN_SECONDARY} w-full mt-2`} disabled={ocupado} onClick={() => setConsentir('ubicacion')}>Revisar</button>
-          </div>
-        )}
-
-        {plataforma ? (
-          <div className="divide-y divide-digi-border border-y border-digi-border" style={mf}>
-            {([['ubicacion', MapPin, estado.ubicacion_activa], ['voz', Mic, estado.voz_activa]] as const).map(([f, Icono, activo]) => (
-              <div key={f} className="flex items-center gap-2.5 py-2.5">
-                <Icono className="w-4 h-4 text-digi-muted shrink-0" />
-                <span className="flex-1 min-w-0 text-[13px] text-digi-text">{CONSENTIMIENTO[f].titulo}</span>
-                <Interruptor
-                  activo={activo}
-                  disabled={ocupado}
-                  etiqueta={CONSENTIMIENTO[f].titulo}
-                  onChange={(v) => (v ? setConsentir(f) : apagar(f))}
-                />
-              </div>
-            ))}
-            {estado.voz_activa && nativo?.problemaVoz && (
-              <p className="py-2 text-[12px] text-amber-400">{nativo.problemaVoz}</p>
-            )}
-          </div>
-        ) : (
-          <p className="text-[12px] text-digi-muted flex items-center gap-1.5" style={mf}>
-            {sinRastreo ? 'Esta instalación de la app no trae el rastreo. Hay que actualizarla.' : 'La ubicación y la voz se activan desde la app del teléfono.'}
-          </p>
-        )}
-
-        <div style={mf}>
-          <h3 className="text-[11px] uppercase tracking-wide text-digi-muted mb-1">Quién vio mi ubicación</h3>
-          {estado.accesos.length === 0 ? (
-            <p className="text-[12px] text-digi-muted">Nadie todavía.</p>
-          ) : (
-            <ul className="divide-y divide-digi-border max-h-36 overflow-y-auto">
-              {estado.accesos.map((a) => (
-                <li key={`${a.nombre}-${a.creado_en}`} className="flex items-center justify-between gap-2 py-1.5 text-[12px]">
-                  <span className="truncate min-w-0 text-digi-text" title={a.nombre}>{a.nombre}</span>
-                  <span className="shrink-0 text-digi-muted">{fecha(a.creado_en)}</span>
+        </dl>
+        {miRecorrido && miRecorrido.visitas.length > 0 && (
+          <div>
+            <h4 className="text-[11px] uppercase tracking-wide text-digi-muted mb-1">Llegadas y salidas · {nombreDia}</h4>
+            <ul className="divide-y divide-digi-border">
+              {miRecorrido.visitas.map((v) => (
+                <li key={`${v.lugar}-${v.llegada_en}`} className="flex items-center justify-between gap-2 py-1.5">
+                  <span className="truncate min-w-0 text-digi-text" title={v.lugar}>{v.lugar}</span>
+                  <span className="shrink-0 text-[12px] text-digi-muted">{hora(v.llegada_en)} – {v.salida_en ? hora(v.salida_en) : 'sigue allí'}</span>
                 </li>
               ))}
             </ul>
-          )}
-        </div>
-      </PanelHastaElPie>
+          </div>
+        )}
+        {detalle.recorrido.length > 0 && (
+          <div>
+            <h4 className="text-[11px] uppercase tracking-wide text-digi-muted mb-1">Recorrido del auxilio</h4>
+            <ul className="divide-y divide-digi-border">
+              {detalle.recorrido.slice(0, 20).map((p) => (
+                <li key={p.registrada_en}>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`}
+                    target="_blank" rel="noreferrer"
+                    className="flex items-center justify-between gap-2 py-1.5 text-digi-text hover:text-accent"
+                  >
+                    <span>{fecha(p.registrada_en)}</span>
+                    <span className="text-[11px] text-digi-muted">{p.precision_m == null ? '' : `${fmtInt(p.precision_m)} m`}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    ),
+  };
 
-      <div className="min-w-0 space-y-4">
-        <div className="flex items-center gap-2">
-          <select
-            aria-label="Día del recorrido"
-            value={dia}
-            onChange={(e) => setDia(e.target.value)}
-            className={`${EDIT_INPUT} flex-1 sm:flex-none sm:w-52`}
-            style={mf}
-          >
-            {dias.map((d, i) => <option key={d} value={d}>Recorrido: {etiquetaDia(d, i)}</option>)}
-          </select>
-          {estado.es_admin && (
-            <button className={`${BTN_SECONDARY} shrink-0 sm:ml-auto`} onClick={() => setVerLugares(true)}>
-              <Flag className="w-4 h-4" /> Lugares
-            </button>
+  const paneles: Record<Vista, { titulo: string; subtitulo?: string; pie?: React.ReactNode; cuerpo: React.ReactNode }> = {
+    miembros: {
+      titulo: 'Miembros',
+      subtitulo: `${fmtInt(estado.filas.length)} ${estado.filas.length === 1 ? 'miembro' : 'miembros'}`,
+      cuerpo: (
+        <ul className="-my-1 divide-y divide-digi-border">
+          {estado.filas.map((f) => {
+            const e = estadoSenal(f);
+            const lugar = e === 'activa' || e === 'auxilio' ? f.lugar_actual : null;
+            return (
+              <li key={f.user_id}>
+                <button onClick={() => setElegido(f.user_id)} className="w-full min-h-12 py-2 text-left hover:text-accent">
+                  <span className="block truncate text-[13px] font-medium text-digi-text" title={f.nombre}>{f.nombre}</span>
+                  <span className="flex items-center justify-between gap-2 text-[12px]">
+                    <span className={`truncate ${SENAL[e].clase}`}>{SENAL[e].texto}{lugar ? ` · ${lugar}` : ''}</span>
+                    <span className="shrink-0 text-digi-muted">{fecha(f.registrada_en)}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ),
+    },
+    recorrido: {
+      titulo: 'Recorrido',
+      cuerpo: (
+        <ul className="-my-1 divide-y divide-digi-border" role="radiogroup" aria-label="Día del recorrido">
+          {dias.map((d, i) => (
+            <li key={d}>
+              <button
+                role="radio" aria-checked={d === dia}
+                onClick={() => { setDia(d); setVista(null); }}
+                className={`w-full min-h-11 text-left text-[13px] ${d === dia ? 'font-semibold text-accent' : 'text-digi-text hover:text-accent'}`}
+              >
+                {etiquetaDia(d, i)}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ),
+    },
+    lugares: {
+      titulo: 'Lugares',
+      pie: estado.es_admin ? (
+        <PieAcciones>
+          <button className={BTN_PRIMARY} onClick={() => setFormLugar({ id: null, nombre: '', radio: '150', lat: null, lng: null })}>Nuevo lugar</button>
+        </PieAcciones>
+      ) : undefined,
+      cuerpo: estado.lugares.length === 0 ? (
+        <p className="py-6 text-center text-[13px] text-digi-muted">Todavía no hay puntos de reunión.</p>
+      ) : (
+        <ul className="-my-1 divide-y divide-digi-border">
+          {estado.lugares.map((l) => (
+            <li key={l.id} className="flex items-center gap-2">
+              <button
+                onClick={() => { setEnfocar({ lat: l.lat, lng: l.lng, n: Date.now() }); setVista(null); }}
+                className="flex-1 min-w-0 min-h-12 py-2 text-left hover:text-accent"
+              >
+                <span className="block truncate text-[13px] font-medium text-digi-text" title={l.nombre}>{l.nombre}</span>
+                <span className="block text-[12px] text-digi-muted">Radio de {fmtInt(l.radio_m)} m</span>
+              </button>
+              {estado.es_admin && (
+                <BotonEditar
+                  etiqueta={`Editar ${l.nombre}`}
+                  onClick={() => setFormLugar({ id: l.id, nombre: l.nombre, radio: String(l.radio_m), lat: l.lat, lng: l.lng })}
+                />
+              )}
+            </li>
+          ))}
+        </ul>
+      ),
+    },
+    proteccion: {
+      titulo: 'Mi protección',
+      cuerpo: (
+        <div className="space-y-3">
+          {plataforma ? (
+            <div className="-my-1 divide-y divide-digi-border">
+              {([['ubicacion', MapPin, estado.ubicacion_activa], ['voz', Mic, estado.voz_activa]] as const).map(([f, Icono, activo]) => (
+                <div key={f} className="flex items-center gap-2.5 min-h-12">
+                  <Icono className="w-4 h-4 text-digi-muted shrink-0" />
+                  <span className="flex-1 min-w-0 text-[13px] text-digi-text">{CONSENTIMIENTO[f].titulo}</span>
+                  <Interruptor activo={activo} disabled={ocupado} etiqueta={CONSENTIMIENTO[f].titulo} onChange={(v) => (v ? setConsentir(f) : apagar(f))} />
+                </div>
+              ))}
+              {estado.voz_activa && nativo?.problemaVoz && <p className="py-2 text-[12px] text-amber-400">{nativo.problemaVoz}</p>}
+            </div>
+          ) : (
+            <p className="text-[13px] text-digi-muted">
+              {sinRastreo ? 'Esta instalación de la app no trae el rastreo. Hay que actualizarla.' : 'La ubicación y la voz se activan desde la app del teléfono.'}
+            </p>
           )}
         </div>
-        <MapaMiembros
-          filas={estado.filas}
-          lugares={estado.lugares}
-          recorridos={recorridos}
-          elegido={elegido}
-          onElegir={setElegido}
-          className="h-80 lg:h-[46dvh]"
-        />
-        <PixelDataTable
-          columns={columnas}
-          data={estado.filas}
-          singleLine
-          onRowClick={(f: FilaRastreo) => setElegido(f.user_id)}
-          rowClassName={(f: FilaRastreo) => (f.user_id === elegido ? 'bg-accent-light' : '')}
-          emptyTitle="Sin miembros"
-          unidad={['miembro', 'miembros']}
+      ),
+    },
+    accesos: {
+      titulo: 'Quién vio mi ubicación',
+      cuerpo: estado.accesos.length === 0 ? (
+        <p className="py-6 text-center text-[13px] text-digi-muted">Nadie todavía.</p>
+      ) : (
+        <ul className="-my-1 divide-y divide-digi-border">
+          {estado.accesos.map((a) => (
+            <li key={`${a.nombre}-${a.creado_en}`} className="flex items-center justify-between gap-2 py-2 text-[13px]">
+              <span className="truncate min-w-0 text-digi-text" title={a.nombre}>{a.nombre}</span>
+              <span className="shrink-0 text-[12px] text-digi-muted">{fecha(a.creado_en)}</span>
+            </li>
+          ))}
+        </ul>
+      ),
+    },
+  };
+
+  const panelAbierto = panelDetalle || (vista ? paneles[vista] : null);
+  const FLOTANTE = 'cp-opaco shadow-md';
+
+  return (
+    // De borde a borde: los márgenes negativos anulan el relleno de `main`, también el de abajo.
+    <div
+      ref={refAlto}
+      style={{ height: alto ?? undefined, marginBottom: 'calc(-1 * (var(--pie-panel) + 1.25rem))' }}
+      className="relative overflow-hidden -mx-4 -mt-4 md:-mx-6 md:-mt-6"
+    >
+      <MapaMiembros
+        filas={estado.filas}
+        lugares={estado.lugares}
+        recorridos={recorridos}
+        elegido={elegido}
+        onElegir={setElegido}
+        panelAbierto={!!panelAbierto}
+        enfocar={enfocar}
+        className="absolute inset-0"
+      />
+
+      {/* Arriba: el día que se está viendo y solo los avisos que piden algo. */}
+      <div className="absolute z-10 left-2 right-2 top-2 md:right-auto md:w-80 space-y-2 pointer-events-none" style={mf}>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/dashboard/centralized"
+            aria-label="Volver a Centralizado"
+            title="Volver a Centralizado"
+            className={`pointer-events-auto w-9 h-9 inline-flex items-center justify-center rounded-md border border-digi-border text-digi-text hover:text-accent ${FLOTANTE}`}
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Link>
+          <button
+            onClick={() => { setElegido(null); setVista('recorrido'); }}
+            className={`pointer-events-auto inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-digi-border text-[13px] font-medium text-digi-text ${FLOTANTE}`}
+          >
+            <CalendarDays className="w-4 h-4 text-digi-muted" /> Recorrido: {nombreDia}
+          </button>
+        </div>
+        {estado.mi_alerta_id && (
+          <div className={`pointer-events-auto rounded-md border border-red-400/60 p-3 ${FLOTANTE}`}>
+            <p className="text-[13px] font-semibold text-red-400 flex items-center gap-1.5"><ShieldAlert className="w-4 h-4" /> Tu auxilio está activo</p>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              <button className={BTN_SECONDARY} disabled={ocupado} onClick={() => cerrarAuxilio(estado.mi_alerta_id!, 'falsa')}>Falsa alarma</button>
+              <button className={BTN_PRIMARY} disabled={ocupado} onClick={() => cerrarAuxilio(estado.mi_alerta_id!, 'resuelta')}>Resuelta</button>
+            </div>
+          </div>
+        )}
+        {hayAuxilioAjeno > 0 && !elegido && (
+          <button
+            onClick={() => setElegido(estado.filas.find((f) => f.alerta_id && f.user_id !== estado.user_id)!.user_id)}
+            className={`pointer-events-auto w-full flex items-center gap-1.5 rounded-md border border-red-400/60 p-3 text-left text-[13px] font-semibold text-red-400 ${FLOTANTE}`}
+          >
+            <Siren className="w-4 h-4 shrink-0" />
+            <span className="truncate">{estado.filas.find((f) => f.alerta_id && f.user_id !== estado.user_id)!.nombre} pide auxilio</span>
+          </button>
+        )}
+        {estado.ubicacion_activa && !estado.ubicacion_al_dia && (
+          <div className={`pointer-events-auto flex items-center gap-2 rounded-md border border-amber-400/60 py-1.5 pl-3 pr-1.5 ${FLOTANTE}`}>
+            <p className="flex-1 min-w-0 text-[13px] text-digi-text">Cambió lo que se comparte</p>
+            <button className={`${BTN_SECONDARY} shrink-0 !min-h-9 !py-1`} disabled={ocupado} onClick={() => setConsentir('ubicacion')}>Revisar</button>
+          </div>
+        )}
+      </div>
+
+      {/* Abajo: la emergencia siempre a un toque; todo lo demás, dentro de «Más». */}
+      <div className="absolute z-10 left-2 right-2 bottom-2 md:right-auto flex items-center gap-2" style={mf}>
+        <button
+          className={`${BTN_DANGER} ${FLOTANTE} flex-1 md:flex-none min-h-[52px] md:min-h-11 font-semibold`}
+          disabled={ocupado || !!estado.mi_alerta_id}
+          onClick={() => setConfirmarAuxilio(true)}
+        >
+          <Siren className="w-4 h-4" /> Pedir auxilio
+        </button>
+        <a href="tel:911" className={`${BTN_SECONDARY} ${FLOTANTE} min-h-[52px] md:min-h-11 font-semibold`}>
+          <Phone className="w-4 h-4" /> 911
+        </a>
+        <MenuMas
+          label="Más opciones"
+          boton={{ texto: 'Más', icon: Menu, className: `${BTN_SECONDARY} ${FLOTANTE} min-h-[52px] md:min-h-11 font-semibold` }}
+          items={[
+            { label: 'Miembros', icon: Users, onClick: () => { setElegido(null); setVista('miembros'); } },
+            { label: 'Recorrido', icon: CalendarDays, onClick: () => { setElegido(null); setVista('recorrido'); } },
+            { label: 'Lugares', icon: Flag, onClick: () => { setElegido(null); setVista('lugares'); } },
+            { label: 'Mi protección', icon: Shield, onClick: () => { setElegido(null); setVista('proteccion'); } },
+            { label: 'Quién vio mi ubicación', icon: Eye, onClick: () => { setElegido(null); setVista('accesos'); } },
+          ]}
         />
       </div>
 
-      {detalle && conColumna && (
-        <PanelDetalle
-          titulo={detalle.nombre}
-          icono={MapPin}
-          subtitulo="Ubicación"
-          onCerrar={() => setElegido(null)}
-          pie={pieDetalle}
-        >
-          {cuerpoDetalle}
-        </PanelDetalle>
-      )}
-      {!conColumna && (
-        <PixelModal open={!!detalle} onClose={() => setElegido(null)} title={detalle?.nombre || 'Ubicación'} size="md" pie={pieDetalle}>
-          {cuerpoDetalle}
-        </PixelModal>
-      )}
+      <PanelMapa
+        contenido={panelAbierto || null}
+        onCerrar={() => { setElegido(null); setVista(null); }}
+        onVolver={panelDetalle && vista === 'miembros' ? () => setElegido(null) : undefined}
+      />
 
       <PixelModal
         open={!!consentir}
@@ -521,38 +598,6 @@ export default function ControlPsicosocialSystem() {
         {consentir && (
           <ul className="list-disc pl-5 space-y-2 text-[13px] text-digi-text" style={mf}>
             {CONSENTIMIENTO[consentir].puntos.map((p) => <li key={p}>{p}</li>)}
-          </ul>
-        )}
-      </PixelModal>
-
-      <PixelModal
-        open={verLugares && !formLugar}
-        onClose={() => setVerLugares(false)}
-        title="Lugares"
-        size="md"
-        pie={(
-          <PieAcciones>
-            <button className={BTN_PRIMARY} onClick={() => setFormLugar({ id: null, nombre: '', radio: '150', lat: null, lng: null })}>Nuevo lugar</button>
-          </PieAcciones>
-        )}
-      >
-        {estado.lugares.length === 0 ? (
-          <p className="py-8 text-center text-[13px] text-digi-muted" style={mf}>Todavía no hay puntos de reunión.</p>
-        ) : (
-          <ul className="divide-y divide-digi-border" style={mf}>
-            {estado.lugares.map((l) => (
-              <li key={l.id} className="flex items-center gap-3 py-2.5">
-                <Flag className="w-4 h-4 text-digi-muted shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="truncate text-[13px] font-medium text-digi-text" title={l.nombre}>{l.nombre}</p>
-                  <p className="text-[12px] text-digi-muted">Radio de {fmtInt(l.radio_m)} m</p>
-                </div>
-                <BotonEditar
-                  etiqueta={`Editar ${l.nombre}`}
-                  onClick={() => setFormLugar({ id: l.id, nombre: l.nombre, radio: String(l.radio_m), lat: l.lat, lng: l.lng })}
-                />
-              </li>
-            ))}
           </ul>
         )}
       </PixelModal>
@@ -605,7 +650,7 @@ export default function ControlPsicosocialSystem() {
       <PixelConfirm
         open={!!borrarLugar}
         title="Eliminar lugar"
-        message={`Se borrará «${borrarLugar?.nombre ?? ''}» y sus llegadas registradas.`}
+        message={`Se borrará «${borrarLugar?.nombre ?? ''}» y sus llegadas y salidas registradas.`}
         confirmLabel="Eliminar"
         danger
         onConfirm={confirmarBorrarLugar}

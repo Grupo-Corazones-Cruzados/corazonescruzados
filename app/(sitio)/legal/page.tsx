@@ -70,7 +70,7 @@ const INDICE: GrupoIndice[] = [
   ] },
 ];
 
-const ULTIMA_ACTUALIZACION = '1 de agosto de 2026';
+const ULTIMA_ACTUALIZACION = '5 de noviembre de 2026';
 
 export default function LegalPage() {
   return (
@@ -194,6 +194,12 @@ export default function LegalPage() {
             <strong className={b}>Datos de comunicación:</strong> los que el Titular nos proporcione al
             contactarnos o participar en reuniones del proyecto.
           </li>
+          <li>
+            <strong className={b}>Datos de ubicación y seguridad de los miembros:</strong> solo de los
+            miembros que lo aceptan en el Sistema de Control Psicosocial (ver sección 9): ubicación, su
+            precisión y su hora, nivel de batería, llegadas y salidas de puntos de reunión y alertas de
+            auxilio.
+          </li>
         </ul>
 
         <Titulo id="s6">6. Momento de la recolección (minimización y responsabilidad)</Titulo>
@@ -211,6 +217,10 @@ export default function LegalPage() {
           <li>Crear y administrar su cuenta y permitir el acceso al sitio y a sus herramientas.</li>
           <li>Comunicarnos con el Titular respecto de su candidatura y del proyecto.</li>
           <li>Garantizar la seguridad del servicio y prevenir fraudes o usos indebidos.</li>
+          <li>
+            Proteger la seguridad de los miembros que lo aceptan: localizarlos en una emergencia, avisar
+            a los demás miembros y saber quién ha llegado a un punto de reunión.
+          </li>
           <li>Cumplir obligaciones legales aplicables.</li>
         </ul>
 
@@ -234,13 +244,56 @@ export default function LegalPage() {
         <p className={pp}>
           El consentimiento específico a cada dato se otorga{' '}
           <strong className={b}>antes de acceder a la herramienta correspondiente</strong>, no de forma
-          anticipada. En su estado actual,{' '}
-          <strong className={b}>este sistema no recopila datos del Titular a través del sitio</strong>.
-          Si en el futuro se habilitan herramientas que requieran datos —incluida geolocalización u
-          otros datos sensibles— se solicitará el consentimiento explícito y separado
-          correspondiente y se adoptarán las garantías y, cuando proceda, la evaluación de impacto
-          que exija la LOPDP. El Titular podrá negarse a dicho tratamiento sin que ello le impida
-          usar las funciones que no dependan de esos datos.
+          anticipada. Hoy está en funcionamiento la herramienta de{' '}
+          <strong className={b}>Rastreo</strong>, disponible únicamente para los{' '}
+          <strong className={b}>miembros</strong> de la organización, en la aplicación de su teléfono.
+          No se aplica a candidatos, clientes ni visitantes del sitio.
+        </p>
+        <ul className={ul}>
+          <li>
+            <strong className={b}>Ubicación.</strong> Si el miembro la activa, su teléfono envía la
+            ubicación cada minuto, también con la aplicación cerrada, y cada 15 segundos durante un
+            auxilio, junto con su precisión, su hora y el nivel de batería.
+          </li>
+          <li>
+            <strong className={b}>Quién la ve.</strong> Todos los miembros, incluido el administrador,
+            pueden ver la ubicación actual y el recorrido de quienes lo han aceptado. Cada consulta queda
+            registrada y el miembro puede ver quién la hizo.
+          </li>
+          <li>
+            <strong className={b}>Puntos de reunión.</strong> Los marcan los administradores. Al llegar a
+            uno de ellos o salir de él, los demás miembros reciben un aviso y queda registrado.
+          </li>
+          <li>
+            <strong className={b}>Detección de voz.</strong> Es un consentimiento aparte. Si el miembro la
+            activa, el teléfono escucha de forma continua para detectar una frase de auxilio. El audio se
+            procesa solo dentro del teléfono:{' '}
+            <strong className={b}>no se graba, no se guarda y no se envía</strong>. Al detectarla hay unos
+            segundos para cancelar; después, se envía la alerta.
+          </li>
+          <li>
+            <strong className={b}>Auxilio.</strong> Lo envía el miembro con un botón o con la frase de voz.
+            Todos los miembros reciben la alerta y la ubicación de quien lo pidió. La plataforma{' '}
+            <strong className={b}>no avisa por sí sola a las autoridades</strong>: el botón del 911 abre
+            el marcador del teléfono y es la persona quien hace la llamada.
+          </li>
+          <li>
+            <strong className={b}>Conservación.</strong> El recorrido, las llegadas y las salidas se
+            eliminan a los 7 días. Lo registrado durante un auxilio se conserva con ese auxilio, y también
+            la constancia de cada aceptación y retirada del consentimiento.
+          </li>
+          <li>
+            <strong className={b}>Control del miembro.</strong> Nadie puede activar estas funciones por
+            otra persona, y el teléfono muestra siempre que están en uso. El miembro puede apagarlas en
+            cualquier momento desde la misma pantalla: deja de enviarse y se eliminan su recorrido, sus
+            llegadas y sus salidas.
+          </li>
+        </ul>
+        <p className={pp}>
+          Si en el futuro se habilitan otras herramientas que requieran datos, se solicitará el
+          consentimiento explícito y separado correspondiente y se adoptarán las garantías y, cuando
+          proceda, la evaluación de impacto que exija la LOPDP. El Titular podrá negarse a cualquiera de
+          estos tratamientos sin que ello le impida usar las funciones que no dependan de esos datos.
         </p>
 
         <Titulo id="s10">10. Cookies y tecnologías similares</Titulo>
@@ -266,7 +319,10 @@ export default function LegalPage() {
           tratamiento, algunos ubicados fuera del Ecuador, entre ellos: servicios de{' '}
           <strong className={b}>alojamiento e infraestructura</strong>, de{' '}
           <strong className={b}>envío de correo electrónico</strong> y de{' '}
-          <strong className={b}>inteligencia artificial</strong> para funciones del sitio. Estos
+          <strong className={b}>inteligencia artificial</strong> para funciones del sitio y de{' '}
+          <strong className={b}>notificaciones</strong> de Google y Apple, por donde pasan los avisos que
+          llegan al teléfono. El mapa de Control Psicosocial se dibuja con{' '}
+          <strong className={b}>OpenStreetMap</strong>, que recibe la zona que se está mirando. Estos
           encargados tratan los datos siguiendo nuestras instrucciones y con obligaciones de
           confidencialidad y seguridad. En las transferencias internacionales adoptamos las garantías
           adecuadas previstas en la LOPDP (cláusulas contractuales u otros mecanismos válidos).
@@ -277,7 +333,8 @@ export default function LegalPage() {
           Conservamos los datos durante el tiempo necesario para las finalidades descritas y mientras
           exista una relación con el Titular, y luego durante los plazos legales aplicables. Cumplidos
           dichos plazos, los datos se <strong className={b}>eliminan o anonimizan</strong> de forma
-          segura.
+          segura. Los datos de ubicación del Sistema de Control Psicosocial tienen su propio plazo, descrito
+          en la sección 9.
         </p>
 
         <Titulo id="s14">14. Derechos del Titular</Titulo>

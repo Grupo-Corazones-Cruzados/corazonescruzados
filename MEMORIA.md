@@ -346,10 +346,13 @@ Stack estándar de la casa, con particularidades de este repo:
     que aceptaron, por día (7 días, hora de Ecuador). Los lugares los ven todos y solo un administrador los crea, cambia o borra
     (`cp_lugares`, `cp_visitas`, migración 081). Las llegadas las detecta el SERVIDOR al recibir cada punto, no el teléfono: un lugar
     nuevo no exige reinstalar y vale igual en iPhone y Android. El aviso va a los demás miembros y se puede apagar en
-    Configuración → Notificaciones (`cp_llegada`), a diferencia del auxilio. **Decidido por el asistente:** avisar a todos los demás,
-    sin aviso de salida, envío cada minuto en vez de cada 5 (el servidor manda el intervalo), radio de 150 m por defecto.
-    **Consentimiento versión 3:** quien aceptó «última ubicación» no aceptó enseñar su recorrido; hasta revisar el texto
+    Configuración → Notificaciones (`cp_llegada`, `cp_salida`), a diferencia del auxilio. **Fernando, 2026-11-05:** también avisa al salir
+    (confirmada tras 3 min fuera, con la hora de la primera vez fuera; volver después de una salida confirmada es otra llegada) y
+    7 días de historial está bien. **Decidido por el asistente:** avisar a todos los demás, envío cada minuto en vez de cada 5 (el servidor manda el intervalo), radio de 150 m por defecto.
+    **Consentimiento versión 4 (3 añadió el recorrido; 4, las salidas):** quien aceptó menos no aceptó enseñar su recorrido; hasta revisar el texto
     nuevo sigue compartiendo su posición, pero sin recorrido ni llegadas (`cp_miembros.ubicacion_version`).
+  - **Interfaz (Fernando, 2026-11-05):** el mapa ocupa casi toda la pantalla, en teléfono y computador; dentro van Pedir auxilio, 911 y «Más», que abre
+    Miembros, Recorrido, Lugares, Mi protección y Quién vio mi ubicación. La emergencia no entra en «Más» a propósito. Detalle en `Diseño.md`.
   - **Consentimiento propio de cada función**, como promete `/legal` §9: `cp_consentimientos` guarda aceptar y retirar. Nadie
     puede activar el rastreo de otro, ni un admin viendo «como otro». El teléfono muestra siempre que está activo. Apagar
     la ubicación borra el historial. Quien abre el mapa queda en `cp_accesos` (una vez cada 30 min por par) y la persona ve quién fue.
@@ -357,8 +360,8 @@ Stack estándar de la casa, con particularidades de este repo:
     se habría apagado sin avisar. 401/403 en el servidor ⇒ el teléfono se apaga y olvida la llave. Salir de la cuenta también.
   - **El auxilio NO pasa por `avisarUsuarios`**, que se salta a quien apagó una clase de avisos. Android recibe `tipo=aviso` +
     `urgente=1`: una APK antigua lo enseña normal y la nueva con canal de alarma.
-  - **Pendiente de Fernando:** (1) `/legal` §9 dice «este sistema no recopila datos»: ya no es cierto para quien active esto, y
-    la evaluación de impacto de la LOPDP sigue por hacer. (2) Comprobado el 2026-11-05 en su iPhone: segundo plano (posiciones cada 5 min durante casi 2 h) y la frase dispara. Falta confirmar pantalla bloqueada, ruido, gritos y Android.
+  - **Pendiente de Fernando:** (1) `/legal` §5, 7, 9, 12 y 13 actualizados el 2026-11-05 a petición suya; la frase de auxilio NO se publica ahí. Lo escribió el
+    asistente, sin revisión legal; la evaluación de impacto de la LOPDP sigue sin hacerse y lo de un auxilio no tiene plazo de borrado. (2) Comprobado el 2026-11-05 en su iPhone: segundo plano (posiciones cada 5 min durante casi 2 h) y la frase dispara. Falta confirmar pantalla bloqueada, ruido, gritos y Android.
     (3) iPhone: sin el permiso `time-sensitive` el aviso no atraviesa el modo Concentración; no se añadió porque cambia la
     configuración en la cuenta de Apple del cliente. Las alertas críticas requieren aprobación de Apple.
     (4) Tiendas: Google y Apple exigen justificar la ubicación en segundo plano y el micrófono continuo; puede que no

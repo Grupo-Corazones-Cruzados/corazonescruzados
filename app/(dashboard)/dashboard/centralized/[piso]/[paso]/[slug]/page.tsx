@@ -89,6 +89,9 @@ export default function CentralizedSystemPage() {
 
   const cell = system.cell_name || cellNameFor(piso, paso);
 
+  // El mapa ocupa la pantalla entera y lleva dentro su propia flecha de volver (Fernando, 2026-11-05).
+  if (slug === 'control-psicosocial') return <ControlPsicosocialSystem />;
+
   return (
     <div>
       {/* Breadcrumb + acciones. En el teléfono «Compartir acceso» (secundaria) bajaba sola a
@@ -145,8 +148,6 @@ export default function CentralizedSystemPage() {
           <GestionSocialSystem system={system} isAdmin={isAdmin} />
         ) : slug === 'generacion-de-contenido' ? (
           <GeneracionDeContenidoSystem system={system} isAdmin={isAdmin} />
-        ) : slug === 'control-psicosocial' ? (
-          <ControlPsicosocialSystem />
         ) : (
           <div className="bg-digi-card border border-digi-border rounded-xl text-center py-16">
             <div className="w-12 h-12 rounded-lg bg-accent-light border border-accent/20 flex items-center justify-center mx-auto mb-3">

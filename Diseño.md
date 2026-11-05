@@ -6306,17 +6306,18 @@ Pantalla de alto completo con `PanelHastaElPie desdeAncho={0}`: raíl de 300 px 
 - **Cuadro de escritura:** `textarea.sin-marco` dentro de su franja. En escritorio, acciones debajo del campo. En el teléfono, UNA fila de 49 px (adjuntar · campo · micrófono · enviar) que crece con el texto. Un adjunto es icono + nombre recortado + quitar, sin cápsula. Intro envía solo en escritorio.
 - **`AutoGrowTextarea` lleva `rows={minRows}`:** sin eso, el navegador mide dos filas y el campo nunca baja de dos líneas aunque se pida una.
 
-## Control Psicosocial — Rastreo (2026-11-04)
-`components/centralized/systems/ControlPsicosocialSystem.tsx`. Tres columnas: tarjeta «Rastreo» (300 px) · mapa (`MapaMiembros`, 46 dvh) sobre `PixelDataTable singleLine` · `PanelDetalle` (340 px, desde `xl`). Por debajo de `xl`, el detalle
-es `PixelModal` encima de la lista; en el teléfono la tabla es galería y las emergencias quedan arriba en dos columnas.
-- **Emergencias:** «Pedir auxilio» (`BTN_DANGER`) y «Llamar al 911» (`BTN_SECONDARY`, enlace `tel:911`), de 48 px de alto. Se quedan al principio, excepción consciente a la barra inferior: es lo primero que debe encontrarse.
-- **Barra del mapa:** `<select>` «Recorrido: Hoy» (7 días) a la izquierda y «Lugares» (solo admin) a la derecha; en el teléfono una fila. **Lugares** y su formulario: `PixelModal md`; el punto se marca tocando `MapaElegirPunto`, sin campos de coordenadas.
-- **Colores por persona (`COLORES` en `MapaMiembros`):** única paleta fuera de los tokens, porque el mapa no cambia con el tema; todos ≥ 4,5:1 con blanco. El recorrido y la marca comparten color; elegir a alguien atenúa al resto. Línea con círculo hueco al inicio del día.
+## Control Psicosocial — el mapa ES la pantalla (Fernando, 2026-11-05)
+`components/centralized/systems/ControlPsicosocialSystem.tsx`. *«Principalmente centradas en el mapa […] dentro del mapa controles […] botones de más que al hacer clic aparecen las opciones, y luego así la navegación según la opción elegida.»* Vale para teléfono y computador; sustituye a las columnas de tarjeta, tabla y detalle del 2026-11-04.
+- **De borde a borde hasta el pie:** márgenes negativos que anulan el relleno de `main`, sin la franja de ruta de los demás sistemas. El alto se mide contra `[data-app-footer]`, y otra vez a los 400 ms: durante la animación de entrada de la página todo está desplazado 10 px. Medido: 92 % de la ventana a 1440 px y 87 % a 390 px.
+- **Dentro del mapa, arriba a la izquierda:** flecha a Centralizado, chip «Recorrido: <día>» y solo los avisos que piden algo (auxilio propio, auxilio ajeno, consentimiento por revisar).
+- **Abajo a la izquierda, siempre visibles:** «Pedir auxilio», «911» y «Más» (`MenuMas` con `boton`). La emergencia no entra en «Más» a propósito: en una emergencia no debe haber un paso de más.
+- **«Más» → Miembros · Recorrido · Lugares · Mi protección · Quién vio mi ubicación.** Cada opción abre `PanelMapa`: columna de 360 px a la derecha desde `md`, hoja abajo en el teléfono, por encima de los botones de emergencia y sin taparlos. Entra y sale con `useAparicion`. Un miembro elegido se abre encima y la flecha vuelve a la lista. Al ir a alguien, el mapa se encuadra en lo que el panel deja libre.
+- **Formularios** (nuevo lugar, consentimiento): `PixelModal md` de siempre; el panel flotante es para consultar y navegar. El punto se marca tocando `MapaElegirPunto`.
+- **Lo que flota es opaco (`.cp-opaco`):** los temas translúcidos dejaban ver las calles detrás del texto. Es la excepción a las tarjetas de cristal, solo sobre mapas.
+- **Colores por persona (`COLORES` en `MapaMiembros`):** única paleta fuera de los tokens, porque el mapa no cambia con el tema; todos ≥ 4,5:1 con blanco. Recorrido y marca comparten color; elegir a alguien atenúa al resto. Círculo hueco al inicio del día.
+- **Marcas:** círculo de 34 px con iniciales y aro blanco: color de la persona = señal activa, gris = sin señal, rojo que late = auxilio.
 - **Lugar en el mapa:** círculo morado discontinuo y nombre en su borde norte (`.cp-lugar`), nunca al centro: taparía la marca de quien está allí.
-- **Marcas del mapa:** círculo de 34 px con iniciales y aro blanco: color de la persona = señal activa, gris = sin señal, rojo que late = auxilio. Tocarla abre su detalle. Los mosaicos de OpenStreetMap no cambian con el tema oscuro.
 - **Estado:** texto de color sin relleno (rojo auxilio, verde activa, ámbar sin señal, tenue no comparte).
-- **Interruptores:** `Interruptor`, y solo donde funcionan: en el navegador no salen, porque la activación es del teléfono.
-- **Consentimiento:** `PixelModal md` con los puntos y pie `No acepto · Acepto y activar`. Los textos son un primer borrador para que los corrija Fernando (`CONSENTIMIENTO`).
-- **Notificación de la detección:** «GCC World · Procesando aviso», sin la palabra auxilio, porque la pantalla puede estar a la vista de quien amenaza. Es una decisión de seguridad; no «mejorar» ese texto.
+- **Interruptores:** `Interruptor`, solo donde funcionan: en el navegador no salen, porque la activación es del teléfono.
+- **Notificación de la detección de voz:** «GCC World · Procesando aviso», sin la palabra auxilio, porque la pantalla puede estar a la vista de quien amenaza. Es una decisión de seguridad; no «mejorar» ese texto.
 - **Canal Android «Auxilio de un miembro»:** alarma, vibración y pantalla de bloqueo. Rojo `0xFFB3261E`, copia del rojo del tema, como el morado de `Relojes`.
-

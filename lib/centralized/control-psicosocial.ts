@@ -21,7 +21,7 @@ export const DIAS_HISTORIAL = 7;
 export type FuncionCp = 'ubicacion' | 'voz';
 
 /** Si cambia lo que se acepta, se sube la versión: queda escrito qué texto aceptó cada quien. */
-export const VERSION_CONSENTIMIENTO = 3;
+export const VERSION_CONSENTIMIENTO = 4;
 
 export const CONSENTIMIENTO: Record<FuncionCp, { titulo: string; puntos: string[]; aceptar: string }> = {
   ubicacion: {
@@ -30,11 +30,11 @@ export const CONSENTIMIENTO: Record<FuncionCp, { titulo: string; puntos: string[
     puntos: [
       'Este teléfono enviará tu ubicación a GCC World cada minuto, también con la app cerrada, y cada 15 segundos durante un auxilio. Esto gasta más batería.',
       `Todos los miembros, incluido el administrador, pueden ver en el mapa dónde estás y tu recorrido de los últimos ${DIAS_HISTORIAL} días.`,
-      'Al llegar a un punto de reunión marcado por un administrador, los demás miembros reciben un aviso y tu llegada queda registrada.',
+      'Al llegar a un punto de reunión marcado por un administrador, y al salir de él, los demás miembros reciben un aviso y queda registrado.',
       'Cada vez que otro miembro abre el mapa queda registrado, y tú puedes ver quién fue.',
       'El mapa se dibuja con OpenStreetMap: al abrirlo, ese servicio recibe la zona que se está mirando.',
-      `El recorrido y las llegadas se borran a los ${DIAS_HISTORIAL} días. Lo registrado durante un auxilio se conserva con ese auxilio.`,
-      'El teléfono mostrará siempre que está activo. Puedes apagarlo cuando quieras desde aquí: se deja de enviar y se borran tu recorrido y tus llegadas.',
+      `El recorrido, las llegadas y las salidas se borran a los ${DIAS_HISTORIAL} días. Lo registrado durante un auxilio se conserva con ese auxilio.`,
+      'El teléfono mostrará siempre que está activo. Puedes apagarlo cuando quieras desde aquí: se deja de enviar y se borran tu recorrido, tus llegadas y tus salidas.',
       'Es voluntario. Negarte no te impide usar el resto de la plataforma.',
     ],
   },
