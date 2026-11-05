@@ -858,6 +858,10 @@ de Apple/Google, firma y distribución) para un titular persona natural en Ecuad
   que ya es dueña del producto Automatizaciones y del Firebase `grupo-corazones-cruzados`). Un mismo
   Apple ID puede estar en varios equipos (el del cliente y el propio).
 
+#### P7 — Alcance de la primera versión · ✅ Resuelta (Fernando, 2026-11-05)
+- **Con venta dentro de la app:** se publica para el público que consumirá los servicios. Reafirma lo del 2026-09-23 (StoreKit / Play Billing; PayPhone solo en la web).
+- **Centralizado entra, con su justificación:** solo para miembros internos; cada uno decide si da el acceso; nunca llega a clientes ni candidatos. Esa promesa hay que comprobarla en el código antes de declararla a las tiendas.
+
 #### P5 — ¿Qué app se publica primero? · ❓ Abierta (retoma P8/P6 del 2026-09-23)
 - GCC World (plataforma + juego) o GCC Productos. Recomendación previa: la más pequeña primero, y GCC
   World sin el juego en su primera versión.
@@ -867,7 +871,8 @@ de Apple/Google, firma y distribución) para un titular persona natural en Ecuad
   sin construir; atar la compra a la cuenta con `appAccountToken` / `obfuscatedExternalAccountId`.
   Alternativa a estudiar: si la primera app no vende nada dentro (solo entra quien ya contrató en la
   web, sin botones de pago), no hace falta compra en la tienda.
-- **Borrar la cuenta desde la app** (Apple 5.1.1(v), Google lo pide igual): no existe en el repo.
+- **Borrar la cuenta desde la app** (Apple 5.1.1(v), Google lo pide igual): ✅ hecho (2026-11-05). `lib/auth/eliminar-cuenta.ts`: clientes y candidatos, con contraseña; borra lo personal, anonimiza `users`/`clients`/`members`, cancela suscripciones activas por correo y conserva facturas, proyectos, tickets y mensajes (Fernando: «lo legal sobre las facturas tocará hacerlo»). Los miembros los da de baja un administrador. Probado con ROLLBACK, build y navegador.
+- **Centralizado solo para miembros:** ✅ comprobado (2026-11-05): `MODULE_ACCESS` y `miembroDeSesion` exigen admin/member; los permisos nativos solo se piden al activar la función. Los permisos sí quedan declarados en la app para todos, y eso es lo que hay que justificar ante las tiendas; el revisor necesitará una cuenta de miembro de prueba.
 - **Política de privacidad** pública: hay `/legal`; revisar que cubra la app móvil.
 - **Cuenta de prueba para el revisor** (como la de Meta) y formularios de datos (Data Safety / etiqueta
   de privacidad de Apple).

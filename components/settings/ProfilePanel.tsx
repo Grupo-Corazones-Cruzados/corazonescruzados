@@ -9,6 +9,8 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import SettingsPanel from '@/components/settings/SettingsPanel';
 import GrupoForm from '@/components/settings/GrupoForm';
 import { BTN_PRIMARY } from '@/components/ui/Button';
+import PieAcciones from '@/components/ui/PieAcciones';
+import EliminarCuenta from '@/components/settings/EliminarCuenta';
 import PasskeysPanel from '@/components/settings/PasskeysPanel';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 
@@ -39,6 +41,7 @@ export default function ProfilePanel() {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   // Ajustes del CV público. Solo se cargan/guardan si el usuario es miembro: quien no
   // lo es no tiene fila en `member_cv_profiles` y el endpoint le responde 403.
@@ -200,9 +203,14 @@ export default function ProfilePanel() {
          `form="perfil-form"` — atributo HTML estándar. Es lo que permite tener la
          acción fija al fondo sin renunciar a enviar con Intro desde un campo. */
       pie={(
-        <button type="submit" form="perfil-form" disabled={saving} className={`${BTN_PRIMARY} w-full sm:w-auto`}>
-          <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar cambios'}
-        </button>
+        <PieAcciones
+          onEliminar={user?.role === 'client' ? () => setEliminando(true) : undefined}
+          etiquetaEliminar="Eliminar mi cuenta"
+        >
+          <button type="submit" form="perfil-form" disabled={saving} className={BTN_PRIMARY}>
+            <Save className="w-4 h-4" /> {saving ? 'Guardando…' : 'Guardar cambios'}
+          </button>
+        </PieAcciones>
       )}
     >
       {/* En el teléfono, cada bloque es un grupo con su tarjeta y su nombre encima (`GrupoForm`,
@@ -309,6 +317,7 @@ export default function ProfilePanel() {
         <PasskeysPanel />
 
       </form>
+      <EliminarCuenta open={eliminando} onClose={() => setEliminando(false)} />
     </SettingsPanel>
   );
 }

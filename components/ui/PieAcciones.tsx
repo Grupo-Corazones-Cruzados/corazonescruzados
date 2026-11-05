@@ -38,7 +38,7 @@ export default function PieAcciones({
 }) {
   return (
     <div className="flex items-center gap-2 w-full">
-      {onEliminar && <BotonEliminar onClick={onEliminar} etiqueta={etiquetaEliminar} disabled={eliminarDeshabilitado} />}
+      {onEliminar && <BotonEliminar onClick={onEliminar} etiqueta={etiquetaEliminar} disabled={eliminarDeshabilitado} className="!w-auto shrink-0" />}
       {izquierda}
       <div className="flex-1" />
       {children}
