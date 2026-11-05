@@ -368,6 +368,7 @@ Stack estándar de la casa, con particularidades de este repo:
     aprueben la escucha continua. Lo investigado y los límites, en `Aprendizaje.md` («CONTROL PSICOSOCIAL»).
   - `079_gcont_videos` figura pendiente en `schema_migrations`, aunque su tabla existe (no es de esta tarea). Por eso la 080
     se aplicó sola y no con `npm run migrate`.
+- **🔗 ENLACE DE COTIZACIÓN: QUÉ VE EL CLIENTE (Fernando, 2026-11-05).** Aceptar saca el proyecto de `cotizacion` (pasa a `draft`), así que al recargar salía «No se pudo abrir la cotización» y confundía a los clientes. Ahora `validateQuoteToken` lanza un `motivo` (`aceptada`, `cerrada`, `caducado`, `invalido`) y `/cotizacion/[id]` tiene un aviso para cada uno; al aceptar confirma con lo que ya tiene, sin pedirla otra vez. El token se comprueba **antes** que el estado: sin el enlace correcto no se revela qué pasó con ella. El PDF solo se menciona si salió de verdad (`copiaEnviada`).
 - **🖼️ IMÁGENES DEL MARKETPLACE: NÍTIDAS Y EN DRIVE (Fernando, 2026-11-04).** *«ya no quiero que se vean borrosas en
   ningún lado»* → fuera todo desenfoque (ruta de imagen del marketplace, `/soluciones`, CSS). Dos fallos que encontró al
   cambiar las fotos el 2026-11-01: (1) **Configuración ▸ Portafolio ▸ proyecto del equipo** abría el formulario SIN las
@@ -883,6 +884,7 @@ Stack estándar de la casa, con particularidades de este repo:
   restaurarlas durante 20 días. Helen sigue siendo administradora, con `members.email` en Outlook y `workspace_email` vacío.
   ⚠️ `createWorkspaceUser` en `/Candidatos` asignó Business Standard, y `complete-profile` de los candidatos usa esa función.
 - **🗑️ Borrar la cuenta (Fernando, 2026-11-05; lo exigen las tiendas).** Papelera en Perfil (solo `role = client`, que incluye candidatos), con contraseña. Borra lo personal y anonimiza; la fila de `users` se queda porque facturas, proyectos y tickets cuelgan de su `id`, y las facturas se conservan por ley. Cancela sus suscripciones activas. `billing_clients` no se toca: son datos de facturación. Primera versión de tiendas: **con venta dentro** y **con Centralizado**, justificado como solo para miembros (`Aprendizaje.md`, P6-P7).
+- **🔑 Firma de GCC World para Google Play (2026-11-05).** `~/.android/gcc-world-subida.jks` y su contraseña en `~/.gradle/gradle.properties`, fuera del repo; distinta de la de Herramientas. ⚠️ Respaldarlas. Java: el de Android Studio. Compilar: `JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradlew :app:bundleRelease` en `movil/android`.
 - **📲 Herramientas ▸ «Apps para el teléfono» + Descargador GCC (Fernando, 2026-10-21).** Tipo nuevo
   de herramienta: un paquete para instalar fuera de tiendas. Decidido: **solo Android**, descarga del
   APK **con sesión**, app **independiente** (`movil/descargador/`, Kotlin, `org.grupocc.descargador`).
