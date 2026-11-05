@@ -13,6 +13,7 @@ import Conversacion from './Conversacion';
 import Incidencias from './Incidencias';
 import PanelProyecto from './PanelProyecto';
 import PanelServidores from './PanelServidores';
+import PanelFlujo from './flujo/PanelFlujo';
 import { api, type Proyecto, type Viva } from './api';
 
 type Vista = 'sesiones' | 'incidencias' | 'servidores';
@@ -58,6 +59,27 @@ function Espacio() {
   const refrescar = useCallback(() => setVersion((v) => v + 1), []);
 
   const proyecto = proyectos?.find((p) => p.id === proyectoId) || null;
+
+  /* Abrir un proyecto en la lista enseña su diagrama sin cambiar la conversación que se está leyendo. */
+  const [flujoId, setFlujoId] = useState<string | null>(proyectoId);
+  const [flujoEnTelefono, setFlujoEnTelefono] = useState(false);
+  const [errorFlujo, setErrorFlujo] = useState('');
+  useEffect(() => { if (proyectoId) setFlujoId(proyectoId); }, [proyectoId]);
+  useEffect(() => {
+    if (!errorFlujo) return;
+    const t = setTimeout(() => setErrorFlujo(''), 8000);
+    return () => clearTimeout(t);
+  }, [errorFlujo]);
+  const proyectoFlujo = proyectos?.find((p) => p.id === flujoId) || null;
+  const verSesion = useCallback((p: string, s: string) => { setFlujoEnTelefono(false); ir({ p, s }); }, [ir]);
+  const actualizarFlujo = useCallback((p: string) => {
+    setErrorFlujo('');
+    api<{ id: string }>(`/proyectos/${p}/flujo`, { cuerpo: {} })
+      .then((j) => { setFlujoId(p); verSesion(p, j.id); refrescar(); })
+      .catch((e) => setErrorFlujo(e.message));
+  }, [verSesion, refrescar]);
+  const flujo = (plegado: boolean) => <PanelFlujo proyecto={proyectoFlujo} forma={plegado ? 'plegado' : 'panel'} alActualizar={actualizarFlujo} alVerSesion={verSesion} />;
+
   const espera = vivas.filter((v) => v.estado === 'espera').length;
   useEffect(() => { document.title = espera ? `(${espera}) Espacio de trabajo` : 'Espacio de trabajo'; }, [espera]);
 
@@ -72,7 +94,8 @@ function Espacio() {
 
   const rail = (
     <RailProyectos proyectos={proyectos || []} vivas={vivas} proyectoId={proyectoId} sesionId={sesionUrl} desdeActivas={desdeActivas} version={version}
-      alElegir={(p, s) => ir({ p, s })} alElegirActiva={(p, s) => ir({ p, s, a: true })} alCerrada={(s) => { if (s === sesionUrl) ir({}); }} alNueva={(p) => ir({ p })} alEditar={(p) => setEditar({ abierto: true, proyecto: p })} alAgregar={() => setEditar({ abierto: true, proyecto: null })} />
+      alElegir={(p, s) => ir({ p, s })} alElegirActiva={(p, s) => ir({ p, s, a: true })} alCerrada={(s) => { if (s === sesionUrl) ir({}); }} alNueva={(p) => ir({ p })} alEditar={(p) => setEditar({ abierto: true, proyecto: p })} alAgregar={() => setEditar({ abierto: true, proyecto: null })}
+      alAbrirProyecto={setFlujoId} alActualizarFlujo={actualizarFlujo} alVerFlujo={enTelefono ? (p) => { setFlujoId(p); setFlujoEnTelefono(true); } : undefined} />
   );
 
   const conversacion = proyecto ? (
@@ -110,17 +133,18 @@ function Espacio() {
       </div>
       )}
       </div>
-      <PanelServidores proyectoId={proyectoId} plegable />
+      <PanelServidores proyectoId={proyectoId} plegable debajo={flujo} />
       </div>
     );
   }
 
   return (
     <>
-      {error && <p className={`mb-2 rounded-lg border p-2.5 text-[13px] ${TONO.error.caja} ${TONO.error.texto}`}>{error}</p>}
+      {(error || errorFlujo) && <p className={`mb-2 rounded-lg border p-2.5 text-[13px] ${TONO.error.caja} ${TONO.error.texto}`}>{error || errorFlujo}</p>}
       <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} respiro={enTelefono ? 0 : 12} className="bg-digi-card lg:border lg:border-digi-border lg:rounded-lg overflow-hidden">
         {contenido}
       </PanelHastaElPie>
+      {enTelefono && <PanelFlujo proyecto={proyectoFlujo} forma="ventana" abierta={flujoEnTelefono} alCerrar={() => setFlujoEnTelefono(false)} alActualizar={actualizarFlujo} alVerSesion={verSesion} />}
       <PanelProyecto abierto={editar.abierto} proyecto={editar.proyecto} alCerrar={() => setEditar((x) => ({ ...x, abierto: false }))} alCambiar={() => { cargarProyectos(); refrescar(); }} />
     </>
   );

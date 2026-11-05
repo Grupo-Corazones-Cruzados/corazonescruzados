@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, CheckCircle2, ChevronRight, Loader2, MessageCircleQuestion, MessageSquareDashed, Plus, Search, Square, SquareTerminal, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Loader2, MessageCircleQuestion, MessageSquareDashed, Plus, Search, Square, SquareTerminal, Workflow, X } from 'lucide-react';
 import BotonEditar from '@/components/ui/BotonEditar';
 import { BTN_ICONO_FILA } from '@/components/ui/Button';
 import RenombrarSesion, { type SesionARenombrar } from './RenombrarSesion';
@@ -69,7 +69,10 @@ export function lineaSesion(s: Sesion, detalle = s.rama) {
   );
 }
 
-export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, desdeActivas, version, alElegir, alElegirActiva, alCerrada, alNueva, alEditar, alAgregar }: {
+/** Una sesión del diagrama sigue en marcha: el botón lleva a ella en vez de abrir otra. */
+const generandoFlujo = (v: Viva) => !!v.flujo && (v.estado === 'iniciando' || v.estado === 'trabajando' || v.estado === 'espera' || (v.tareas || 0) > 0);
+
+export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, desdeActivas, version, alElegir, alElegirActiva, alCerrada, alNueva, alEditar, alAgregar, alAbrirProyecto, alActualizarFlujo, alVerFlujo }: {
   proyectos: Proyecto[];
   vivas: Viva[];
   proyectoId: string | null;
@@ -82,6 +85,9 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
   alNueva: (proyecto: string) => void;
   alEditar: (p: Proyecto) => void;
   alAgregar: () => void;
+  alAbrirProyecto: (p: string) => void;
+  alActualizarFlujo: (p: string) => void;
+  alVerFlujo?: (p: string) => void;
 }) {
   const [buscar, setBuscar] = useState('');
   const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
@@ -161,6 +167,7 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
   const alDia = (s: Sesion): Sesion => ({ ...s, viva: vivas.find((v) => v.id === s.id) || s.viva });
 
   function alternar(id: string) {
+    if (!abiertos.has(id)) alAbrirProyecto(id);
     setAbiertos((a) => { const n = new Set(a); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
 
@@ -204,6 +211,8 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
             {lista.map((p) => {
               const abierto = abiertos.has(p.id);
               const activos = vivas.filter((v) => v.proyecto === p.id && v.estado !== 'cerrada' && v.estado !== 'libre').length;
+              const conFlujoEnMarcha = vivas.some((v) => v.proyecto === p.id && generandoFlujo(v));
+              const textoFlujo = conFlujoEnMarcha ? 'Actualizándose: ver sesión' : 'Actualizar el diagrama de flujo';
               return (
                 <div key={p.id}>
                   <div className="group flex items-center gap-0.5 min-w-0">
@@ -216,6 +225,9 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
                     </button>
                     <span className="hidden lg:inline-flex"><BotonEditar onClick={() => alEditar(p)} etiqueta={`Editar ${p.nombre}`} /></span>
                     <button type="button" onClick={() => alNueva(p.id)} aria-label={`Sesión nueva en ${p.nombre}`} title="Sesión nueva" className={BTN_ICONO_FILA}><Plus className="w-3.5 h-3.5" /></button>
+                    <button type="button" onClick={() => alActualizarFlujo(p.id)} aria-label={`${textoFlujo} de ${p.nombre}`} title={textoFlujo} className={BTN_ICONO_FILA}>
+                      {conFlujoEnMarcha ? <Loader2 className="w-3.5 h-3.5 animate-spin text-accent" /> : <Workflow className="w-3.5 h-3.5" />}
+                    </button>
                   </div>
                   {abierto && (
                     <div className="ml-3 pl-1.5 border-l border-digi-border mb-1 min-w-0">
@@ -230,6 +242,7 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
                           {detenible(alDia(s)) && <BotonDetener s={s} />}
                         </div>
                       ))}
+                      {alVerFlujo && <button type="button" onClick={() => alVerFlujo(p.id)} className="block px-2 py-1.5 text-[12px] text-digi-muted hover:text-digi-text">Ver diagrama de flujo</button>}
                       <button type="button" onClick={() => alEditar(p)} className="lg:hidden px-2 py-1.5 text-[12px] text-digi-muted hover:text-digi-text">Editar proyecto</button>
                     </div>
                   )}

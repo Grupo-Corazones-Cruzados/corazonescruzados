@@ -13,6 +13,7 @@ import { ajustesDeSesion, carpetaAdjuntos, entornoLimpio, instruccionProyecto, R
 import { carpetaDe, ErrorVideo, estadoSubida, guardarParte, primerMensaje, raizEdicion, terminarSubida } from './videos.mjs';
 import { generarJson } from './generar.mjs';
 import { crearServidores } from './servidores.mjs';
+import { carpetaFlujo, guardarMeta, leerFlujo, leerMeta, ordenFlujo } from './flujo.mjs';
 
 /**
  * SERVICIO LOCAL DEL ESPACIO DE TRABAJO. Es el dueño de las sesiones vivas; va aparte de la web
@@ -530,7 +531,7 @@ async function proyectoPorId(id) {
   return p;
 }
 
-const resumenViva = (s) => ({ id: s.id, proyecto: s.proyecto.id, estado: s.estado, noVisto: s.noVisto, modelo: s.modelo, modo: s.modo, preguntas: s.solicitudes.size, aislada: s.aislada, tareas: s.tareas.size });
+const resumenViva = (s) => ({ id: s.id, proyecto: s.proyecto.id, estado: s.estado, noVisto: s.noVisto, modelo: s.modelo, modo: s.modo, preguntas: s.solicitudes.size, aislada: s.aislada, tareas: s.tareas.size, flujo: s.esFlujo === true });
 
 /** La carpeta donde está guardada una sesión. Se usa la suya, no se adivina. */
 async function ubicar(proyecto, id) {
@@ -789,6 +790,36 @@ ruta('POST', '/sesiones/:id/terminal', async ({ p, cuerpo }) => {
     await new Promise((ok, mal) => execFile('osascript', ['-e', guion], (e) => (e ? mal(new ErrorApi(500, 'macOS no dejó abrir la Terminal. Copia el comando.')) : ok())));
   }
   return { comando };
+});
+
+/* ─────────── Diagrama de flujo de un proyecto ─────────── */
+
+const ocupada = (s) => !!s && (s.estado === 'iniciando' || s.estado === 'trabajando' || s.estado === 'espera' || s.tareas.size > 0);
+
+ruta('GET', '/proyectos/:id/flujo', async ({ p }) => {
+  const proyecto = await proyectoPorId(p.id);
+  const carpeta = carpetaFlujo(DATOS, proyecto.id);
+  const sesion = leerMeta(carpeta)?.sesion || null;
+  return { ...(leerFlujo(carpeta) ?? { flujo: null, actualizado: null }), sesion, generando: ocupada(vivas.get(sesion)) };
+});
+
+/** Abre la sesión que lee el proyecto y escribe el diagrama. Si ya hay una trabajando, se vuelve a ella. */
+ruta('POST', '/proyectos/:id/flujo', async ({ p }) => {
+  const proyecto = await proyectoPorId(p.id);
+  // Una sesión aislada no puede escribir fuera de su carpeta, y el diagrama no vive en el repositorio del cliente.
+  if (proyecto.aislado === true) throw new ErrorApi(409, 'Este proyecto está aislado y su sesión no podría guardar el diagrama. Quita el aislamiento en «Editar proyecto».');
+  const todos = await proyectos();
+  const carpeta = carpetaFlujo(DATOS, proyecto.id);
+  const anterior = vivas.get(leerMeta(carpeta)?.sesion);
+  if (ocupada(anterior)) return { id: anterior.id, ya: true };
+  const id = crypto.randomUUID();
+  guardarMeta(carpeta, { ruta: proyecto.ruta, sesion: id, lanzada: Date.now() });
+  fs.rmSync(path.join(carpeta, 'borrador.json'), { force: true });
+  const s = new SesionViva({ id, proyecto, cwd: proyecto.ruta, retomar: false, proyectosTodos: todos, tituloInicial: 'Diagrama de flujo' });
+  s.esFlujo = true;
+  vivas.set(id, s);
+  s.enviar({ texto: ordenFlujo({ nombre: proyecto.nombre, ruta: proyecto.ruta, carpeta, hayPublicado: !!leerFlujo(carpeta) }) });
+  return { id };
 });
 
 /* ─────────── Videos de Generación de Contenido ─────────── */

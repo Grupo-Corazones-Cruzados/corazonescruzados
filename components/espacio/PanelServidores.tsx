@@ -96,7 +96,7 @@ function IconoGeneral({ datos }: { datos: DatosServidores | null }) {
   return <Server className="w-4 h-4 text-digi-muted" />;
 }
 
-export default function PanelServidores({ proyectoId, plegable, cabecera }: { proyectoId: string | null; plegable: boolean; cabecera?: React.ReactNode }) {
+export default function PanelServidores({ proyectoId, plegable, cabecera, debajo }: { proyectoId: string | null; plegable: boolean; cabecera?: React.ReactNode; debajo?: (plegado: boolean) => React.ReactNode }) {
   const [datos, setDatos] = useState<DatosServidores | null>(null);
   const [error, setError] = useState('');
   const [plegado, setPlegado] = useState(false);
@@ -128,6 +128,7 @@ export default function PanelServidores({ proyectoId, plegable, cabecera }: { pr
       <aside aria-label="Servidores" className="shrink-0 w-10 h-full border-l border-digi-border flex flex-col items-center gap-2 py-2">
         <button type="button" onClick={alternarPlegado} aria-label="Abrir servidores" title="Abrir servidores" className={BTN_ICONO_FILA}><PanelRightOpen className="w-4 h-4" /></button>
         <IconoGeneral datos={datos} />
+        {debajo?.(true)}
       </aside>
     );
   }
@@ -175,6 +176,7 @@ export default function PanelServidores({ proyectoId, plegable, cabecera }: { pr
           </section>
         )}
       </div>
+      {debajo?.(false)}
     </aside>
   );
 }

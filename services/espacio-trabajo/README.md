@@ -16,6 +16,7 @@ Navegador de la Mac ────────────────────
 - **Registros:** `~/.gcc-espacio/servicio.log` y `web.log`.
 - **Teléfono:** `tailscale serve --bg --https=443 http://127.0.0.1:3792`, y entrar a `/espacio-acceso`.
 - **Pruebas:** `npm test` en esta carpeta.
+- **Diagrama de flujo:** el botón de cada proyecto abre una sesión normal con la orden de `flujo.mjs` y las reglas de `flujo-reglas.md`. La sesión escribe un borrador en `~/.gcc-espacio/flujos/<proyecto>` y publica con `publicar-flujo.mjs`, que solo sustituye lo publicado si el borrador es válido. Nada se guarda en el repositorio del cliente. Las piezas: `flujo-catalogo.mjs` (lo comparten validador y web).
 - **Generación de Contenido:** `/generar-json` escribe los textos con Claude Code, y `/videos/…` sube cada video a `~/Movies/GCC-Edicion` y abre su sesión. Ver `videos.mjs` y `generar.mjs`.
 
 Por defecto cada sesión tiene acceso completo, como en la terminal. Solo se aíslan un proyecto marcado así y las sesiones nacidas de una incidencia. Reglas y porqué: `aislamiento.mjs`.
