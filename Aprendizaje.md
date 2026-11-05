@@ -871,6 +871,7 @@ de Apple/Google, firma y distribución) para un titular persona natural en Ecuad
 - **Política de privacidad** pública: hay `/legal`; revisar que cubra la app móvil.
 - **Cuenta de prueba para el revisor** (como la de Meta) y formularios de datos (Data Safety / etiqueta
   de privacidad de Apple).
+- **Revisado en el repo (2026-11-05):** faltan firma de publicación de GCC World en Android (`build.gradle` no tiene `signingConfig`; la clave debe ser propia, no la de Herramientas), `PrivacyInfo.xcprivacy` en iPhone, borrar la cuenta y compras en la tienda. Android pide ubicación en segundo plano y servicio en primer plano de micrófono por Control Psicosocial, que puede frenar la revisión. `www.grupocc.org/legal` responde 200.
 - **Sign in with Apple:** NO hace falta (no hay inicio de sesión con Google/Facebook; solo correo y passkey).
 - **Guía 4.2:** ya hay push, Actividad en Vivo, widget y modo sin conexión: argumento sólido.
 
