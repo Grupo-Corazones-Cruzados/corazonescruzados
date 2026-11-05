@@ -52,6 +52,7 @@ export class Motor {
   desactivar() {
     if (!this.activo) return;
     this.activo = false;
+    this.agente.parar?.(); // nada sigue gastando la suscripción con el copiloto apagado
     clearInterval(this.relojDictado);
     if (this.dictado) { this.dictado = null; this.emitir('escuchando', { activo: false }); }
     this.segmentos.mic.cerrar();
@@ -67,6 +68,7 @@ export class Motor {
 
   audio(canal, pcm) {
     if (!this.activo || !this.segmentos[canal]) return;
+    if (canal === 'mic') this.oimosMic = true;
     if (canal === 'sistema' && energia(pcm) > 0.006) this.ultimaVozSistema = this.ahora();
     this.segmentos[canal].agregar(pcm);
   }
@@ -120,7 +122,7 @@ export class Motor {
 
     if (hallada && !this.dictado) {
       this.previoMic = '';
-      this.dictado = { texto: hallada.resto, inicio: this.ahora(), ultima: this.ahora(), restante: null };
+      this.dictado = { texto: hallada.resto, inicio: this.ahora(), inicioVoz: this.ultimaVozMic, ultima: this.ahora(), restante: null };
       this.emitir('escuchando', { activo: true, texto: hallada.resto, total: FIN_DICTADO_MS / 1000 });
     } else if (this.dictado) {
       this.dictado.texto = `${this.dictado.texto} ${texto}`.trim();
@@ -138,7 +140,9 @@ export class Motor {
     if (!d) return;
     const ahora = this.ahora();
     const agotado = ahora - d.inicio >= MAXIMO_DICTADO_MS;
-    const hablo = Math.max(d.ultima, this.ultimaVozMic);
+    // Con audio, cuenta desde la última voz, no desde que Whisper devolvió el texto: si no, el contador
+    // volvía a 4 cuando ya te habías callado.
+    const hablo = this.oimosMic ? Math.max(d.inicioVoz, this.ultimaVozMic) : d.ultima;
 
     if (!d.texto && !agotado && this.micPendientes === 0 && ahora - hablo >= ESPERA_CLAVE_MS) {
       this.dictado = null;
@@ -147,8 +151,8 @@ export class Motor {
     }
     if (!d.texto && !agotado) return;
     if (!agotado && (this.micPendientes > 0 || ahora - hablo < FIN_DICTADO_MS)) {
-      // Whisper aún trabaja: el tiempo no corre, porque ese texto todavía puede traer más pregunta.
-      this.#cuentaAtras(this.micPendientes > 0 ? FIN_DICTADO_MS : FIN_DICTADO_MS - (ahora - hablo), d);
+      // Con Whisper aún trabajando se queda en lo último: ese texto todavía puede traer más pregunta.
+      this.#cuentaAtras(Math.max(100, FIN_DICTADO_MS - (ahora - hablo)), d);
       return;
     }
 
@@ -200,7 +204,8 @@ export class Motor {
       });
       this.emitir('respuesta', { id, texto: respuesta.trim(), ms: this.ahora() - inicio });
     } catch (e) {
-      this.emitir('error', { id, mensaje: e.message });
+      if (e.detenida) this.emitir('descartada', { id });
+      else this.emitir('error', { id, mensaje: e.message });
     } finally {
       if (!pedido) {
         this.ocupado = false;

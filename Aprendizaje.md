@@ -11752,3 +11752,9 @@ Fernando: debe ser una sesión de Claude Code como la de Admin ▸ Espacio de tr
 
 **Sin probar:** la voz de Fernando, el recordatorio real, varias preguntas seguidas en una reunión, el gasto de límite en una reunión larga.
 
+## Copiloto — solo transcribía la primera frase (2026-11-05)
+Fernando: ya no se cortaba la escucha, pero solo salía la primera frase. **Causa, reproducida con audio real a varios volúmenes:** el contador usaba un umbral más sensible que el detector que decide qué se transcribe, así que le oía para esperar pero descartaba lo dicho. Además el fondo se medía con la media de lo que «no era voz», y una voz baja lo subía hasta perderse más. Con voz de rms 0,0047: 0 s de 25 s.
+**Corrección:** una sola decisión para los dos; fondo = percentil 20 de los últimos 5 s; mínimo 0,0015; tramo de hasta 10 s, cortado en el hueco más callado (a 5 s partía «sistema | tema de camiones»). Ahora, de rms 0,14 a 0,0047, llega todo el mensaje. Sin probar aún con su voz.
+**Regla:** dos componentes que deciden lo mismo (¿está hablando?) usan la misma función; si no, se contradicen en silencio.
+Fernando detuvo la sesión por consumo innecesario: se añadió «Detener» y desactivar ahora corta la investigación. Las pruebas de este arreglo no usaron Claude.
+

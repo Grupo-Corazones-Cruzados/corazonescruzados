@@ -7,7 +7,7 @@ import { buscarClave, ordenaTerminar } from './palabra-clave.mjs';
 import { esAlucinacion, esEco, parecePregunta } from './filtro.mjs';
 import { limpiarFilas, validarConsulta } from './bd.mjs';
 import { SesionClaude, describirHerramienta } from './sesion-claude.mjs';
-import { Segmentador } from './segmentador.mjs';
+import { Segmentador, energia } from './segmentador.mjs';
 import { Sesion, leerPendiente } from './sesion.mjs';
 import { buscar, rutaSegura } from './buscar.mjs';
 import { Motor } from './motor.mjs';
@@ -120,13 +120,39 @@ test('la búsqueda recorre los proyectos y nunca toca llaves', async () => {
   delete process.env.COPILOTO_RAICES;
 });
 
+/** Parecido al habla: sílabas con huecos. Un tono constante es ruido de fondo, no voz, y el detector lo sabe. */
 const pcm = (seg, amp) => {
   const b = Buffer.alloc(Math.round(seg * 16000) * 2);
-  for (let i = 0; i < b.length / 2; i++) b.writeInt16LE(Math.round(Math.sin(i / 10) * amp * 32767), i * 2);
+  for (let i = 0; i < b.length / 2; i++) {
+    const silaba = Math.max(0, Math.sin((2 * Math.PI * 3 * i) / 16000));
+    b.writeInt16LE(Math.round(Math.sin(i / 10) * silaba * amp * 32767), i * 2);
+  }
   return b;
 };
 
-test('el segmentador corta en la pausa y a los 5 s, sin mandar silencios', () => {
+test('una voz baja se transcribe y el contador y la transcripción deciden igual', () => {
+  const tramos = [];
+  let voces = 0;
+  const s = new Segmentador({ alCerrar: (a) => tramos.push(a.length / 32000), alVoz: () => { voces++; } });
+  s.agregar(pcm(2, 0.0004)); // ruido de la sala
+  for (let i = 0; i < 4; i++) { s.agregar(pcm(1.5, 0.008)); s.agregar(pcm(0.3, 0.0004)); } // voz muy baja con pausas cortas
+  s.agregar(pcm(1, 0.0004));
+  assert.ok(voces > 50, String(voces));
+  const total = tramos.reduce((a, b) => a + b, 0);
+  assert.ok(total >= 6, `se perdió voz: ${total} s`);
+});
+
+test('la voz de una persona que habla seguido no sube el umbral hasta perderla', () => {
+  const tramos = [];
+  const s = new Segmentador({ alCerrar: (a) => tramos.push(a.length / 32000) });
+  s.agregar(pcm(1, 0.0004));
+  for (let i = 0; i < 12; i++) { s.agregar(pcm(2.5, 0.01)); s.agregar(pcm(0.2, 0.0004)); }
+  s.agregar(pcm(1, 0.0004));
+  const total = tramos.reduce((a, b) => a + b, 0);
+  assert.ok(total > 30, `solo ${total} s de 32`);
+});
+
+test('el segmentador corta en la pausa y a los 10 s, sin mandar silencios', () => {
   const tramos = [];
   const s = new Segmentador({ alCerrar: (a) => tramos.push(a.length / 32000) });
   s.agregar(pcm(3, 0)); assert.equal(tramos.length, 0);
@@ -134,9 +160,9 @@ test('el segmentador corta en la pausa y a los 5 s, sin mandar silencios', () =>
   assert.equal(tramos.length, 1);
   assert.ok(tramos[0] > 2 && tramos[0] < 3.5, String(tramos[0]));
   tramos.length = 0;
-  s.agregar(pcm(11, 0.2)); s.agregar(pcm(1, 0));
-  assert.ok(tramos.length >= 2 && tramos.every((d) => d <= 5.1), String(tramos));
-  assert.ok(Math.abs(tramos.reduce((a, b) => a + b, 0) - 12) < 1, 'sin perder audio ni repetirlo');
+  s.agregar(pcm(21, 0.2)); s.agregar(pcm(1, 0));
+  assert.ok(tramos.length >= 2 && tramos.every((d) => d <= 10.1), String(tramos));
+  assert.ok(Math.abs(tramos.reduce((a, b) => a + b, 0) - 22) < 1, 'sin perder audio ni repetirlo');
 });
 
 function reunion({ respuestas = [], r_espera = null, nada = false } = {}) {
@@ -188,6 +214,25 @@ test('si el clasificador dice NADA, ni la sesión ni el widget se enteran', asyn
   assert.equal(r.clasificadas.length, 1);
   assert.equal(r.preguntas.length, 0);
   for (const e of ['consulta', 'respuesta', 'parcial']) assert.ok(!nombres(r.eventos).includes(e), e);
+});
+
+test('el contador cuenta desde la última voz y no vuelve a 4 cuando llega el texto', async () => {
+  const r = reunion({ respuestas: ['Listo.'] });
+  r.motor.audio('mic', pcm(0.5, 0.2));
+  await r.motor.texto('mic', 'GUMDRAMON, una pregunta');
+  r.avanzar(1500);
+  await r.motor.texto('mic', 'que sigue un poco más'); // Whisper la devuelve ya callado
+  await r.motor.revisarDictado();
+  const ultimo = r.eventos.filter(([e, d]) => e === 'escuchando' && d.restante != null).at(-1)[1].restante;
+  assert.equal(ultimo, 2.5);
+});
+
+test('desactivar corta lo que esté investigando', () => {
+  const r = reunion();
+  let paradas = 0;
+  r.motor.agente.parar = () => { paradas++; };
+  r.motor.desactivar();
+  assert.equal(paradas, 1);
 });
 
 test('la cuenta atrás baja de 4 s y se reinicia al volver a hablar', async () => {
@@ -363,12 +408,14 @@ test('a media frase no se pregunta; al cerrarla, sí', async () => {
   assert.match(r.preguntas[0], /costaría el sistema de reservas/);
 });
 
-test('el corte forzado cae en el hueco y no pierde audio', () => {
+test('el corte forzado cae en un hueco y no pierde audio', () => {
   const tramos = [];
-  const s = new Segmentador({ maximoS: 5, alCerrar: (a, seguir) => tramos.push({ d: a.length / 32000, seguir }) });
-  s.agregar(pcm(4.6, 0.2)); s.agregar(pcm(0.15, 0.001)); s.agregar(pcm(0.4, 0.2)); s.agregar(pcm(1, 0));
+  const s = new Segmentador({ maximoS: 5, alCerrar: (a, seguir) => tramos.push({ a: Buffer.from(a), seguir }) });
+  s.agregar(pcm(4, 0.2)); s.agregar(Buffer.alloc(16000)); s.agregar(pcm(2, 0.2)); s.agregar(Buffer.alloc(32000));
   assert.ok(tramos[0].seguir);
-  assert.ok(tramos[0].d > 4.5 && tramos[0].d < 4.85, String(tramos[0].d));
+  assert.ok(energia(tramos[0].a.subarray(-960)) < 0.02, 'el corte no cae en plena sílaba');
+  const total = tramos.reduce((n, t) => n + t.a.length, 0) / 32000;
+  assert.ok(total > 6.4 && total <= 7, String(total));
 });
 
 test('la transcripción se guarda y sobrevive a un reinicio', () => {

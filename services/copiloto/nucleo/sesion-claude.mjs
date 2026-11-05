@@ -137,7 +137,8 @@ export class SesionClaude {
       }
     } else if (e.tipo === 'fin') {
       this.turno = null;
-      if (e.ok) { this.#titular(); t.ok(String(t.ultimo || t.texto || '').trim()); }
+      if (e.detenida) { const d = new Error('Detenida.'); d.detenida = true; t.mal(d); }
+      else if (e.ok) { this.#titular(); t.ok(String(t.ultimo || t.texto || '').trim()); }
       else t.mal(new Error(e.error || 'Claude no pudo responder.'));
     } else if (e.tipo === 'error') {
       this.turno = null;
@@ -168,13 +169,18 @@ export class SesionClaude {
     return trabajo;
   }
 
-  /** Al desactivar deja de escuchar. Lo que estuviera investigando sigue en el Espacio de trabajo. */
+  /** Corta lo que esté investigando: cada búsqueda de más gasta la suscripción de Fernando. */
+  parar() {
+    if (this.turno && this.id) this.#api(`/sesiones/${this.id}/detener`, {}).catch(() => {});
+  }
+
+  /** Deja de escuchar la sesión; se retoma con la siguiente pregunta. */
   detener() {
     this.lector?.abort();
     this.lector = null;
     const t = this.turno;
     this.turno = null;
-    t?.mal(new Error('Se desactivó antes de terminar: la respuesta sigue en la sesión del Espacio de trabajo.'));
+    if (t) { const d = new Error('Detenida.'); d.detenida = true; t.mal(d); }
   }
 
   /** La reunión terminó: la siguiente pregunta abre otra sesión. */

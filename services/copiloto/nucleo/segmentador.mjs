@@ -1,18 +1,22 @@
 /**
  * CORTA EL AUDIO EN TRAMOS DE VOZ. Cortar cada 5 s a ciegas parte las palabras, incluida la clave. Un
- * tramo se cierra con una pausa, o a los 5 s si la persona sigue hablando. En ese caso se corta por el
- * punto más callado del último segundo, entre dos palabras, y lo que sobra abre el tramo siguiente: un
+ * tramo se cierra con una pausa, o a los 10 s si la persona sigue hablando. En ese caso se corta por el
+ * punto más callado del último segundo y medio, entre dos palabras, y lo que sobra abre el tramo siguiente: un
  * corte ciego en «sistema de reservas» hizo que Whisper entendiera «cilindro» (2026-11-05).
  *
  * Audio: PCM de 16 bits, 16 kHz, un canal.
  */
+const MAXIMO_POR_DEFECTO = 10; // a 5 s partía frases: «sistema | tema de camiones» (2026-11-05)
 const HZ = 16000;
 const BYTES_S = HZ * 2;
 const CUADRO = Math.round(HZ * 0.03) * 2; // 30 ms
 const SILENCIO_CIERRE_S = 0.7;
-const MINIMO_S = 0.6;
-const VENTANA_CORTE = Math.round(1 / 0.03); // cuadros del último segundo
-const UMBRAL_MINIMO = 0.006;
+const MINIMO_S = 0.25;
+const VENTANA_CORTE = Math.round(1.5 / 0.03); // cuadros del último segundo y medio
+const UMBRAL_MINIMO = 0.0015;
+const VECES_SOBRE_EL_FONDO = 2.5;
+const CUADROS_FONDO = Math.round(5 / 0.03); // el ruido de fondo se mide en los últimos 5 s
+const SUAVIZADO_CORTE = 5; // 150 ms: un solo cuadro callado puede ser una consonante, no un hueco
 
 export function energia(cuadro) {
   let suma = 0;
@@ -25,7 +29,7 @@ export function energia(cuadro) {
 }
 
 export class Segmentador {
-  constructor({ maximoS = 5, alCerrar, alVoz = () => {} }) {
+  constructor({ maximoS = MAXIMO_POR_DEFECTO, alCerrar, alVoz = () => {} }) {
     this.alVoz = alVoz;
     this.maximo = Math.round(maximoS * BYTES_S);
     this.alCerrar = alCerrar;
@@ -34,7 +38,7 @@ export class Segmentador {
     this.bytes = 0;
     this.bytesVoz = 0;
     this.silencio = 0;
-    this.piso = UMBRAL_MINIMO / 3;
+    this.fondo = [];
     this.energias = [];
     this.previo = Buffer.alloc(0); // lo de justo antes de la voz: si no, se pierde la primera sílaba
   }
@@ -50,11 +54,15 @@ export class Segmentador {
 
   #cuadro(cuadro) {
     const e = energia(cuadro);
-    const umbral = Math.max(UMBRAL_MINIMO, this.piso * 3);
+    // El fondo es lo más callado de los últimos segundos, no la media de lo que «no era voz»: con esa media, una voz
+    // baja contaba como ruido, subía el umbral y se perdía aún más voz (Fernando, 2026-11-05: solo transcribía la
+    // primera frase). El contador y la transcripción usan esta MISMA decisión: si te oye para esperar, te transcribe.
+    this.fondo.push(e);
+    if (this.fondo.length > CUADROS_FONDO) this.fondo.shift();
+    const orden = [...this.fondo].sort((x, y) => x - y);
+    const umbral = Math.max(UMBRAL_MINIMO, orden[Math.floor(orden.length * 0.2)] * VECES_SOBRE_EL_FONDO);
     const voz = e > umbral;
-    // Más sensible que el corte: una voz baja al final de una frase también cuenta como seguir hablando.
-    if (e > Math.max(UMBRAL_MINIMO / 2, this.piso * 2)) this.alVoz();
-    if (!voz) this.piso = this.piso * 0.98 + e * 0.02; // el ruido de fondo se aprende solo en lo que no es voz
+    if (voz) this.alVoz();
 
     if (!this.bytes) {
       if (!voz) {
@@ -82,8 +90,10 @@ export class Segmentador {
     let hasta = this.tramo.length;
     if (seguir) {
       let menor = Infinity;
-      for (let i = this.tramo.length - 1; i >= Math.max(1, this.tramo.length - VENTANA_CORTE); i--) {
-        if (this.energias[i] < menor) { menor = this.energias[i]; hasta = i; }
+      for (let i = this.tramo.length - 1; i >= Math.max(SUAVIZADO_CORTE, this.tramo.length - VENTANA_CORTE); i--) {
+        let suma = 0;
+        for (let k = 0; k < SUAVIZADO_CORTE; k++) suma += this.energias[i - k];
+        if (suma < menor) { menor = suma; hasta = i - Math.floor(SUAVIZADO_CORTE / 2); }
       }
     }
     const audio = Buffer.concat(this.tramo.slice(0, hasta));

@@ -23,6 +23,7 @@ struct Medidor: View {
 
 struct TarjetaConsulta: View {
   let c: Consulta
+  let detener: () -> Void
   var body: some View {
     VStack(alignment: .leading, spacing: 5) {
       Text(c.pregunta).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
@@ -30,6 +31,8 @@ struct TarjetaConsulta: View {
         HStack(spacing: 6) {
           ProgressView().controlSize(.mini)
           Text(c.buscando ? (c.detalle ?? "Investigando…") : "Pensando…").font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
+          Spacer(minLength: 0)
+          Button("Detener", action: detener).controlSize(.small).help("Corta esta investigación para no seguir gastando")
         }
       } else {
         Text(c.respuesta).font(.system(size: 14, weight: .medium)).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
@@ -143,7 +146,7 @@ struct Widget: View {
               Text(m.activo ? "Escuchando. Aparecerá algo aquí cuando haya una pregunta." : "Actívalo para empezar.")
                 .font(.system(size: 12)).foregroundStyle(.secondary).frame(maxWidth: .infinity).padding(.top, 34)
             }
-            ForEach(m.consultas) { TarjetaConsulta(c: $0).id($0.id) }
+            ForEach(m.consultas) { TarjetaConsulta(c: $0, detener: { m.detenerConsulta() }).id($0.id) }
             if let d = m.dictando {
               TarjetaDictado(texto: d, restante: m.restante, total: m.totalEspera).id("dictado")
             }

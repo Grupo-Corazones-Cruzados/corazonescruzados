@@ -95,6 +95,7 @@ const servidor = http.createServer(async (req, res) => {
     if (ruta === 'GET /estado') return responder(200, motor.estado());
     if (ruta === 'POST /activar') { motor.activar(); return responder(200, motor.estado()); }
     if (ruta === 'POST /desactivar') { motor.desactivar(); return responder(200, motor.estado()); }
+    if (ruta === 'POST /detener') { agente.parar(); return responder(200, { ok: true }); }
     if (ruta === 'POST /terminar') { await terminar(); return responder(200, motor.estado()); }
     if (ruta === 'POST /consulta') {
       const { texto } = JSON.parse((await leer(req, 20000)).toString() || '{}');

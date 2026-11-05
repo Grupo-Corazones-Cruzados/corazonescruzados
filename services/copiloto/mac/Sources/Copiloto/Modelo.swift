@@ -136,6 +136,9 @@ final class Modelo: ObservableObject {
     Task { await llamar("terminar") }
   }
 
+  /// Corta la investigación en curso: cada búsqueda de más gasta la suscripción.
+  func detenerConsulta() { Task { await llamar("detener") } }
+
   func enviar(_ texto: String) {
     guard let d = try? JSONSerialization.data(withJSONObject: ["texto": texto]) else { return }
     Task { await llamar("consulta", cuerpo: d) }
