@@ -864,8 +864,11 @@ Stack estándar de la casa, con particularidades de este repo:
 - **👤 Segunda administradora (Fernando, 2026-11-05).** Helen Mabel Cárdenas Coloma: ya tenía cuenta de cliente con su
   correo personal, así que se promovió esa misma fila a `admin` con miembro 6 (no se duplicó) y se cerraron sus
   sesiones para que el rol nuevo entre al volver a acceder. Sigue entrando con el correo personal, porque el código de acceso
-  llega al correo de la cuenta. ⏸ `hmcardenasc0@grupocc.org` aún NO existe en Google: sin esa cuenta,
-  `workspace_email` queda vacío. Cloud Identity no da buzón; un buzón exige licencia de pago.
+  llega al correo de la cuenta. ⏸ `hmcardenasc0@grupocc.org` NO existe en Google y `workspace_email` sigue vacío.
+  ⚠️ Fernando aprobó la cuenta gratuita, pero `createWorkspaceUser` en `/Candidatos` le asignó **Business Standard de
+  pago**: la licencia automática NO está apagada en esa unidad y Cloud Identity Free no está activo. Se borró a los
+  segundos. No crear cuentas ahí hasta apagarla en la consola (ojo: lo mismo pasaría con `complete-profile`
+  de los candidatos). Y la gratuita NO trae Google Calendar; para eso hace falta licencia.
 - **📲 Herramientas ▸ «Apps para el teléfono» + Descargador GCC (Fernando, 2026-10-21).** Tipo nuevo
   de herramienta: un paquete para instalar fuera de tiendas. Decidido: **solo Android**, descarga del
   APK **con sesión**, app **independiente** (`movil/descargador/`, Kotlin, `org.grupocc.descargador`).
