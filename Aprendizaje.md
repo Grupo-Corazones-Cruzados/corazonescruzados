@@ -196,6 +196,12 @@ Subió su video por la app. Cuatro problemas, todos con causa en cómo se dejó 
 - **Sin Blender:** era opcional y el agente no leyó su guía. Ahora, en videos de 45 s o más, `construir.mjs` exige una animación o una explicación en `sinAnimacion`, y cada gráfico y efecto necesita `motivo`.
 **Lección:** una regla escrita no bastó; lo que importa se comprueba en `construir.mjs`. Y llamar «referencia» a un resultado aprobado lo convierte en plantilla.
 
+### La v2 aprobada y la última corrección (2026-11-05)
+Fernando sobre la v2 de su video: «perfecto, de muy excelente calidad». Solo pidió, para futuros videos, iconos y referencias en lo que se nombra (Odoo, Microsoft) para que no queden tantos espacios con solo su cara, sin llegar a cubrirlo todo. Además aclaró la duda: la app móvil está integrada con **Odoo**.
+- **Logos:** `simple-icons` (CC0, 3.467 logos) en el bloque `iconos`. Microsoft, Teams, OpenAI y LinkedIn no están: se muestran con nombre e icono genérico, y dibujar el logo de Microsoft queda a su decisión. Son marcas ajenas: solo para decir qué se integró, sin sugerir alianza.
+- **Comprobado en `construir.mjs`:** una marca de `references/marcas.json` mencionada sin imagen o más de 8 s sin nada visual se rechazan salvo justificación. Sobre su plan aprobado detecta la mención de Microsoft sin imagen (66 s) y los 12 s iniciales.
+- **Límite conocido:** si Whisper oye mal una marca («OV» por Odoo), la comprobación no la ve. Se añadió vocabulario común a `preparar.mjs` y la guía pide corregirlo. No se ha comprobado si mejora la transcripción.
+
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?
