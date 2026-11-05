@@ -88,7 +88,7 @@ Ejemplos del estándar:
 Si el trabajo son horas de desarrollo o soporte, nombra el trabajo, no las horas: "Dar soporte a la automatización de procesos", no "Hora de desarrollo".`,
   project: `Es un PROYECTO: un sistema construido. El título dice QUÉ SISTEMA ES y cómo es.
 - "titulo": tipo de sistema + lo que hace (Sistema de…, Portal de…, Plataforma de…, App móvil de…, Agente de…, Módulo de…). Mayúscula solo al inicio y en nombres propios. Máximo 70 caracteres, sin punto final.
-- "descripcion": 2 a 4 frases que describen el sistema: qué resuelve, cómo funciona y qué incluye. Al cliente se le llama "el negocio". Máximo 450 caracteres.
+- "descripcion": 2 a 4 frases que describen el sistema: qué resuelve, cómo funciona y qué incluye. Sácalo de los requerimientos y sus subtareas: nombra los módulos, datos, roles e integraciones concretos, no generalidades. Lo que es trabajo de entrega (pruebas, despliegue, horas) no se cuenta salvo que defina el sistema. Al cliente se le llama "el negocio". Máximo 450 caracteres.
 Ejemplos del estándar:
 · "Portal de consulta de facturas emitidas ante el SRI" — "Plataforma web para consultar y descargar en un solo listado facturas, notas de crédito y notas de débito emitidas ante el SRI por varias empresas. Incluye sincronización mediante un worker en Node.js y autenticación por código de un solo uso."
 · "App móvil de catálogo y pedidos con integración a Odoo" — "Aplicación móvil multiplataforma que consume inventario, productos y precios desde Odoo por API para vender tipo catálogo. Permite filtrar por bodega y categoría, armar el pedido y registrarlo en Odoo."
@@ -97,7 +97,7 @@ Ejemplos del estándar:
 
 const COMUNES = `Reglas para los dos:
 - En español neutro.
-- NINGÚN dato de la empresa o persona cliente: ni su nombre, ni su marca, ni personas, correos, RUC, números de factura, montos o fechas. Sí se nombran tecnologías y servicios de terceros (Power Automate, SharePoint, Odoo, WhatsApp, Azure, SRI…).
+- NINGÚN dato de la empresa o persona cliente: ni su nombre, ni su marca, ni sus clientes o plataformas internas, ni personas, correos, RUC, números de factura, montos, horas o fechas. Sí se nombran tecnologías y servicios de terceros (Power Automate, SharePoint, Odoo, WhatsApp, Azure, SRI…).
 - No inventes funciones que el texto no diga. Si ya cumple el estándar, devuélvelo igual o con el mínimo retoque.
 - Nunca hables de la información que falta ("no se detalla…"): si hay poco, escribe menos.
 Responde solo con JSON: {"titulo": "...", "descripcion": "..."}`;
@@ -154,8 +154,15 @@ async function leer(tipo: Tipo, id: string): Promise<Registro | null> {
                 WHERE i.project_id = p.id OR (i.source_type = 'project' AND i.source_id = p.id::text)
                    OR i.id IN (SELECT invoice_id FROM gcc_world.invoice_projects WHERE project_id = p.id)
                    OR i.id IN (SELECT invoice_id FROM gcc_world.project_stages WHERE project_id = p.id)) AS factura_cliente,
-              (SELECT string_agg(r.title, '; ' ORDER BY r.id) FROM (SELECT id, title FROM gcc_world.project_requirements
-                WHERE project_id = p.id ORDER BY id LIMIT 20) r) AS detalle
+              -- Con su descripción y subtareas: solo con los títulos salían textos genéricos (Fernando, 2026-11-05).
+              (SELECT string_agg(
+                        '- ' || r.title
+                        || COALESCE(': ' || NULLIF(r.description, ''), '')
+                        || COALESCE(' Subtareas: ' || (SELECT string_agg(ri.title, '; ' ORDER BY ri.sort_order)
+                                                         FROM gcc_world.requirement_items ri WHERE ri.requirement_id = r.id), ''),
+                        E'\n' ORDER BY r.id)
+                 FROM (SELECT id, title, description FROM gcc_world.project_requirements
+                        WHERE project_id = p.id ORDER BY id LIMIT 20) r) AS detalle
          FROM gcc_world.projects p
          LEFT JOIN gcc_world.clients c ON c.id = p.client_id
         WHERE p.id = ($1)::bigint`;
@@ -178,7 +185,7 @@ export async function proponerNombreEstandar(tipo: Tipo, r: Registro): Promise<{
   const datos = [
     `Título actual: ${r.title}`,
     `Descripción actual: ${r.description || '(vacía)'}`,
-    r.detalle ? (tipo === 'ticket' ? `Servicio: ${r.detalle}` : `Requerimientos: ${r.detalle}`) : '',
+    r.detalle ? (tipo === 'ticket' ? `Servicio: ${r.detalle}` : `Requerimientos:\n${r.detalle}`) : '',
     marcas.length ? `Datos del cliente que NO pueden aparecer: ${[r.cliente, r.factura_cliente].filter(Boolean).join(' | ')}` : '',
   ].filter(Boolean).join('\n');
 
