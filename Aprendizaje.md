@@ -11758,3 +11758,9 @@ Fernando: ya no se cortaba la escucha, pero solo salía la primera frase. **Caus
 **Regla:** dos componentes que deciden lo mismo (¿está hablando?) usan la misma función; si no, se contradicen en silencio.
 Fernando detuvo la sesión por consumo innecesario: se añadió «Detener» y desactivar ahora corta la investigación. Las pruebas de este arreglo no usaron Claude.
 
+## Copiloto — voz de Gumdramon (2026-11-05)
+Fernando pidió voz gratis, tipo Digimon, nítida en español y que se pueda activar y desactivar. Se usa `AVSpeechSynthesizer` con Paulina y tono 1,25 / 1,55 / 1,85: es voz propia, no imita al actor. Viene apagada.
+**Medido:** Whisper entendió la frase completa en todos los tonos probados, hasta 1,9. Tono medio: 172 Hz normal, 327 Hz a 1,9.
+**La trampa:** Gumdramon escucha el audio del equipo. La voz se sintetiza con `write` y suena en la propia app, para excluir ese proceso del tap. Comprobado por altavoces: su voz no apareció como Cliente y un `say` de otro programa sí, como control. El micrófono sí la oye por altavoces; el núcleo descarta lo que coincide con una respuesta reciente (probado solo con pruebas automáticas).
+**Riesgo:** por altavoces, el cliente puede oírla. Usar audífonos.
+
