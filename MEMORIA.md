@@ -9189,3 +9189,6 @@ Pestañas: Inicio · Candidatos · Clientes · Miembros. `/soluciones` sigue en 
 
 ## El inicio de las apps (2026-11-05)
 Fernando: el inicio y la carga de las apps deben parecer una app móvil, con el lenguaje de la de Motordesa; GCC World no cambia. `components/landing/InicioApp.tsx` cubre la portada cuando existe la cookie `gcc_app`: velo de arranque con logo y alas, cabecera de marca y hoja Ingresar / Crear cuenta, sin pestañas del sitio. Los diálogos de siempre salen como hoja inferior (`.landing-page[data-app]` en `globals.css`), con los tokens de cada app y las mismas condiciones de registro. Centralizado solo ingresa miembros y no crea cuentas (Fernando, 2026-11-05). Los textos bajo el nombre de cada app son provisionales. Pendiente: la salida animada de las hojas; el panel interior no se tocó.
+
+## ADISA: Formatos de impresión en su Azure (2026-11-06)
+Preventa, sin nada contratado. ADISA pide la herramienta en un servidor bajo su control y enviar los PDF a un equipo local con la tarjeta de firma. Propuesta y costos en `Aprendizaje.md`. La guía comercial está en `02_Clientes/ADISA/`, fuera del repo porque es público; incluye horas y tarifa. **Pendiente:** cuestionario de TI y prueba con la tarjeta real antes de cotizar en firme.

@@ -11774,3 +11774,43 @@ Fernando: que funcione como las apps con el Entorno de trabajo. Es una página d
 **Trampa de la prueba:** `--use-file-for-fake-audio-capture` entregó silencio en todos los casos, también con una página mínima. Para probar audio, sustituir `getUserMedia` por una corriente de `createMediaStreamDestination`.
 **Dos fallos de uso real:** el tope de 90 s cortaba al hablar mucho (ahora 10 min), y la tarjeta recortaba la pregunta a dos líneas aunque el agente la recibía entera (771 caracteres). Medido en el registro de la sesión.
 
+
+# Formatos de impresión en el Azure del cliente, con firma en un equipo local (2026-11-06) · 55 %
+
+## Objetivo
+Entender y vender cómo llevar «Formatos de impresión para Excel» a un Azure bajo control de ADISA (corporativo, solo entorno Microsoft, TI restrictivo), incluido el envío del PDF a un equipo local con la tarjeta de firma. Es preventa: nada contratado ni desplegado.
+
+## Rol asumido
+Arquitecto de soluciones Azure y seguridad corporativa, con enfoque de preventa.
+
+## Progreso
+- **% de información para el objetivo:** 55 %
+- **Estado:** arquitectura y costos de lista listos para presentar. Falta todo lo del cliente y probar la tarjeta. La guía comercial está fuera del repo, porque el repo es público.
+
+## Fuentes consultadas (2026-11-06)
+- Código: `lib/herramientas/formatos-excel/motor.ts`, `components/herramientas/FormatosExcel.tsx`, `lib/herramientas/accesos.ts`.
+- API pública de precios de Azure; documentación de Microsoft (Hybrid Connections, Entra, SAS, regiones, Defender); documentación de EU DSS.
+- BD de GCC en solo lectura: ningún cliente, cliente de facturación ni ticket con el nombre ADISA. Puede estar con otra razón social.
+
+## Preguntas y respuestas
+### P1 — ¿Dónde se procesa hoy el archivo? · ✅ Resuelta
+- **Respuesta:** en el navegador; el servidor no lo recibe. Firmar obliga a que el PDF viaje, y ese es el riesgo nuevo. El Excel no tiene por qué salir del equipo del usuario. (Fuente: código y MEMORIA.md)
+### P2 — ¿Cómo llega el archivo al equipo de firma? · ✅ Resuelta (recomendación, sin aprobar)
+- **Respuesta:** un agente local consulta por 443 saliente y usa Blob con permisos SAS breves. Sin puertos de entrada y con el equipo apagado el trabajo espera. Hybrid Connection obliga a reintentar, y tras 5 GB al mes cobra 1 $/GB (un PDF llega a 98 MB).
+### P3 — ¿Cuánto cuesta Azure? · ✅ Resuelta con supuestos
+- **Respuesta:** lista en East US 2, 730 h: base ≈ 115 $/mes, privada con VPN ≈ 385 $ (recomendada), con WAF ≈ 495 $, ambas ≈ 670 $. Chile Central cerca de 40 % más en cómputo y WAF. Private Endpoint (7,30 $) no salió de la API: confirmar. Volúmenes supuestos: 100 GB y 10 GB de registros.
+### P4 — ¿Cómo responde su tarjeta? · ⏸ Bloqueada (espera al cliente)
+- **Por qué importa:** es el mayor riesgo. Sin probar: si pide PIN en cada firma, si un servicio de Windows puede usarla, y si el PDF hecho a mano por el motor admite PAdES en 98 MB. Se prueba antes de contratar Azure.
+### P5 — ¿Es legal firmar sin intervención? · ⏸ Bloqueada (abogado del cliente)
+- **Por qué importa:** la Ley de Comercio Electrónico (art. 17) pide mantener la firma bajo estricto control del titular. Consultado en fuentes secundarias. LOPDP y salida de datos del país: sin revisar.
+### P6 — Datos del cliente · ⏸ Bloqueada
+- Licencias Entra, VPN, usuarios fuera de oficina, volumen, emisor y modelo de tarjeta, y si sus libros siguen los formatos actuales.
+
+## Decisiones de diseño (propuestas, sin aprobar)
+- Todo en el tenant y la suscripción del cliente. App Service en lugar de máquina virtual. GCC como invitado con rol Colaborador solo en el grupo de recursos.
+- El rol Colaborador no lee archivos directamente, pero podría cambiar la configuración para hacerlo: no prometer lo contrario.
+- Aplicación propia en repositorio privado, solo con el motor. Sin enlaces con token.
+
+## Riesgos
+- Con Private Endpoint hay que resolver los nombres a IP privadas desde la oficina: lo hace su DNS interno o no llega nadie.
+- Equipo de firma como punto único de fallo: cola, alerta, equipo de reemplazo y aviso de vencimiento del certificado.
