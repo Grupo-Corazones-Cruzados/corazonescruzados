@@ -32,7 +32,7 @@ export const PRESENTACION_CANDIDATOS: Presentacion = {
   etiqueta: 'Candidatos',
   titulo: 'Un corazón puede cruzar al mundo',
   texto:
-    'El Proyecto del Grupo Corazones Cruzados, es un Proyecto de Desarrollo Humano que aplica Sistemas de Gobernanza Innovadores con el fin de Reconocer y Aprovechar las Condiciones de los Sujetos, generando como resultado las Soluciones que requerimos implementar para confrontar o corregir Problemas Individuales, y Problemáticas Sociales que hoy están siendo la causa de nuestra degeneración como Sociedad y nos alejan cada vez más que nuestro objetivo principal, el cual es la Unión de la Humanidad.',
+    'El Proyecto del Grupo Corazones Cruzados, es un "Proyecto de Desarrollo Humano" que aplica "Sistemas de Gobernanza Innovadores" con el fin de Reconocer y Aprovechar las "Condiciones" de los Sujetos, y generar "Soluciones" que se requieren implementar para confrontar o corregir Problemas Individuales y Problemáticas Sociales que hoy están causando nuestra degeneración como Sociedad, y nos alejan cada vez más de nuestro objetivo principal, el cual es "Cruzar al Mundo".',
   visual: (
     <span className="visual-cruce" aria-hidden>
       <span className="visual-cruce-halo" />

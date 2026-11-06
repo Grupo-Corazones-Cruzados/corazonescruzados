@@ -862,7 +862,7 @@ export const TEMAS_CLIENTES: Acceso[] = [
     titulo: 'Proyectos',
     texto: '',
     descripcion:
-      'Nuestra tercer propuesta consiste en hacer realidad las ideas de negocio o proyectos que tengan nuestros Clientes Experimentales, los cuales crean un "Proyecto", en donde ofrecen un presupuesto, un objetivo, y deciden las propuestas que ofrecen nuestros miembros que buscan ser responsables de gestionar los recursos, y  de convertir la intención del cliente en un proyecto real.',
+      'Nuestra tercer propuesta consiste en hacer realidad las ideas de negocio o proyectos que tengan nuestros Clientes Experimentales, los cuales crean un "Proyecto" desde la plataforma, especifican un presupuesto, un objetivo, y luego deciden entre las propuestas que ofrecen nuestros miembros, un responsable quien se encargará de Gestionar el Proyecto, y  de convertir la intención del cliente en una Solución real.',
   },
 ];
 
