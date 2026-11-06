@@ -12,6 +12,7 @@ export const RP_NAME = 'GCC World';
  */
 const ORIGENES_APPS_ANDROID = [
   'android:apk-key-hash:_UYrPw9HGkTV-qiZzDc-O7-k6-tSVIekfF1nVsrbAxU', // GCC Progreso, clave de subida
+  'android:apk-key-hash:JqZwBSgZywyNxKoyrkLCgan_sYNUjT1CPBtEonJGJtk', // GCC Progreso, firma de Google Play
   'android:apk-key-hash:znrg5y_t0eTCdcekwxjWfhNT3UtKQeTPQAKZVs7FJbc', // GCC Centralizado
 ];
 
