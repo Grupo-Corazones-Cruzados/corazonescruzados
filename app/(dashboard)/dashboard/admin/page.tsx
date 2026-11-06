@@ -14,7 +14,7 @@ import ListasPanel from '@/components/admin/ListasPanel';
 import FaqsPanel from '@/components/admin/FaqsPanel';
 import SolucionesPanel from '@/components/admin/SolucionesPanel';
 import PromptsPanel from '@/components/admin/PromptsPanel';
-import { Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers, NotebookPen, SquareTerminal } from 'lucide-react';
+import { AudioLines, Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers, NotebookPen, SquareTerminal } from 'lucide-react';
 import { esAppInstalada } from '@/components/espacio/api';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -45,6 +45,9 @@ const TABS = [
 const RUTA_ESPACIO = '/dashboard/admin/espacio';
 const RUTA_ESPACIO_APP = '/dashboard/admin/espacio-app';
 const TAB_ESPACIO = { value: 'espacio', label: 'Espacio de trabajo', Icon: SquareTerminal, grupo: 'Personal' };
+/** Va por el mismo camino que el Espacio: en la Mac directo y en las apps en un marco, por Tailscale. */
+const TAB_GUMDRAMON = { value: 'gumdramon', label: 'Gumdramon', Icon: AudioLines, grupo: 'Personal' };
+const rutaGumdramon = (rutaEspacio: string | null) => (rutaEspacio === RUTA_ESPACIO_APP ? '/dashboard/admin/gumdramon-app' : '/gumdramon');
 
 
 const sinSuscripcion = () => () => {};
@@ -70,7 +73,7 @@ function Admin() {
       .then((r) => setRutaEspacio(r.ok ? RUTA_ESPACIO : enApp ? RUTA_ESPACIO_APP : null))
       .catch(() => setRutaEspacio(enApp ? RUTA_ESPACIO_APP : null));
   }, []);
-  const pestanas = rutaEspacio ? [TAB_ESPACIO, ...TABS] : TABS;
+  const pestanas = rutaEspacio ? [TAB_ESPACIO, TAB_GUMDRAMON, ...TABS] : TABS;
 
   useEffect(() => {
     if (tabUrl && TABS.some((t) => t.value === tabUrl)) setTab(tabUrl);
@@ -96,7 +99,7 @@ function Admin() {
       return (
         <PortadaSecciones titulo="Admin"
           secciones={pestanas.map((t) => ({ key: t.value, label: t.label, Icon: t.Icon, grupo: t.grupo }))}
-          onAbrir={(key) => router.push(key === TAB_ESPACIO.value ? rutaEspacio! : `/dashboard/admin?tab=${key}`, { scroll: false })} />
+          onAbrir={(key) => router.push(key === TAB_ESPACIO.value ? rutaEspacio! : key === TAB_GUMDRAMON.value ? rutaGumdramon(rutaEspacio) : `/dashboard/admin?tab=${key}`, { scroll: false })} />
       );
     }
     return (
@@ -115,7 +118,7 @@ function Admin() {
         {pestanas.map((t) => {
           const active = tab === t.value;
           return (
-            <button key={t.value} onClick={() => (t.value === TAB_ESPACIO.value ? router.push(rutaEspacio!) : setTab(t.value))}
+            <button key={t.value} onClick={() => (t.value === TAB_ESPACIO.value ? router.push(rutaEspacio!) : t.value === TAB_GUMDRAMON.value ? router.push(rutaGumdramon(rutaEspacio)) : setTab(t.value))}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-md whitespace-nowrap transition-colors ${
                 active ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-black/[0.03]'
               }`}>

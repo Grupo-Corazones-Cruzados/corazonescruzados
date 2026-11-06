@@ -168,7 +168,7 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       // El espacio de trabajo solo se deja enmarcar desde las apps de GCC.
-      ...['/espacio', '/contenido'].map((source) => ({
+      ...['/espacio', '/contenido', '/gumdramon'].map((source) => ({
         source,
         headers: [{ key: 'Content-Security-Policy', value: "frame-ancestors 'self' https://app.grupocc.org https://www.grupocc.org https://grupocc.org http://localhost:3792" }],
       })),

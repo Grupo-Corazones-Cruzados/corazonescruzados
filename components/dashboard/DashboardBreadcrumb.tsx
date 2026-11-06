@@ -14,7 +14,7 @@ const LABELS: Record<string, string> = {
   invoices: 'Facturas', marketplace: 'Marketplace', plataformas: 'Plataformas', automatizaciones: 'Automatizaciones',
   tools: 'Herramientas', enlaces: 'Enlaces de un solo uso', entregas: 'Entregas de un solo uso', centralized: 'Centralizado', settings: 'Configuración', support: 'Soporte', admin: 'Admin',
   availability: 'Disponibilidad', cv: 'Mi CV', portfolio: 'Portafolio', calendar: 'Calendario',
-  incidents: 'Incidentes', espacio: 'Espacio de trabajo', 'espacio-app': 'Espacio de trabajo',
+  incidents: 'Incidentes', espacio: 'Espacio de trabajo', 'espacio-app': 'Espacio de trabajo', 'gumdramon-app': 'Gumdramon',
 };
 
 function labelFor(seg: string): string {

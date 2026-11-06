@@ -309,10 +309,16 @@ test('tampoco se envía con un tramo aún en Whisper', async () => {
   assert.equal(r.preguntas.length, 1);
 });
 
-test('a los 90 s se envía aunque no pare de hablar', async () => {
+test('hablando varios minutos no se corta; solo a los 10 min', async () => {
   const r = reunion({ respuestas: ['Listo.'] });
   await r.motor.texto('mic', 'GUMDRAMON, habla y habla sin parar');
-  r.avanzar(91000);
+  for (let min = 1; min <= 9; min++) {
+    r.avanzar(60000);
+    r.motor.audio('mic', pcm(1, 0.2));
+    await r.motor.revisarDictado();
+    assert.equal(r.preguntas.length, 0, `al minuto ${min}`);
+  }
+  r.avanzar(61000);
   r.motor.audio('mic', pcm(1, 0.2));
   await r.motor.revisarDictado();
   await espera();
@@ -432,6 +438,26 @@ test('Gumdramon no se oye a sí mismo por ninguna de las dos entradas', async ()
   r.avanzar(100000);
   await r.motor.texto('mic', 'Gestión de Reservas cuesta cinco dólares al mes');
   assert.equal(r.sesion.lineas.at(-1).quien, 'Fernando', 'pasado el rato ya no es eco');
+});
+
+test('el micrófono es de un solo dispositivo: el último que activó', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'copiloto-'));
+  const tramos = [];
+  const motor = new Motor({
+    sesion: new Sesion(dir),
+    transcriptor: { iniciar: async () => {}, detener() {}, transcribir: async (a) => { tramos.push(a); return ''; } },
+    agente: { detener() {}, preguntar: async () => 'x' }, clasificar: async () => null, emitir: () => {}, terminar: async () => {},
+  });
+  motor.activar('mac');
+  motor.activar('telefono');
+  assert.equal(motor.estado().dispositivo, 'telefono');
+  motor.audio('mic', pcm(2, 0.2), 'mac');
+  motor.audio('mic', Buffer.alloc(32000), 'mac');
+  assert.equal(tramos.length, 0, 'lo de la Mac se ignora');
+  motor.audio('mic', pcm(2, 0.2), 'telefono');
+  motor.audio('mic', Buffer.alloc(32000), 'telefono');
+  assert.equal(tramos.length, 1);
+  clearInterval(motor.relojDictado);
 });
 
 test('la transcripción se guarda y sobrevive a un reinicio', () => {

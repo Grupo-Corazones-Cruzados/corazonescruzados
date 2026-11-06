@@ -15,7 +15,7 @@ const ESPERA_CLAVE_MS = 8000; // tras «GUMDRAMON», cuánto se espera a que emp
 // La pregunta se da por terminada tras este silencio: «debe esperar al menos 4 segundos a que yo me
 // calle» (Fernando, 2026-11-05). El widget lo enseña como una cuenta atrás.
 const FIN_DICTADO_MS = 4000;
-const MAXIMO_DICTADO_MS = 90000;
+const MAXIMO_DICTADO_MS = 10 * 60_000; // solo por si un ruido constante no lo dejara cerrar nunca: a 90 s cortaba a Fernando hablando
 const ESPERA_ECO_MS = 2500;
 const VOZ_PROPIA_MS = 90000; // lo que tarda en leerse una respuesta, con margen
 const MINIMO_VOZ_PROPIA = 5; // palabras: un cliente puede repetir tres de una respuesta sin que sea eco
@@ -26,6 +26,7 @@ export class Motor {
   constructor({ transcriptor, agente, clasificar, sesion, emitir, terminar, ahora = Date.now, esperar = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
     Object.assign(this, { transcriptor, agente, clasificar, sesion, emitir, terminar, ahora, esperar });
     this.ultimaVozSistema = 0;
+    this.dispositivo = 'mac';
     this.activo = false;
     this.respuestasRecientes = [];
     this.dictado = null;
@@ -42,8 +43,16 @@ export class Motor {
     };
   }
 
-  activar() {
-    if (this.activo) return;
+  /**
+   * El micrófono es de UN dispositivo a la vez: dos a la vez entrelazarían su audio en el mismo tramo y
+   * Whisper no entendería ninguno. Manda el último que activó. La Mac no se identifica: es la de siempre.
+   */
+  activar(dispositivo = 'mac') {
+    if (this.activo) {
+      if (this.dispositivo !== dispositivo) { this.dispositivo = dispositivo; this.emitir('estado', this.estado()); }
+      return;
+    }
+    this.dispositivo = dispositivo;
     this.activo = true;
     this.sesion.abrir();
     this.transcriptor.iniciar().catch((e) => this.emitir('error', { mensaje: e.message }));
@@ -66,11 +75,11 @@ export class Motor {
   }
 
   estado() {
-    return { activo: this.activo, sesion: this.sesion.id, lineas: this.sesion.lineas.length };
+    return { activo: this.activo, dispositivo: this.dispositivo, sesion: this.sesion.id, lineas: this.sesion.lineas.length };
   }
 
-  audio(canal, pcm) {
-    if (!this.activo || !this.segmentos[canal]) return;
+  audio(canal, pcm, dispositivo = 'mac') {
+    if (!this.activo || !this.segmentos[canal] || dispositivo !== this.dispositivo) return;
     if (canal === 'mic') this.oimosMic = true;
     if (canal === 'sistema' && energia(pcm) > 0.006) this.ultimaVozSistema = this.ahora();
     this.segmentos[canal].agregar(pcm);

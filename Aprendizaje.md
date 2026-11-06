@@ -11767,3 +11767,9 @@ Fernando pidió voz gratis, tipo Digimon, nítida en español y que se pueda act
 **La trampa:** Gumdramon escucha el audio del equipo. La voz se sintetiza con `write` y suena en la propia app, para excluir ese proceso del tap. Comprobado por altavoces: su voz no apareció como Cliente y un `say` de otro programa sí, como control. El micrófono sí la oye por altavoces; el núcleo descarta lo que coincide con una respuesta reciente (probado solo con pruebas automáticas).
 **Riesgo:** por altavoces, el cliente puede oírla. Usar audífonos.
 
+## Copiloto — en el teléfono, por Tailscale (2026-11-05)
+Fernando: que funcione como las apps con el Entorno de trabajo. Es una página de la web local (`/gumdramon`) con el mismo candado; las apps la enmarcan y el marco ya permite el micrófono. Sin compilar, sin firma y sin los 7 días. El micrófono es de un dispositivo a la vez, porque dos entrelazarían su audio en el mismo tramo.
+**Probado:** tamaño de iPhone, con voz real por una corriente inyectada, Whisper real y Claude simulado: pregunta con 2,5 s de pausa entera, contador, respuesta, voz, y 401 sin sesión. Sin probar en un iPhone de verdad, donde la pantalla bloqueada o salir de la app pausan el micrófono.
+**Trampa de la prueba:** `--use-file-for-fake-audio-capture` entregó silencio en todos los casos, también con una página mínima. Para probar audio, sustituir `getUserMedia` por una corriente de `createMediaStreamDestination`.
+**Dos fallos de uso real:** el tope de 90 s cortaba al hablar mucho (ahora 10 min), y la tarjeta recortaba la pregunta a dos líneas aunque el agente la recibía entera (771 caracteres). Medido en el registro de la sesión.
+

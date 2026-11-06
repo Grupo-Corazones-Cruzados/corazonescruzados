@@ -26,7 +26,7 @@ struct TarjetaConsulta: View {
   let detener: () -> Void
   var body: some View {
     VStack(alignment: .leading, spacing: 5) {
-      Text(c.pregunta).font(.system(size: 11)).foregroundStyle(.secondary).lineLimit(2)
+      Text(c.pregunta).font(.system(size: 11)).foregroundStyle(.secondary).textSelection(.enabled).fixedSize(horizontal: false, vertical: true)
       if c.respuesta.isEmpty && !c.terminada {
         HStack(spacing: 6) {
           ProgressView().controlSize(.mini)
@@ -161,7 +161,7 @@ struct Widget: View {
             ForEach(m.lineas) { l in
               (Text("\(l.quien): ").font(.system(size: 11.5, weight: .semibold)).foregroundColor(l.quien == "Cliente" ? violeta : .secondary)
                 + Text(l.texto).font(.system(size: 12)))
-                .textSelection(.enabled).id(l.id)
+                .textSelection(.enabled).fixedSize(horizontal: false, vertical: true).id(l.id)
             }
           }
         }

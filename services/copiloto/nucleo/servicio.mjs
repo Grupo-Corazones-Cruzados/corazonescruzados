@@ -81,7 +81,7 @@ const servidor = http.createServer(async (req, res) => {
     if (ruta === 'POST /audio') {
       const canal = url.searchParams.get('canal');
       if (canal !== 'mic' && canal !== 'sistema') return responder(400, { error: 'Canal inválido.' });
-      motor.audio(canal, await leer(req, 2 * 1024 * 1024));
+      motor.audio(canal, await leer(req, 2 * 1024 * 1024), url.searchParams.get('dispositivo') || 'mac');
       return responder(200, { ok: true });
     }
     if (ruta === 'GET /eventos') {
@@ -93,7 +93,7 @@ const servidor = http.createServer(async (req, res) => {
       return undefined;
     }
     if (ruta === 'GET /estado') return responder(200, motor.estado());
-    if (ruta === 'POST /activar') { motor.activar(); return responder(200, motor.estado()); }
+    if (ruta === 'POST /activar') { motor.activar(url.searchParams.get('dispositivo') || 'mac'); return responder(200, motor.estado()); }
     if (ruta === 'POST /desactivar') { motor.desactivar(); return responder(200, motor.estado()); }
     if (ruta === 'POST /detener') { agente.parar(); return responder(200, { ok: true }); }
     if (ruta === 'POST /terminar') { await terminar(); return responder(200, motor.estado()); }
