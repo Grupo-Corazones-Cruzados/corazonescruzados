@@ -5069,5 +5069,6 @@ html[data-gcc-app], html[data-gcc-app] body { background: #0b0d14; }
   .landing-page[data-app] .auth-panel, .landing-page[data-app] .auth-marco { border-radius: 28px !important; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .app-filas,   .app-velo, .app-fila { transition: none; }
+  .app-filas, .landing-page[data-app] .corp-overlay > div { animation: none; }
+  .app-velo, .app-fila { transition: none; }
 }
