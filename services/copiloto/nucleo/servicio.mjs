@@ -15,6 +15,7 @@ import crypto from 'node:crypto';
 import { Transcriptor } from './transcripcion.mjs';
 import { SesionClaude } from './sesion-claude.mjs';
 import { clasificar } from './clasificador.mjs';
+import { ColaRecordatorios } from './recordatorio.mjs';
 import { Sesion } from './sesion.mjs';
 import { Motor } from './motor.mjs';
 import { enviarPendiente } from './plataforma.mjs';
@@ -34,6 +35,7 @@ function emitir(evento, datos) {
 }
 
 const sesion = new Sesion(DATOS);
+const recordatorios = new ColaRecordatorios(DATOS);
 const transcriptor = new Transcriptor();
 const agente = new SesionClaude({ alSesion: (d) => emitir('sesion', d) });
 
@@ -56,10 +58,18 @@ async function terminar() {
   if (ruta) await enviarTodo();
 }
 
-const motor = new Motor({ transcriptor, agente, clasificar, sesion, emitir, terminar });
-const reintento = setInterval(() => { if (sesion.pendientes().length) enviarTodo(); }, 5 * 60 * 1000);
+const motor = new Motor({ transcriptor, agente, clasificar, recordatorios, sesion, emitir, terminar });
+async function reintentarRecordatorios() {
+  for (const id of recordatorios.pendientes()) {
+    try {
+      const r = await recordatorios.procesar(id);
+      if (r) emitir('recordatorio', { id: r.reminderId, titulo: r.titulo });
+    } catch (e) { console.error('recordatorio pendiente:', e.message); }
+  }
+}
+const reintento = setInterval(() => { if (sesion.pendientes().length) enviarTodo(); reintentarRecordatorios(); }, 5 * 60 * 1000);
 reintento.unref();
-setTimeout(() => { if (sesion.pendientes().length) enviarTodo(); }, 5000).unref();
+setTimeout(() => { if (sesion.pendientes().length) enviarTodo(); reintentarRecordatorios(); }, 5000).unref();
 
 const leer = (req, tope) => new Promise((ok, mal) => {
   const partes = [];

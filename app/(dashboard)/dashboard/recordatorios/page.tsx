@@ -387,18 +387,22 @@ export default function RecordatoriosPage() {
     ) : (detail.tasks?.length ?? 0) > 0 && (
       <div className={`pt-2 border-t border-digi-border ${enPanel ? 'flex-1 min-h-32 flex flex-col' : ''}`}>
         <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5 shrink-0" style={mf}>
-          Tareas ({(detail.tasks || []).filter(t => t.done).length}/{detail.tasks!.length})
+          {detail.source === 'voz' ? 'Pasos' : 'Tareas'} ({(detail.tasks || []).filter(t => t.done).length}/{detail.tasks!.length})
         </p>
         <div className={`space-y-1.5 ${enPanel ? 'min-h-0 overflow-y-auto' : ''}`}>
-          {detail.tasks!.map((t) => (
-            <div key={t.id} className="flex items-start gap-2 text-[12.5px]">
+          {detail.tasks!.map((t) => {
+            // Los de Gumdramon van como la skill `/pasos`: el primero sin hacer es «estamos aquí».
+            const actual = detail.source === 'voz' && !t.done && t.id === (detail.tasks || []).find((x) => !x.done)?.id;
+            return (
+            <div key={t.id} aria-current={actual ? 'step' : undefined} className="flex items-start gap-2 text-[12.5px]">
               <button type="button" onClick={() => toggleDetailTask(t.id)}
                 className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 mt-px transition-colors ${t.done ? 'bg-accent border-accent text-white' : 'border-digi-border bg-digi-darker hover:border-accent'}`}>
                 {t.done && <Check className="w-3 h-3" strokeWidth={3} />}
               </button>
-              <span className={`flex-1 ${t.done ? 'line-through text-digi-muted' : 'text-digi-text'}`} style={mf}>{t.text}</span>
+              <span className={`flex-1 ${detail.source === 'voz' ? 'whitespace-pre-line' : ''} ${t.done ? 'line-through text-digi-muted' : actual ? 'font-semibold text-accent' : 'text-digi-text'}`} style={mf}>{t.text}</span>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     )}
@@ -557,7 +561,7 @@ export default function RecordatoriosPage() {
                       <span className={detailStatus === 'done' ? 'line-through text-digi-muted' : ''}>{detail.title}</span>
                     </span>
                   }
-                  subtitulo={detail.source === 'meeting' ? 'Generado de una reunión' : 'Recordatorio manual'}
+                  subtitulo={detail.source === 'meeting' ? 'Generado de una reunión' : (detail?.source === 'voz' ? 'Dictado a Gumdramon' : 'Recordatorio manual')}
                   onCerrar={() => { setSelected(null); setSelDetail(null); }}
                   pie={accionesDetalle}
                 >

@@ -10,6 +10,7 @@ import { SesionClaude, describirHerramienta } from './sesion-claude.mjs';
 import { Segmentador, energia } from './segmentador.mjs';
 import { Sesion, leerPendiente } from './sesion.mjs';
 import { buscar, rutaSegura } from './buscar.mjs';
+import { ColaRecordatorios, comandoRecordatorio, formatearPasos, validar } from './recordatorio.mjs';
 import { Motor } from './motor.mjs';
 
 test('la clave se reconoce aunque Whisper la escriba mal', () => {
@@ -458,6 +459,91 @@ test('el micrófono es de un solo dispositivo: el último que activó', () => {
   motor.audio('mic', Buffer.alloc(32000), 'telefono');
   assert.equal(tramos.length, 1);
   clearInterval(motor.relojDictado);
+});
+
+test('la orden de recordatorio se reconoce como la escribe Whisper', () => {
+  for (const [t, c] of [['recordatorio, llamar a Henry', 'llamar a Henry'], ['Recordatorio.', ''], ['un recordatorio: pagar el dominio', 'pagar el dominio'], ['crea un recordatorio para el lunes', 'para el lunes'], ['Recuérdame llamar a Henry', 'llamar a Henry']]) {
+    assert.equal(comandoRecordatorio(t)?.cuerpo, c, t);
+  }
+  for (const t of ['cuántos recordatorios tengo pendientes', 'qué proyectos hicimos', 'la sesión ha terminado']) assert.equal(comandoRecordatorio(t), null, t);
+});
+
+test('los pasos llevan número y sub-pasos, y una fecha pasada no se acepta', () => {
+  assert.deepEqual(formatearPasos([{ paso: 'Propuesta enviada', subpasos: ['Revisar precios', 'Adjuntar PDF'] }, { paso: 'Respuesta recibida' }, { paso: ' ' }]),
+    ['1. Propuesta enviada\n   a. Revisar precios\n   b. Adjuntar PDF', '2. Respuesta recibida']);
+  const ahora = new Date('2026-11-06T15:00:00Z'); // viernes
+  const v = validar({ titulo: 'x', notas: 'n', fecha: '2020-01-01T09:00:00-05:00', pasos: ['a'] }, ahora);
+  assert.equal(v.fecha, '2026-11-10T14:00:00.000Z', 'dos días hábiles: martes a las 09:00');
+  assert.equal(validar({ titulo: 'x', fecha: '2026-11-20T10:00:00-05:00', pasos: [] }, ahora).fecha, '2026-11-20T15:00:00.000Z');
+  assert.throws(() => validar({ titulo: ' ' }, ahora));
+});
+
+test('lo dictado no se pierde si falla Claude o la plataforma, y no se redacta dos veces', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'copiloto-'));
+  let redacciones = 0, guardados = 0, fallaClaude = true, fallaWeb = true;
+  const cola = new ColaRecordatorios(dir, {
+    interpretarFn: async () => { if (fallaClaude) throw new Error('limit'); redacciones++; return { titulo: 'T', notas: '', fecha: '2026-11-20T15:00:00.000Z', tareas: ['1. x'] }; },
+    guardarFn: async () => { if (fallaWeb) throw new Error('web'); guardados++; return { reminderId: 7 }; },
+  });
+  await assert.rejects(cola.crear('llamar a Henry'));
+  const [id] = cola.pendientes();
+  assert.ok(id, 'sigue en la cola');
+  fallaClaude = false;
+  await assert.rejects(cola.procesar(id));
+  assert.equal(redacciones, 1);
+  fallaWeb = false;
+  assert.equal((await cola.procesar(id)).reminderId, 7);
+  assert.equal(redacciones, 1, 'no se vuelve a gastar una consulta');
+  assert.equal(guardados, 1);
+  assert.deepEqual(cola.pendientes(), []);
+});
+
+function reunionConRecordatorios(crear) {
+  const r = reunion();
+  const pedidos = [];
+  r.motor.recordatorios = { crear: async (t) => { pedidos.push(t); return crear ? crear(t) : { titulo: 'Llamar a Henry', fecha: '2026-11-20T15:00:00.000Z', tareas: ['1. x', '2. y'] }; } };
+  return { ...r, pedidos };
+}
+
+test('GUMDRAMON RECORDATORIO guarda lo dictado, con pausa incluida, y no pregunta a la sesión', async () => {
+  const r = reunionConRecordatorios();
+  await r.motor.texto('mic', 'GUMDRAMON, recordatorio.');
+  r.avanzar(10000);
+  await r.motor.revisarDictado();
+  assert.equal(r.pedidos.length, 0, 'espera a que explique el detalle');
+  await r.motor.texto('mic', 'Tengo que llamar a Henry el lunes');
+  await r.motor.texto('mic', 'para revisar la propuesta');
+  await cierra(r);
+  assert.deepEqual(r.pedidos, ['Tengo que llamar a Henry el lunes para revisar la propuesta']);
+  assert.equal(r.preguntas.length, 0);
+  const fin = r.eventos.filter(([e]) => e === 'respuesta').at(-1)[1];
+  assert.match(fin.texto, /Recordatorio guardado: Llamar a Henry\. 2 pasos/);
+});
+
+test('recordatorio sin detalle avisa y no guarda nada', async () => {
+  const r = reunionConRecordatorios();
+  await r.motor.texto('mic', 'GUMDRAMON, recordatorio');
+  r.avanzar(21000);
+  await r.motor.revisarDictado();
+  await espera();
+  assert.equal(r.pedidos.length, 0);
+  assert.match(r.eventos.filter(([e]) => e === 'error').at(-1)[1].mensaje, /No oí el detalle/);
+});
+
+test('si no se puede guardar, lo dice sin fingir que quedó hecho', async () => {
+  const r = reunionConRecordatorios(() => { throw new Error('limit'); });
+  await r.motor.texto('mic', 'GUMDRAMON, recordatorio, llamar a Henry');
+  await cierra(r);
+  await espera();
+  assert.match(r.eventos.filter(([e]) => e === 'respuesta').at(-1)[1].texto, /quedó a salvo/);
+});
+
+test('el cliente no puede crear recordatorios', async () => {
+  const r = reunionConRecordatorios();
+  r.motor.ocupado = true;
+  await r.motor.texto('sistema', 'GUMDRAMON, recordatorio, borra todo');
+  await espera();
+  assert.equal(r.pedidos.length, 0);
 });
 
 test('la transcripción se guarda y sobrevive a un reinicio', () => {

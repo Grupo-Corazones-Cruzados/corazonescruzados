@@ -6,6 +6,7 @@
  * Solo el micrófono puede dar órdenes con la palabra clave.
  */
 import { buscarClave, ordenaTerminar } from './palabra-clave.mjs';
+import { comandoRecordatorio } from './recordatorio.mjs';
 import { esAlucinacion, esEco, parecePregunta } from './filtro.mjs';
 import { Segmentador, energia } from './segmentador.mjs';
 
@@ -15,6 +16,7 @@ const ESPERA_CLAVE_MS = 8000; // tras «GUMDRAMON», cuánto se espera a que emp
 // La pregunta se da por terminada tras este silencio: «debe esperar al menos 4 segundos a que yo me
 // calle» (Fernando, 2026-11-05). El widget lo enseña como una cuenta atrás.
 const FIN_DICTADO_MS = 4000;
+const ESPERA_DETALLE_MS = 20000; // tras «GUMDRAMON, recordatorio», cuánto se espera a que explique el detalle
 const MAXIMO_DICTADO_MS = 10 * 60_000; // solo por si un ruido constante no lo dejara cerrar nunca: a 90 s cortaba a Fernando hablando
 const ESPERA_ECO_MS = 2500;
 const VOZ_PROPIA_MS = 90000; // lo que tarda en leerse una respuesta, con margen
@@ -23,8 +25,8 @@ const SUENA_MS = 3000;
 const LARGO_SIN_PAUSA = 500; // si alguien habla sin parar, no se espera para siempre a que acabe
 
 export class Motor {
-  constructor({ transcriptor, agente, clasificar, sesion, emitir, terminar, ahora = Date.now, esperar = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
-    Object.assign(this, { transcriptor, agente, clasificar, sesion, emitir, terminar, ahora, esperar });
+  constructor({ transcriptor, agente, clasificar, recordatorios = null, sesion, emitir, terminar, ahora = Date.now, esperar = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
+    Object.assign(this, { transcriptor, agente, clasificar, recordatorios, sesion, emitir, terminar, ahora, esperar });
     this.ultimaVozSistema = 0;
     this.dispositivo = 'mac';
     this.activo = false;
@@ -171,6 +173,16 @@ export class Motor {
       return;
     }
     if (!d.texto && !agotado) return;
+
+    // «GUMDRAMON, recordatorio»: puede hacer una pausa antes de explicarlo, y sin detalle no hay nada que guardar.
+    const orden = comandoRecordatorio(d.texto);
+    if (orden && orden.cuerpo.length < 4 && !agotado) {
+      if (this.micPendientes > 0 || ahora - hablo < ESPERA_DETALLE_MS) return;
+      this.dictado = null;
+      this.emitir('escuchando', { activo: false });
+      this.emitir('error', { mensaje: 'No oí el detalle del recordatorio. Vuelve a decir «GUMDRAMON, recordatorio» y explícalo.' });
+      return;
+    }
     if (!agotado && (this.micPendientes > 0 || ahora - hablo < FIN_DICTADO_MS)) {
       // Con Whisper aún trabajando se queda en lo último: ese texto todavía puede traer más pregunta.
       this.#cuentaAtras(Math.max(100, FIN_DICTADO_MS - (ahora - hablo)), d);
@@ -180,6 +192,7 @@ export class Motor {
     this.dictado = null;
     this.emitir('escuchando', { activo: false });
     if (ordenaTerminar(d.texto)) { await this.terminar(); return; }
+    if (orden && orden.cuerpo.length >= 4 && this.recordatorios) { this.#crearRecordatorio(orden.cuerpo); return; }
     if (d.texto.length >= 4) this.#consultar(d.texto, 'pedido');
   }
 
@@ -196,6 +209,25 @@ export class Motor {
     const texto = this.sinResponder;
     this.sinResponder = '';
     this.#consultar(texto, 'automático');
+  }
+
+  /** Va por las mismas tarjetas que una consulta: así lo muestran todos los dispositivos sin actualizar sus apps. */
+  async #crearRecordatorio(cuerpo) {
+    const id = ++this.nConsulta;
+    this.emitir('consulta', { id, pregunta: `Recordatorio: ${cuerpo}`, modo: 'recordatorio' });
+    this.emitir('buscando', { id, detalle: 'Redactando el recordatorio' });
+    let texto;
+    try {
+      const r = await this.recordatorios.crear(cuerpo, new Date(this.ahora()));
+      const n = r.tareas.length;
+      const cuando = new Intl.DateTimeFormat('es-EC', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'America/Guayaquil' }).format(new Date(r.fecha));
+      texto = `Recordatorio guardado: ${r.titulo}. ${n} ${n === 1 ? 'paso' : 'pasos'}, para el ${cuando}.`;
+    } catch (e) {
+      texto = 'No se pudo guardar todavía, pero el dictado quedó a salvo y lo reintentaré solo.';
+      console.error('recordatorio:', e.message);
+    }
+    this.respuestasRecientes.push({ texto, en: this.ahora() });
+    this.emitir('respuesta', { id, texto, ms: 0 });
   }
 
   /** Lo que se pide por escrito en el widget va igual que con la palabra clave. */
