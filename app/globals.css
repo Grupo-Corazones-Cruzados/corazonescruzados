@@ -5042,17 +5042,15 @@ html[data-gcc-app='centralizado'], html[data-gcc-app='centralizado'] body { back
   background: var(--app-velo); opacity: 1; transition: opacity 260ms ease-in-out;
 }
 .app-velo.es-saliente { opacity: 0; pointer-events: none; }
-.app-barra { position: relative; width: 132px; height: 3px; overflow: hidden; border-radius: 3px; background: rgba(255, 255, 255, 0.25); }
-.app-barra i { position: absolute; inset: 0 auto 0 0; width: 35%; background: #fff; animation: appBarra 900ms linear infinite; }
-@keyframes appBarra { from { transform: translateX(-120%); } to { transform: translateX(300%); } }
+/* El mismo cargador de la web (`BrandLoader`) sobre el color de la app: blanco, porque el acento no se
+   vería sobre su propio color. */
+.app-velo { --color-accent: #fff; --degradado-acento: #fff; --color-digi-border: rgba(255, 255, 255, 0.35); }
 @keyframes appDesdeDerecha { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
 @keyframes appDesdeIzquierda { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
 @keyframes appHojaSale { to { transform: translateY(100%); } }
 @keyframes appVeloSale { to { opacity: 0; } }
 .landing-page[data-app] .corp-overlay[data-saliendo]:not(.onboarding-portada) { animation: appVeloSale 200ms ease-in forwards; pointer-events: none; }
 .landing-page[data-app] .corp-overlay[data-saliendo]:not(.onboarding-portada) > div { animation: appHojaSale 200ms ease-in forwards; }
-.app-velo-logo { width: 96px; height: 96px; border-radius: 50%; animation: appVeloEntra 240ms ease-out both; }
-@keyframes appVeloEntra { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: none; } }
 /* Los diálogos de acceso, como hoja que sube desde abajo. */
 .landing-page[data-app] .corp-overlay:not(.onboarding-portada) { align-items: flex-end !important; justify-content: center !important; padding: 0 !important; background: rgba(5, 6, 10, 0.55) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 .landing-page[data-app] .corp-overlay:not(.onboarding-portada) > div { max-width: none !important; width: 100%; margin: 0 !important; gap: 0 !important; animation: appHoja 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }
@@ -5073,6 +5071,6 @@ html[data-gcc-app='centralizado'], html[data-gcc-app='centralizado'] body { back
   .landing-page[data-app] .auth-panel, .landing-page[data-app] .auth-marco { border-radius: 28px !important; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .app-hoja, .app-filas, .app-velo-logo, .landing-page[data-app] .corp-overlay > div, .landing-page[data-app] .corp-overlay[data-saliendo] { animation: none; }
+  .app-hoja, .app-filas, .landing-page[data-app] .corp-overlay > div, .landing-page[data-app] .corp-overlay[data-saliendo] { animation: none; }
   .app-velo, .app-fila { transition: none; }
 }

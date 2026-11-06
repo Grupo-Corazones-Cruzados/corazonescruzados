@@ -6,8 +6,8 @@
  */
 
 import { useCerrarAlTocarFuera } from '@/lib/hooks/useCerrarAlTocarFuera';
-import { useNombreApp } from '@/lib/hooks/useNombreApp';
-import { useState } from 'react';
+import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
+import { useEffect, useState } from 'react';
 import { motivoPasskey, passkeyDisponible, usePasskeyPreparada, usePasskeyRegistro } from '@/lib/hooks/usePasskeyPreparada';
 import LogoGirando from '@/components/ui/LogoGirando';
 import FingerprintIcon from '@/components/landing/FingerprintIcon';
@@ -24,7 +24,9 @@ export default function MemberLoginModal({
   /** hasCharacter=false → el miembro aún no tiene personaje (debe crearlo). */
   onLoggedIn: (hasCharacter: boolean) => void;
 }) {
-  const nombreApp = useNombreApp();
+  // «El juego» solo es destino en la web y en Aventura; en Progreso y Centralizado se entra al panel.
+  const [alJuego, setAlJuego] = useState(true);
+  useEffect(() => { const app = appDeTelefono(); setAlJuego(!app || app === 'aventura'); }, []);
   const [step, setStep] = useState<'creds' | 'factor' | 'code' | 'passkeyOffer'>('creds');
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
@@ -225,7 +227,7 @@ export default function MemberLoginModal({
           <span
             style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', letterSpacing: '0.2em', color: '#fff' }}
           >
-            {nombreApp.toUpperCase()}
+            GCC WORLD
           </span>
         </div>
 
@@ -243,7 +245,7 @@ export default function MemberLoginModal({
           </h2>
           <p style={{ fontFamily: BODY, fontSize: '0.84rem', color: 'var(--auth-suave, #b9b2cf)', margin: '0 0 16px' }}>
             {step === 'creds'
-              ? `Inicia sesión con tu cuenta de miembro o administrador para entrar ${nombreApp === 'GCC World' || nombreApp === 'GCC Aventura' ? 'al juego' : `a ${nombreApp}`}.`
+              ? `Inicia sesión con tu cuenta de miembro o administrador para entrar${alJuego ? ' al juego' : ''}.`
               : step === 'factor'
                 ? 'Verificamos tus credenciales. Por seguridad, completa un segundo paso.'
                 : step === 'code'
@@ -280,7 +282,7 @@ export default function MemberLoginModal({
                 className="pixel-btn pixel-btn-secondary"
                 style={{ opacity: busy ? 0.6 : 1 }}
               >
-                {nombreApp === 'GCC World' || nombreApp === 'GCC Aventura' ? 'Ahora no, entrar al juego' : 'Ahora no, continuar'}
+                {alJuego ? 'Ahora no, entrar al juego' : 'Ahora no, continuar'}
               </button>
             </div>
           ) : step === 'creds' ? (
@@ -399,7 +401,7 @@ export default function MemberLoginModal({
                 className="pixel-btn pixel-btn-primary"
                 style={{ marginTop: 4, opacity: busy || code.length !== 6 ? 0.5 : 1 }}
               >
-                {busy ? 'Verificando...' : 'Entrar al juego'}
+                {busy ? 'Verificando...' : alJuego ? 'Entrar al juego' : 'Entrar'}
               </button>
               <button
                 type="button"

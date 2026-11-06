@@ -10,8 +10,3 @@ export function appDeTelefono(): AppDeTelefono | null {
   const m = document.cookie.match(/(?:^|;\s*)gcc_app=(progreso|aventura|centralizado)(?:;|$)/);
   return (m?.[1] as AppDeTelefono) ?? null;
 }
-
-/** El nombre que ve la persona: en la web, GCC World. */
-export function nombreDeApp(app: AppDeTelefono | null): string {
-  return app === 'progreso' ? 'GCC Progreso' : app === 'aventura' ? 'GCC Aventura' : app === 'centralizado' ? 'GCC Centralizado' : 'GCC World';
-}

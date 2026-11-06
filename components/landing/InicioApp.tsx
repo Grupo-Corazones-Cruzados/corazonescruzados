@@ -13,9 +13,10 @@
 
 import { useEffect, useState, type ComponentType } from 'react';
 import { ChevronRight, FileText, UserPlus } from 'lucide-react';
+import BrandLoader from '@/components/ui/BrandLoader';
 import Segmentado from '@/components/ui/Segmentado';
 import { abrirFuera } from '@/lib/movil/abrir-fuera';
-import { nombreDeApp, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
+import type { AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 import { horaDeReanudacion, useEstadoRegistro } from './estadoRegistro';
 import { useOpcionesAcceso, type AccionesAcceso } from './opcionesAcceso';
 
@@ -74,7 +75,7 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta }: 
     <div className="corp app-inicio">
       <main className="app-hoja">
         <div className="app-hoja-marca">
-          <h1>{nombreDeApp(app)}</h1>
+          <h1>GCC World</h1>
           <p>{SUBTITULO[app]}</p>
         </div>
         {/* Centralizado es solo para miembros: ahí no se crean cuentas. */}
@@ -97,12 +98,10 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta }: 
         <button type="button" className="app-legal" onClick={verLegal}>Legal y privacidad</button>
       </main>
 
-      {/* Al entrar a la plataforma la página se va: el velo con el logo y su barra cubre esa espera. */}
+      {/* Al entrar a la plataforma la página se va: el color de la app con el cargador de la web cubre esa espera. */}
       {saliendo && (
         <div className="app-velo" aria-hidden>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="app-velo-logo" src="/icono-512.png" alt="" />
-          <span className="app-barra"><i /></span>
+          <BrandLoader size="lg" />
         </div>
       )}
     </div>

@@ -39,11 +39,25 @@
 
 /* En las apps, las pantallas se sienten de teléfono: el detalle llega desde la derecha y al volver
    entra desde la izquierda. El aviso de arriba sobre la derecha es de Windows; aquí se recorta. */
-@keyframes appPantallaDerecha { from { opacity: 0.4; transform: translateX(64px); } to { opacity: 1; transform: none; } }
-@keyframes appPantallaIzquierda { from { opacity: 0.4; transform: translateX(-64px); } to { opacity: 1; transform: none; } }
+@keyframes appPantallaDerecha { from { transform: translateX(64px); } to { transform: none; } }
+@keyframes appPantallaIzquierda { from { transform: translateX(-64px); } to { transform: none; } }
 html[data-gcc-app] .corp main[data-entrada] { overflow-x: clip; }
 html[data-gcc-app] .corp main[data-entrada='adentro'] > :not(#barra-acciones-movil) { animation: appPantallaDerecha 280ms cubic-bezier(0.22, 1, 0.36, 1); }
 html[data-gcc-app] .corp main[data-entrada='afuera'] > :not(#barra-acciones-movil) { animation: appPantallaIzquierda 280ms cubic-bezier(0.22, 1, 0.36, 1); }
+/* EN LA APP NADA SE APAGA Y SE VUELVE A ENCENDER (Fernando, 2026-11-05: «parpadea lo que está visible»).
+   Grabado cuadro a cuadro, salía de tres sitios: cada fundido deja ver el fondo un instante, las filas
+   entran una a una después de la pantalla y el desenfoque del velo recalcula lo que hay detrás mientras
+   se abre el formulario. Por eso aquí se mueve o aparece, sin fundidos ni desenfoques. */
+html[data-gcc-app] .corp main[data-entrada='lado'] > :not(#barra-acciones-movil),
+html[data-gcc-app] .corp .fila-entra { animation: none; }
+/* El velo oscuro llega a la par que el panel: de golpe, la pantalla pasaba de clara a oscura y luego a clara. */
+@keyframes appVeloDialogo { from { opacity: 0; } to { opacity: 1; } }
+html[data-gcc-app] dialog::backdrop { animation: appVeloDialogo 270ms ease-out; }
+html[data-gcc-app] *, html[data-gcc-app] *::backdrop { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  html[data-gcc-app] .corp main[data-entrada][data-entrada] > :not(#barra-acciones-movil) { animation: none; }
+  html[data-gcc-app] dialog::backdrop { animation: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .corp main[data-entrada] > *, .corp .fila-entra { animation: none; }

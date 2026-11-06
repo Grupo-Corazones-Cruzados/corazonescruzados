@@ -1,6 +1,6 @@
 'use client';
 
-import { useNombreApp } from '@/lib/hooks/useNombreApp';
+import { useConsultaMedia } from '@/lib/hooks/useConsultaMedia';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -57,7 +57,6 @@ const NAV_GROUPS: NavGroup[] = MODULE_GROUPS.map((title) => ({
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export default function DashboardSidebar() {
-  const nombreApp = useNombreApp();
   const { user, signOut, suplantacion } = useAuth();
   const pathname = usePathname();
   // El estado lo comparte con la cabecera del teléfono, que es quien tiene el botón.
@@ -81,7 +80,10 @@ export default function DashboardSidebar() {
   // Con la burbuja de temas abierta el menú sigue desplegado: la burbuja vive fuera del
   // `<aside>` y llevar el puntero a ella no es dejar el menú.
   const [temasAbierto, setTemasAbierto] = useState(false);
-  const collapsed = !(sobreElMenu || mobileOpen || temasAbierto);
+  // En el teléfono el raíl estrecho no existe: el menú entra y sale ya con su ancho. Si no, se
+  // veía deslizarse estrecho y ensancharse al final, como si se cortara (Fernando, 2026-11-05).
+  const telefono = useConsultaMedia('(max-width: 63.99rem)');
+  const collapsed = !telefono && !(sobreElMenu || mobileOpen || temasAbierto);
   // Módulo cuyo modal de tutoriales está abierto (null = ninguno). Al cerrarlo el
   // modal se DESMONTA, así el iframe de YouTube deja de reproducir.
   const [tutorialFor, setTutorialFor] = useState<NavItem | null>(null);
@@ -205,7 +207,7 @@ export default function DashboardSidebar() {
            menú cerrado (z-40) · velo del teléfono (z-40) · menú abierto en teléfono
            (z-50). El menú siempre por encima de su propio velo. */
         className={`rail fixed top-0 left-0 h-full pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] ${mobileOpen ? 'z-50' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width,translate] duration-200 ease-out
-          ${collapsed ? 'w-16' : 'w-56 shadow-2xl'}
+          ${collapsed ? 'w-16' : telefono ? 'w-56' : 'w-56 shadow-2xl'}
           ${mobileOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full lg:translate-x-0'}
         `}
       >
@@ -220,7 +222,7 @@ export default function DashboardSidebar() {
             className="rounded-full select-none shrink-0 motion-reduce:animate-none"
             style={{ animation: 'slowSpin 12s linear infinite reverse' }}
           />
-          {!collapsed && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>{nombreApp.toUpperCase()}</span>}
+          {!collapsed && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>GCC WORLD</span>}
         </Link>
 
         {/* Nav */}

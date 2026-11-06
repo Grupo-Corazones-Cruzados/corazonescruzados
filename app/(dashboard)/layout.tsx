@@ -156,7 +156,8 @@ function useEntradaTrasCarga(mainRef: React.RefObject<HTMLElement | null>) {
     const esCargador = (n: Node) =>
       n instanceof Element && (n.matches('[role=status]') || !!n.querySelector('[role=status]')) && !!n.querySelector('.animate-spin');
     const obs = new MutationObserver((cambios) => {
-      if (quieto.matches) return;
+      // En la app la pantalla ya entró una vez: moverla otra vez al quitarse el cargador es parpadeo.
+      if (quieto.matches || document.documentElement.dataset.gccApp) return;
       for (const c of cambios) {
         let nivel = 0;
         for (let el: Node | null = c.target; el && el !== main; el = el.parentNode) nivel++;

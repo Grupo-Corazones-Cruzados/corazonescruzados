@@ -7,7 +7,6 @@
  */
 
 import { useCerrarAlTocarFuera } from '@/lib/hooks/useCerrarAlTocarFuera';
-import { useNombreApp } from '@/lib/hooks/useNombreApp';
 import { useState } from 'react';
 import { horaDeReanudacion, useEstadoRegistro } from './estadoRegistro';
 import { motivoPasskey, passkeyDisponible, usePasskeyPreparada, usePasskeyRegistro } from '@/lib/hooks/usePasskeyPreparada';
@@ -36,7 +35,6 @@ export default function ClientLoginModal({
    */
   correoInicial?: string;
 }) {
-  const nombreApp = useNombreApp();
   const [step, setStep] = useState<'creds' | 'factor' | 'code' | 'passkeyOffer'>('creds');
   const [email, setEmail] = useState(correoInicial);
   const [pwd, setPwd] = useState('');
@@ -285,7 +283,7 @@ export default function ClientLoginModal({
           <span
             style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', letterSpacing: '0.2em', color: '#fff' }}
           >
-            {nombreApp.toUpperCase()}
+            GCC WORLD
           </span>
         </div>
 

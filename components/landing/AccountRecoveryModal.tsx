@@ -1,7 +1,6 @@
 'use client';
 
 import { useCerrarAlTocarFuera } from '@/lib/hooks/useCerrarAlTocarFuera';
-import { useNombreApp } from '@/lib/hooks/useNombreApp';
 import { useState } from 'react';
 import { startRegistration } from '@simplewebauthn/browser';
 import { usePasskeyPreparada } from '@/lib/hooks/usePasskeyPreparada';
@@ -22,7 +21,6 @@ export default function AccountRecoveryModal({
   /** Destino tras iniciar sesión: 'game' (Entrar) o 'dashboard' (Colaborar). */
   destination?: 'game' | 'dashboard';
 }) {
-  const nombreApp = useNombreApp();
   const [step, setStep] = useState<'creds' | 'factor' | 'code' | 'passkeyOffer'>('creds');
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
@@ -214,7 +212,7 @@ export default function AccountRecoveryModal({
           <span
             style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', letterSpacing: '0.2em', color: '#fff' }}
           >
-            {nombreApp.toUpperCase()}
+            GCC WORLD
           </span>
         </div>
 
