@@ -72,7 +72,7 @@ export function lineaSesion(s: Sesion, detalle = s.rama) {
 /** Una sesión del diagrama sigue en marcha: el botón lleva a ella en vez de abrir otra. */
 const generandoFlujo = (v: Viva) => !!v.flujo && (v.estado === 'iniciando' || v.estado === 'trabajando' || v.estado === 'espera' || (v.tareas || 0) > 0);
 
-export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, desdeActivas, version, alElegir, alElegirActiva, alCerrada, alNueva, alEditar, alAgregar, alAbrirProyecto, alActualizarFlujo, alVerFlujo }: {
+export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, desdeActivas, version, alElegir, alElegirActiva, alCerrada, alNueva, alEditar, alAgregar, alActualizarFlujo, alVerFlujo }: {
   proyectos: Proyecto[];
   vivas: Viva[];
   proyectoId: string | null;
@@ -85,7 +85,6 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
   alNueva: (proyecto: string) => void;
   alEditar: (p: Proyecto) => void;
   alAgregar: () => void;
-  alAbrirProyecto: (p: string) => void;
   alActualizarFlujo: (p: string) => void;
   alVerFlujo?: (p: string) => void;
 }) {
@@ -167,7 +166,6 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
   const alDia = (s: Sesion): Sesion => ({ ...s, viva: vivas.find((v) => v.id === s.id) || s.viva });
 
   function alternar(id: string) {
-    if (!abiertos.has(id)) alAbrirProyecto(id);
     setAbiertos((a) => { const n = new Set(a); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   }
 

@@ -1,5 +1,5 @@
 import { pool } from '@/lib/db';
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { usuarioLocal } from '@/lib/espacio-trabajo/guardia';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureReminderTables, normalizeTasks } from '@/lib/reminders/schema';
 
@@ -13,7 +13,7 @@ async function canAccess(userId: string, reminderId: string): Promise<boolean> {
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await getCurrentUser();
+    const user = await usuarioLocal();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     await ensureReminderTables();
     const { id } = await params;
@@ -33,7 +33,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await getCurrentUser();
+    const user = await usuarioLocal();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     await ensureReminderTables();
     const { id } = await params;
@@ -61,7 +61,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await getCurrentUser();
+    const user = await usuarioLocal();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     await ensureReminderTables();
     const { id } = await params;

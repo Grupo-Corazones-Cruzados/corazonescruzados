@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
-import PixelInput from '@/components/ui/PixelInput';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PageHeader from '@/components/ui/PageHeader';
 import FilterRail from '@/components/ui/FilterRail';
@@ -14,25 +13,18 @@ import BrandLoader from '@/components/ui/BrandLoader';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import BarraLista from '@/components/ui/BarraLista';
 import {
-  Inbox, Clock, CheckCircle2, AlertTriangle, Plus, X, Paperclip,
-  Check, Download, ListChecks, Video, AlarmClock, Pencil, RotateCcw,
+  Inbox, Clock, CheckCircle2, AlertTriangle, Plus,
+  ListChecks, Video, AlarmClock,
   RefreshCw, Sparkles, CalendarDays, CalendarClock, Radio, ArrowRight,
 } from 'lucide-react';
-import BotonQuitar from '@/components/ui/BotonQuitar';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PanelDetalle from '@/components/ui/PanelDetalle';
-import PieAcciones from '@/components/ui/PieAcciones';
-import BotonEliminar from '@/components/ui/BotonEliminar';
+import { effStatus, fmtShort, STATUS_LABEL, STATUS_VARIANT, type Reminder } from '@/components/recordatorios/comun';
+import { useRecordatorios } from '@/components/recordatorios/useRecordatorios';
+import { AccionesDetalle, ContenidoDetalle } from '@/components/recordatorios/DetalleRecordatorio';
+import FormRecordatorio from '@/components/recordatorios/FormRecordatorio';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
-
-type Task = { id: string; text: string; done: boolean };
-type Attach = { id?: number; filename: string; content_type?: string | null; kind?: string; size?: number | null; data?: string };
-type Reminder = {
-  id: number; title: string; notes?: string; remind_at?: string | null; tasks: Task[];
-  status: string; source: string; source_event_id?: string | null; attachment_count?: number; attachments?: Attach[];
-};
 
 /** Reunión de Meet candidata a generar recordatorio (GET /api/reminders/meetings). */
 type MeetCandidate = {
@@ -61,50 +53,12 @@ const STATUS_TABS = [
   { value: 'all', label: 'Todos', Icon: Inbox },
 ];
 
-const STATUS_VARIANT: Record<string, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
-  active: 'info', expired: 'error', done: 'success',
-};
-const STATUS_LABEL: Record<string, string> = { active: 'Pendiente', expired: 'Vencido', done: 'Completado' };
-
-/** Estado efectivo para la UI: los activos ya vencidos se muestran como "Vencido" aunque el cron aún no los haya marcado. */
-function effStatus(r: { status: string; remind_at?: string | null }): 'active' | 'expired' | 'done' {
-  if (r.status === 'done') return 'done';
-  if (r.remind_at && new Date(r.remind_at).getTime() <= Date.now()) return 'expired';
-  return 'active';
-}
-
-/** ISO → valor para <input type="datetime-local"> en hora local. */
-function toLocalInput(iso?: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return '';
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-function fmtDate(iso?: string | null): string {
-  if (!iso) return 'Sin fecha';
-  return new Date(iso).toLocaleString('es-EC', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
-}
-function fmtShort(iso?: string | null): string {
-  if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
-}
 /** "29 jul, 17:59 · 47 min" para una reunión de Meet. */
 function fmtMeetingWhen(c: { endTime: string | null; minutes: number | null }): string {
   if (!c.endTime) return '—';
   const when = new Date(c.endTime).toLocaleString('es-EC', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false });
   return c.minutes != null ? `${when} · ${c.minutes} min` : when;
 }
-function relative(iso?: string | null): string {
-  if (!iso) return '';
-  const ms = new Date(iso).getTime() - Date.now();
-  if (ms <= 0) return 'vencido';
-  const h = Math.floor(ms / 3600000);
-  if (h < 1) return `en ${Math.max(1, Math.round(ms / 60000))} min`;
-  if (h < 24) return `en ${h} h`;
-  return `en ${Math.round(h / 24)} d`;
-}
-
 export default function RecordatoriosPage() {
   /**
    * ⚠️ EL MODAL DE TELÉFONO **NO SE MONTA** EN ESCRITORIO, y no es una optimización.
@@ -120,29 +74,15 @@ export default function RecordatoriosPage() {
    */
   const enTelefono = !useConsultaMedia(PANTALLA_XL);
 
-  const [list, setList] = useState<Reminder[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    list, loading, fetchList, selected, selLoading, detail, selectReminder, cerrarDetalle,
+    form, openCreate, openEdit, cerrarForm, alGuardar, del, setStatus, toggleDetailTask,
+  } = useRecordatorios();
   // Abre en «Pendientes», que es lo que hay que atender (Fernando, 2026-10-05).
   const [tab, setTab] = useState('active');
   const [search, setSearch] = useState('');
 
-  // Selección / detalle (panel derecho).
-  const [selected, setSelected] = useState<Reminder | null>(null);
-  const [selDetail, setSelDetail] = useState<Reminder | null>(null);
-  const [selLoading, setSelLoading] = useState(false);
   const [pendingOpen, setPendingOpen] = useState<number | null>(null);
-
-  // Modal crear/editar.
-  const [modal, setModal] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [editId, setEditId] = useState<number | null>(null);
-  const [title, setTitle] = useState('');
-  const [notes, setNotes] = useState('');
-  const [remindAt, setRemindAt] = useState('');
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [newTask, setNewTask] = useState('');
-  const [markDoneForm, setMarkDoneForm] = useState(false);
-  const [attachments, setAttachments] = useState<Attach[]>([]);
 
   // Modal "Buscar reuniones" (generación MANUAL desde una reunión de Meet).
   const [meetModal, setMeetModal] = useState(false);
@@ -152,26 +92,6 @@ export default function RecordatoriosPage() {
   const [meetNote, setMeetNote] = useState<string | null>(null);
   const [meetScanned, setMeetScanned] = useState(false);
   const [generating, setGenerating] = useState<string | null>(null);
-
-  const fetchList = useCallback(async () => {
-    try {
-      const r = await fetch('/api/reminders');
-      const d = await r.json();
-      setList(d.data || []);
-    } catch { toast.error('Error al cargar recordatorios'); }
-    finally { setLoading(false); }
-  }, []);
-  useEffect(() => { fetchList(); }, [fetchList]);
-
-  const selectReminder = useCallback(async (r: Reminder) => {
-    setSelected(r); setSelDetail(null); setSelLoading(true);
-    try {
-      const res = await fetch(`/api/reminders/${r.id}`);
-      const { data } = await res.json();
-      setSelDetail(data || null);
-    } catch { setSelDetail(null); }
-    finally { setSelLoading(false); }
-  }, []);
 
   // Enlace profundo desde la reunión (?open=<id>) → selecciona ese recordatorio en el panel.
   useEffect(() => {
@@ -199,97 +119,6 @@ export default function RecordatoriosPage() {
       return true;
     });
   }, [list, tab, search]);
-
-  // ── Crear / editar ──
-  const resetForm = () => { setTitle(''); setNotes(''); setRemindAt(''); setTasks([]); setNewTask(''); setAttachments([]); setMarkDoneForm(false); };
-  const openCreate = () => { setEditId(null); resetForm(); setModal(true); };
-
-  const openEdit = async (id: number) => {
-    try {
-      const r = await fetch(`/api/reminders/${id}`);
-      const { data } = await r.json();
-      setEditId(id);
-      setTitle(data.title || '');
-      setNotes(data.notes || '');
-      setRemindAt(toLocalInput(data.remind_at));
-      setTasks(Array.isArray(data.tasks) ? data.tasks : []);
-      setAttachments(data.attachments || []);
-      setMarkDoneForm(data.status === 'done');
-      setNewTask('');
-      setModal(true);
-    } catch { toast.error('Error al abrir el recordatorio'); }
-  };
-
-  const addTask = () => { const t = newTask.trim(); if (!t) return; setTasks(p => [...p, { id: `t${Date.now()}`, text: t, done: false }]); setNewTask(''); };
-  const toggleTask = (id: string) => setTasks(p => p.map(t => t.id === id ? { ...t, done: !t.done } : t));
-  const removeTask = (id: string) => setTasks(p => p.filter(t => t.id !== id));
-
-  const onFiles = async (files: FileList | null) => {
-    if (!files) return;
-    for (const f of Array.from(files)) {
-      if (f.size > 9 * 1024 * 1024) { toast.error(`"${f.name}" supera 9MB`); continue; }
-      const data = await new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.readAsDataURL(f); });
-      const att: Attach = { filename: f.name, content_type: f.type, kind: 'file', size: f.size, data };
-      if (editId) {
-        try {
-          const r = await fetch(`/api/reminders/${editId}/attachments`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(att) });
-          const d = await r.json();
-          if (!r.ok) throw new Error(d.error);
-          setAttachments(p => [...p, d.data]);
-        } catch (e: any) { toast.error(e.message || 'Error al subir'); }
-      } else {
-        setAttachments(p => [...p, att]);
-      }
-    }
-  };
-
-  const removeAttach = async (att: Attach, i: number) => {
-    if (att.id && editId) {
-      try { await fetch(`/api/reminders/${editId}/attachments/${att.id}`, { method: 'DELETE' }); } catch { /* ignore */ }
-    }
-    setAttachments(p => p.filter((_, idx) => idx !== i));
-  };
-
-  const save = async () => {
-    if (!title.trim()) { toast.error('El título es requerido'); return; }
-    setSaving(true);
-    try {
-      const remindIso = remindAt ? new Date(remindAt).toISOString() : null;
-      if (editId) {
-        const r = await fetch(`/api/reminders/${editId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, notes, remind_at: remindIso, tasks, status: markDoneForm ? 'done' : 'active' }) });
-        if (!r.ok) throw new Error((await r.json()).error);
-        toast.success('Recordatorio actualizado');
-      } else {
-        const r = await fetch('/api/reminders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, notes, remind_at: remindIso, tasks, attachments }) });
-        if (!r.ok) throw new Error((await r.json()).error);
-        toast.success('Recordatorio creado');
-      }
-      setModal(false); resetForm();
-      await fetchList();
-      if (editId && selected?.id === editId) { const fresh = { id: editId } as Reminder; selectReminder(fresh); }
-    } catch (e: any) { toast.error(e.message || 'Error al guardar'); }
-    finally { setSaving(false); }
-  };
-
-  const del = async (id: number) => {
-    try {
-      await fetch(`/api/reminders/${id}`, { method: 'DELETE' });
-      toast.success('Recordatorio eliminado');
-      setModal(false);
-      if (selected?.id === id) { setSelected(null); setSelDetail(null); }
-      fetchList();
-    } catch { toast.error('Error al eliminar'); }
-  };
-
-  // Cambia el estado (completado ↔ activo) y refresca lista + detalle.
-  const setStatus = async (id: number, status: 'done' | 'active') => {
-    try {
-      await fetch(`/api/reminders/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) });
-      toast.success(status === 'done' ? 'Marcado como completado' : 'Reactivado');
-      await fetchList();
-      if (selected?.id === id) selectReminder({ id } as Reminder);
-    } catch { toast.error('Error'); }
-  };
 
   // ── Buscar reuniones de Meet y generar el recordatorio a mano ──
   const loadMeetings = useCallback(async (days: string) => {
@@ -337,113 +166,9 @@ export default function RecordatoriosPage() {
     setPendingOpen(reminderId);
   };
 
-  // Marca/desmarca una tarea desde el panel de detalle (persiste).
-  const toggleDetailTask = async (taskId: string) => {
-    if (!selDetail) return;
-    const next = (selDetail.tasks || []).map(t => t.id === taskId ? { ...t, done: !t.done } : t);
-    setSelDetail({ ...selDetail, tasks: next });
-    try {
-      await fetch(`/api/reminders/${selDetail.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tasks: next }) });
-      setList(prev => prev.map(r => r.id === selDetail.id ? { ...r, tasks: next } : r));
-    } catch { toast.error('Error al actualizar la tarea'); }
-  };
-
-
-  const detail = selDetail || selected;
   const detailStatus = detail ? effStatus(detail) : 'active';
-
-  /**
-   * EL CUERPO DEL DETALLE, UNA SOLA VEZ. Se pinta en dos envoltorios —la columna de
-   * escritorio y el panel a pantalla completa del teléfono— y por eso vive aquí: dos
-   * copias del mismo bloque acabarían siendo dos detalles distintos.
-   *
-   * `enPanel`: en la columna de escritorio (`PanelDetalle`) la lista de tareas se queda con el
-   * alto que sobra y se desplaza sola, y las acciones van al pie fijo (Fernando, 2026-10-29).
-   */
-  const contenidoDetalle = (enPanel: boolean) => !detail ? null : (
-  <>
-    <div className="flex items-center justify-between gap-3 text-[12px]">
-      <span className="text-digi-muted" style={mf}>Estado</span>
-      <PixelBadge variant={STATUS_VARIANT[detailStatus] || 'default'}>{STATUS_LABEL[detailStatus]}</PixelBadge>
-    </div>
-    <div className="flex items-center justify-between gap-3 text-[12px]">
-      <span className="text-digi-muted" style={mf}>Fecha y hora</span>
-      <span className="text-digi-text text-right" style={mf}>
-        {fmtDate(detail.remind_at)}
-        {detail.remind_at && detailStatus === 'active' && <span className="text-digi-muted"> · {relative(detail.remind_at)}</span>}
-      </span>
-    </div>
-
-    {detail.notes && (
-      <div className="pt-2 border-t border-digi-border">
-        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1" style={mf}>Notas</p>
-        <p className="text-[12px] text-digi-text whitespace-pre-wrap leading-relaxed" style={mf}>{detail.notes}</p>
-      </div>
-    )}
-
-    {/* Tareas (marcables) */}
-    {selLoading ? (
-      <p className="text-[11px] text-digi-muted pt-1" style={mf}>Cargando…</p>
-    ) : (detail.tasks?.length ?? 0) > 0 && (
-      <div className={`pt-2 border-t border-digi-border ${enPanel ? 'flex-1 min-h-32 flex flex-col' : ''}`}>
-        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5 shrink-0" style={mf}>
-          {detail.source === 'voz' ? 'Pasos' : 'Tareas'} ({(detail.tasks || []).filter(t => t.done).length}/{detail.tasks!.length})
-        </p>
-        <div className={`space-y-1.5 ${enPanel ? 'min-h-0 overflow-y-auto' : ''}`}>
-          {detail.tasks!.map((t) => {
-            // Los de Gumdramon van como la skill `/pasos`: el primero sin hacer es «estamos aquí».
-            const actual = detail.source === 'voz' && !t.done && t.id === (detail.tasks || []).find((x) => !x.done)?.id;
-            return (
-            <div key={t.id} aria-current={actual ? 'step' : undefined} className="flex items-start gap-2 text-[12.5px]">
-              <button type="button" onClick={() => toggleDetailTask(t.id)}
-                className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 mt-px transition-colors ${t.done ? 'bg-accent border-accent text-white' : 'border-digi-border bg-digi-darker hover:border-accent'}`}>
-                {t.done && <Check className="w-3 h-3" strokeWidth={3} />}
-              </button>
-              <span className={`flex-1 ${detail.source === 'voz' ? 'whitespace-pre-line' : ''} ${t.done ? 'line-through text-digi-muted' : actual ? 'font-semibold text-accent' : 'text-digi-text'}`} style={mf}>{t.text}</span>
-            </div>
-            );
-          })}
-        </div>
-      </div>
-    )}
-
-    {/* Adjuntos */}
-    {(detail.attachments?.length ?? 0) > 0 && (
-      <div className="pt-2 border-t border-digi-border">
-        <p className="text-[10px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={mf}>Adjuntos ({detail.attachments!.length})</p>
-        <div className="space-y-1">
-          {detail.attachments!.map((a) => (
-            <a key={a.id} href={`/api/reminders/${detail.id}/attachments/${a.id}`}
-              className="flex items-center gap-2 px-2 py-1 border border-digi-border rounded bg-digi-darker hover:border-accent transition-colors group">
-              <Paperclip className="w-3.5 h-3.5 text-digi-muted shrink-0" />
-              <span className="flex-1 text-[12px] text-digi-text truncate" style={mf}>{a.filename}{a.kind === 'transcript' ? ' · transcripción' : ''}</span>
-              <Download className="w-3.5 h-3.5 text-digi-muted group-hover:text-accent shrink-0" />
-            </a>
-          ))}
-        </div>
-      </div>
-    )}
-
-  </>
-  );
-  /** UNA fila (regla «PieAcciones», Fernando 2026-10-31): papelera sola a la izquierda;
-   *  Editar y, a la derecha del todo, completar o reactivar. */
-  const accionesDetalle = !detail ? null : (
-    <PieAcciones onEliminar={() => del(detail.id)} etiquetaEliminar="Eliminar recordatorio">
-      <button onClick={() => openEdit(detail.id)} className={BTN_SECONDARY}>
-        <Pencil className="w-4 h-4" /> Editar
-      </button>
-      {detailStatus === 'done' ? (
-        <button onClick={() => setStatus(detail.id, 'active')} className={BTN_PRIMARY}>
-          <RotateCcw className="w-4 h-4" /> Reactivar
-        </button>
-      ) : (
-        <button onClick={() => setStatus(detail.id, 'done')} className={BTN_PRIMARY}>
-          <CheckCircle2 className="w-4 h-4" /> Completar
-        </button>
-      )}
-    </PieAcciones>
-  );
+  const accionesDetalle = !detail ? null : <AccionesDetalle detail={detail} alEliminar={del} alEditar={openEdit} alCambiarEstado={setStatus} />;
+  const contenidoDetalle = (enPanel: boolean) => !detail ? null : <ContenidoDetalle detail={detail} cargando={selLoading} enPanel={enPanel} alMarcarTarea={toggleDetailTask} />;
   /** En el panel del teléfono, todo seguido, como antes. */
   const cuerpoDetalle = !detail ? null : (
   <div className="p-4 space-y-3">
@@ -562,7 +287,7 @@ export default function RecordatoriosPage() {
                     </span>
                   }
                   subtitulo={detail.source === 'meeting' ? 'Generado de una reunión' : (detail?.source === 'voz' ? 'Dictado a Gumdramon' : 'Recordatorio manual')}
-                  onCerrar={() => { setSelected(null); setSelDetail(null); }}
+                  onCerrar={cerrarDetalle}
                   pie={accionesDetalle}
                 >
                   {contenidoDetalle(true)}
@@ -577,7 +302,7 @@ export default function RecordatoriosPage() {
       {enTelefono && (
         <PixelModal
           open={!!detail}
-          onClose={() => { setSelected(null); setSelDetail(null); }}
+          onClose={cerrarDetalle}
           title={detail?.title || 'Recordatorio'}
           size="md"
           pie={accionesDetalle}
@@ -675,79 +400,7 @@ export default function RecordatoriosPage() {
       </PixelModal>
 
       {/* Modal crear / editar */}
-      <PixelModal open={modal} onClose={() => setModal(false)} title={editId ? 'Editar recordatorio' : 'Nuevo recordatorio'} size="lg">
-        <div className="space-y-3">
-          <PixelInput label="Título *" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej: Enviar cotización a…" />
-          <PixelInput label="Fecha y hora del recordatorio" type="datetime-local" value={remindAt} onChange={(e) => setRemindAt(e.target.value)} />
-          <div className="flex flex-col gap-1">
-            <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Notas</label>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={6} placeholder="Contexto del recordatorio…"
-              className="field-control w-full h-40 px-3 py-2 bg-digi-darker border-2 border-digi-border text-sm text-digi-text focus:border-accent focus:outline-none resize-y overflow-y-auto" style={mf} />
-          </div>
-
-          {/* Tareas */}
-          <div>
-            <label className="field-label text-[10px] text-accent-glow opacity-70 block mb-1" style={df}>Tareas</label>
-            <div className="space-y-1 mb-2">
-              {tasks.map(t => (
-                <div key={t.id} className="flex items-center gap-2 group group/task">
-                  <button type="button" onClick={() => toggleTask(t.id)}
-                    className={`w-[18px] h-[18px] rounded-[5px] border flex items-center justify-center shrink-0 transition-colors ${t.done ? 'bg-accent border-accent text-white' : 'border-digi-border bg-digi-darker'}`}>
-                    {t.done && <Check className="w-3 h-3" strokeWidth={3} />}
-                  </button>
-                  <span className={`flex-1 text-[13px] ${t.done ? 'line-through text-digi-muted' : 'text-digi-text'}`} style={mf}>{t.text}</span>
-                  <BotonQuitar onClick={() => removeTask(t.id)} etiqueta="Quitar tarea" tamano="xs" className="acciones-al-pasar" />
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input value={newTask} onChange={(e) => setNewTask(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTask(); } }}
-                placeholder="Agregar tarea…" className="field-control flex-1 px-3 py-1.5 bg-digi-darker border-2 border-digi-border text-[13px] text-digi-text focus:border-accent focus:outline-none" style={mf} />
-              <button type="button" onClick={addTask} className={BTN_SECONDARY}><Plus className="w-4 h-4" /></button>
-            </div>
-          </div>
-
-          {/* Adjuntos */}
-          <div>
-            <label className="field-label text-[10px] text-accent-glow opacity-70 block mb-1" style={df}>Adjuntos</label>
-            <div className="space-y-1 mb-2">
-              {attachments.map((a, i) => (
-                <div key={a.id ?? `n${i}`} className="flex items-center gap-2 px-2 py-1 border border-digi-border rounded bg-digi-darker">
-                  <Paperclip className="w-3.5 h-3.5 text-digi-muted shrink-0" />
-                  <span className="flex-1 text-[12px] text-digi-text truncate" style={mf}>{a.filename}{a.kind === 'transcript' ? ' · transcripción' : ''}</span>
-                  {a.id && editId && (
-                    <a href={`/api/reminders/${editId}/attachments/${a.id}`} onClick={(e) => e.stopPropagation()} className="text-digi-muted hover:text-accent" title="Descargar"><Download className="w-3.5 h-3.5" /></a>
-                  )}
-                  <BotonQuitar onClick={() => removeAttach(a, i)} etiqueta="Quitar adjunto" tamano="xs" />
-                </div>
-              ))}
-            </div>
-            <label className={`${BTN_SECONDARY} cursor-pointer inline-flex`}>
-              <Paperclip className="w-4 h-4" /> Adjuntar archivo
-              <input type="file" multiple className="hidden" onChange={(e) => onFiles(e.target.files)} />
-            </label>
-          </div>
-
-          {/* Completado: corta los correos de recordatorio */}
-          {editId && (
-            <label className="flex items-start gap-2 px-3 py-2 rounded-md border border-digi-border cursor-pointer hover:bg-black/[0.03] transition-colors" style={mf}>
-              <input type="checkbox" checked={markDoneForm} onChange={(e) => setMarkDoneForm(e.target.checked)} className="mt-0.5 accent-accent" />
-              <span className="min-w-0">
-                <span className="text-[12.5px] font-medium text-digi-text inline-flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-green-400" /> Marcar como completado</span>
-                <span className="block text-[10.5px] text-digi-muted">Deja de enviar correos de recordatorio.</span>
-              </span>
-            </label>
-          )}
-
-          <div className="flex items-center justify-between gap-2 pt-2 border-t border-digi-border">
-            {editId ? <BotonEliminar onClick={() => del(editId)} etiqueta="Eliminar recordatorio" /> : <span />}
-            <div className="flex gap-2">
-              <button onClick={() => setModal(false)} className={BTN_SECONDARY}>Cancelar</button>
-              <button onClick={save} disabled={saving || !title.trim()} className={`${BTN_PRIMARY} disabled:opacity-50`}>{saving ? 'Guardando…' : editId ? 'Guardar' : 'Crear'}</button>
-            </div>
-          </div>
-        </div>
-      </PixelModal>
+      <FormRecordatorio abierto={form.abierto} datos={form.datos} onClose={cerrarForm} onGuardado={alGuardar} onEliminar={del} />
     </div>
   );
 }

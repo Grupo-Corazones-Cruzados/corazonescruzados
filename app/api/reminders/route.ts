@@ -1,5 +1,5 @@
 import { pool } from '@/lib/db';
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { usuarioLocal } from '@/lib/espacio-trabajo/guardia';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureReminderTables, normalizeTasks } from '@/lib/reminders/schema';
 import { createNotification } from '@/lib/notifications';
@@ -8,7 +8,7 @@ const MAX_ATTACH_CHARS = 12 * 1024 * 1024; // ~9MB de archivo en base64
 
 export async function GET(_req: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await usuarioLocal();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     await ensureReminderTables();
     const { rows } = await pool.query(
@@ -29,7 +29,7 @@ export async function GET(_req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const user = await getCurrentUser();
+    const user = await usuarioLocal();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     await ensureReminderTables();
 

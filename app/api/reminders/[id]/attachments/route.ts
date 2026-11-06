@@ -1,5 +1,5 @@
 import { pool } from '@/lib/db';
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { usuarioLocal } from '@/lib/espacio-trabajo/guardia';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureReminderTables } from '@/lib/reminders/schema';
 
@@ -16,7 +16,7 @@ async function canAccess(userId: string, reminderId: string): Promise<boolean> {
 /** Agrega un adjunto (data URL base64) a un recordatorio existente. */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const user = await getCurrentUser();
+    const user = await usuarioLocal();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     await ensureReminderTables();
     const { id } = await params;

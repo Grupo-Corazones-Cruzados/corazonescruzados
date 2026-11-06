@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowDown, ChevronLeft, Copy, Loader2, LockOpen, Pencil, Power, SlidersHorizontal, SquareTerminal } from 'lucide-react';
+import { ArrowDown, ChevronLeft, Copy, Loader2, LockOpen, Pencil, Power, SlidersHorizontal, SquareTerminal, Workflow } from 'lucide-react';
 import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import MenuMas from '@/components/ui/MenuMas';
 import PixelConfirm from '@/components/ui/PixelConfirm';
@@ -23,11 +23,13 @@ const segundos = (ms: number) => (ms < 60000 ? `${Math.round(ms / 1000)} s` : `$
  * llevan el mismo `uuid` por mensaje, así que al recargar a mitad de trabajo no se repite nada.
  */
 export default function Conversacion({
-  proyecto, sesionId, alVolver, alCrear, alNueva, alCambiar,
+  proyecto, sesionId, alVolver, alVerFlujo, alCrear, alNueva, alCambiar,
 }: {
   proyecto: Proyecto;
   sesionId: string | null;
   alVolver?: () => void;
+  /** Abre el diagrama del proyecto. En otros sitios donde se reutiliza la conversación no hay botón. */
+  alVerFlujo?: () => void;
   alCrear: (id: string) => void;
   alNueva: () => void;
   alCambiar: () => void;
@@ -250,6 +252,12 @@ export default function Conversacion({
             {proyecto.nombre}{aislada && <> · Aislada</>}{!enEscritorio && modo !== 'bypassPermissions' && <> · {MODOS.find((m) => m.valor === modo)?.texto}</>}{tareas > 0 ? <> · <span className="text-accent">{tareas === 1 ? '1 tarea' : `${tareas} tareas`} en segundo plano</span></> : lineaEstado && <> · <span className={lineaEstado.clase}>{lineaEstado.texto}</span></>}{enTerminal && !estado && <> · <span className="text-amber-400">Abierta en una terminal</span></>}
           </p>
         </div>
+        {alVerFlujo && (
+          <button type="button" onClick={alVerFlujo} aria-label="Diagrama de flujo" title="Diagrama de flujo"
+            className="shrink-0 w-9 h-9 flex items-center justify-center border border-digi-border rounded text-digi-muted transition-colors hover:bg-accent/10 hover:text-accent hover:border-accent/40 max-lg:border-0">
+            <Workflow className="w-4 h-4" />
+          </button>
+        )}
         {(sesionId || !enEscritorio) && (
           <MenuMas className="max-lg:!border-0 max-lg:!w-9 max-lg:!h-9 max-lg:!min-w-9 max-lg:!min-h-9" items={[
             ...(enEscritorio ? [] : [{ label: 'Modelo y permisos', icon: SlidersHorizontal, onClick: () => setAjustes(true) }]),

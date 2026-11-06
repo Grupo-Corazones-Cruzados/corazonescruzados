@@ -1,5 +1,5 @@
 import { pool } from '@/lib/db';
-import { getCurrentUser } from '@/lib/auth/jwt';
+import { usuarioLocal } from '@/lib/espacio-trabajo/guardia';
 import { NextRequest, NextResponse } from 'next/server';
 
 async function canAccess(userId: string, reminderId: string): Promise<boolean> {
@@ -13,7 +13,7 @@ async function canAccess(userId: string, reminderId: string): Promise<boolean> {
 /** Descarga un adjunto (devuelve el archivo con su tipo). */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string; attId: string }> }) {
   try {
-    const user = await getCurrentUser();
+    const user = await usuarioLocal();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id, attId } = await params;
     if (!(await canAccess(user.userId, id))) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
@@ -43,7 +43,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string; attId: string }> }) {
   try {
-    const user = await getCurrentUser();
+    const user = await usuarioLocal();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id, attId } = await params;
     if (!(await canAccess(user.userId, id))) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
