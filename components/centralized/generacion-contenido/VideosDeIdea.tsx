@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, type DragEvent } from 'react';
-import { CloudUpload, FileVideo, Loader2, RotateCw, Trash2, Upload } from 'lucide-react';
+import { CloudUpload, FileVideo, Loader2, RotateCw, Send, Trash2, Upload } from 'lucide-react';
 import { toast } from 'sonner';
 import BotonEditar from '@/components/ui/BotonEditar';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
@@ -11,12 +11,12 @@ import { TONO } from '@/components/ui/tonos';
 import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import Conversacion from '@/components/espacio/Conversacion';
 import RenombrarSesion, { type SesionARenombrar } from '@/components/espacio/RenombrarSesion';
+import PanelPublicar from './PanelPublicar';
+import { subirArchivo } from './subida';
 import { BotonDetener, detenible, FilaSesion, IconoEstado, lineaSesion } from '@/components/espacio/RailProyectos';
-import { api, BASE, cabeceras, EVENTO_TITULO, type Proyecto, type Sesion, type Viva } from '@/components/espacio/api';
+import { api, EVENTO_TITULO, type Proyecto, type Sesion, type Viva } from '@/components/espacio/api';
 
 const API = '/api/centralized/generacion-contenido';
-const TAMANO_PARTE = 32 * 1024 * 1024;
-const REINTENTOS = 5;
 
 interface Video { id: number; contenido_id: number; nombre: string; tamano: number; carpeta: string; sesion_id: string | null; created_at: string }
 interface Subida { videoId: number; contenidoId: number; nombre: string; progreso: number; etapa: 'subiendo' | 'abriendo' }
@@ -34,34 +34,7 @@ function useSubida() {
   return s;
 }
 
-const espera = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
 const legible = (b: number) => (b >= 1e9 ? `${(b / 1e9).toFixed(1).replace('.', ',')} GB` : `${Math.round(b / 1e6)} MB`);
-
-/** Sigue desde lo que ya está en disco. Una parte fallida se repite; si el servicio dice otra posición, manda él. */
-async function subirArchivo(video: Video, archivo: File, alAvanzar: (recibido: number) => void) {
-  const base = `${BASE}/videos/${encodeURIComponent(video.carpeta)}`;
-  const nombre = encodeURIComponent(video.nombre);
-  const estado = await api(`/videos/${encodeURIComponent(video.carpeta)}/estado?nombre=${nombre}`);
-  let desde: number = estado.recibido;
-  if (estado.completa) { alAvanzar(archivo.size); return; }
-  let fallos = 0;
-  while (desde < archivo.size) {
-    alAvanzar(desde);
-    let r: Response | null = null;
-    try {
-      r = await fetch(`${base}/partes?nombre=${nombre}&desde=${desde}`, {
-        method: 'POST', headers: cabeceras({ 'Content-Type': 'application/octet-stream' }), body: archivo.slice(desde, desde + TAMANO_PARTE),
-      });
-    } catch { /* se repite abajo */ }
-    const j = r ? await r.json().catch(() => ({})) : {};
-    if (r?.ok || (r?.status === 409 && typeof j.recibido === 'number')) { desde = j.recibido; fallos = 0; continue; }
-    if (r && r.status >= 400 && r.status < 500) throw new Error(j.error || 'No se pudo subir el video.');
-    fallos += 1;
-    if (fallos > REINTENTOS) throw new Error('Se perdió la conexión con la Mac. Vuelve a elegir el archivo para seguir desde donde quedó.');
-    await espera(1000 * fallos);
-  }
-  alAvanzar(archivo.size);
-}
 
 /**
  * LOS VIDEOS DE UNA IDEA. Cada uno es su propia sesión de Claude Code: es el mismo chat del Espacio
@@ -80,6 +53,7 @@ export default function VideosDeIdea({ contenidoId }: { contenidoId: number }) {
   const [error, setError] = useState('');
   const [borrar, setBorrar] = useState<Video | null>(null);
   const [nombrando, setNombrando] = useState<SesionARenombrar | null>(null);
+  const [publicando, setPublicando] = useState<Video | null>(null);
   const [reanudar, setReanudar] = useState<Video | null>(null);
   /* Tras `/clear` el video no tiene sesión hasta el siguiente mensaje, pero ya no está por subir. */
   const [limpios, setLimpios] = useState<Set<number>>(new Set());
@@ -152,7 +126,7 @@ export default function VideosDeIdea({ contenidoId }: { contenidoId: number }) {
       const v = video;
       fijarSubida({ videoId: v.id, contenidoId, nombre: v.nombre, progreso: 0, etapa: 'subiendo' });
       setElegido(v.id);
-      await subirArchivo(v, archivo, (recibido) => fijarSubida({ videoId: v.id, contenidoId, nombre: v.nombre, progreso: recibido / archivo.size, etapa: 'subiendo' }));
+      await subirArchivo(v, archivo, v.nombre, (recibido) => fijarSubida({ videoId: v.id, contenidoId, nombre: v.nombre, progreso: recibido / archivo.size, etapa: 'subiendo' }));
       fijarSubida({ videoId: v.id, contenidoId, nombre: v.nombre, progreso: 1, etapa: 'abriendo' });
       const r = await fetch(`${API}/videos/${v.id}/iniciar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
       const j = await r.json();
@@ -237,6 +211,7 @@ export default function VideosDeIdea({ contenidoId }: { contenidoId: number }) {
               <div className="flex-1 min-w-0">
                 <FilaSesion titulo={s.titulo} linea={lineaSesion(s)} icono={<IconoEstado s={s} />} activa={elegido === v.id} alElegir={() => setElegido(v.id)} />
               </div>
+              <button type="button" onClick={() => setPublicando(v)} aria-label={`Publicar ${s.titulo}`} title="Publicar" className={BTN_ICONO_FILA}><Send className="w-3.5 h-3.5" /></button>
               <BotonEditar onClick={() => setNombrando(s)} etiqueta={`Cambiar el nombre de ${s.titulo}`} title="Cambiar nombre" />
               {detenible(s) ? <BotonDetener s={s} /> : <button type="button" onClick={() => setBorrar(v)} aria-label={`Eliminar ${s.titulo}`} title="Eliminar" className={BTN_ICONO_FILA}><Trash2 className="w-3.5 h-3.5" /></button>}
             </div>
@@ -286,6 +261,7 @@ export default function VideosDeIdea({ contenidoId }: { contenidoId: number }) {
         ? <div className="flex-1 min-h-0 h-full">{contenido}</div>
         : <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} respiro={0} className="bg-digi-card border border-digi-border rounded-xl overflow-hidden">{contenido}</PanelHastaElPie>}
       <RenombrarSesion sesion={nombrando} alCerrar={() => setNombrando(null)} />
+      <PanelPublicar video={publicando} alCerrar={() => setPublicando(null)} />
       <PixelConfirm open={!!borrar} title="Eliminar video"
         message={`Se borra «${borrar?.nombre || ''}» y su carpeta con las capas y la vista previa. El proyecto de CapCut y la conversación se conservan. No se puede deshacer.`}
         confirmLabel="Eliminar" danger onConfirm={confirmarBorrado} onCancel={() => setBorrar(null)} />

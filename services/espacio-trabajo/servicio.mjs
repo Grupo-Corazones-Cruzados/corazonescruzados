@@ -858,7 +858,8 @@ async function proyectoEdicion() {
 }
 
 ruta('GET', '/edicion', async () => ({ proyecto: await proyectoEdicion() }));
-ruta('GET', '/videos/:carpeta/estado', async ({ p, url }) => estadoSubida(carpetaDe(RAIZ_EDICION, p.carpeta), url.searchParams.get('nombre')));
+ruta('GET', '/videos/:carpeta/estado', async ({ p, url }) => estadoSubida(carpetaDe(RAIZ_EDICION, p.carpeta), url.searchParams.get('nombre'), url.searchParams.get('tipo')));
+ruta('POST', '/videos/:carpeta/final', async ({ p, cuerpo }) => ({ ruta: terminarSubida(carpetaDe(RAIZ_EDICION, p.carpeta), cuerpo.nombre, cuerpo.tamano, 'final') }));
 /** Deja el video completo en su carpeta y abre su sesión. La idea va en un archivo: un guion no cabe en un mensaje legible. */
 ruta('POST', '/videos/:carpeta/iniciar', async ({ p, cuerpo }) => {
   const dir = carpetaDe(RAIZ_EDICION, p.carpeta);
@@ -952,7 +953,7 @@ const servidor = http.createServer(async (req, res) => {
     const subida = url.pathname.match(/^\/proyectos\/([^/]+)\/adjuntos$/);
     if (subida && req.method === 'POST') return responder(200, await subirAdjunto(req, subida[1], url.searchParams.get('nombre')));
     const parte = url.pathname.match(/^\/videos\/([^/]+)\/partes$/);
-    if (parte && req.method === 'POST') return responder(200, await guardarParte(req, carpetaDe(RAIZ_EDICION, decodeURIComponent(parte[1])), url.searchParams.get('nombre'), url.searchParams.get('desde')));
+    if (parte && req.method === 'POST') return responder(200, await guardarParte(req, carpetaDe(RAIZ_EDICION, decodeURIComponent(parte[1])), url.searchParams.get('nombre'), url.searchParams.get('desde'), url.searchParams.get('tipo')));
     if (url.pathname === '/generar-json' && req.method === 'POST') return generarConLatido(req, res);
     for (const r of rutas) {
       if (r.metodo !== req.method) continue;

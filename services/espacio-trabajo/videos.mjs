@@ -30,21 +30,24 @@ export function extensionDe(nombre) {
   return ext;
 }
 
-const finalDe = (dir, ext) => path.join(dir, `fuente${ext}`);
-const parcialDe = (dir, ext) => path.join(dir, `.fuente${ext}.parcial`);
+/** `fuente` es lo que entra al agente; `final`, lo que Fernando exportó de CapCut para publicar. */
+const baseDe = (tipo) => (tipo === 'final' ? 'final' : 'fuente');
+const finalDe = (dir, ext, tipo) => path.join(dir, `${baseDe(tipo)}${ext}`);
+const parcialDe = (dir, ext, tipo) => path.join(dir, `.${baseDe(tipo)}${ext}.parcial`);
 const tamanoDe = (ruta) => { try { return fs.statSync(ruta).size; } catch { return 0; } };
 
-export function estadoSubida(dir, nombre) {
+export function estadoSubida(dir, nombre, tipo) {
   const ext = extensionDe(nombre);
-  if (fs.existsSync(finalDe(dir, ext))) return { recibido: tamanoDe(finalDe(dir, ext)), completa: true };
-  return { recibido: tamanoDe(parcialDe(dir, ext)), completa: false };
+  // La versión final siempre se puede reemplazar: que ya exista una no significa que sea esta.
+  if (tipo !== 'final' && fs.existsSync(finalDe(dir, ext, tipo))) return { recibido: tamanoDe(finalDe(dir, ext, tipo)), completa: true };
+  return { recibido: tamanoDe(parcialDe(dir, ext, tipo)), completa: false };
 }
 
 /** Una parte fuera de orden no se escribe: se responde desde dónde hay que seguir. */
-export async function guardarParte(origen, dir, nombre, desde) {
+export async function guardarParte(origen, dir, nombre, desde, tipo) {
   const ext = extensionDe(nombre);
   fs.mkdirSync(dir, { recursive: true });
-  const parcial = parcialDe(dir, ext);
+  const parcial = parcialDe(dir, ext, tipo);
   const recibido = tamanoDe(parcial);
   if (Number(desde) !== recibido) throw new ErrorVideo(409, 'La subida se desfasó.', { codigo: 'desfase', recibido });
   let total = 0;
@@ -59,13 +62,20 @@ export async function guardarParte(origen, dir, nombre, desde) {
 }
 
 /** Solo pasa a ser el video cuando mide lo que dijo el navegador. Repetirlo no cambia nada. */
-export function terminarSubida(dir, nombre, tamano) {
+export function terminarSubida(dir, nombre, tamano, tipo) {
   const ext = extensionDe(nombre);
-  const final = finalDe(dir, ext);
-  if (fs.existsSync(final)) return final;
-  const recibido = tamanoDe(parcialDe(dir, ext));
-  if (recibido !== Number(tamano)) throw new ErrorVideo(409, 'La subida está incompleta.', { codigo: 'desfase', recibido });
-  fs.renameSync(parcialDe(dir, ext), final);
+  const final = finalDe(dir, ext, tipo);
+  const parcial = parcialDe(dir, ext, tipo);
+  if (fs.existsSync(final) && (tipo !== 'final' || !fs.existsSync(parcial))) return final;
+  const recibido = tamanoDe(parcial);
+  if (recibido !== Number(tamano)) {
+    // Restos de otro archivo más grande: sin esto, la versión final no se podría volver a subir nunca.
+    if (tipo === 'final' && recibido > Number(tamano)) fs.rmSync(parcial, { force: true });
+    throw new ErrorVideo(409, 'La subida está incompleta. Vuelve a elegir el archivo.', { codigo: 'desfase', recibido });
+  }
+  // Una versión final nueva sustituye a la anterior, aunque tenga otra extensión.
+  if (tipo === 'final') for (const n of fs.readdirSync(dir)) if (/^final\.\w+$/.test(n)) fs.rmSync(path.join(dir, n));
+  fs.renameSync(parcialDe(dir, ext, tipo), final);
   return final;
 }
 

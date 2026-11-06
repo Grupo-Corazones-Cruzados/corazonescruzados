@@ -216,6 +216,14 @@ Fernando pregunta por LinkedIn, YouTube, Facebook e Instagram. Se puede en las c
 - **Intermediarios:** Blotato desde 29 $/mes, Ayrshare desde 149 $/mes, Buffer por canal; precios de páginas de los propios vendedores.
 - **Falta en el flujo:** el archivo final se exporta desde CapCut y no vuelve al sistema.
 
+### Publicar en YouTube: construido (2026-11-06)
+Fernando pidió implementar la publicación en redes. Primero YouTube, con conexión propia y siempre con su visto bueno.
+- **Versión final:** cada video admite subir lo exportado de CapCut (`final.*`), con la misma subida reanudable; se puede reemplazar.
+- **Cuentas:** `gcont_redes_cuentas`, una por canal, para las dos marcas. Conexión aparte de la de Drive y Gmail, con solo `youtube.upload` y `youtube.readonly`. Refresh token cifrado. Se conecta desde `localhost` en la Mac.
+- **Publicaciones:** `gcont_publicaciones`, subida reanudable por partes de 16 MB dentro de la web local. Privado por defecto, y público o programado piden confirmación. Si la web se reinicia, la subida se marca interrumpida a los 5 min. Los créditos CC BY entran solos en la descripción. Solo administrador: las rutas exigen ese rol.
+- **Probado contra un YouTube simulado:** 335 MB en 21 partes con un 503 a mitad; archivo idéntico. 404 en la web, estado falso rechazado, token cifrado. **Sin probar contra YouTube real ni la programación en pantalla:** falta que Fernando autorice el cliente de Google.
+- **Instagram, Facebook y LinkedIn sin construir:** dependen de permisos. Los datos tienen `red` para sumarlas.
+
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?

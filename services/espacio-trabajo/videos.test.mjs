@@ -35,6 +35,23 @@ test('la subida se arma por partes y solo termina con el tamaño completo', asyn
   assert.equal(terminarSubida(dir, 'a.mov', 10), final, 'repetirlo no falla');
 });
 
+test('la versión final va aparte del video original y sustituye a la anterior', async () => {
+  const dir = temporal();
+  await guardarParte(trozo('original'), dir, 'a.mov', 0);
+  const fuente = terminarSubida(dir, 'a.mov', 8);
+  await guardarParte(trozo('uno'), dir, 'b.mp4', 0, 'final');
+  assert.equal(path.basename(terminarSubida(dir, 'b.mp4', 3, 'final')), 'final.mp4');
+  await guardarParte(trozo('dos!'), dir, 'c.mov', 0, 'final');
+  assert.equal(path.basename(terminarSubida(dir, 'c.mov', 4, 'final')), 'final.mov');
+  assert.deepEqual(fs.readdirSync(dir).filter((n) => n.startsWith('final')), ['final.mov']);
+  // Reemplazarla con la misma extensión también vale.
+  assert.equal(estadoSubida(dir, 'c.mov', 'final').completa, false);
+  await guardarParte(trozo('tres'), dir, 'c.mov', 0, 'final');
+  terminarSubida(dir, 'c.mov', 4, 'final');
+  assert.equal(fs.readFileSync(path.join(dir, 'final.mov'), 'utf8'), 'tres');
+  assert.equal(fs.readFileSync(fuente, 'utf8'), 'original');
+});
+
 test('una parte fuera de orden no se escribe y dice desde dónde seguir', async () => {
   const dir = temporal();
   await guardarParte(trozo('abc'), dir, 'a.mp4', 0);
