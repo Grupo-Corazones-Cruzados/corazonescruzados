@@ -40,7 +40,9 @@ const diaDeClave = (c: string) => `${c.slice(0, 2)}/${c.slice(2, 4)}/${c.slice(4
 export function compararEmitidas(dias: DiaEmitido[], plataforma: FacturaPlataforma[]): ResultadoEmitidas {
   const r: ResultadoEmitidas = { coinciden: 0, anuladas: 0, faltan: [], importes: [], estados: [], soloPlataforma: [], diasFallidos: dias.filter((d) => !d.ok).map((d) => d.dia), dias: dias.length };
   const porClave = new Map(plataforma.filter((f) => f.access_key).map((f) => [f.access_key as string, f]));
-  const porNumero = new Map(plataforma.filter((f) => f.invoice_number).map((f) => [f.invoice_number as string, f]));
+  // Por número, solo las que no tienen clave. El número se repite: la 001-001-000000001 existe en 2025 y
+  // en marzo de 2026, porque la numeración se reinició. Con otra clave es otra factura, no otro importe.
+  const porNumero = new Map(plataforma.filter((f) => f.invoice_number && !f.access_key).map((f) => [f.invoice_number as string, f]));
   const vistas = new Set<number>();
 
   for (const d of dias) {
