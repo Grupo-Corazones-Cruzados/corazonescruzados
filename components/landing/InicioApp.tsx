@@ -101,8 +101,11 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta }: 
       </header>
 
       <main className="app-hoja">
-        <Segmentado etiqueta="Cuenta" valor={modo} onChange={setModo}
-          opciones={[{ valor: 'ingresar', texto: 'Ingresar' }, { valor: 'crear', texto: 'Crear cuenta' }]} />
+        {/* Centralizado es solo para miembros: ahí no se crean cuentas. */}
+        {app !== 'centralizado' && (
+          <Segmentado etiqueta="Cuenta" valor={modo} onChange={setModo}
+            opciones={[{ valor: 'ingresar', texto: 'Ingresar' }, { valor: 'crear', texto: 'Crear cuenta' }]} />
+        )}
 
         <div key={modo} className="app-filas">
           {modo === 'ingresar'
