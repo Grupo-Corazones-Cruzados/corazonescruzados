@@ -433,7 +433,7 @@ Stack estándar de la casa, con particularidades de este repo:
     proyecto nuevo (id 46). Cercasa y Pisercons = 001-026 ($1800, P5 + P11).
   · Los ingresos `sri_emitida` pasaron a su relación (suscripción/ticket/proyecto/factura).
   · **Pendiente de Fernando:** Expoflor 001-014/015 («abono 20 %») y Entheus 001-018/019 ($91,22) sin proyecto
-    aún; la 001-001-000000001 del 29/03/2026 a su nombre (¿prueba?); revisar en el portal abr–oct 2026 (falta
+    aún; la 001-001-000000001 del 29/03/2026 a su nombre ($425) fue una PRUEBA (Fernando, 2026-11-05): no es ingreso, y «Facturas emitidas» la seguirá listando en marzo de 2026 como «en el SRI y no en la plataforma»; revisar en el portal abr–oct 2026 (falta
     su clave).
   · **Cuadre de importes con lo facturado (Fernando, mismo día: «actualiza los valores para que coincidan»):**
     ticket 7 80→82,50; proyecto 18 126→127,17; proyectos por etapas P25 679,50→0 y P38 870→0 (cuentan sus
