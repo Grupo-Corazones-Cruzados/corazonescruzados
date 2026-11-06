@@ -26,9 +26,16 @@ export async function middleware(request: NextRequest) {
   const isProtected = PROTECTED.some((r) => pathname.startsWith(r));
   const isAuth = AUTH_ROUTES.some((r) => pathname.startsWith(r));
 
-  // GCC Centralizado abre directamente su módulo; la web y GCC Progreso, el Inicio.
+  // GCC Centralizado abre su módulo al ARRANCAR o al iniciar sesión, viniendo de la portada. El botón
+  // «Inicio» también pide `/dashboard`, y ese debe llegar al Inicio: es navegación interna (`rsc`) o
+  // viene de otra página del panel.
   if (valid && pathname === "/dashboard" && request.cookies.get("gcc_app")?.value === "centralizado") {
-    return NextResponse.redirect(new URL("/dashboard/centralized", request.url));
+    const interna = request.headers.has("rsc") || request.nextUrl.searchParams.has("_rsc");
+    const referer = request.headers.get("referer");
+    const desdeElPanel = !!referer && new URL(referer).pathname.startsWith("/dashboard");
+    if (!interna && !desdeElPanel) {
+      return NextResponse.redirect(new URL("/dashboard/centralized", request.url));
+    }
   }
 
   // En GCC Progreso no se paga con PayPhone (`usePagosEnApp`), ni llegando por un enlace.

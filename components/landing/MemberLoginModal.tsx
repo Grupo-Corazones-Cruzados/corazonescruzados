@@ -5,6 +5,7 @@
  * credenciales (gcc_world.users) → código de verificación por correo (2FA).
  */
 
+import { useCerrarAlTocarFuera } from '@/lib/hooks/useCerrarAlTocarFuera';
 import { useNombreApp } from '@/lib/hooks/useNombreApp';
 import { useState } from 'react';
 import { motivoPasskey, passkeyDisponible, usePasskeyPreparada, usePasskeyRegistro } from '@/lib/hooks/usePasskeyPreparada';
@@ -32,6 +33,7 @@ export default function MemberLoginModal({
   /** ¿Tiene una passkey que sirva? Lo dice el servidor en el paso 1 (ver la ruta). */
   const [tienePasskey, setTienePasskey] = useState(false);
   const [busy, setBusy] = useState(false);
+  const cerrarAlTocarFuera = useCerrarAlTocarFuera(onClose, busy);
   const [error, setError] = useState<string | null>(null);
 
   // Paso 1: valida credenciales (sin enviar código) → muestra opciones.
@@ -207,7 +209,7 @@ export default function MemberLoginModal({
   };
 
   return (
-    <div role="dialog" aria-modal="true" className="corp dark corp-overlay" style={overlay}>
+    <div role="dialog" aria-modal="true" className="corp dark corp-overlay" style={overlay} {...cerrarAlTocarFuera}>
       <div
         style={{
           width: '100%',

@@ -6,6 +6,7 @@
  * su destino es el marketplace.
  */
 
+import { useCerrarAlTocarFuera } from '@/lib/hooks/useCerrarAlTocarFuera';
 import { useNombreApp } from '@/lib/hooks/useNombreApp';
 import { useState } from 'react';
 import { horaDeReanudacion, useEstadoRegistro } from './estadoRegistro';
@@ -51,6 +52,7 @@ export default function ClientLoginModal({
    */
   const [tienePasskey, setTienePasskey] = useState(false);
   const [busy, setBusy] = useState(false);
+  const cerrarAlTocarFuera = useCerrarAlTocarFuera(onClose, busy);
   const [error, setError] = useState<string | null>(null);
   /**
    * CUENTA SIN VERIFICAR (Fernando, 2026-10-29): en vez de un error seco, se dice que falta
@@ -267,7 +269,7 @@ export default function ClientLoginModal({
   };
 
   return (
-    <div role="dialog" aria-modal="true" className="corp dark corp-overlay" style={overlay}>
+    <div role="dialog" aria-modal="true" className="corp dark corp-overlay" style={overlay} {...cerrarAlTocarFuera}>
       <div
         style={{
           width: '100%',
