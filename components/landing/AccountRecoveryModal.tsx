@@ -28,7 +28,7 @@ export default function AccountRecoveryModal({
   const [pwd, setPwd] = useState('');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
-  const cerrarAlTocarFuera = useCerrarAlTocarFuera(onClose, busy);
+  const { cerrar, velo } = useCerrarAlTocarFuera(onClose, busy);
   const [error, setError] = useState<string | null>(null);
   const [masked, setMasked] = useState<string | null>(null);
   /** ¿Tiene una passkey que sirva en este dominio? Lo dice el servidor en el paso 1. */
@@ -198,7 +198,7 @@ export default function AccountRecoveryModal({
   };
 
   return (
-    <div role="dialog" aria-modal="true" className="corp dark corp-overlay" style={overlay} {...cerrarAlTocarFuera}>
+    <div role="dialog" aria-modal="true" className="corp dark corp-overlay" style={overlay} {...velo}>
       <div
         style={{
           width: '100%',
@@ -219,7 +219,7 @@ export default function AccountRecoveryModal({
         </div>
 
         <div className="auth-panel" style={panel}>
-          <BotonCerrar onClick={onClose} tono="oscuro" className="absolute top-2.5 right-3" />
+          <BotonCerrar onClick={cerrar} tono="oscuro" className="absolute top-2.5 right-3" />
 
           <h2 style={title}>
             {step === 'creds'

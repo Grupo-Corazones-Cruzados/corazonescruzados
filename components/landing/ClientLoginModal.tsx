@@ -52,7 +52,7 @@ export default function ClientLoginModal({
    */
   const [tienePasskey, setTienePasskey] = useState(false);
   const [busy, setBusy] = useState(false);
-  const cerrarAlTocarFuera = useCerrarAlTocarFuera(onClose, busy);
+  const { cerrar, velo } = useCerrarAlTocarFuera(onClose, busy);
   const [error, setError] = useState<string | null>(null);
   /**
    * CUENTA SIN VERIFICAR (Fernando, 2026-10-29): en vez de un error seco, se dice que falta
@@ -269,7 +269,7 @@ export default function ClientLoginModal({
   };
 
   return (
-    <div role="dialog" aria-modal="true" className="corp dark corp-overlay" style={overlay} {...cerrarAlTocarFuera}>
+    <div role="dialog" aria-modal="true" className="corp dark corp-overlay" style={overlay} {...velo}>
       <div
         style={{
           width: '100%',
@@ -290,7 +290,7 @@ export default function ClientLoginModal({
         </div>
 
         <div className="auth-panel" style={panel}>
-          <BotonCerrar onClick={onClose} tono="oscuro" className="absolute top-2.5 right-3" />
+          <BotonCerrar onClick={cerrar} tono="oscuro" className="absolute top-2.5 right-3" />
 
           <h2 style={title}>
             {step === 'creds'

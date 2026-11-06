@@ -2792,7 +2792,7 @@ export default function LandingPage() {
       style={{ ['--corte' as string]: '50vw' }}
     >
       {/* En una app, la portada partida no llega a verse: se esconde hasta que `appTelefono` entra. */}
-      <script dangerouslySetInnerHTML={{ __html: "if(/(?:^|;\\s*)gcc_app=/.test(document.cookie))document.documentElement.dataset.gccApp='1'" }} />
+      <script dangerouslySetInnerHTML={{ __html: "var a=document.cookie.match(/(?:^|;\\s*)gcc_app=(\\w+)/);if(a)document.documentElement.dataset.gccApp=a[1]" }} />
       {/* La misma cabecera que el resto del sitio, en modo FLOTANTE: la portada es una
           experiencia a pantalla completa y una barra sólida encima le corta la escena. */}
       <CabeceraSitio />

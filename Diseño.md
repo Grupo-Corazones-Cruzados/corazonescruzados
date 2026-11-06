@@ -1808,8 +1808,8 @@ pinta el sistema operativo. Mismos tokens de marca, escritos a mano porque ahí 
 - **Pendiente (iPhone):** la Actividad en Vivo (pantalla de bloqueo + isla dinámica) seguirá esta
   misma ficha: logo, ticket, cliente, reloj grande, tarifa, «Detener».
 
-## Animación de inicio de las apps (2026-11-05)
-Videos sin sonido de `movil/animaciones/generar.py`, en `public/apps/`, con el borde difuminado para fundirse con la cabecera. `--app-velo` es el fondo de cada app. Con «reducir movimiento» se muestra `<app>-bucle.jpg`. No usar la marca de Motordesa ni de otros clientes.
+## Transiciones de las apps (2026-11-05)
+Sobre la portada de siempre (corazón, mundo, eslogan y raya, sin tocar sus colores) sube la hoja de `InicioApp`, con `appHoja`. Ingresar y Crear cuenta se deslizan a su lado. Las ventanas de acceso bajan al cerrarse (`[data-saliendo]`). En el panel, `html[data-gcc-app]` hace que el detalle entre por la derecha y al volver por la izquierda. No usar marcas de otros clientes ni videos de fondo. Centralizado cambia solo fondo y acentos de la hoja.
 
 ## Inicio de sesión de cada app (Fernando, 2026-11-05)
 La misma portada, según la cookie `gcc_app`: sin paneles de mundo, sin «Volver» y sin el menú «¿Cómo quieres ingresar?».

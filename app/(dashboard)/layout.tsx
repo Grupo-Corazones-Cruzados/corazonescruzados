@@ -1,5 +1,6 @@
 'use client';
 
+import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
 import '../tema-progreso.css';
 import '../temas.css';
 import '../movimiento.css';
@@ -45,6 +46,11 @@ function Panel({ children }: { children: React.ReactNode }) {
   // El espacio de trabajo tiene su cuadro de escritura justo donde flotan estos botones.
   const sinMuelle = usePathname().startsWith('/dashboard/admin/espacio');
   const mainRef = useRef<HTMLElement>(null);
+  // Las transiciones de teléfono de `movimiento.css` solo corren dentro de una app.
+  useEffect(() => {
+    const app = appDeTelefono();
+    if (app) document.documentElement.dataset.gccApp = app;
+  }, []);
   useEntradaTrasCarga(mainRef);
 
   /**
