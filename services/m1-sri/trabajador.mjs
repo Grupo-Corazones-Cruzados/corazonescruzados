@@ -39,7 +39,7 @@ async function puerta(metodo, cuerpo) {
   return d.data;
 }
 
-async function entrar(ruc, clave) {
+async function entrar(ruc, clave, seccion = /recibidos/i) {
   const browser = await puppeteer.launch({
     executablePath: CHROME, headless: false,
     // Con la tapa cerrada nadie ve la ventana: sin estas tres, Chrome la da por oculta y frena
@@ -64,7 +64,7 @@ async function entrar(ruc, clave) {
   await espera(8000);
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 90000 }),
-    page.evaluate(() => [...document.querySelectorAll('#consultaDocumentoForm a')].find((a) => /recibidos/i.test(a.innerText)).click()),
+    page.evaluate((s) => [...document.querySelectorAll('#consultaDocumentoForm a')].find((a) => new RegExp(s, 'i').test(a.innerText)).click(), seccion.source),
   ]);
   await espera(5000);
   return { browser, page };
@@ -132,11 +132,70 @@ async function ejecutar(t) {
   }
 }
 
+/** Las facturas EMITIDAS de un día: esa pantalla consulta día a día y no lleva captcha. */
+async function consultarDia(page, dia) {
+  await page.evaluate((d) => {
+    const i = document.getElementById('frmPrincipal:calendarFechaDesde_input');
+    i.value = d;
+    i.dispatchEvent(new Event('change', { bubbles: true }));
+  }, dia);
+  await page.select('#frmPrincipal\\:cmbTipoComprobante', '1');
+  await espera(300);
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('comprobantes-electronicos-internet'), { timeout: 60000 }),
+    page.click('#frmPrincipal\\:btnConsultar'),
+  ]);
+  await espera(2500);
+  const msg = await page.evaluate(() => [...document.querySelectorAll('.ui-messages, .ui-growl, [id*="messages"]')].map((e) => e.innerText.trim()).filter(Boolean).join(' '));
+  if (/captcha/i.test(msg)) throw new Error(`Captcha: ${msg}`);
+  const leer = () => page.$$eval('tbody[id$="_data"] tr', (trs) => trs.map((tr) => [...tr.cells].map((c) => c.innerText.trim().replace(/\s+/g, ' '))));
+  let filas = await leer();
+  const pag = await page.evaluate(() => (document.querySelector('.ui-paginator-current') || {}).innerText || '');
+  const m = pag.match(/of (\d+)|de (\d+)/);
+  const paginas = m ? +(m[1] || m[2]) : 1;
+  for (let p = 2; p <= paginas; p++) { await page.click('.ui-paginator-next'); await espera(2500); filas = filas.concat(await leer()); }
+  // Número · comprobante · clave · autorización · emisión · subtotal · IVA · total
+  return filas.map((c) => {
+    const clave = c.find((x) => /^\d{49}$/.test(x)) || '';
+    const numeros = c.slice(c.indexOf(clave) + 1).filter((x) => /^-?\d+([.,]\d+)?$/.test(x));
+    return { comprobante: c.find((x) => /^Factura/i.test(x)) || '', clave, total: numeros[numeros.length - 1] || '0' };
+  }).filter((f) => f.clave);
+}
+
+async function ejecutarEmitidas(t) {
+  const dias = (t.meses || []).flatMap((m) => m.dias || []);
+  log(`trabajo ${t.id}: emitidas de ${dias.length} días`);
+  const resultados = [];
+  let browser;
+  try {
+    const s = await entrar(t.ruc, t.clave, /emitidos/i);
+    browser = s.browser;
+    for (const dia of dias) {
+      let comprobantes = [], ok = false, mensaje;
+      for (let intento = 1; intento <= 3 && !ok; intento++) {
+        try { comprobantes = await consultarDia(s.page, dia); ok = true; }
+        catch (e) { mensaje = e.message; await espera(5000 * intento); }
+      }
+      resultados.push({ dia, ok, comprobantes, mensaje: ok ? undefined : mensaje });
+      if (!ok) log(`  ${dia}: FALLÓ ${mensaje}`);
+      await espera(1000);
+    }
+    const r = await enviar({ id: t.id, dias: resultados });
+    log(`trabajo ${t.id}: ${r.estado}`);
+  } catch (e) {
+    log(`trabajo ${t.id}: ERROR ${e.message}`);
+    await enviar({ id: t.id, dias: resultados, error: e.message }).catch((e2) => log('no se pudo avisar:', e2.message));
+  } finally {
+    await browser?.close().catch(() => {});
+  }
+}
+
 log('trabajador del SRI en marcha');
 for (;;) {
   try {
     const t = await puerta('GET');
-    if (t) await ejecutar(t);
+    if (t?.tipo === 'emitidos') await ejecutarEmitidas(t);
+    else if (t) await ejecutar(t);
     else await espera(30000);
   } catch (e) {
     log('sin conexión con la plataforma:', e.message);

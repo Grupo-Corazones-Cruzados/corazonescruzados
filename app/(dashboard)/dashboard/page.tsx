@@ -14,6 +14,7 @@ import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
 import MenuMas from '@/components/ui/MenuMas';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import BotonGastosSri from '@/components/dashboard/BotonGastosSri';
+import BotonEmitidasSri from '@/components/dashboard/BotonEmitidasSri';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import Segmentado from '@/components/ui/Segmentado';
 import Interruptor from '@/components/ui/Interruptor';
@@ -219,6 +220,7 @@ export default function DashboardHome() {
               <EnBarraAcciones>
                 {/* Un solo botón montado a la vez (teléfono O escritorio): cada uno pregunta y avisa. */}
                 {isAdmin && enTelefono && <BotonGastosSri onActualizado={fetchMonths} />}
+                {isAdmin && enTelefono && <BotonEmitidasSri />}
                 {mesesFiltrados.length > 0 && (
                   <MenuMas items={opcionesReporte} label={textoReporte}
                     boton={{ texto: textoReporte, icon: Download, className: `${BTN_SECONDARY} inline-flex items-center justify-center gap-1.5` }} />
@@ -263,6 +265,7 @@ export default function DashboardHome() {
               {(mesesFiltrados.length > 0 || isAdmin) && (
                 <div className="hidden lg:flex items-center gap-2 ml-auto shrink-0">
                   {isAdmin && !enTelefono && <BotonGastosSri onActualizado={fetchMonths} />}
+                  {isAdmin && !enTelefono && <BotonEmitidasSri />}
                   {mesesFiltrados.length > 0 && (
                     <MenuMas items={opcionesReporte} label={textoReporte}
                       boton={{ texto: textoReporte, icon: Download, className: BTN_SECONDARY }} />

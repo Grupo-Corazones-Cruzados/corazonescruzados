@@ -54,6 +54,8 @@ export function ensureSriTables(): Promise<void> {
         nuevos INT,
         mensaje TEXT
       );
+      ALTER TABLE gcc_world.sri_sync_trabajos ADD COLUMN IF NOT EXISTS tipo VARCHAR(12) NOT NULL DEFAULT 'recibidos';
+      ALTER TABLE gcc_world.sri_sync_trabajos ADD COLUMN IF NOT EXISTS resultado JSONB;
       CREATE TABLE IF NOT EXISTS gcc_world.sri_sync_meses (
         year INT NOT NULL,
         month INT NOT NULL,
@@ -113,7 +115,7 @@ export async function estadoSincronizacion() {
   );
   const { rows: [t] } = await pool.query(
     `SELECT id, estado, creado_en, tomado_en, terminado_en, meses, nuevos, mensaje
-       FROM gcc_world.sri_sync_trabajos ORDER BY id DESC LIMIT 1`,
+       FROM gcc_world.sri_sync_trabajos WHERE tipo = 'recibidos' ORDER BY id DESC LIMIT 1`,
   );
   return {
     claveConfigurada: !!c?.clave,
@@ -129,7 +131,7 @@ export async function estadoSincronizacion() {
 export async function encolarSincronizacion(pedidoPor: string) {
   await ensureSriTables();
   const { rows: [abierto] } = await pool.query(
-    `SELECT id FROM gcc_world.sri_sync_trabajos WHERE estado IN ('pendiente', 'en_curso') ORDER BY id DESC LIMIT 1`,
+    `SELECT id FROM gcc_world.sri_sync_trabajos WHERE tipo = 'recibidos' AND estado IN ('pendiente', 'en_curso') ORDER BY id DESC LIMIT 1`,
   );
   if (abierto) return { id: Number(abierto.id), yaEnCola: true };
   const { rows: [n] } = await pool.query(
@@ -167,7 +169,7 @@ export async function esTrabajador(authorization: string | null): Promise<boolea
  * El M1 toma el trabajo más antiguo de la cola. Recibe la clave DESCIFRADA (viaja por HTTPS y no
  * se guarda en el M1) y los meses que tiene que consultar. `null` si no hay nada que hacer.
  */
-export async function tomarTrabajo(): Promise<{ id: number; ruc: string; clave: string; meses: Mes[] } | null> {
+export async function tomarTrabajo(): Promise<{ id: number; tipo: 'recibidos' | 'emitidos'; ruc: string; clave: string; meses: any[] } | null> {
   await ensureSriTables();
   // Un trabajo que se quedó «en curso» (el M1 se apagó a medias) vuelve a la cola.
   await pool.query(
@@ -178,10 +180,11 @@ export async function tomarTrabajo(): Promise<{ id: number; ruc: string; clave: 
   const { rows: [c] } = await pool.query(`SELECT clave_cifrada FROM gcc_world.sri_sync_config WHERE id = 1`);
   const meses = await mesesPendientes();
   const { rows: [t] } = await pool.query(
-    `UPDATE gcc_world.sri_sync_trabajos SET estado = 'en_curso', tomado_en = NOW(), meses = $1
+    `UPDATE gcc_world.sri_sync_trabajos SET estado = 'en_curso', tomado_en = NOW(),
+            meses = CASE WHEN tipo = 'emitidos' THEN meses ELSE $1::jsonb END
       WHERE id = (SELECT id FROM gcc_world.sri_sync_trabajos WHERE estado = 'pendiente'
                    ORDER BY id LIMIT 1 FOR UPDATE SKIP LOCKED)
-      RETURNING id`,
+      RETURNING id, tipo, meses`,
     [JSON.stringify(meses)],
   );
   if (!t) return null;
@@ -189,10 +192,10 @@ export async function tomarTrabajo(): Promise<{ id: number; ruc: string; clave: 
     await terminar(Number(t.id), 'error', 0, 'Falta la clave del SRI: guárdala desde el botón del Inicio.');
     return null;
   }
-  return { id: Number(t.id), ruc: RUC_SRI, clave: descifrar(c.clave_cifrada, CONTEXTO_CLAVE), meses };
+  return { id: Number(t.id), tipo: t.tipo, ruc: RUC_SRI, clave: descifrar(c.clave_cifrada, CONTEXTO_CLAVE), meses: t.meses };
 }
 
-async function terminar(id: number, estado: EstadoTrabajo, nuevos: number, mensaje: string | null) {
+export async function terminar(id: number, estado: EstadoTrabajo, nuevos: number, mensaje: string | null) {
   await pool.query(
     `UPDATE gcc_world.sri_sync_trabajos SET estado = $2, terminado_en = NOW(), nuevos = $3, mensaje = $4 WHERE id = $1`,
     [id, estado, nuevos, mensaje],
