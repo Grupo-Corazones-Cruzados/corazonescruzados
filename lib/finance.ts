@@ -153,6 +153,18 @@ export async function removeIncomeFromFinance(sourceType: string, sourceId: stri
 export { ensureFinanceTables, ensureMonth, recalcMonth };
 
 /**
+ * ¿ESTE ORIGEN SE COBRA POR ETAPAS? Condición SQL: `true` si NO tiene ninguna etapa con factura vigente.
+ * Cada etapa entra como ingreso por su factura (`invoice`/<id>), así que anotar además el proyecto o el
+ * ticket por su costo entero contaría lo que aún no se ha facturado y lo ya facturado dos veces. Le pasó
+ * al proyecto 37 (2026-10-29) y al 47 (2026-11-05: 435 $ con solo la etapa de 125 $ facturada).
+ */
+export function sqlSinEtapasFacturadas(columna: 'project_id' | 'ticket_id', origen: string): string {
+  return `NOT EXISTS (SELECT 1 FROM gcc_world.project_stages ps
+    JOIN gcc_world.invoices fe ON fe.id = ps.invoice_id AND fe.status <> 'cancelled'
+    WHERE ps.${columna} = ${origen})`;
+}
+
+/**
  * ¿ESTE INGRESO ESTÁ FACTURADO? — definición ÚNICA, en SQL sobre `finance_items` con alias `fi`
  * (Fernando, 2026-10-29: «un filtro de solo facturado, para que de mis reportes cuente solo lo
  * facturado en ingresos»). Lo usan la lista de meses, el detalle y el reporte en PDF.

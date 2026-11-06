@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { addTicketIncomeToFinance } from '@/lib/finance';
+import { addTicketIncomeToFinance, sqlSinEtapasFacturadas } from '@/lib/finance';
 import { ensureTicketSlotColumns, ensureTicketActionColumns } from '@/lib/tickets/schema';
 import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 import { puedeVerTicket, puedeEditarTicket, puedeBorrarTicket, cargarTicketParaPermiso } from '@/lib/tickets/permisos';
@@ -127,7 +127,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const ticket = rows[0];
     if (ticket.status === 'completed' && ticket.estimated_cost) {
       try {
-        await addTicketIncomeToFinance(String(ticket.id), ticket.title, Number(ticket.estimated_cost) || 0);
+        const { rows: [sinEtapas] } = await pool.query(`SELECT ${sqlSinEtapasFacturadas('ticket_id', '($1)::bigint')} AS si`, [ticket.id]);
+        if (sinEtapas.si) await addTicketIncomeToFinance(String(ticket.id), ticket.title, Number(ticket.estimated_cost) || 0);
       } catch (finErr: any) { console.error('Finance ticket registration error:', finErr.message); }
     }
 

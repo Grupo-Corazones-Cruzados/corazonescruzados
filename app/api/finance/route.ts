@@ -1,13 +1,15 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureFinanceTables, ensureMonth, recalcMonth, addProjectIncomeToFinance, addTicketIncomeToFinance, SQL_INGRESO_FACTURADO, nombrarIngresosFacturados } from '@/lib/finance';
+import { ensureFinanceTables, ensureMonth, recalcMonth, addProjectIncomeToFinance, addTicketIncomeToFinance, SQL_INGRESO_FACTURADO, nombrarIngresosFacturados, sqlSinEtapasFacturadas } from '@/lib/finance';
 import { nombrarPendientes } from '@/lib/pagos/nombre-estandar';
 
 /**
  * Backfill: register completed/invoiced projects and completed tickets.
  * Uses finance_source_log to skip sources that were ever registered
  * (even if the admin later deleted the item manually).
+ *
+ * ⚠️ Lo que se cobra por etapas no se anota entero: cada etapa ya entra por su factura.
  */
 async function backfillIncomes() {
   // Seed log from existing items (one-time catch-up for items registered before the log existed)
@@ -23,6 +25,7 @@ async function backfillIncomes() {
     SELECT p.id, p.title, p.final_cost, p.updated_at
     FROM gcc_world.projects p
     WHERE p.status = 'completed'
+      AND ${sqlSinEtapasFacturadas('project_id', 'p.id')}
       AND NOT EXISTS (SELECT 1 FROM gcc_world.finance_source_log l WHERE l.source_type = 'project' AND l.source_id = CAST(p.id AS TEXT))
   `);
   for (const p of completedProjects) {
@@ -40,6 +43,7 @@ async function backfillIncomes() {
       SELECT 1 FROM gcc_world.invoice_projects ip WHERE ip.project_id = CAST(p.id AS TEXT) AND ip.invoice_id = i.id
     ))
     WHERE i.status != 'cancelled' AND p.status != 'completed'
+      AND ${sqlSinEtapasFacturadas('project_id', 'p.id')}
       AND NOT EXISTS (SELECT 1 FROM gcc_world.finance_source_log l WHERE l.source_type = 'project' AND l.source_id = CAST(p.id AS TEXT))
   `);
   for (const p of invoicedProjects) {
@@ -51,6 +55,7 @@ async function backfillIncomes() {
     SELECT t.id, t.title, t.estimated_cost, t.updated_at
     FROM gcc_world.tickets t
     WHERE t.status = 'completed' AND t.estimated_cost IS NOT NULL AND t.estimated_cost > 0
+      AND ${sqlSinEtapasFacturadas('ticket_id', 't.id')}
       AND NOT EXISTS (SELECT 1 FROM gcc_world.finance_source_log l WHERE l.source_type = 'ticket' AND l.source_id = CAST(t.id AS TEXT))
   `);
   for (const t of completedTickets) {
