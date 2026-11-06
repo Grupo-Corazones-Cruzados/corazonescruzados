@@ -120,7 +120,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             `UPDATE gcc_world.tickets SET status = $2, completed_at = NULL, updated_at = NOW() WHERE id = $1 AND status = 'completed'`,
             [inv.source_id, inv.origen_estado_previo || 'confirmed']
           );
-          await removeIncomeFromFinance('ticket', String(inv.source_id));
+          // Con otra factura vigente, el ingreso del ticket puede ser el de esa: solo se quita si es el de esta.
+          const { rows: [c] } = await pool.query(
+            `SELECT EXISTS (SELECT 1 FROM gcc_world.invoices i WHERE i.id <> $1 AND i.status <> 'cancelled'
+                 AND (i.ticket_id = (($2)::text)::int OR (i.source_type = 'ticket' AND i.source_id = ($2)::text))) AS otra,
+                    EXISTS (SELECT 1 FROM gcc_world.finance_items fi WHERE fi.source_type = 'ticket' AND fi.source_id = ($2)::text AND ABS(fi.amount - ($3)::numeric) < 0.01) AS es_suyo`,
+            [id, String(inv.source_id), Number(inv.total) || 0],
+          );
+          if (!c.otra || c.es_suyo) await removeIncomeFromFinance('ticket', String(inv.source_id));
         } catch (e: any) {
           console.error('[void] ticket revert error:', e.message);
         }

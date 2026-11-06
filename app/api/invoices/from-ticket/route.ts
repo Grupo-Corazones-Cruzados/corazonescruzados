@@ -2,7 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoiceFromTicket, sendInvoiceToSri } from '@/lib/integrations/sri';
-import { addTicketIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
+import { addTicketIncomeToFinance, addInvoiceIncomeToFinance, sqlSinEtapasFacturadas } from '@/lib/finance';
 import { upsertBillingForClient, cuentaFacturable, CONSUMIDOR_FINAL_RUC } from '@/lib/billing-clients';
 import { getTicketPayments , getTicketBilling } from '@/lib/payments';
 import { marcarRegistrosFacturados } from '@/lib/tickets/facturacion';
@@ -83,7 +83,9 @@ export async function POST(req: NextRequest) {
       await pool.query(`UPDATE gcc_world.tickets SET status = 'completed', updated_at = NOW() WHERE id = $1`, [ticket_id]);
       try {
         const estimated = Number(ticket.estimated_cost) || 0;
-        if (estimated > 0) await addTicketIncomeToFinance(String(ticket.id), ticket.title, estimated);
+        // Con etapas facturadas, lo cobrado ya entró factura a factura: sumar el estimado lo contaría dos veces.
+        const { rows: [sinEtapas] } = await pool.query(`SELECT ${sqlSinEtapasFacturadas('ticket_id', '($1)::bigint')} AS si`, [ticket.id]);
+        if (estimated > 0 && sinEtapas.si) await addTicketIncomeToFinance(String(ticket.id), ticket.title, estimated);
       } catch (finErr: any) { console.error('Finance ticket registration error:', finErr.message); }
       return NextResponse.json({ ok: true, invoiceId: null, sriResult: { ok: true, authorized: false, skipped: true } });
     }
@@ -138,7 +140,15 @@ export async function POST(req: NextRequest) {
     // Register as income. Un ABONO registra su ingreso por-factura (cada parcial es propio);
     // una factura total lo registra por-ticket (comportamiento clásico).
     try {
+      // Si el ticket ya tiene otra factura, esta lleva su propio ingreso: el registro es único por origen y
+      // una segunda «factura total» (permitida desde el 2026-10-16) no sumaba nada.
+      const { rows: [otra] } = await pool.query(
+        `SELECT EXISTS (SELECT 1 FROM gcc_world.invoices i
+           WHERE i.id <> $2 AND i.status <> 'cancelled' AND (i.ticket_id = (($1)::text)::int OR (i.source_type = 'ticket' AND i.source_id = ($1)::text))) AS hay`,
+        [String(ticket.id), invoiceId],
+      );
       if (is_abono) await addInvoiceIncomeToFinance(String(invoiceId), `Abono — ${ticket.title}`, total);
+      else if (otra.hay) await addInvoiceIncomeToFinance(String(invoiceId), ticket.title, total);
       else await addTicketIncomeToFinance(String(ticket.id), ticket.title, total);
     } catch (finErr: any) { console.error('Finance ticket registration error:', finErr.message); }
 

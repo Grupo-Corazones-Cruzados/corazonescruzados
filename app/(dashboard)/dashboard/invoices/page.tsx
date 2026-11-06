@@ -96,6 +96,8 @@ function InvoicesPageInner() {
   // Al refacturar recordamos el ticket/proyecto de origen para volver a marcarlo como
   // completado y re-enlazar la nueva factura a su origen.
   const [refactorSource, setRefactorSource] = useState<{ type: 'ticket' | 'project'; id: number; client_id: number | null } | null>(null);
+  // La factura anulada que se está re-emitiendo. De ella saca el servidor el origen y sus etapas.
+  const [refacturaDe, setRefacturaDe] = useState<string | null>(null);
 
   // Client form
   const [mIdType, setMIdType] = useState('07');
@@ -316,6 +318,7 @@ function InvoicesPageInner() {
       const itemsData = itemsRes.ok ? await itemsRes.json() : { data: [] };
       const items = itemsData.data || [];
 
+      setRefacturaDe(String(sourceId));
       // Recuerda el origen (ticket/proyecto) para re-completarlo al autorizar la refactura.
       if (inv.source_type === 'ticket' && inv.source_id != null) {
         setRefactorSource({ type: 'ticket', id: Number(inv.source_id), client_id: inv.client_id ?? null });
@@ -414,6 +417,7 @@ function InvoicesPageInner() {
           })),
           additional_fields: mAdditionalFields.filter(f => f.name.trim() && f.value.trim()),
           refactor_source: refactorSource,
+          refactura_de: refacturaDe,
         }),
       });
       const data = await res.json();
@@ -444,9 +448,13 @@ function InvoicesPageInner() {
         (mSendEmail && mClientEmail && sriOk ? ' — Enviada por correo' : '')
       );
       if (sriError && !sriOk) toast.error(`SRI: ${sriError}`);
-      if (refactorSource && sriOk) toast.success(`${refactorSource.type === 'ticket' ? 'Ticket' : 'Proyecto'} marcado como completado nuevamente`);
+      for (const o of (data.refacturados || []) as { tipo: string; completado: boolean; titulo: string }[]) {
+        if (o.completado) toast.success(`${o.tipo === 'ticket' ? 'Ticket' : 'Proyecto'} marcado como completado nuevamente`);
+        else toast.info(`«${o.titulo}» sigue en curso: le quedan etapas por facturar`);
+      }
 
       setRefactorSource(null);
+      setRefacturaDe(null);
       setStageProject(null);
       setSelectedStages([]);
       setShowManual(false);

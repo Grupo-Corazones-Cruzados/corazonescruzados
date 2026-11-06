@@ -2,7 +2,8 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoice, sendInvoiceToSri } from '@/lib/integrations/sri';
-import { addProjectIncomeToFinance, addTicketIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
+import { addProjectIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
+import { heredarDeFacturaAnulada, type OrigenRefacturado } from '@/lib/pagos/refactura';
 import { getProjectStages, getProjectBilling } from '@/lib/payments';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
       project_ids, client_id_type, client_name, client_ruc, client_email,
       client_phone, client_address, payment_code, invoice_items,
       additional_fields, send_email, currency, exchange_rate,
-      refactor_source, requirement_ids, stage_ids,
+      refactor_source, refactura_de, requirement_ids, stage_ids,
     } = await req.json();
 
     if (!client_name?.trim()) return NextResponse.json({ error: 'Nombre del cliente requerido' }, { status: 400 });
@@ -104,40 +105,21 @@ export async function POST(req: NextRequest) {
     }
 
     // Sign and send to SRI
+    let refacturados: OrigenRefacturado[] = [];
     let sriResult: any = null;
     if (invoiceId) {
       sriResult = await sendInvoiceToSri(invoiceId);
 
-      // REFACTURA: si esta factura re-emite una anulada de un ticket/proyecto, al autorizar
-      // el SRI volvemos a marcar ese origen como COMPLETADO, re-registramos su ingreso y
-      // re-enlazamos la nueva factura a su origen (para que futuras anulaciones lo reviertan).
-      if (sriResult?.authorized && refactor_source?.id && (refactor_source.type === 'ticket' || refactor_source.type === 'project')) {
+      // REFACTURA: la factura nueva ocupa el lugar de la anulada. El origen, sus etapas y lo que se
+      // completa salen de la propia anulada (ver `heredarDeFacturaAnulada`), y el ingreso es el de
+      // ESTA factura: el costo entero de un proyecto cobrado por etapas contaría lo no facturado.
+      if (sriResult?.authorized && refactura_de) {
         try {
-          const srcId = String(refactor_source.id);
-          const clientId = refactor_source.client_id != null ? Number(refactor_source.client_id) : null;
-          if (refactor_source.type === 'ticket') {
-            const { rows: [t] } = await pool.query(
-              `UPDATE gcc_world.tickets SET status = 'completed', updated_at = NOW() WHERE id = $1 RETURNING title, estimated_cost`,
-              [srcId]
-            );
-            if (t) await addTicketIncomeToFinance(srcId, t.title, Number(t.estimated_cost) || 0);
-            await pool.query(
-              `UPDATE gcc_world.invoices SET source_type = 'ticket', source_id = $1, ticket_id = $1${clientId ? ', client_id = $2' : ''} WHERE id = ${clientId ? '$3' : '$2'}`,
-              clientId ? [srcId, clientId, invoiceId] : [srcId, invoiceId]
-            );
-            // La refactura cubre los registros que quedaron libres al anular la anterior.
-            await marcarRegistrosFacturados(srcId, invoiceId);
-          } else {
-            const { rows: [p] } = await pool.query(
-              `UPDATE gcc_world.projects SET status = 'completed', updated_at = NOW() WHERE id = $1 RETURNING title, final_cost`,
-              [srcId]
-            );
-            if (p) await addProjectIncomeToFinance(srcId, p.title, Number(p.final_cost) || 0);
-            await pool.query(
-              `UPDATE gcc_world.invoices SET project_id = $1${clientId ? ', client_id = $2' : ''} WHERE id = ${clientId ? '$3' : '$2'}`,
-              clientId ? [srcId, clientId, invoiceId] : [srcId, invoiceId]
-            );
-          }
+          const clientId = refactor_source?.client_id != null ? Number(refactor_source.client_id) : null;
+          refacturados = await heredarDeFacturaAnulada(refactura_de, invoiceId);
+          if (clientId) await pool.query(`UPDATE gcc_world.invoices SET client_id = $1 WHERE id = $2`, [clientId, invoiceId]);
+          const { rows: [nueva] } = await pool.query(`SELECT total FROM gcc_world.invoices WHERE id = $1`, [invoiceId]);
+          await addInvoiceIncomeToFinance(String(invoiceId), `Refactura — ${refacturados[0]?.titulo || client_name}`, Number(nueva?.total) || 0);
           // Fase 2: actualiza la cuenta de facturación del cliente con los datos re-emitidos.
           if (clientId) {
             await upsertBillingForClient(clientId, {
@@ -146,7 +128,7 @@ export async function POST(req: NextRequest) {
             });
           }
         } catch (e: any) {
-          console.error('[manual] refactura re-complete error:', e.message);
+          console.error('[manual] refactura error:', e.message);
         }
       }
 
@@ -259,7 +241,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: true, invoiceId, sriResult, projectsData });
+    return NextResponse.json({ ok: true, invoiceId, sriResult, projectsData, refacturados });
   } catch (err: any) {
     console.error('Manual invoice error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
