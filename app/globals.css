@@ -5006,6 +5006,10 @@ html[data-gcc-app='progreso'], html[data-gcc-app='progreso'] body { background: 
 html[data-gcc-app='centralizado'], html[data-gcc-app='centralizado'] body { background: #050304; }
 .landing-page[data-app] > header, .landing-page[data-app] > footer { display: none; }
 .landing-page[data-app] .portada-zona { display: none; }
+/* Cada app con su fondo desde el primer cuadro: sin relleno y sin pintar el mundo que no se ve. */
+.landing-page[data-app='progreso'] .escena-progreso { clip-path: none !important; }
+.landing-page[data-app='progreso'] .escena-aventura { display: none; }
+.landing-page[data-app]:not([data-app='progreso']) .escena-progreso { display: none; }
 .corp.app-inicio {
   position: fixed; inset: auto 0 0 0; z-index: 100; min-height: 0; display: flex; flex-direction: column; max-height: 72dvh; overflow-y: auto; overscroll-behavior: none;
   background: transparent; font-family: var(--font-body); -webkit-tap-highlight-color: transparent;

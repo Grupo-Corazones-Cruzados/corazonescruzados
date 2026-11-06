@@ -2938,7 +2938,7 @@ export default function LandingPage() {
           </div>
         </div>
 
-        <FondosPortada modo={modoPortada} juegoEnCurso={windAway} ligero={esTactil} />
+        <FondosPortada modo={modoPortada} juegoEnCurso={windAway} ligero={esTactil} sinFrontera={!!appTelefono} />
 
         {/* Camera viewfinder — corner brackets pan with the cursor */}
         <div

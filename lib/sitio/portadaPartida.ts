@@ -20,6 +20,7 @@
  */
 
 import { useEffect, useRef, type RefObject } from 'react';
+import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
 
 export type ModoPortada = 'partido' | 'aventura' | 'progreso';
 
@@ -72,6 +73,9 @@ export function useCorteAnimado(ref: RefObject<HTMLElement | null>, modo: ModoPo
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // En las apps no hay nada que elegir ni que rellenar (Fernando, 2026-11-05: ralentizaba abrirlas):
+    // el fondo ya está puesto, sin bucle cuadro a cuadro.
+    if (appDeTelefono()) return;
     const reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const mqVertical = window.matchMedia(CONSULTA_VERTICAL);
     const escena = () => el.querySelector<HTMLElement>('.escena-progreso');
