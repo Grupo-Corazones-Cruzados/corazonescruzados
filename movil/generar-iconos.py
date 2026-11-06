@@ -103,6 +103,33 @@ for f in AND.glob("drawable*/splash.png"):
     lienzo.paste((20, 20, 20), ((w - lado) // 2, (h - lado) // 2), mask=m)
     lienzo.save(f)
 
+# El fondo del icono según la app (Fernando, 2026-11-05), con el trazo en blanco. Cada sabor de Android
+# sobrescribe los de `main`. Aventura aún no tiene sabor: lo usará al crearlo.
+FONDOS = {"progreso": "#4B2D8E", "centralizado": "#DC2626", "aventura": "#0B0D14"}
+BLANCO = (255, 255, 255, 255)
+for app, fondo in FONDOS.items():
+    res = RAIZ / f"movil/android/app/src/{app}/res"
+    color = tuple(int(fondo[i:i + 2], 16) for i in (1, 3, 5)) + (255,)
+    for d, lado in {"mdpi": 48, "hdpi": 72, "xhdpi": 96, "xxhdpi": 144, "xxxhdpi": 192}.items():
+        (res / f"mipmap-{d}").mkdir(parents=True, exist_ok=True)
+        cuadrado = Image.new("RGB", (lado, lado), color[:3])
+        cuadrado.paste(BLANCO[:3], mask=marca(lado, 0.62))
+        cuadrado.save(res / f"mipmap-{d}/ic_launcher.png")
+        from PIL import ImageDraw
+        disco = Image.new("L", (lado * 4, lado * 4), 0)
+        ImageDraw.Draw(disco).ellipse((0, 0, lado * 4 - 1, lado * 4 - 1), fill=255)
+        redondo = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
+        redondo.paste(color, mask=disco.resize((lado, lado), Image.LANCZOS))
+        redondo.paste(BLANCO, mask=marca(lado, 0.58))
+        redondo.save(res / f"mipmap-{d}/ic_launcher_round.png")
+    for d, lado in {"mdpi": 108, "hdpi": 162, "xhdpi": 216, "xxhdpi": 324, "xxxhdpi": 432}.items():
+        fg = Image.new("RGBA", (lado, lado), (0, 0, 0, 0))
+        fg.paste(BLANCO, mask=marca(lado, 0.42))
+        fg.save(res / f"mipmap-{d}/ic_launcher_foreground.png")
+    (res / "values").mkdir(parents=True, exist_ok=True)
+    (res / "values/ic_launcher_background.xml").write_text(
+        f'<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    <color name="ic_launcher_background">{fondo}</color>\n</resources>\n')
+
 # Web / PWA
 sobre_blanco(512, 0.62).save(RAIZ / "public/icono-512.png")
 sobre_blanco(192, 0.62).save(RAIZ / "public/icono-192.png")
