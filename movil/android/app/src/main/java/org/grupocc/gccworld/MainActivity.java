@@ -2,9 +2,11 @@ package org.grupocc.gccworld;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.webkit.WebView;
 import androidx.webkit.WebSettingsCompat;
 import androidx.webkit.WebViewFeature;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.WebViewListener;
 import org.grupocc.gccworld.reloj.RelojTicketPlugin;
 import org.grupocc.gccworld.reloj.Relojes;
 
@@ -23,7 +25,23 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onPause() {
         enPrimerPlano = false;
+        guardarCookies();
         super.onPause();
+    }
+
+    /** Si un aviso de permiso ya la tenía en pausa, salir de la app solo pasa por aquí. */
+    @Override
+    public void onStop() {
+        guardarCookies();
+        super.onStop();
+    }
+
+    /**
+     * La WebView guarda las cookies en disco cada 30 s: cerrar la app antes de eso devolvía la sesión
+     * recién cerrada (Fernando, 2026-11-06). Es lo último que se oye antes de que el sistema pueda matarla.
+     */
+    private void guardarCookies() {
+        android.webkit.CookieManager.getInstance().flush();
     }
 
     @Override
@@ -41,6 +59,13 @@ public class MainActivity extends BridgeActivity {
             WebSettingsCompat.setWebAuthenticationSupport(
                 getBridge().getWebView().getSettings(), WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP);
         }
+        // Entrar y salir de la cuenta acaban cargando una página: la sesión queda guardada en ese momento.
+        getBridge().addWebViewListener(new WebViewListener() {
+            @Override
+            public void onPageLoaded(WebView webView) {
+                guardarCookies();
+            }
+        });
         abrirRuta(getIntent());
     }
 
