@@ -4990,7 +4990,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 /* ═══ EL INICIO DE LAS APPS (Fernando, 2026-11-05: «debe parecer una app móvil») ═══
    Solo con `data-app`, la cookie que escribe cada app: GCC World no cambia. Lenguaje de la app de
    Motordesa: velo con logo y alas, cabecera de marca y hoja de radio 28. */
-.landing-page[data-app] { --app-cabeza: #4b2d8e; --app-ala: #a78bfa; --app-velo: #4b2d8e; --app-sub: #d9d0f2; --app-enlace: #5b3fa8; }
+.landing-page[data-app] { --app-cabeza: #4b2d8e; --app-velo: #4b2d8e; --app-sub: #d9d0f2; --app-enlace: #5b3fa8; }
 .landing-page[data-app='progreso'] .corp {
   --color-digi-card: #ffffff; --color-digi-darker: #f1f4f7; --color-digi-dark: #eef1f4; --color-digi-border: #e3e6ea;
   --color-digi-text: #1a1d21; --color-digi-muted: #6b7280; --color-accent: #4b2d8e; --color-accent-light: #ece7f8;
@@ -5001,7 +5001,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   --color-digi-card: #171a24; --color-digi-darker: #0f1119; --color-digi-dark: #0f1119; --color-digi-border: #2a2e3c;
   --color-digi-text: #f2f0f8; --color-digi-muted: #a9a5b8; --color-accent: #7b5fbf; --color-accent-light: rgba(123, 95, 191, 0.2);
 }
-.landing-page[data-app='centralizado'] { --app-cabeza: #050304; --app-ala: #ef4444; --app-velo: #dc2626; --app-sub: #d8b4b4; --app-enlace: #fca5a5; }
+.landing-page[data-app='centralizado'] { --app-cabeza: #050304; --app-velo: #050304; --app-sub: #d8b4b4; --app-enlace: #fca5a5; }
 .landing-page[data-app='centralizado'] .corp {
   --color-digi-card: #140c0e; --color-digi-darker: #0a0607; --color-digi-dark: #0a0607; --color-digi-border: #2d1719;
   --color-digi-text: #f5ecec; --color-digi-muted: #c9a9a9; --auth-enlace: #fca5a5; --auth-suave: #c9a9a9; --auth-tenue: #c9a9a9;
@@ -5017,18 +5017,10 @@ html[data-gcc-app], html[data-gcc-app] body { background: #0b0d14; }
   position: relative; flex: none; overflow: hidden; display: flex; flex-direction: column; align-items: center; text-align: center;
   padding: calc(env(safe-area-inset-top, 0px) + 24px) 24px 32px; background: var(--app-cabeza); color: #fff;
 }
-.app-logo { position: relative; width: 84px; height: 84px; border-radius: 42px; margin-bottom: 16px; }
+.app-logo { position: relative; width: 148px; height: 148px; object-fit: cover; margin-bottom: 6px; -webkit-mask-image: radial-gradient(closest-side, #000 86%, transparent 100%); mask-image: radial-gradient(closest-side, #000 86%, transparent 100%); }
+.app-velo-video { width: min(78vw, 340px); aspect-ratio: 1; object-fit: cover; -webkit-mask-image: radial-gradient(closest-side, #000 86%, transparent 100%); mask-image: radial-gradient(closest-side, #000 86%, transparent 100%); }
 .app-cabeza h1 { position: relative; margin: 0; font-size: 28px; line-height: 1.15; font-weight: 700; color: #fff; }
 .app-cabeza p { position: relative; margin: 4px 0 0; font-size: 15px; color: var(--app-sub); }
-.app-alas { position: absolute; display: flex; flex-direction: column; color: var(--app-ala); pointer-events: none; }
-.app-alas i { display: block; background: currentColor; transform: skewX(-40deg); }
-.app-alas-arriba { top: 28px; left: -70px; width: 260px; gap: 11px; opacity: 0.16; }
-.app-alas-arriba i { height: 20px; }
-.app-alas-abajo { bottom: 18px; right: -60px; width: 180px; gap: 8px; opacity: 0.1; align-items: flex-end; }
-.app-alas-abajo i { height: 14px; transform: skewX(40deg); }
-.app-alas i:nth-child(1) { width: 100%; }
-.app-alas i:nth-child(2) { width: 82%; }
-.app-alas i:nth-child(3) { width: 64%; }
 .app-hoja {
   flex: 1 0 auto; display: flex; flex-direction: column; gap: 12px; padding: 28px 24px calc(env(safe-area-inset-bottom, 0px) + 24px);
   border-radius: 28px 28px 0 0; background: var(--color-digi-card); color: var(--color-digi-text);
@@ -5051,14 +5043,8 @@ html[data-gcc-app], html[data-gcc-app] body { background: #0b0d14; }
   background: var(--app-velo); opacity: 1; transition: opacity 260ms ease-in-out;
 }
 .app-velo.es-saliente { opacity: 0; pointer-events: none; }
-.app-velo-marca { position: relative; display: block; width: 132px; height: 132px; }
-.app-velo-marca img { width: 100%; height: 100%; border-radius: 50%; animation: appLogo 620ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
-.app-velo-alas { top: 40px; right: 138px; width: 170px; gap: 9px; color: #000; opacity: 0.3; align-items: flex-end; animation: appAlas 650ms cubic-bezier(0.33, 1, 0.68, 1) 120ms both; }
-.app-velo-alas i { height: 16px; }
 .app-barra { position: relative; width: 132px; height: 3px; overflow: hidden; border-radius: 3px; background: rgba(255, 255, 255, 0.25); }
 .app-barra i { position: absolute; inset: 0 auto 0 0; width: 35%; background: #fff; animation: appBarra 900ms linear infinite; }
-@keyframes appLogo { from { opacity: 0; transform: scale(0.82); } to { opacity: 1; transform: scale(1); } }
-@keyframes appAlas { from { opacity: 0; transform: translateX(-140px); } to { opacity: 0.3; transform: none; } }
 @keyframes appBarra { from { transform: translateX(-120%); } to { transform: translateX(300%); } }
 @keyframes appFilas { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 /* Los diálogos de acceso, como hoja que sube desde abajo. */
@@ -5083,6 +5069,5 @@ html[data-gcc-app], html[data-gcc-app] body { background: #0b0d14; }
   .landing-page[data-app] .auth-panel, .landing-page[data-app] .auth-marco { border-radius: 28px !important; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .app-filas, .app-velo-marca img, .app-velo-alas, .landing-page[data-app] .corp-overlay > div { animation: none; }
-  .app-velo, .app-fila { transition: none; }
+  .app-filas,   .app-velo, .app-fila { transition: none; }
 }

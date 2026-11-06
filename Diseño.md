@@ -1808,6 +1808,9 @@ pinta el sistema operativo. Mismos tokens de marca, escritos a mano porque ahí 
 - **Pendiente (iPhone):** la Actividad en Vivo (pantalla de bloqueo + isla dinámica) seguirá esta
   misma ficha: logo, ticket, cliente, reloj grande, tarifa, «Detener».
 
+## Animación de inicio de las apps (2026-11-05)
+Videos sin sonido de `movil/animaciones/generar.py`, en `public/apps/`, con el borde difuminado para fundirse con la cabecera. `--app-velo` es el fondo de cada app. Con «reducir movimiento» se muestra `<app>-bucle.jpg`. No usar la marca de Motordesa ni de otros clientes.
+
 ## Inicio de sesión de cada app (Fernando, 2026-11-05)
 La misma portada, según la cookie `gcc_app`: sin paneles de mundo, sin «Volver» y sin el menú «¿Cómo quieres ingresar?».
 - **GCC Progreso:** mundo claro. **GCC Aventura:** cielo oscuro. **GCC Centralizado:** cielo con `[data-app='centralizado']` en `globals.css`: negro `#050304`, rojo `#dc2626`/`#ef4444`, solo la tarjeta «Miembro». Dentro de cada app el tema se elige como siempre.
