@@ -68,7 +68,7 @@ export function AuthDialog({
       aria-modal="true"
       aria-label={titulo}
     >
-      <div className={`w-full ${max} my-auto bg-digi-card border border-digi-border rounded-lg shadow-2xl overflow-hidden`}>
+      <div className={`auth-marco w-full ${max} my-auto bg-digi-card border border-digi-border rounded-lg shadow-2xl overflow-hidden`}>
         {/* Cabecera: chip de icono + título + cerrar de 32×32, como los diálogos del panel. */}
         <div className="flex items-start gap-3 px-5 py-4 border-b border-digi-border">
           <span className="w-9 h-9 rounded-md bg-accent-light text-accent flex items-center justify-center shrink-0">

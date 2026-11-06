@@ -34,7 +34,7 @@ export const TITULO_AUTH: React.CSSProperties = {
 
 export const SUBTITULO_AUTH: React.CSSProperties = {
   fontFamily: 'var(--font-body)', fontSize: '0.84rem',
-  color: '#b9b2cf', margin: '0 0 16px',
+  color: 'var(--auth-suave, #b9b2cf)', margin: '0 0 16px',
 };
 
 /** Campo sin etiqueta: el marcador de posición hace de rótulo. */
@@ -52,7 +52,7 @@ export const CAMPO_AUTH: React.CSSProperties = {
 export const ENLACE_AUTH: React.CSSProperties = {
   background: 'transparent', border: 0, cursor: 'pointer',
   fontFamily: 'var(--font-body)', fontSize: '0.78rem',
-  color: '#c9b6ff', textDecoration: 'underline', marginTop: 2,
+  color: 'var(--auth-enlace, #c9b6ff)', textDecoration: 'underline', marginTop: 2,
 };
 
 /** Texto de apoyo bajo el título (el mismo gris lila del diálogo). */
@@ -74,4 +74,4 @@ export const FONDO_AUTH: React.CSSProperties = {
 };
 
 /** Mensaje de error del diálogo. */
-export const ERROR_AUTH: React.CSSProperties = { fontFamily: 'var(--font-body)', fontSize: '0.78rem', color: '#ff8f8f' };
+export const ERROR_AUTH: React.CSSProperties = { fontFamily: 'var(--font-body)', fontSize: '0.78rem', color: 'var(--auth-error, #ff8f8f)' };

@@ -218,7 +218,7 @@ export default function MemberLoginModal({
           gap: 18,
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        <div className="auth-marca" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
           <LogoGirando tamano={40} />
           <span
             style={{ fontFamily: 'var(--font-body)', fontSize: '0.72rem', letterSpacing: '0.2em', color: '#fff' }}
@@ -227,7 +227,7 @@ export default function MemberLoginModal({
           </span>
         </div>
 
-        <div style={panel}>
+        <div className="auth-panel" style={panel}>
           <BotonCerrar onClick={onClose} tono="oscuro" className="absolute top-2.5 right-3" />
 
           <h2 style={title}>
@@ -239,7 +239,7 @@ export default function MemberLoginModal({
                   ? 'Confirma el código'
                   : 'Configura tu passkey'}
           </h2>
-          <p style={{ fontFamily: BODY, fontSize: '0.84rem', color: '#b9b2cf', margin: '0 0 16px' }}>
+          <p style={{ fontFamily: BODY, fontSize: '0.84rem', color: 'var(--auth-suave, #b9b2cf)', margin: '0 0 16px' }}>
             {step === 'creds'
               ? `Inicia sesión con tu cuenta de miembro o administrador para entrar ${nombreApp === 'GCC World' || nombreApp === 'GCC Aventura' ? 'al juego' : `a ${nombreApp}`}.`
               : step === 'factor'
@@ -350,7 +350,7 @@ export default function MemberLoginModal({
                     fontFamily: BODY,
                     fontSize: '0.78rem',
                     lineHeight: 1.5,
-                    color: '#9b93b4',
+                    color: 'var(--auth-tenue, #9b93b4)',
                     margin: '2px 0 0',
                     textAlign: 'center',
                   }}
@@ -370,7 +370,7 @@ export default function MemberLoginModal({
                   cursor: 'pointer',
                   fontFamily: BODY,
                   fontSize: '0.78rem',
-                  color: '#b9b2cf',
+                  color: 'var(--auth-suave, #b9b2cf)',
                   textDecoration: 'underline',
                   marginTop: 2,
                 }}
@@ -412,7 +412,7 @@ export default function MemberLoginModal({
                   cursor: 'pointer',
                   fontFamily: BODY,
                   fontSize: '0.78rem',
-                  color: '#c9b6ff',
+                  color: 'var(--auth-enlace, #c9b6ff)',
                   textDecoration: 'underline',
                   marginTop: 2,
                 }}
@@ -428,7 +428,7 @@ export default function MemberLoginModal({
 }
 
 function ErrorMsg({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: '#ff8f8f' }}>{children}</div>;
+  return <div style={{ fontFamily: BODY, fontSize: '0.78rem', color: 'var(--auth-error, #ff8f8f)' }}>{children}</div>;
 }
 
 const overlay: React.CSSProperties = {

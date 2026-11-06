@@ -9,6 +9,7 @@ import PensamientosCielo from '@/components/landing/PensamientosCielo';
 import FondosPortada from '@/components/landing/FondosPortada';
 import PanelesMundo from '@/components/landing/PanelesMundo';
 import RolesMundo from '@/components/landing/RolesMundo';
+import InicioApp from '@/components/landing/InicioApp';
 import { sonarUnion, sonarVolver } from '@/lib/sitio/sonidoSeleccion';
 import type { AccionesAcceso } from '@/components/landing/opcionesAcceso';
 import { IconoCorazon, IconoMundo } from '@/components/landing/IconosTitular';
@@ -806,7 +807,7 @@ export default function LandingPage() {
   const formularioAbierto =
     recoveryOpen || entryChoiceOpen || onboardingOpen || clientSignupOpen || clientLoginOpen ||
     memberLoginOpen || !!proposalPending || !!candidateAccount || !!clientPending;
-  const latidoDebeSonar = !formularioAbierto && !windAway;
+  const latidoDebeSonar = !formularioAbierto && !windAway && !appTelefono;
   const latidoDebeSonarRef = useRef(latidoDebeSonar);
   latidoDebeSonarRef.current = latidoDebeSonar;
   const latidoFundidoRef = useRef(0);
@@ -3184,6 +3185,15 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+
+      {appTelefono && !windAway && (
+        <InicioApp
+          app={appTelefono}
+          acciones={accionesAcceso}
+          onPostular={() => setOnboardingOpen(true)}
+          onCrearCuenta={() => setClientSignupOpen(true)}
+        />
+      )}
 
       {recoveryOpen && (
         <AccountRecoveryModal

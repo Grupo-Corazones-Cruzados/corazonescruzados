@@ -4986,3 +4986,103 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   .invitacion, .invitacion-enlace, .invitacion-hoja, .invitacion-ir { transition: none; }
   .invitacion-flota, .invitacion-halo, .invitacion-enlace::after, .invitacion-chispa { animation: none; }
 }
+
+/* ═══ EL INICIO DE LAS APPS (Fernando, 2026-11-05: «debe parecer una app móvil») ═══
+   Solo con `data-app`, la cookie que escribe cada app: GCC World no cambia. Lenguaje de la app de
+   Motordesa: velo con logo y alas, cabecera de marca y hoja de radio 28. */
+.landing-page[data-app] { --app-cabeza: #4b2d8e; --app-ala: #a78bfa; --app-velo: #4b2d8e; --app-sub: #d9d0f2; --app-enlace: #5b3fa8; }
+.landing-page[data-app='progreso'] .corp {
+  --color-digi-card: #ffffff; --color-digi-darker: #f1f4f7; --color-digi-dark: #eef1f4; --color-digi-border: #e3e6ea;
+  --color-digi-text: #1a1d21; --color-digi-muted: #6b7280; --color-accent: #4b2d8e; --color-accent-light: #ece7f8;
+  --auth-suave: #6b7280; --auth-tenue: #6b7280; --auth-enlace: #5b3fa8; --auth-error: #b42318;
+}
+.landing-page[data-app='aventura'] { --app-cabeza: #0b0d14; --app-velo: #0b0d14; --app-sub: #b9b2cf; --app-enlace: #c9b6ff; }
+.landing-page[data-app='aventura'] .corp {
+  --color-digi-card: #171a24; --color-digi-darker: #0f1119; --color-digi-dark: #0f1119; --color-digi-border: #2a2e3c;
+  --color-digi-text: #f2f0f8; --color-digi-muted: #a9a5b8; --color-accent: #7b5fbf; --color-accent-light: rgba(123, 95, 191, 0.2);
+}
+.landing-page[data-app='centralizado'] { --app-cabeza: #050304; --app-ala: #ef4444; --app-velo: #dc2626; --app-sub: #d8b4b4; --app-enlace: #fca5a5; }
+.landing-page[data-app='centralizado'] .corp {
+  --color-digi-card: #140c0e; --color-digi-darker: #0a0607; --color-digi-dark: #0a0607; --color-digi-border: #2d1719;
+  --color-digi-text: #f5ecec; --color-digi-muted: #c9a9a9; --auth-enlace: #fca5a5; --auth-suave: #c9a9a9; --auth-tenue: #c9a9a9;
+}
+html[data-gcc-app], html[data-gcc-app] body { background: #0b0d14; }
+.landing-page[data-app] > header, .landing-page[data-app] > footer { display: none; }
+.landing-page[data-app] .portada-bloque { visibility: hidden; }
+.corp.app-inicio {
+  position: fixed; inset: 0; z-index: 100; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; overscroll-behavior: none;
+  background: var(--app-cabeza); font-family: var(--font-body); -webkit-tap-highlight-color: transparent;
+}
+.corp.app-inicio .app-cabeza {
+  position: relative; flex: none; overflow: hidden; display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 24px) 24px 32px; background: var(--app-cabeza); color: #fff;
+}
+.app-logo { position: relative; width: 84px; height: 84px; border-radius: 42px; margin-bottom: 16px; }
+.app-cabeza h1 { position: relative; margin: 0; font-size: 28px; line-height: 1.15; font-weight: 700; color: #fff; }
+.app-cabeza p { position: relative; margin: 4px 0 0; font-size: 15px; color: var(--app-sub); }
+.app-alas { position: absolute; display: flex; flex-direction: column; color: var(--app-ala); pointer-events: none; }
+.app-alas i { display: block; background: currentColor; transform: skewX(-40deg); }
+.app-alas-arriba { top: 28px; left: -70px; width: 260px; gap: 11px; opacity: 0.16; }
+.app-alas-arriba i { height: 20px; }
+.app-alas-abajo { bottom: 18px; right: -60px; width: 180px; gap: 8px; opacity: 0.1; align-items: flex-end; }
+.app-alas-abajo i { height: 14px; transform: skewX(40deg); }
+.app-alas i:nth-child(1) { width: 100%; }
+.app-alas i:nth-child(2) { width: 82%; }
+.app-alas i:nth-child(3) { width: 64%; }
+.app-hoja {
+  flex: 1 0 auto; display: flex; flex-direction: column; gap: 12px; padding: 28px 24px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  border-radius: 28px 28px 0 0; background: var(--color-digi-card); color: var(--color-digi-text);
+}
+.app-filas { display: flex; flex-direction: column; gap: 10px; animation: appFilas 220ms ease-out both; }
+.app-fila {
+  width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px; text-align: left; border: 1.5px solid transparent; border-radius: 16px;
+  background: var(--color-digi-darker); color: var(--color-digi-text); cursor: pointer; transition: transform 120ms ease, opacity 120ms ease;
+}
+.app-fila:active { transform: scale(0.98); opacity: 0.85; }
+.app-fila:focus-visible { border-color: var(--color-accent); outline: none; }
+.app-fila-icono { flex: none; display: grid; place-items: center; width: 42px; height: 42px; border-radius: 10px; background: var(--color-accent); color: #fff; }
+.app-fila-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.app-fila-texto b { font-size: 15px; font-weight: 700; }
+.app-fila-texto span { font-size: 13px; line-height: 18px; color: var(--color-digi-muted); }
+.app-fila-ir { flex: none; width: 20px; height: 20px; color: var(--color-digi-muted); }
+.app-legal { margin-top: auto; padding: 16px 0 0; border: 0; background: none; font-size: 13px; font-weight: 700; color: var(--app-enlace); cursor: pointer; }
+.app-velo {
+  position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 28px;
+  background: var(--app-velo); opacity: 1; transition: opacity 260ms ease-in-out;
+}
+.app-velo.es-saliente { opacity: 0; pointer-events: none; }
+.app-velo-marca { position: relative; display: block; width: 132px; height: 132px; }
+.app-velo-marca img { width: 100%; height: 100%; border-radius: 50%; animation: appLogo 620ms cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.app-velo-alas { top: 40px; right: 138px; width: 170px; gap: 9px; color: #000; opacity: 0.3; align-items: flex-end; animation: appAlas 650ms cubic-bezier(0.33, 1, 0.68, 1) 120ms both; }
+.app-velo-alas i { height: 16px; }
+.app-barra { position: relative; width: 132px; height: 3px; overflow: hidden; border-radius: 3px; background: rgba(255, 255, 255, 0.25); }
+.app-barra i { position: absolute; inset: 0 auto 0 0; width: 35%; background: #fff; animation: appBarra 900ms linear infinite; }
+@keyframes appLogo { from { opacity: 0; transform: scale(0.82); } to { opacity: 1; transform: scale(1); } }
+@keyframes appAlas { from { opacity: 0; transform: translateX(-140px); } to { opacity: 0.3; transform: none; } }
+@keyframes appBarra { from { transform: translateX(-120%); } to { transform: translateX(300%); } }
+@keyframes appFilas { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+/* Los diálogos de acceso, como hoja que sube desde abajo. */
+.landing-page[data-app] .corp-overlay:not(.onboarding-portada) { align-items: flex-end !important; justify-content: center !important; padding: 0 !important; background: rgba(5, 6, 10, 0.55) !important; backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+.landing-page[data-app] .corp-overlay:not(.onboarding-portada) > div { max-width: none !important; width: 100%; margin: 0 !important; gap: 0 !important; animation: appHoja 320ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.landing-page[data-app] .auth-marca { display: none !important; }
+.landing-page[data-app] .auth-panel { border: 0 !important; border-radius: 28px 28px 0 0 !important; box-shadow: none !important; padding: 28px 24px calc(env(safe-area-inset-bottom, 0px) + 24px) !important; }
+.landing-page[data-app] .auth-marco { border: 0 !important; border-radius: 28px 28px 0 0 !important; box-shadow: none !important; padding-bottom: env(safe-area-inset-bottom, 0px); }
+.landing-page[data-app] .corp-overlay input:not([type='checkbox']):not([type='radio']) { min-height: 49px; padding: 14px 16px !important; border-radius: 10px !important; border: 1.5px solid var(--color-digi-darker) !important; background: var(--color-digi-darker) !important; font-size: 16px !important; }
+.landing-page[data-app] .corp-overlay input:not([type='checkbox']):not([type='radio']):focus { border-color: var(--color-digi-muted) !important; box-shadow: none !important; }
+.landing-page[data-app] .corp-overlay .pixel-btn { min-height: 48px; border-radius: 10px !important; font-size: 13px !important; font-weight: 700 !important; letter-spacing: 1px; text-transform: uppercase; }
+.landing-page[data-app] .auth-marco input:not([type='checkbox']):not([type='radio']) { background: var(--color-digi-card) !important; border-color: var(--color-digi-border) !important; }
+/* En el teléfono `.landing-page header` pinta toda cabecera de oscuro con !important. */
+.landing-page[data-app] .app-cabeza { background: var(--app-cabeza) !important; }
+.landing-page[data-app] .onb-cabecera { background: var(--color-digi-card) !important; }
+@keyframes appHoja { from { transform: translateY(100%); } to { transform: none; } }
+@media (min-width: 600px) {
+  .app-hoja { width: 100%; max-width: 440px; margin: 0 auto 32px; flex: none; border-radius: 28px; }
+  .corp.app-inicio { background: var(--app-cabeza); }
+  .landing-page[data-app] .corp-overlay:not(.onboarding-portada) { align-items: center !important; }
+  .landing-page[data-app] .corp-overlay:not(.onboarding-portada) > div { max-width: 440px !important; }
+  .landing-page[data-app] .auth-panel, .landing-page[data-app] .auth-marco { border-radius: 28px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-filas, .app-velo-marca img, .app-velo-alas, .landing-page[data-app] .corp-overlay > div { animation: none; }
+  .app-velo, .app-fila { transition: none; }
+}

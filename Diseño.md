@@ -6341,3 +6341,6 @@ Pantalla de alto completo con `PanelHastaElPie desdeAncho={0}`: raíl de 300 px 
 ## Invitación flotante del sitio público (2026-11-05)
 `components/sitio/InvitacionSolucion.tsx`, `.invitacion*` en `app/globals.css`. Una acción opcional que depende de un filtro flota abajo en el centro, sobre el pie (`--alto-pie` + 16 px), con ilustración (puerta entreabierta), «×» para retirarla y un hueco en el flujo para que no tape la paginación. Va en un portal al `body`: un `fixed` dentro de un elemento animado se coloca respecto a él. Entra y sale animada; respeta `prefers-reduced-motion`.
 Nota: `/desarrollo-humano` se eliminó ese mismo día; lo que este documento diga de ella es historia.
+
+## Inicio de las apps de teléfono (2026-11-05)
+Referencia: la app de Motordesa. Hoja de radio 28, campos de 49 px, radio 10 y letra de 16 px (evita el zoom de iOS), botones de 48 px en mayúsculas. Velo: logo con rebote, alas desde la izquierda, mínimo 1,28 s y salida de 260 ms; al salir hacia la plataforma lleva barra de carga. Colores: Progreso `#4B2D8E` con hoja blanca, Aventura `#0B0D14` con hoja oscura y Centralizado negro con rojo `#DC2626`. Todo bajo `.landing-page[data-app]`: nunca afecta a GCC World.
