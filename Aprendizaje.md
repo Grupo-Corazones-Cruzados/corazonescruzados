@@ -208,6 +208,14 @@ Fernando sobre la v2 de su video: «perfecto, de muy excelente calidad». Solo p
 - **Comprobado en `construir.mjs`:** una marca de `references/marcas.json` mencionada sin imagen o más de 8 s sin nada visual se rechazan salvo justificación. Sobre su plan aprobado detecta la mención de Microsoft sin imagen (66 s) y los 12 s iniciales.
 - **Límite conocido:** si Whisper oye mal una marca («OV» por Odoo), la comprobación no la ve. Se añadió vocabulario común a `preparar.mjs` y la guía pide corregirlo. No se ha comprobado si mejora la transcripción.
 
+### Publicar en redes automáticamente: investigación (2026-11-06, sin construir)
+Fernando pregunta por LinkedIn, YouTube, Facebook e Instagram. Se puede en las cuatro y las API son gratis; el costo es de aprobación y de construcción.
+- **YouTube:** `videos.insert`, 100 subidas al día. La historia de revisiones de Google (2026-11-02) dice que los proyectos sin verificar ya no quedan forzados a privado, aunque otra página de su documentación aún dice lo contrario: hay que comprobarlo con una subida real. Ya hay cliente OAuth; en «Testing» la conexión caduca a 7 días.
+- **Instagram:** Reels con `media_type=REELS` y subida a `rupload.facebook.com`. Cuenta profesional, Página y `instagram_content_publish`. Límite de 50 publicaciones en 24 h en la referencia (otra guía dice 100). Sin confirmar: si hace falta App Review para las cuentas propias. Facebook Reels aún sin leer en la documentación oficial.
+- **LinkedIn:** como empresa, `w_organization_social` y Community Management API, que exige solicitud, correo de empresa y validación de un superadministrador de la Página. Nivel de desarrollo: 500 llamadas al día y 12 meses para terminar. El nivel estándar exige un video de demostración.
+- **Intermediarios:** Blotato desde 29 $/mes, Ayrshare desde 149 $/mes, Buffer por canal; precios de páginas de los propios vendedores.
+- **Falta en el flujo:** el archivo final se exporta desde CapCut y no vuelve al sistema.
+
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?
