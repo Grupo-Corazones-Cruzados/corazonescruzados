@@ -52,6 +52,15 @@ function guardarJson(nombre, valor) {
   fs.renameSync(tmp, rutaDato(nombre));
 }
 
+/* El nombre de una sesión vive aquí y no solo en su archivo. Claude Code solo lee los primeros y los últimos 64 KB:
+ * un nombre puesto a mitad de trabajo deja de leerse en cuanto el archivo crece, y aparece el que genera la IA. */
+const titulos = leerJson('titulos.json', {});
+function fijarTitulo(id, titulo) {
+  if (titulos[id] !== titulo) { titulos[id] = titulo; guardarJson('titulos.json', titulos); }
+  return titulo;
+}
+const tituloDe = (id, info) => titulos[id] || (info?.customTitle && fijarTitulo(id, info.customTitle)) || info?.summary || info?.firstPrompt || null;
+
 function tokenServicio() {
   const r = rutaDato('token');
   if (!fs.existsSync(r)) fs.writeFileSync(r, crypto.randomBytes(32).toString('hex'), { mode: 0o600 });
@@ -353,7 +362,7 @@ class SesionViva {
       if (m.type === 'assistant' && this.tituloInicial) {
         const titulo = this.tituloInicial;
         this.tituloInicial = null;
-        renameSession(this.id, titulo, { dir: this.cwd }).then(() => this.emitir({ tipo: 'titulo', titulo })).catch((e) => console.error('[espacio] sin título', e?.message));
+        renameSession(this.id, titulo, { dir: this.cwd }).then(() => { fijarTitulo(this.id, titulo); this.emitir({ tipo: 'titulo', titulo }); }).catch((e) => console.error('[espacio] sin título', e?.message));
       }
       const bloques = normalizar(m.type, m.message);
       if (bloques.length) this.emitir({ tipo: 'mensaje', uuid: m.uuid, rol: m.type, bloques, padre: m.parent_tool_use_id || null });
@@ -662,7 +671,7 @@ async function sesionesDe(proyecto, terminal) {
   for (const dir of [proyecto.ruta, ...(proyecto.subcarpetas || [])]) {
     const l = await listSessions({ dir, limit: 60, includeWorktrees: false }).catch(() => []);
     for (const s of l) todas.push({
-      id: s.sessionId, proyecto: proyecto.id, titulo: s.customTitle || s.summary || s.firstPrompt || 'Sesión sin título',
+      id: s.sessionId, proyecto: proyecto.id, titulo: tituloDe(s.sessionId, s) || 'Sesión sin título',
       actualizada: ultimaInteraccion(archivoSesion(dir, s.sessionId)) ?? s.lastModified, rama: s.gitBranch || null, carpeta: dir === proyecto.ruta ? null : path.relative(proyecto.ruta, dir),
       enTerminal: terminal.has(s.sessionId), estadoTerminal: terminal.get(s.sessionId) || null, error: ultimosErrores.get(s.sessionId) || null,
       viva: vivas.has(s.sessionId) ? resumenViva(vivas.get(s.sessionId)) : null,
@@ -728,7 +737,7 @@ ruta('GET', '/sesiones/:id/mensajes', async ({ p, url }) => {
   const corte = viva?.eventos.findLast((e) => e.tipo === 'mensaje' && !e.padre && enArchivo.has(e.uuid))?.seq ?? 0;
   return {
     mensajes: filas.slice(desde, antes), hayAnteriores: desde > 0, inicio: desde,
-    titulo: donde?.info?.customTitle || donde?.info?.summary || null,
+    titulo: tituloDe(p.id, donde?.info),
     carpeta: donde?.dir || viva?.cwd, enTerminal: !!abiertaEnTerminal(p.id), aislada: proyecto.aislado === true || leerAisladas().has(p.id),
     viva: viva ? { ...resumenViva(viva), solicitudes: [...viva.solicitudes].map(([solicitudId, s]) => ({ solicitudId, herramienta: s.herramienta, entrada: recortarEntrada(s.entrada) })) } : null,
     ultimoSeq: viva?.seq ?? 0, corte,
@@ -781,7 +790,9 @@ ruta('POST', '/sesiones/:id/titulo', async ({ p, cuerpo }) => {
   const proyecto = await proyectoPorId(cuerpo.proyecto);
   const donde = await ubicar(proyecto, p.id);
   if (!donde) throw new ErrorApi(404, 'No encuentro esa sesión.');
-  await renameSession(p.id, String(cuerpo.titulo || '').slice(0, 200), { dir: donde.dir });
+  const titulo = String(cuerpo.titulo || '').trim().slice(0, 200);
+  await renameSession(p.id, titulo, { dir: donde.dir });
+  fijarTitulo(p.id, titulo);
   return { ok: true };
 });
 /** Misma sesión en una terminal. Antes se cierra aquí: dos procesos sobre una sesión se pisan. */
