@@ -2,9 +2,13 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import {
+  browserSupportsWebAuthn,
   startAuthentication,
+  startRegistration,
   type AuthenticationResponseJSON,
+  type PublicKeyCredentialCreationOptionsJSON,
   type PublicKeyCredentialRequestOptionsJSON,
+  type RegistrationResponseJSON,
 } from '@simplewebauthn/browser';
 
 /**
@@ -86,4 +90,79 @@ export function usePasskeyPreparada(activo: boolean, pedir: () => Promise<Respon
 
   /** `preparar()` tras un `finish` fallido, para que el siguiente toque tenga reto. */
   return { autenticar, preparar };
+}
+
+/**
+ * ¿Puede este aparato usar una passkey? Un botón que solo sabe fallar no se ofrece.
+ * · Android: la WebView de las apps instaladas antes de la versión 1.8 no trae WebAuthn.
+ * · App de iPhone: necesita `webcredentials` en sus entitlements y hoy no los lleva. Safari sí puede.
+ */
+export function passkeyDisponible(): boolean {
+  if (typeof window === 'undefined' || !browserSupportsWebAuthn()) return false;
+  const cap = (window as unknown as { Capacitor?: { getPlatform?: () => string } }).Capacitor;
+  return cap?.getPlatform?.() !== 'ios';
+}
+
+/** Qué decirle a la persona cuando la passkey no se completó. El sistema no distingue cancelar de rechazar. */
+export function motivoPasskey(e: unknown): 'ya-registrada' | 'no-completada' | 'otro' {
+  const nombre = e instanceof Error ? e.name : '';
+  if (nombre === 'InvalidStateError') return 'ya-registrada';
+  if (nombre === 'NotAllowedError' || nombre === 'AbortError') return 'no-completada';
+  return 'otro';
+}
+
+export type ResultadoRegistroPasskey =
+  | { ok: true; credential: RegistrationResponseJSON }
+  | { ok: false; status: number; error: string | null };
+
+/**
+ * Lo mismo para CREAR la passkey (2026-11-05): con el `await fetch(…/begin)` dentro del toque, Safari
+ * rechazaba el diálogo, ese rechazo se leía como «canceló» y se entraba al panel sin crear nada.
+ */
+export function usePasskeyRegistro(activo: boolean, pedir: () => Promise<Response>) {
+  const preparada = useRef<
+    | { ok: true; opts: PublicKeyCredentialCreationOptionsJSON; en: number }
+    | { ok: false; status: number; error: string | null; en: number }
+    | null
+  >(null);
+  const pedirRef = useRef(pedir);
+  pedirRef.current = pedir;
+
+  const preparar = useCallback(async () => {
+    try {
+      const r = await pedirRef.current();
+      const j = await r.json().catch(() => null);
+      preparada.current = r.ok
+        ? { ok: true, opts: j, en: Date.now() }
+        : { ok: false, status: r.status, error: j?.error ?? null, en: Date.now() };
+    } catch {
+      preparada.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!activo) { preparada.current = null; return; }
+    void preparar();
+    const t = setInterval(() => void preparar(), VIGENCIA_MS);
+    return () => clearInterval(t);
+  }, [activo, preparar]);
+
+  const crear = useCallback(async (): Promise<ResultadoRegistroPasskey> => {
+    const p = preparada.current;
+    preparada.current = null;
+    const fresca = p && Date.now() - p.en < VIGENCIA_MS ? p : null;
+    try {
+      if (fresca?.ok) return { ok: true, credential: await startRegistration({ optionsJSON: fresca.opts }) };
+      if (fresca && !fresca.ok) return { ok: false, status: fresca.status, error: fresca.error };
+      const r = await pedirRef.current();
+      const j = await r.json().catch(() => null);
+      if (!r.ok) return { ok: false, status: r.status, error: j?.error ?? null };
+      return { ok: true, credential: await startRegistration({ optionsJSON: j }) };
+    } catch (e) {
+      void preparar();
+      throw e;
+    }
+  }, [preparar]);
+
+  return { crear, preparar };
 }

@@ -9,8 +9,7 @@
 import { useNombreApp } from '@/lib/hooks/useNombreApp';
 import { useState } from 'react';
 import { horaDeReanudacion, useEstadoRegistro } from './estadoRegistro';
-import { startRegistration } from '@simplewebauthn/browser';
-import { usePasskeyPreparada } from '@/lib/hooks/usePasskeyPreparada';
+import { motivoPasskey, passkeyDisponible, usePasskeyPreparada, usePasskeyRegistro } from '@/lib/hooks/usePasskeyPreparada';
 import LogoGirando from '@/components/ui/LogoGirando';
 import FingerprintIcon from '@/components/landing/FingerprintIcon';
 import { PANEL_AUTH, TITULO_AUTH, CAMPO_AUTH } from './authEstilos';
@@ -114,7 +113,7 @@ export default function ClientLoginModal({
       // sesión abierta, así que no hay «código o passkey» que elegir. Entra directo.
       if (j?.sinCodigo) { onLoggedIn(); return; }
       setMasked(j?.masked ?? null);
-      setTienePasskey(j?.tienePasskey === true);
+      setTienePasskey(j?.tienePasskey === true && passkeyDisponible());
       setStep('factor');
     } catch {
       setError('Error de red');
@@ -182,8 +181,7 @@ export default function ClientLoginModal({
       }
       onLoggedIn();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error de passkey';
-      if (!/cancel|abort|timeout|allowed/i.test(msg)) setError(msg);
+      setError(motivoPasskey(e) === 'otro' && e instanceof Error ? e.message : 'No se pudo usar la passkey en este dispositivo. Si no está guardada aquí, entra con el código y podrás añadirla.');
     } finally {
       setBusy(false);
     }
@@ -221,7 +219,8 @@ export default function ClientLoginModal({
        * normal, no una anomalía.
        */
       setError(null);
-      setStep('passkeyOffer');
+      if (passkeyDisponible()) setStep('passkeyOffer');
+      else onLoggedIn();
     } catch {
       setError('Error de red');
     } finally {
@@ -230,35 +229,38 @@ export default function ClientLoginModal({
   };
 
   // Registro de passkey de usuario (la sesión ya quedó activa tras el código).
+  const { crear: crearPasskey, preparar: prepararRegistro } = usePasskeyRegistro(
+    step === 'passkeyOffer',
+    () => fetch('/api/auth/passkey/register/begin', { method: 'POST' }),
+  );
   const registerPasskey = async () => {
     setError(null);
     setBusy(true);
     try {
-      const begin = await fetch('/api/auth/passkey/register/begin', { method: 'POST' });
-      const opts = await begin.json();
-      if (!begin.ok) {
-        setError(opts?.error ?? 'No se pudo iniciar el registro');
+      // Primero la passkey, sin esperar nada antes: Safari exige que salga del toque.
+      const res = await crearPasskey();
+      if (!res.ok) {
+        setError(res.error ?? 'No se pudo iniciar el registro');
+        void prepararRegistro();
         return;
       }
-      const attestation = await startRegistration({ optionsJSON: opts });
       const finish = await fetch('/api/auth/passkey/register/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(attestation),
+        body: JSON.stringify(res.credential),
       });
       const fj = await finish.json();
       if (!finish.ok) {
         setError(fj?.error ?? 'No se pudo registrar la passkey');
+        void prepararRegistro();
         return;
       }
       onLoggedIn();
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error de passkey';
-      if (/cancel|abort|timeout|allowed/i.test(msg)) {
-        onLoggedIn();
-        return;
-      }
-      setError(msg);
+      const motivo = motivoPasskey(e);
+      if (motivo === 'ya-registrada') setError('Este dispositivo ya tiene una passkey de tu cuenta. Puedes continuar.');
+      else if (motivo === 'no-completada') setError('No se creó la passkey: se canceló o este dispositivo no lo permitió. Prueba otra vez o continúa sin ella.');
+      else setError(e instanceof Error ? e.message : 'Error de passkey');
     } finally {
       setBusy(false);
     }
@@ -466,7 +468,7 @@ export default function ClientLoginModal({
                     Ingresar con passkey
                   </span>
                 </button>
-              ) : (
+              ) : passkeyDisponible() && (
                 <p
                   style={{
                     fontFamily: BODY,

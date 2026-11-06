@@ -2,7 +2,7 @@ import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyAuthenticationResponse } from '@simplewebauthn/server';
-import { getWebAuthnRP } from '@/lib/world/webauthn';
+import { getWebAuthnRP, origenesAceptados } from '@/lib/world/webauthn';
 import { createToken, setAuthCookie } from '@/lib/auth/jwt';
 import { CLIENT_COOKIE, getClientIp, hashIp } from '@/lib/world/session';
 
@@ -131,7 +131,7 @@ export async function POST(req: Request) {
     const verification = await verifyAuthenticationResponse({
       response: credential,
       expectedChallenge: client.webauthn_challenge,
-      expectedOrigin: origin,
+      expectedOrigin: origenesAceptados(origin),
       expectedRPID: rpId,
       credential: {
         id: stored.credential_id as string,

@@ -13,7 +13,7 @@ import {
   getClientIp,
   hashIp,
 } from '@/lib/world/session';
-import { getWebAuthnRP } from '@/lib/world/webauthn';
+import { getWebAuthnRP, origenesAceptados } from '@/lib/world/webauthn';
 
 export async function POST(req: Request) {
   try {
@@ -100,7 +100,7 @@ export async function POST(req: Request) {
     const verification = await verifyAuthenticationResponse({
       response: body,
       expectedChallenge: client.webauthn_challenge,
-      expectedOrigin: origin,
+      expectedOrigin: origenesAceptados(origin),
       expectedRPID: rpId,
       credential: {
         id: stored.credential_id as string,

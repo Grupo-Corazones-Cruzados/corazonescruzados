@@ -2,6 +2,8 @@ package org.grupocc.gccworld;
 
 import android.content.Intent;
 import android.os.Bundle;
+import androidx.webkit.WebSettingsCompat;
+import androidx.webkit.WebViewFeature;
 import com.getcapacitor.BridgeActivity;
 import org.grupocc.gccworld.reloj.RelojTicketPlugin;
 import org.grupocc.gccworld.reloj.Relojes;
@@ -33,6 +35,12 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AbrirFueraPlugin.class);
         Extras.registrarPlugins(this);
         super.onCreate(savedInstanceState);
+        // Sin esto la WebView no trae WebAuthn: «WebAuthn is not supported in this browser». La app se
+        // asocia al dominio de las passkeys con `public/.well-known/assetlinks.json`.
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_AUTHENTICATION)) {
+            WebSettingsCompat.setWebAuthenticationSupport(
+                getBridge().getWebView().getSettings(), WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP);
+        }
         abrirRuta(getIntent());
     }
 

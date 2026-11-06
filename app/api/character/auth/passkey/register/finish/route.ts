@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import { AUTH_COOKIE } from '@/lib/world/session';
-import { getWebAuthnRP } from '@/lib/world/webauthn';
+import { getWebAuthnRP, origenesAceptados } from '@/lib/world/webauthn';
 
 export async function POST(req: Request) {
   try {
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const verification = await verifyRegistrationResponse({
       response: body,
       expectedChallenge: row.webauthn_challenge,
-      expectedOrigin: origin,
+      expectedOrigin: origenesAceptados(origin),
       expectedRPID: rpId,
       requireUserVerification: false,
     });

@@ -7,8 +7,7 @@
 
 import { useNombreApp } from '@/lib/hooks/useNombreApp';
 import { useState } from 'react';
-import { startRegistration } from '@simplewebauthn/browser';
-import { usePasskeyPreparada } from '@/lib/hooks/usePasskeyPreparada';
+import { motivoPasskey, passkeyDisponible, usePasskeyPreparada, usePasskeyRegistro } from '@/lib/hooks/usePasskeyPreparada';
 import LogoGirando from '@/components/ui/LogoGirando';
 import FingerprintIcon from '@/components/landing/FingerprintIcon';
 import BotonCerrar from '@/components/ui/BotonCerrar';
@@ -55,7 +54,7 @@ export default function MemberLoginModal({
       // sesión abierta, así que no hay «código o passkey» que elegir. Entra directo.
       if (j?.sinCodigo) { onLoggedIn(true); return; }
       setMasked(j?.masked ?? null);
-      setTienePasskey(j?.tienePasskey === true);
+      setTienePasskey(j?.tienePasskey === true && passkeyDisponible());
       setStep('factor');
     } catch {
       setError('Error de red');
@@ -127,8 +126,7 @@ export default function MemberLoginModal({
       }
       onLoggedIn(true);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error de passkey';
-      if (!/cancel|abort|timeout|allowed/i.test(msg)) setError(msg);
+      setError(motivoPasskey(e) === 'otro' && e instanceof Error ? e.message : 'No se pudo usar la passkey en este dispositivo. Si no está guardada aquí, entra con el código y podrás añadirla.');
     } finally {
       setBusy(false);
     }
@@ -157,11 +155,11 @@ export default function MemberLoginModal({
        * entrado con ella en vez de pedir un código. Antes solo se ofrecía a quien no
        * tenía ninguna, y eso dejaba encerrado a quien sí (ver `ClientLoginModal`).
        */
-      if (j.hasCharacter) {
+      if (j.hasCharacter && passkeyDisponible()) {
         setError(null);
         setStep('passkeyOffer');
       } else {
-        onLoggedIn(false);
+        onLoggedIn(j.hasCharacter === true);
       }
     } catch {
       setError('Error de red');
@@ -171,36 +169,38 @@ export default function MemberLoginModal({
   };
 
   // Registro de passkey (la sesión ya quedó activa tras el login con código).
+  const { crear: crearPasskey, preparar: prepararRegistro } = usePasskeyRegistro(
+    step === 'passkeyOffer',
+    () => fetch('/api/character/auth/passkey/register/begin', { method: 'POST' }),
+  );
   const registerPasskey = async () => {
     setError(null);
     setBusy(true);
     try {
-      const begin = await fetch('/api/character/auth/passkey/register/begin', { method: 'POST' });
-      const opts = await begin.json();
-      if (!begin.ok) {
-        setError(opts?.error ?? 'No se pudo iniciar el registro');
+      // Primero la passkey, sin esperar nada antes: Safari exige que salga del toque.
+      const res = await crearPasskey();
+      if (!res.ok) {
+        setError(res.error ?? 'No se pudo iniciar el registro');
+        void prepararRegistro();
         return;
       }
-      const attestation = await startRegistration({ optionsJSON: opts });
       const finish = await fetch('/api/character/auth/passkey/register/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(attestation),
+        body: JSON.stringify(res.credential),
       });
       const fj = await finish.json();
       if (!finish.ok) {
         setError(fj?.error ?? 'No se pudo registrar la passkey');
+        void prepararRegistro();
         return;
       }
       onLoggedIn(true);
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error de passkey';
-      // Si el usuario cancela el prompt, entra igual (sin passkey).
-      if (/cancel|abort|timeout|allowed/i.test(msg)) {
-        onLoggedIn(true);
-        return;
-      }
-      setError(msg);
+      const motivo = motivoPasskey(e);
+      if (motivo === 'ya-registrada') setError('Este dispositivo ya tiene una passkey de tu cuenta. Puedes continuar.');
+      else if (motivo === 'no-completada') setError('No se creó la passkey: se canceló o este dispositivo no lo permitió. Prueba otra vez o continúa sin ella.');
+      else setError(e instanceof Error ? e.message : 'Error de passkey');
     } finally {
       setBusy(false);
     }
@@ -344,7 +344,7 @@ export default function MemberLoginModal({
                     Ingresar con passkey
                   </span>
                 </button>
-              ) : (
+              ) : passkeyDisponible() && (
                 <p
                   style={{
                     fontFamily: BODY,

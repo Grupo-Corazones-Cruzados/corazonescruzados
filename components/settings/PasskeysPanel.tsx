@@ -2,7 +2,7 @@
 
 import GrupoForm from './GrupoForm';
 import { useCallback, useEffect, useState } from 'react';
-import { startRegistration } from '@simplewebauthn/browser';
+import { motivoPasskey, passkeyDisponible, usePasskeyRegistro } from '@/lib/hooks/usePasskeyPreparada';
 import { Fingerprint, AlertTriangle, RefreshCw } from 'lucide-react';
 import BotonQuitar from '@/components/ui/BotonQuitar';
 
@@ -47,33 +47,37 @@ export default function PasskeysPanel() {
 
   useEffect(() => { void cargar(); }, [cargar]);
 
+  // Se comprueba ya montado: en el servidor no hay navegador al que preguntarle.
+  const [disponible, setDisponible] = useState<boolean | null>(null);
+  useEffect(() => setDisponible(passkeyDisponible()), []);
+  const { crear, preparar } = usePasskeyRegistro(
+    disponible === true,
+    () => fetch('/api/auth/passkey/register/begin', { method: 'POST' }),
+  );
+
   const registrar = async () => {
     setError(null); setAviso(null); setOcupado(true);
     try {
-      const inicio = await fetch('/api/auth/passkey/register/begin', { method: 'POST' });
-      const opciones = await inicio.json();
-      if (!inicio.ok) { setError(opciones?.error ?? 'No se pudo empezar el registro.'); return; }
-
-      const credencial = await startRegistration({ optionsJSON: opciones });
+      // Primero la passkey, sin esperar nada antes: Safari exige que salga del toque.
+      const res = await crear();
+      if (!res.ok) { setError(res.error ?? 'No se pudo empezar el registro.'); void preparar(); return; }
 
       const fin = await fetch('/api/auth/passkey/register/finish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credencial),
+        body: JSON.stringify(res.credential),
       });
       const j = await fin.json();
-      if (!fin.ok) { setError(j?.error ?? 'No se pudo guardar la passkey.'); return; }
+      if (!fin.ok) { setError(j?.error ?? 'No se pudo guardar la passkey.'); void preparar(); return; }
 
       setAviso('Listo. La próxima vez entrarás con tu huella o tu cara, sin código.');
       await cargar();
+      void preparar();
     } catch (e) {
-      // Cancelar no es un error: si cierras el diálogo del sistema, no se te regaña.
-      const m = e instanceof Error ? e.message : 'No se pudo crear la passkey.';
-      if (/already registered|excluded/i.test(m)) {
-        setError('Este dispositivo ya tiene una passkey de tu cuenta.');
-      } else if (!/cancel|abort|timeout|NotAllowed|not allowed/i.test(m)) {
-        setError(m);
-      }
+      const motivo = motivoPasskey(e);
+      if (motivo === 'ya-registrada') setError('Este dispositivo ya tiene una passkey de tu cuenta.');
+      else if (motivo === 'no-completada') setError('No se creó la passkey: se canceló o este dispositivo no lo permitió.');
+      else setError(e instanceof Error ? e.message : 'No se pudo crear la passkey.');
     } finally {
       setOcupado(false);
     }
@@ -100,7 +104,7 @@ export default function PasskeysPanel() {
     /* Título «Passkey» con su acción a la altura, a la derecha (Fernando, 2026-09-30): el
        mismo botón pequeño de acento que el «Editar» junto a los títulos de las tarjetas. En el
        teléfono es un grupo con su tarjeta (`GrupoForm`, 2026-10-30). */
-    <GrupoForm titulo="Passkey" extra={(
+    <GrupoForm titulo="Passkey" extra={disponible === false ? undefined : (
         <button type="button" onClick={registrar} disabled={ocupado} title="Añadir passkey de este equipo"
           className="destino-tactil inline-flex items-center gap-1 text-[11px] text-accent border border-accent/30 px-1.5 py-0.5 rounded hover:bg-accent/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed" style={mf}>
           {ocupado ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Fingerprint className="w-3.5 h-3.5" />}

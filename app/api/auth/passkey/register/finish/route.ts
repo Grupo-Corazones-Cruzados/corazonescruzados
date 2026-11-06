@@ -2,7 +2,7 @@ import { pool } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { verifyRegistrationResponse } from '@simplewebauthn/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { getWebAuthnRP } from '@/lib/world/webauthn';
+import { getWebAuthnRP, origenesAceptados } from '@/lib/world/webauthn';
 
 /** Registro de passkey de USUARIO (cliente/staff) — paso 2. */
 export async function POST(req: Request) {
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     const verification = await verifyRegistrationResponse({
       response: body,
       expectedChallenge: row.webauthn_challenge,
-      expectedOrigin: origin,
+      expectedOrigin: origenesAceptados(origin),
       expectedRPID: rpId,
       requireUserVerification: false,
     });

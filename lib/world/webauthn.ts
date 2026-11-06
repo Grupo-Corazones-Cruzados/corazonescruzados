@@ -6,6 +6,18 @@ const APP_URL =
 export const RP_NAME = 'GCC World';
 
 /**
+ * Las apps de Android que firman passkeys: `android:apk-key-hash:` + el SHA-256 de su certificado en
+ * base64url. Es el origen que puede declarar una WebView con WebAuthn, además del de la página. Salen
+ * de los mismos certificados que `public/.well-known/assetlinks.json`: cambiar uno obliga al otro.
+ */
+const ORIGENES_APPS_ANDROID = [
+  'android:apk-key-hash:_UYrPw9HGkTV-qiZzDc-O7-k6-tSVIekfF1nVsrbAxU', // GCC Progreso, clave de subida
+  'android:apk-key-hash:znrg5y_t0eTCdcekwxjWfhNT3UtKQeTPQAKZVs7FJbc', // GCC Centralizado
+];
+
+export const origenesAceptados = (origin: string) => [origin, ...ORIGENES_APPS_ANDROID];
+
+/**
  * ⚠️ EL DOMINIO QUE GOBIERNA LAS PASSKEYS — Y POR QUÉ NO ES EL HOST.
  *
  * Una passkey queda atada al «RP ID» con el que se creó, y solo se puede usar desde un
