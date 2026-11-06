@@ -36,8 +36,8 @@ export async function heredarDeFacturaAnulada(
     [anuladaId, nuevaId],
   );
   await db.query(
-    `INSERT INTO gcc_world.invoice_requirements (invoice_id, requirement_id)
-     SELECT ($2)::int, requirement_id FROM gcc_world.invoice_requirements WHERE invoice_id = ($1)::int
+    `INSERT INTO gcc_world.invoice_requirements (invoice_id, requirement_id, project_id)
+     SELECT ($2)::int, requirement_id, project_id FROM gcc_world.invoice_requirements WHERE invoice_id = ($1)::int
      ON CONFLICT DO NOTHING`,
     [anuladaId, nuevaId],
   );
