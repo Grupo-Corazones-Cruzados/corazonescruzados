@@ -6347,3 +6347,5 @@ Nota: `/desarrollo-humano` se eliminó ese mismo día; lo que este documento dig
 
 ## Inicio de las apps de teléfono (2026-11-05)
 Referencia: la app de Motordesa. Hoja de radio 28, campos de 49 px, radio 10 y letra de 16 px (evita el zoom de iOS), botones de 48 px en mayúsculas. Velo: logo con rebote, alas desde la izquierda, mínimo 1,28 s y salida de 260 ms; al salir hacia la plataforma lleva barra de carga. Colores: Progreso `#4B2D8E` con hoja blanca, Aventura `#0B0D14` con hoja oscura y Centralizado negro con rojo `#DC2626`. Todo bajo `.landing-page[data-app]`: nunca afecta a GCC World.
+
+**Dentro de una app (2026-11-05, Fernando).** Progreso, Aventura y Centralizado son nombres de fuera (tienda, icono): dentro se lee GCC World, igual que en la web. La pantalla de carga es el color de la app con `BrandLoader` en blanco, sin barra ni logo. Nada se apaga y vuelve a encenderse: sin fundido al cambiar de módulo, sin filas escalonadas, sin `backdrop-filter`, y el velo del `<dialog>` entra a la par que el panel (reglas bajo `html[data-gcc-app]` en `app/movimiento.css`). En el teléfono el menú entra ya con su ancho, sin pasar por el raíl estrecho.
