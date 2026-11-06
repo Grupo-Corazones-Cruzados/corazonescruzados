@@ -1,0 +1,22 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 77;
+	objects = {
+		A10000000000000000000001 = {isa = PBXProject; attributes = {LastSwiftUpdateCheck = 2600; LastUpgradeCheck = 2600;}; buildConfigurationList = A10000000000000000000002; compatibilityVersion = "Xcode 15.3"; developmentRegion = es; hasScannedForEncodings = 0; knownRegions = (es, en, Base); mainGroup = A10000000000000000000003; productRefGroup = A10000000000000000000004; projectDirPath = ""; projectRoot = ""; targets = (A10000000000000000000005); };
+		A10000000000000000000003 = {isa = PBXGroup; children = (A10000000000000000000006, A10000000000000000000004); sourceTree = "<group>"; };
+		A10000000000000000000004 = {isa = PBXGroup; children = (A10000000000000000000007); name = Products; sourceTree = "<group>"; };
+		A10000000000000000000006 = {isa = PBXFileSystemSynchronizedRootGroup; path = Gumdramon; sourceTree = "<group>"; };
+		A10000000000000000000007 = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Gumdramon.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000005 = {isa = PBXNativeTarget; buildConfigurationList = A10000000000000000000008; buildPhases = (A10000000000000000000009, A1000000000000000000000A, A1000000000000000000000B); buildRules = (); dependencies = (); fileSystemSynchronizedGroups = (A10000000000000000000006); name = Gumdramon; productName = Gumdramon; productReference = A10000000000000000000007; productType = "com.apple.product-type.application"; };
+		A10000000000000000000009 = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A1000000000000000000000A = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A1000000000000000000000B = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+		A10000000000000000000002 = {isa = XCConfigurationList; buildConfigurations = (A1000000000000000000000C); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A10000000000000000000008 = {isa = XCConfigurationList; buildConfigurations = (A1000000000000000000000D); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		A1000000000000000000000C = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 18.0; SDKROOT = iphoneos; SWIFT_COMPILATION_MODE = wholemodule; SWIFT_OPTIMIZATION_LEVEL = "-O"; VALIDATE_PRODUCT = YES;}; name = Release; };
+		A1000000000000000000000D = {isa = XCBuildConfiguration; buildSettings = {ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = K7PVYYMP32; GENERATE_INFOPLIST_FILE = YES; INFOPLIST_FILE = Info.plist; INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES; LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks"; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = org.grupocc.gumdramon.personal; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2";}; name = Release; };
+	};
+	rootObject = A10000000000000000000001;
+}

@@ -1,2 +1,4 @@
 node_modules/
 mac/.build/
+ios/build/
+ios/Gumdramon/Assets.xcassets/
