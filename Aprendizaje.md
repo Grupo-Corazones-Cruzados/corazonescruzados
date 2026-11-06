@@ -11809,6 +11809,8 @@ Arquitecto de soluciones Azure y seguridad corporativa, con enfoque de preventa.
 ### P7 — ¿Se puede reutilizar la red privada que tenga el cliente? · 🔎 Investigando (2026-11-06)
 - **Por qué importa:** cambia el costo y evita pedir equipos nuevos. Fernando cree que ya tienen una, pero no sabe de qué tipo.
 - **Respuesta:** sí, no tiene que ser de Microsoft. Conectada ya a Azure: se conecta la VNet y la opción privada baja de ≈ 385 a ≈ 215 $/mes. De otro proveedor sin llegar a Azure: se usa su firewall, pero sigue haciendo falta el VPN Gateway. Solo VPN de usuarios: falta el túnel, aunque puede evitar el WAF. En todos los casos siguen los Private Endpoints, el DNS y la comprobación de rangos. (Fuente: conocimiento general de Azure; sin confirmar con TI del cliente)
+### P8 — ¿Cómo trata el motor los archivos hostiles? · ✅ Resuelta (2026-11-06)
+- **Respuesta:** no ejecuta macros ni usa `eval`. `excelCorregido` copia todas las partes del libro, así que un `.xlsm` conserva sus macros, y `abrirLibro` no pone límite al descomprimir. El daño queda en la pestaña del usuario. Sin corregir en GCC World; en la versión para el cliente va en el paso 7. (Fuente: `lib/herramientas/formatos-excel/motor.ts`, por lectura de código, sin prueba con un archivo hostil)
 
 ## Decisiones de diseño (propuestas, sin aprobar)
 - Todo en el tenant y la suscripción del cliente. App Service en lugar de máquina virtual. GCC como invitado con rol Colaborador solo en el grupo de recursos.
