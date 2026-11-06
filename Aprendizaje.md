@@ -11784,7 +11784,7 @@ Fernando: que funcione como las apps con el Entorno de trabajo. Es una página d
 **Dos fallos de uso real:** el tope de 90 s cortaba al hablar mucho (ahora 10 min), y la tarjeta recortaba la pregunta a dos líneas aunque el agente la recibía entera (771 caracteres). Medido en el registro de la sesión.
 
 
-# Formatos de impresión en el Azure del cliente, con firma en un equipo local (2026-11-06) · 55 %
+# Formatos de impresión en el Azure del cliente, con firma en un equipo local (2026-11-06) · 65 %
 
 ## Objetivo
 Entender y vender cómo llevar «Formatos de impresión para Excel» a un Azure bajo control de ADISA (corporativo, solo entorno Microsoft, TI restrictivo), incluido el envío del PDF a un equipo local con la tarjeta de firma. Es preventa: nada contratado ni desplegado.
@@ -11793,13 +11793,14 @@ Entender y vender cómo llevar «Formatos de impresión para Excel» a un Azure 
 Arquitecto de soluciones Azure y seguridad corporativa, con enfoque de preventa.
 
 ## Progreso
-- **% de información para el objetivo:** 55 %
-- **Estado:** arquitectura y costos de lista listos para presentar. Falta todo lo del cliente y probar la tarjeta. La guía comercial está fuera del repo, porque el repo es público.
+- **% de información para el objetivo:** 65 % (2026-11-06)
+- **Estado:** el cliente montará la infraestructura y pidió un documento de requisitos. Arquitectura y costos de lista listos para presentar. Falta todo lo del cliente y probar la tarjeta. La guía comercial está fuera del repo, porque el repo es público.
 
 ## Fuentes consultadas (2026-11-06)
 - Código: `lib/herramientas/formatos-excel/motor.ts`, `components/herramientas/FormatosExcel.tsx`, `lib/herramientas/accesos.ts`.
 - API pública de precios de Azure; documentación de Microsoft (Hybrid Connections, Entra, SAS, regiones, Defender); documentación de EU DSS.
-- BD de GCC en solo lectura: ningún cliente, cliente de facturación ni ticket con el nombre ADISA. Puede estar con otra razón social.
+- BD de GCC en solo lectura: ningún cliente, cliente de facturación ni ticket con el nombre ADISA. **Corrección (2026-11-06):** esa primera búsqueda falló justo en `herramienta_accesos`. Sí usan la herramienta: acceso n.º 3, «Adisa Evento», 182 usos, último el 2026-10-30, vence el 2026-11-26.
+- Parte final de la reunión con el cliente y su jefe de infraestructura, transcripción automática parcial entregada por Fernando (2026-11-06). Aporta P9 a P13.
 
 ## Preguntas y respuestas
 ### P1 — ¿Dónde se procesa hoy el archivo? · ✅ Resuelta
@@ -11819,6 +11820,18 @@ Arquitecto de soluciones Azure y seguridad corporativa, con enfoque de preventa.
 - **Respuesta:** sí, no tiene que ser de Microsoft. Conectada ya a Azure: se conecta la VNet y la opción privada baja de ≈ 385 a ≈ 215 $/mes. De otro proveedor sin llegar a Azure: se usa su firewall, pero sigue haciendo falta el VPN Gateway. Solo VPN de usuarios: falta el túnel, aunque puede evitar el WAF. En todos los casos siguen los Private Endpoints, el DNS y la comprobación de rangos. (Fuente: conocimiento general de Azure; sin confirmar con TI del cliente)
 ### P8 — ¿Cómo trata el motor los archivos hostiles? · ✅ Resuelta (2026-11-06)
 - **Respuesta:** no ejecuta macros ni usa `eval`. `excelCorregido` copia todas las partes del libro, así que un `.xlsm` conserva sus macros, y `abrirLibro` no pone límite al descomprimir. El daño queda en la pestaña del usuario. Sin corregir en GCC World; en la versión para el cliente va en el paso 7. (Fuente: `lib/herramientas/formatos-excel/motor.ts`, por lectura de código, sin prueba con un archivo hostil)
+### P9 — ¿Quién monta la infraestructura y dónde? · ✅ Resuelta en lo esencial (reunión, 2026-11-06)
+- **Respuesta:** la monta el cliente. GCC entrega los requisitos y recibe acceso al servidor. Evaluarán entre las nubes que manejan: se oye Azure, «OSI» (probablemente OCI) y una tercera que no se entiende («bingo»). No dependen al 100 % de Microsoft. Lo específico de Microsoft (se oye «kibbles», probablemente Key Vault) se revisa caso por caso. **Interpretación de una transcripción automática: confirmar.**
+- **Consecuencia:** la entrega es un documento de requisitos portable; el costo por Azure pasa a ser una referencia, y la infraestructura sale del esfuerzo de GCC.
+### P10 — ¿Dónde queda la firma? · 🔎 Investigando
+- **Respuesta parcial:** en un equipo local. Se habló de un equipo remoto en los cuartos de TI, y al cierre acordaron dejar un ejecutable en el equipo de Jana, porque el lector de la firma de «Kevin» va por USB. Prueba a coordinar con Josué. Sin confirmar quién es el titular, quién digita el PIN ni quién custodia.
+- **Sin resolver:** si el servidor envía el PDF a ese equipo, como se pidió antes, o si Jana sigue firmando a mano con el ejecutable.
+### P11 — ¿Qué es el programa en Python que pasarán a .exe? · ⏸ Bloqueada (Fernando)
+- **Por qué importa:** no aparece en `02_Clientes` (sin código PKCS#11 ni `.spec`). Hay que saber quién lo mantiene, si firma el PDF y cómo. Quitar Python a los usuarios y encapsular reduce superficie, pero no quita «toda la capa de riesgo»: el .exe lleva intérprete y dependencias, no incluye el controlador del lector, y puede chocar con antivirus o AppLocker.
+### P12 — ¿Qué entienden por «más rápido en el servidor»? · ⏸ Bloqueada (Fernando)
+- **Por qué importa:** el motor corre en el navegador, así que un servidor no acelera la generación: depende del equipo del usuario (1,8 GB en Chrome con el libro de ventas). Si esperan procesar en el servidor, el Excel completo viajaría y un plan básico no bastaría. Si no, el plan básico sí alcanza.
+### P13 — ¿Equipo de un usuario como equipo de firma? · 🔎 Investigando
+- **Por qué importa:** la propuesta asumía un equipo dedicado. El de una persona navega y abre correo, y se apaga: sube el riesgo principal y reduce la disponibilidad. Si la firma es de otra persona, además toca el art. 17 de la Ley de Comercio Electrónico. Se plantea a TI, no se decide aquí.
 
 ## Decisiones de diseño (propuestas, sin aprobar)
 - Todo en el tenant y la suscripción del cliente. App Service en lugar de máquina virtual. GCC como invitado con rol Colaborador solo en el grupo de recursos.
