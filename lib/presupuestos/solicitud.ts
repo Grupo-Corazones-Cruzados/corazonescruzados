@@ -1,4 +1,5 @@
 import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
+import { secretoServidor } from '@/lib/auth/secreto';
 import { pool } from '@/lib/db';
 import { hashPassword } from '@/lib/auth/password';
 import { upsertBillingForClient, CONSUMIDOR_FINAL_RUC } from '@/lib/billing-clients';
@@ -17,7 +18,7 @@ import type { Presupuesto } from './db';
 const MINUTOS_CODIGO = 10;
 const MAX_INTENTOS = 5;
 
-const secreto = () => process.env.JWT_SECRET || 'gcc-presupuestos-local';
+const secreto = () => secretoServidor();
 const firmar = (sesion: string, codigo: string) => createHmac('sha256', secreto()).update(`${sesion}:${codigo}`).digest('hex');
 
 export const limpiarId = (x: unknown) => String(x ?? '').trim().replace(/[\s.-]/g, '').toUpperCase().slice(0, 20);

@@ -2,9 +2,10 @@ import { SignJWT, jwtVerify, JWTPayload } from "jose";
 import { cookies } from "next/headers";
 import { pool } from "@/lib/db";
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key-change-in-production"
-);
+import { secretoServidor } from "@/lib/auth/secreto";
+
+/** Se lee al usarse, no al cargar el módulo: así `next build` no exige la variable. */
+const claveSesion = () => new TextEncoder().encode(secretoServidor());
 
 const COOKIE_NAME = "auth_token";
 const TOKEN_EXPIRY = "7d";
@@ -43,14 +44,14 @@ export async function createToken(payload: {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(TOKEN_EXPIRY)
-    .sign(JWT_SECRET);
+    .sign(claveSesion());
 }
 
 export async function verifyToken(
   token: string
 ): Promise<TokenPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, claveSesion());
     return payload as TokenPayload;
   } catch {
     return null;

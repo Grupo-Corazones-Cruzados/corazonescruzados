@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
-
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || "your-secret-key-change-in-production"
-);
+import { secretoServidor } from "@/lib/auth/secreto";
 
 const PROTECTED = ["/dashboard"];
 const AUTH_ROUTES = ["/auth"];
@@ -16,7 +13,8 @@ export async function middleware(request: NextRequest) {
 
   if (token) {
     try {
-      await jwtVerify(token, JWT_SECRET);
+      // Sin clave en producción, `secretoServidor` lanza y la sesión no vale: falla cerrado.
+      await jwtVerify(token, new TextEncoder().encode(secretoServidor()));
       valid = true;
     } catch {
       valid = false;

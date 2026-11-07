@@ -14,10 +14,11 @@
  */
 
 import { createHmac } from 'node:crypto';
+import { secretoServidor } from '@/lib/auth/secreto';
 import { create, CappedMap, randomInt } from 'altcha-lib/frameworks/nextjs';
 import { deriveKey } from 'altcha-lib/algorithms/pbkdf2';
 
-const base = process.env.ALTCHA_HMAC_SECRET || process.env.JWT_SECRET || 'gcc-altcha-local';
+const base = process.env.ALTCHA_HMAC_SECRET || secretoServidor();
 const firma = createHmac('sha256', base).update('gcc-altcha-firma').digest('hex');
 const firmaClave = createHmac('sha256', base).update('gcc-altcha-clave').digest('hex');
 

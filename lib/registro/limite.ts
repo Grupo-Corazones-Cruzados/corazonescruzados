@@ -22,6 +22,7 @@
  */
 
 import { createHmac, randomBytes } from 'node:crypto';
+import { secretoServidor } from '@/lib/auth/secreto';
 import { cookies } from 'next/headers';
 import { pool } from '@/lib/db';
 import { getClientIp, hashIp } from '@/lib/world/session';
@@ -33,7 +34,7 @@ const UN_ANIO = 60 * 60 * 24 * 365;
 
 /** La firma del navegador «sin límite»: solo el servidor la sabe calcular. */
 export function firmaRegistroLibre(): string {
-  const base = process.env.ALTCHA_HMAC_SECRET || process.env.JWT_SECRET || 'gcc-registro-local';
+  const base = process.env.ALTCHA_HMAC_SECRET || secretoServidor();
   return createHmac('sha256', base).update('gcc-registro-libre').digest('hex');
 }
 
