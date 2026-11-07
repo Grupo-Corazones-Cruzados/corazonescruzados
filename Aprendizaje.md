@@ -11901,6 +11901,14 @@ Quiere GCC World en servidor propio por **control**, y Railway solo para proyect
   - **Pendiente de Fernando:** `~/limpieza-admin.sh` con sudo, para las apps y servicios de `root`. Cinco imágenes de Descargas no se dejan leer ni por SSH (`com.apple.macl`).
   - **Acceso:** solo SSH por Tailscale; AnyDesk retirado y Chrome Remote Desktop no corría. Si Tailscale falla, hay que ir al equipo.
   - **Hallazgo aparte:** `~/.gcc-sri/registro.log` tiene 1.760 de 1.787 líneas con «fetch failed», y 1-3 por hora, desde antes de la limpieza. Sin investigar.
+- **Copia de prueba en el M1 (2026-11-07), producción sin tocar:** app y 5 productos, worker y Postgres 16 bajo launchd (`org.grupocc.espejo.*`), en `~/gcc`, solo en 127.0.0.1 (app 3100, productos 3101-3105, base 5433). Datos: dump del 2026-11-06.
+  - **Sin poder enviar nada:** entornos sin claves de correo, push, WhatsApp, IA ni pagos, `AVISOS_PUSH=no`; en la base se vaciaron `push_devices`, `push_suscripciones`, `google_conexiones`, `user_api_keys` y `cola`, y se quitaron los tokens de `canales` y `sri_sync_config`. Registros sin intentos de envío.
+  - **Medido:** 62 % de memoria libre con todo arriba. Lecturas con sesión de admin: 3-169 ms; 360 peticiones a 6 a la vez en 0,5 s, p95 14 ms, 0 fallos. Es desde el propio equipo: no incluye internet ni el túnel. Sin tráfico real, sin PDF y sin agente. `~/gcc/medidas.csv` guarda una fila por minuto.
+  - **Wifi del M1:** 0,37 MB/s y 234 ms dentro de la misma red: el cable es imprescindible. rsync de 5 GB no terminó en 1 h; `tar | gzip` por producto tardó 5-10 min cada uno. `zstd` no está en el M1, y el estado de salida de la canalización daba 0 aunque fallara: comprobar contando archivos.
+  - **Compilar:** en esta Mac, en un worktree limpio; arm64 igual, así que `node_modules` nativos sirven. Node en M1: 22.3.
+  - **Batería:** 80 % con corriente y sin cargar: mantiene el límite, no se está vaciando.
+- **Respaldo nocturno (Fernando, 2026-11-07):** irá a Railway, no a su Mac. Sin construir; se hace al mudarse: M1 → Postgres de Railway, la misma base que recibiría la actualización si el M1 cae. **Se mudan los 5 productos.**
+- **`humble-elegance` borrado (2026-11-06, pedido por Fernando):** demostración, el cliente tiene su propio servidor. **Sin respaldo:** su base no tenía URL pública y el script borró igualmente.
 - **P21 FileVault y reinicios · ✅** En macOS 26 se desbloquea por SSH con Inicio de sesión remoto activo, mejor por cable; Tailscale no corre antes del desbloqueo, así que hace falta otro equipo en la misma red. Con la batería, un corte corto no reinicia: cae el módem. Recomendación: mantener FileVault y dejar a Railway sosteniendo el servicio hasta desbloquear.
 - **Orden:** Cloudflare exige tocar los servidores de nombres: después de cerrar la transferencia del dominio (vence 2026-11-15).
 
