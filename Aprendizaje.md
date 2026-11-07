@@ -226,6 +226,7 @@ Fernando pidió implementar la publicación en redes. Primero YouTube, con conex
 
 ### El sistema en la app del teléfono (2026-11-06)
 Fernando confirmó con capturas que la app del iPhone abre el marco, y señaló que se veía mal. Corregido: los prompts son un selector en el teléfono, el marco no reserva el margen seguro (lo pone la app de fuera), sin franja al pie, sin «Compartir acceso» en este sistema, y el texto del prompt a 16 px para que iOS no haga zoom. Lo oscuro de paneles y menús es su tema «Mixto», no un fallo. Comprobado en Chrome a 390 px con la app simulada y en el tema Mixto; falta verlo en el iPhone real.
+**Corrección de Fernando (2026-11-06):** el formulario quedaba encerrado en el marco, sin velo y con la burbuja de chat sobre «Guardar». Un marco no pinta fuera de sí: al haber un `dialog[open]`, avisa a la app y esta lo expande a pantalla completa sin recargarlo; vale para todos los formularios y también para el Espacio de trabajo. Medido: 358×643 pasa a 390×844 y vuelve, con el marco encima de todo.
 
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.

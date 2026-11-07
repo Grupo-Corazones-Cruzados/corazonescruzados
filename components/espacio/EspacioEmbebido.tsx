@@ -23,6 +23,25 @@ export default function EspacioEmbebido({ titulo = 'Espacio de trabajo', childre
   const [clave, setClave] = useState('');
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [conModal, setConModal] = useState(false);
+
+  /**
+   * Un marco no puede pintar fuera de sí: un formulario quedaría encerrado en él, sin velo sobre la
+   * pantalla y con los botones de la app encima. Por eso avisa a la app, que lo expande mientras haya
+   * uno abierto. Se observa el atributo y no cada formulario: así valen todos, también los futuros.
+   */
+  useEffect(() => {
+    const revisar = () => {
+      const hay = !!document.querySelector('dialog[open]');
+      setConModal((antes) => {
+        if (antes !== hay) window.parent?.postMessage(hay ? 'espacio-modal-abierto' : 'espacio-modal-cerrado', '*');
+        return hay;
+      });
+    };
+    const o = new MutationObserver(revisar);
+    o.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['open'] });
+    return () => o.disconnect();
+  }, []);
 
   useEffect(() => {
     window.parent?.postMessage('espacio-listo', '*');
@@ -52,7 +71,7 @@ export default function EspacioEmbebido({ titulo = 'Espacio de trabajo', childre
   }
 
   return (
-    <div className={`corp tema-progreso tema-${tema} ${oscuro ? 'dark' : ''} h-dvh p-0 bg-digi-dark`} style={{ '--seguro-arriba': '0px', '--seguro-abajo': '0px' } as CSSProperties}>
+    <div className={`corp tema-progreso tema-${tema} ${oscuro ? 'dark' : ''} h-dvh p-0 bg-digi-dark`} style={conModal ? undefined : { '--seguro-arriba': '0px', '--seguro-abajo': '0px' } as CSSProperties}>
       {estado === 'dentro' && (children ?? <EspacioTrabajo />)}
       {estado === 'cargando' && <div className="h-full flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}
       {estado === 'clave' && (

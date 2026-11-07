@@ -25,6 +25,7 @@ export default function EspacioEnApp({ ruta = RUTA_EMBEBIDA, titulo = 'Espacio d
   const [direccion, setDireccion] = useState<string | null>(null);
   const [estado, setEstado] = useState<'cargando' | 'listo' | 'sin-conexion'>('cargando');
   const [intento, setIntento] = useState(0);
+  const [completa, setCompleta] = useState(false);
 
   useEffect(() => {
     if (!esAppInstalada() || (user && user.role !== 'admin')) { router.replace('/dashboard/admin'); return; }
@@ -34,7 +35,12 @@ export default function EspacioEnApp({ ruta = RUTA_EMBEBIDA, titulo = 'Espacio d
   useEffect(() => {
     if (!direccion) return;
     const origen = new URL(direccion).origin;
-    const oir = (e: MessageEvent) => { if (e.origin === origen && e.data === 'espacio-listo') setEstado('listo'); };
+    const oir = (e: MessageEvent) => {
+      if (e.origin !== origen) return;
+      if (e.data === 'espacio-listo') setEstado('listo');
+      if (e.data === 'espacio-modal-abierto') setCompleta(true);
+      if (e.data === 'espacio-modal-cerrado') setCompleta(false);
+    };
     window.addEventListener('message', oir);
     const t = setTimeout(() => setEstado((x) => (x === 'listo' ? x : 'sin-conexion')), ESPERA_MS);
     return () => { window.removeEventListener('message', oir); clearTimeout(t); };
@@ -45,7 +51,7 @@ export default function EspacioEnApp({ ruta = RUTA_EMBEBIDA, titulo = 'Espacio d
 
   return (
     <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} respiro={enTelefono ? 0 : 12} className={`relative bg-digi-card lg:border lg:border-digi-border lg:rounded-lg overflow-hidden ${ruta === RUTA_EMBEBIDA ? 'max-lg:pb-[var(--seguro-abajo)]' : ''}`}>
-      {src && <iframe key={intento} src={src} title={titulo} allow="microphone" className={`w-full h-full border-0 ${estado === 'listo' ? '' : 'invisible'}`} />}
+      {src && <iframe key={intento} src={src} title={titulo} allow="microphone" className={`border-0 ${completa ? 'fixed inset-0 z-[2147483000] w-screen h-dvh' : 'w-full h-full'} ${estado === 'listo' ? '' : 'invisible'}`} />}
       {estado === 'cargando' && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}
       {estado === 'sin-conexion' && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center">
