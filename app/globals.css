@@ -5147,6 +5147,12 @@ html[data-gcc-app='centralizado'], html[data-gcc-app='centralizado'] body { back
 .presu-casilla a { color: #5b3fa8; text-decoration: underline; }
 .presu-error { margin: 0; font-size: 0.85rem; line-height: 1.4; color: #b42318; }
 .presu-texto { margin: 0; font-size: 0.9rem; line-height: 1.5; color: #4b4658; }
+.presu-cuerpo.sin-panel { grid-template-columns: minmax(0, 1fr); }
+.presu-marco:has(.sin-panel) { max-width: 760px; }
+.presu-pedir-sesion { flex: none; display: flex; flex-direction: column; gap: 12px; padding: 16px 20px 20px; border-top: 1px solid #ece9f3; text-align: center; }
+.presu-boton-enlace { display: inline-flex; align-items: center; text-decoration: none; }
+a.presu-principal { display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; }
+a.presu-principal svg { width: 18px; height: 18px; }
 .presu-pestanas { display: none; flex: none; border-bottom: 1px solid #ece9f3; }
 .presu-pestanas button { flex: 1; height: 44px; border: 0; border-bottom: 2px solid transparent; background: none; font-size: 0.9rem; font-weight: 600; color: #6b6776; cursor: pointer; }
 .presu-pestanas button[aria-selected='true'] { color: #4b2d8e; border-bottom-color: #4b2d8e; }

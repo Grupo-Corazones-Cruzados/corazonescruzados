@@ -107,12 +107,12 @@ const GENERICAS = new Set(('compania compañia internacional seguros filial grup
   + 'limitada empresa corporacion consultores auditores asociados hermanos comercial industrial ecuador '
   + 'gmail hotmail outlook yahoo').split(' '));
 
-function sinTildes(s: string): string {
+export function sinTildes(s: string): string {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
 /** Lo que identifica al cliente y no puede aparecer en el nombre nuevo. */
-function marcasDelCliente(nombres: (string | null | undefined)[]): string[] {
+export function marcasDelCliente(nombres: (string | null | undefined)[]): string[] {
   const fuera = new Set<string>();
   for (const n of nombres) {
     if (!n) continue;

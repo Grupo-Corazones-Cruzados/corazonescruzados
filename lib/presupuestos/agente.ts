@@ -1,6 +1,6 @@
 import { pool } from '@/lib/db';
 import { claveIA, mensajeDeErrorIA, MODELO_IA } from '@/lib/ia/openai';
-import { cargarCatalogo, instrucciones, leerTrabajo, type Catalogo } from './contexto';
+import { buscarMiembros, cargarCatalogo, instrucciones, leerTrabajo, type Catalogo } from './contexto';
 import { MAX_TOKENS_SESION, type Mensaje, type Presupuesto } from './db';
 
 /**
@@ -21,10 +21,18 @@ const MAX_VUELTAS = 8;
 const herramientas = (c: Catalogo) => [
   {
     type: 'function', name: 'leer_trabajo', strict: true,
-    description: 'Lee el detalle de un trabajo terminado del catálogo: requerimientos y subtareas de un proyecto, o acciones y días de un ticket.',
+    description: 'Lee el detalle de un trabajo terminado del catálogo: requerimientos y subtareas de un proyecto o acciones de un ticket, y sus responsables.',
     parameters: {
       type: 'object', additionalProperties: false, required: ['tipo', 'id'],
       properties: { tipo: { type: 'string', enum: ['proyecto', 'ticket'] }, id: { type: 'integer' } },
+    },
+  },
+  {
+    type: 'function', name: 'buscar_miembros', strict: true,
+    description: 'Busca miembros por nombre, talento o portafolio. Devuelve su perfil público: contacto, ubicación, talentos y portafolio.',
+    parameters: {
+      type: 'object', additionalProperties: false, required: ['consulta'],
+      properties: { consulta: { type: 'string', description: 'Vacía para listarlos a todos.' } },
     },
   },
   {
@@ -149,6 +157,9 @@ export async function correrTurno(sesion: any, texto: string, emitir: (e: Evento
           if (ll.name === 'leer_trabajo') {
             emitir({ tipo: 'estado', texto: 'Revisando trabajos parecidos…' });
             salida = await leerTrabajo(a.tipo, a.id, catalogo);
+          } else if (ll.name === 'buscar_miembros') {
+            emitir({ tipo: 'estado', texto: 'Buscando miembros…' });
+            salida = await buscarMiembros(String(a.consulta ?? ''));
           } else {
             const error = validar(a, catalogo);
             if (error) salida = { error };

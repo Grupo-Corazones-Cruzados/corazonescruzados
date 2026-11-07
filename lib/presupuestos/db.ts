@@ -1,10 +1,12 @@
 import { pool } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth/jwt';
 import { asegurarCookieDeEquipo, identidadDeEquipo } from '@/lib/registro/limite';
 
 /**
- * LAS SESIONES DEL AGENTE DE PRESUPUESTOS (Fernando, 2026-11-06): quien entra sin cuenta tiene hasta
- * 3 sesiones, contadas por IP o navegador, y cada una hasta 500 000 tokens. Cada sesión guarda su
- * conversación, porque el agente la retoma y sigue iterando sobre el mismo presupuesto.
+ * LAS SESIONES DEL AGENTE (Fernando, 2026-11-06): quien entra sin cuenta tiene hasta 3 sesiones en
+ * total, contadas por IP o navegador, que no se renuevan: después debe iniciar sesión. Con sesión
+ * iniciada no cuentan. Cada sesión tiene hasta 500 000 tokens y guarda su conversación, porque el agente
+ * la retoma y sigue iterando.
  */
 
 export const MAX_SESIONES = 3;
@@ -32,6 +34,7 @@ export function asegurarTablaPresupuestos(): Promise<void> {
     `CREATE TABLE IF NOT EXISTS gcc_world.presupuesto_sesiones (
        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
        dispositivo TEXT NOT NULL,
+       user_id TEXT,
        ip_hash TEXT,
        solucion TEXT NOT NULL,
        mensajes JSONB NOT NULL DEFAULT '[]',
@@ -46,6 +49,8 @@ export function asegurarTablaPresupuestos(): Promise<void> {
        creada TIMESTAMPTZ NOT NULL DEFAULT NOW(),
        actualizada TIMESTAMPTZ NOT NULL DEFAULT NOW()
      );
+     ALTER TABLE gcc_world.presupuesto_sesiones ADD COLUMN IF NOT EXISTS user_id TEXT;
+     CREATE INDEX IF NOT EXISTS presupuesto_sesiones_usuario ON gcc_world.presupuesto_sesiones (user_id);
      CREATE INDEX IF NOT EXISTS presupuesto_sesiones_dispositivo ON gcc_world.presupuesto_sesiones (dispositivo);
      CREATE INDEX IF NOT EXISTS presupuesto_sesiones_ip ON gcc_world.presupuesto_sesiones (ip_hash);`,
   ).then(() => undefined).catch((e: unknown) => { tabla = null; throw e; });
@@ -64,22 +69,30 @@ export function sesionPublica(r: any) {
   };
 }
 
+/**
+ * La sesión anónima es del navegador y la de una cuenta, solo de esa cuenta: en un equipo compartido,
+ * la conversación de quien inició sesión no queda a la vista de quien venga después.
+ */
+const PERTENECE = (usuario: string, dispositivo: string) =>
+  `((user_id IS NOT NULL AND user_id = ${usuario}::text) OR (user_id IS NULL AND ${dispositivo}::text IS NOT NULL AND dispositivo = ${dispositivo}::text))`;
+
 /** Las sesiones de este equipo y cuántas le quedan. */
 export async function sesionesDelEquipo(solucion: string) {
   await asegurarTablaPresupuestos();
   const { ipHash, dispositivo, libre } = await identidadDeEquipo();
+  const usuario = await getCurrentUser();
   const { rows } = await pool.query(
     `SELECT * FROM gcc_world.presupuesto_sesiones
-      WHERE solucion = $1 AND ($2::text IS NOT NULL AND dispositivo = $2)
+      WHERE solucion = $1 AND ${PERTENECE('$2', '$3')}
       ORDER BY creada`,
-    [solucion, dispositivo],
+    [solucion, usuario?.userId ?? null, dispositivo],
   );
   const { rows: [c] } = await pool.query(
     `SELECT COUNT(*)::int AS n FROM gcc_world.presupuesto_sesiones
-      WHERE ip_hash = $1 OR ($2::text IS NOT NULL AND dispositivo = $2)`,
+      WHERE user_id IS NULL AND (ip_hash = $1 OR ($2::text IS NOT NULL AND dispositivo = $2))`,
     [ipHash, dispositivo],
   );
-  return { sesiones: rows.map(sesionPublica), usadas: c.n as number, maximo: MAX_SESIONES, libre };
+  return { sesiones: rows.map(sesionPublica), usadas: c.n as number, maximo: MAX_SESIONES, libre: libre || !!usuario, conSesion: !!usuario };
 }
 
 export type ErrorSesion = { error: string; estado: number };
@@ -88,7 +101,7 @@ export async function crearSesion(solucion: string): Promise<{ sesion: any } | E
   await asegurarTablaPresupuestos();
   const { usadas, libre } = await sesionesDelEquipo(solucion);
   if (!libre && usadas >= MAX_SESIONES) {
-    return { error: `Desde este equipo ya se usaron las ${MAX_SESIONES} sesiones disponibles.`, estado: 429 };
+    return { error: `Ya usaste las ${MAX_SESIONES} sesiones disponibles. Inicia sesión como cliente para seguir.`, estado: 429 };
   }
   const { rows: [d] } = await pool.query(
     `SELECT COALESCE(SUM(tokens), 0)::bigint AS t FROM gcc_world.presupuesto_sesiones WHERE actualizada > NOW() - INTERVAL '1 day'`,
@@ -98,21 +111,23 @@ export async function crearSesion(solucion: string): Promise<{ sesion: any } | E
   }
   const dispositivo = await asegurarCookieDeEquipo();
   const { ipHash } = await identidadDeEquipo();
+  const usuario = await getCurrentUser();
   const { rows: [r] } = await pool.query(
-    `INSERT INTO gcc_world.presupuesto_sesiones (dispositivo, ip_hash, solucion) VALUES ($1, $2, $3) RETURNING *`,
-    [dispositivo, ipHash, solucion],
+    `INSERT INTO gcc_world.presupuesto_sesiones (dispositivo, ip_hash, solucion, user_id) VALUES ($1, $2, $3, $4) RETURNING *`,
+    [dispositivo, ipHash, solucion, usuario?.userId ?? null],
   );
   return { sesion: r };
 }
 
-/** Una sesión, solo si es de este navegador: el identificador solo no basta. */
+/** Una sesión, solo si es de esta cuenta o de este navegador: el identificador solo no basta. */
 export async function sesionDeEsteEquipo(id: string): Promise<any | null> {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   await asegurarTablaPresupuestos();
   const { dispositivo } = await identidadDeEquipo();
-  if (!dispositivo) return null;
+  const usuario = await getCurrentUser();
   const { rows: [r] } = await pool.query(
-    `SELECT * FROM gcc_world.presupuesto_sesiones WHERE id = $1 AND dispositivo = $2`, [id, dispositivo],
+    `SELECT * FROM gcc_world.presupuesto_sesiones WHERE id = $1 AND ${PERTENECE('$2', '$3')}`,
+    [id, usuario?.userId ?? null, dispositivo],
   );
   return r ?? null;
 }

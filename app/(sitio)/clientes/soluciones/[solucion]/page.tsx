@@ -14,7 +14,6 @@ import { notFound } from 'next/navigation';
 import { SITIO, OG_IMAGEN } from '@/lib/sitio/contenido';
 import { cargarSolucionesCacheadas, resumenSolucion } from '../../../soluciones/datos';
 import FichaSolucion from '@/components/sitio/FichaSolucion';
-import AgentePresupuestos from '@/components/sitio/AgentePresupuestos';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,7 +48,6 @@ export default async function SolucionPage({ params }: Props) {
   if (!s) notFound();
   const r = resumenSolucion(s);
   return (
-    <>
     <FichaSolucion
       volver={{ href: '/clientes/soluciones', texto: 'Soluciones' }}
       etiqueta="Solución"
@@ -66,7 +64,5 @@ export default async function SolucionPage({ params }: Props) {
       }))}
       hecho={r}
     />
-    {s.slug === 'tecnologia' && <AgentePresupuestos solucion={s.slug} />}
-    </>
   );
 }

@@ -1,17 +1,18 @@
 'use client';
 
 /**
- * EL AGENTE DE PRESUPUESTOS (Fernando, 2026-11-06). Aparece al abrir la página de la solución, en el
- * centro, preguntando qué quiere presupuestar la persona. Al conversar se amplía: la conversación a la
- * izquierda y, a la derecha, el presupuesto vigente, con el botón de aceptar y los pasos de datos. Al
- * cerrarlo queda como burbuja abajo a la derecha. En el teléfono, conversación y presupuesto son pestañas.
+ * EL AGENTE DE GCC (Fernando, 2026-11-06). Responde consultas del negocio y hace presupuestos. Es una
+ * burbuja abajo a la derecha, y se abre sola en el centro solo con `abrirAlEntrar`. Al conversar se
+ * amplía y, si hay presupuesto, lo enseña a la derecha con el botón de aceptar y los pasos de datos. En
+ * el teléfono, conversación y presupuesto son pestañas. Agotadas las 3 sesiones anónimas, pide entrar.
  *
  * Portal al `body`: un `fixed` dentro de un elemento animado se coloca respecto a él.
  */
 
 import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowUp, Calculator, X } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { ArrowUp, Calculator, LogIn, MessageCircle, X } from 'lucide-react';
 import Captcha from '@/components/landing/Captcha';
 import { fmt2 } from '@/lib/format';
 import type { Mensaje, Presupuesto } from '@/lib/presupuestos/db';
@@ -57,7 +58,10 @@ function TextoAgente({ texto }: { texto: string }) {
   return <>{bloques}</>;
 }
 
-export default function AgentePresupuestos({ solucion }: { solucion: string }) {
+export default function AgentePresupuestos({ solucion = 'tecnologia' }: { solucion?: string }) {
+  const ruta = usePathname();
+  // Se abre sola en la página de Tecnología; en las demás espera a que la pulsen.
+  const abrirAlEntrar = ruta === '/clientes/soluciones/tecnologia';
   const [montado, setMontado] = useState(false);
   const [fase, setFase] = useState<'cerrado' | 'abriendo' | 'abierto' | 'cerrando'>('cerrado');
   const [sesiones, setSesiones] = useState<Sesion[]>([]);
@@ -75,6 +79,7 @@ export default function AgentePresupuestos({ solucion }: { solucion: string }) {
   const activa = sesiones.find((s) => s.id === activaId) ?? null;
   const conConversacion = !!activa?.mensajes.length;
   const puedeNueva = libre || usadas < maximo;
+  const conPanel = !!activa?.presupuesto;
 
   const abrir = useCallback(() => {
     setFase('abriendo');
@@ -94,9 +99,13 @@ export default function AgentePresupuestos({ solucion }: { solucion: string }) {
       setMaximo(j.maximo ?? 3);
       setLibre(!!j.libre);
     }).catch(() => {});
+  }, [solucion]);
+
+  useEffect(() => {
+    if (!abrirAlEntrar) return;
     const t = setTimeout(abrir, 450);
     return () => clearTimeout(t);
-  }, [solucion, abrir]);
+  }, [abrirAlEntrar, abrir]);
 
   useEffect(() => {
     if (fase !== 'abierto') return;
@@ -187,27 +196,28 @@ export default function AgentePresupuestos({ solucion }: { solucion: string }) {
     <>
       {fase !== 'abierto' && fase !== 'abriendo' && (
         <button type="button" className={`presu-burbuja${fase === 'cerrado' ? ' es-visible' : ''}`} onClick={abrir}
-          aria-label="Abrir el agente de presupuestos" title="Presupuestar">
-          <Calculator aria-hidden />
+          aria-label="Abrir el agente de GCC" title="Consultas y presupuestos">
+          <MessageCircle aria-hidden />
         </button>
       )}
       {fase !== 'cerrado' && (
         <div className={`presu-velo${visible ? ' es-visible' : ''}`} onMouseDown={(e) => { if (e.target === e.currentTarget) cerrar(); }}>
-          <div className={`presu-marco${conConversacion ? ' es-amplio' : ''}`} role="dialog" aria-modal="true" aria-label="Agente de presupuestos">
+          <div className={`presu-marco${conConversacion ? ' es-amplio' : ''}`} role="dialog" aria-modal="true" aria-label="Agente de GCC">
             <div className="presu-cabeza">
-              <h2>Agente de presupuestos</h2>
+              <h2>Agente de GCC</h2>
               {sesiones.length > 1 && (
                 <select className="presu-sesion" aria-label="Sesión" value={activaId ?? ''} disabled={ocupado} onChange={(e) => setActivaId(e.target.value)}>
                   {sesiones.map((s, i) => <option key={s.id} value={s.id}>Sesión {i + 1}</option>)}
                 </select>
               )}
-              {conConversacion && (
-                <button type="button" className="presu-boton-suave" disabled={!puedeNueva || ocupado}
-                  title={puedeNueva ? 'Abrir otra sesión' : `Ya usaste las ${maximo} sesiones de este equipo`}
+              {conConversacion && (puedeNueva ? (
+                <button type="button" className="presu-boton-suave" disabled={ocupado} title="Abrir otra sesión"
                   onClick={() => { setError(null); void crear(); setVista('charla'); }}>
                   Nueva
                 </button>
-              )}
+              ) : (
+                <a className="presu-boton-suave presu-boton-enlace" href="/auth/cliente" title={`Ya usaste las ${maximo} sesiones: inicia sesión para seguir`}>Iniciar sesión</a>
+              ))}
               <button type="button" className="presu-cerrar" onClick={cerrar} aria-label="Cerrar"><X aria-hidden /></button>
             </div>
 
@@ -215,24 +225,24 @@ export default function AgentePresupuestos({ solucion }: { solucion: string }) {
               <>
                 <div className="presu-bienvenida">
                   <span className="presu-bienvenida-icono"><Calculator aria-hidden /></span>
-                  <h3>¿Qué te gustaría presupuestar para tu negocio?</h3>
-                  <p>Cuéntame tu idea o el problema que quieres resolver. Te doy un rango de precio basado en proyectos y tickets que ya hemos terminado.</p>
+                  <h3>{abrirAlEntrar ? '¿Qué te gustaría presupuestar para tu negocio?' : '¿En qué te ayudo?'}</h3>
+                  <p>{abrirAlEntrar
+                    ? 'Cuéntame tu idea o el problema que quieres resolver. Te doy un rango de precio basado en proyectos y tickets que ya hemos terminado.'
+                    : 'Pregúntame sobre el negocio, nuestros productos, pagos o miembros, o cuéntame tu idea para presupuestarla.'}</p>
                 </div>
                 {error && <p className="presu-error" style={{ padding: '10px 24px 0', textAlign: 'center' }}>{error}</p>}
-                {!puedeNueva && !activa ? (
-                  <p className="presu-texto" style={{ padding: '16px 24px 24px', textAlign: 'center' }}>Desde este equipo ya se usaron las {maximo} sesiones disponibles.</p>
-                ) : (
+                {!puedeNueva && (!activa || agotada) ? <PedirSesion maximo={maximo} /> : (
                   <Compositor texto={texto} setTexto={setTexto} enviar={enviar} ocupado={ocupado} enfocar />
                 )}
               </>
             ) : (
               <>
-                <div className="presu-pestanas" role="tablist">
+                {conPanel && <div className="presu-pestanas" role="tablist">
                   <button type="button" role="tab" aria-selected={vista === 'charla'} onClick={() => setVista('charla')}>Conversación</button>
                   <button type="button" role="tab" aria-selected={vista === 'panel'} onClick={() => setVista('panel')}>Presupuesto</button>
-                </div>
-                <div className="presu-cuerpo">
-                  <section className="presu-charla" data-vista={vista} hidden={esTelefono() && vista !== 'charla'}>
+                </div>}
+                <div className={`presu-cuerpo${conPanel ? '' : ' sin-panel'}`}>
+                  <section className="presu-charla" data-vista={vista} hidden={conPanel && esTelefono() && vista !== 'charla'}>
                     <div className="presu-mensajes">
                       {activa!.mensajes.map((m, i) => m.texto && (
                         <div key={i} className={`presu-msj es-${m.rol}`}>
@@ -244,9 +254,11 @@ export default function AgentePresupuestos({ solucion }: { solucion: string }) {
                       <div ref={fin} />
                     </div>
                     {activa!.enviada || agotada ? (
-                      <p className="presu-texto" style={{ padding: 16, borderTop: '1px solid #ece9f3' }}>
-                        {activa!.enviada ? 'Este presupuesto ya se envió.' : 'Esta sesión llegó a su límite de uso. Puedes aceptar el presupuesto o abrir otra sesión.'}
-                      </p>
+                      puedeNueva ? (
+                        <p className="presu-texto" style={{ padding: 16, borderTop: '1px solid #ece9f3' }}>
+                          {activa!.enviada ? 'Este presupuesto ya se envió. Puedes abrir otra sesión con «Nueva».' : 'Esta sesión llegó a su límite de uso. Puedes aceptar el presupuesto o abrir otra sesión con «Nueva».'}
+                        </p>
+                      ) : <PedirSesion maximo={maximo} />
                     ) : (
                       <>
                         <Compositor texto={texto} setTexto={setTexto} enviar={enviar} ocupado={ocupado} />
@@ -254,10 +266,12 @@ export default function AgentePresupuestos({ solucion }: { solucion: string }) {
                       </>
                     )}
                   </section>
-                  <aside className="presu-panel" hidden={esTelefono() && vista !== 'panel'}>
-                    <PanelPresupuesto sesion={activa!} ocupado={ocupado}
-                      alEnviar={(enviada) => cambiar(activa!.id, (s) => ({ ...s, enviada }))} />
-                  </aside>
+                  {conPanel && (
+                    <aside className="presu-panel" hidden={esTelefono() && vista !== 'panel'}>
+                      <PanelPresupuesto sesion={activa!} ocupado={ocupado}
+                        alEnviar={(enviada) => cambiar(activa!.id, (s) => ({ ...s, enviada }))} />
+                    </aside>
+                  )}
                 </div>
               </>
             )}
@@ -266,6 +280,16 @@ export default function AgentePresupuestos({ solucion }: { solucion: string }) {
       )}
     </>,
     document.body,
+  );
+}
+
+/** Sin sesiones anónimas: para seguir hay que entrar como cliente. */
+function PedirSesion({ maximo }: { maximo: number }) {
+  return (
+    <div className="presu-pedir-sesion">
+      <p className="presu-texto">Ya usaste las {maximo} sesiones disponibles. Inicia sesión como cliente para seguir usando el agente.</p>
+      <a className="presu-principal" href="/auth/cliente"><LogIn aria-hidden /> Iniciar sesión</a>
+    </div>
   );
 }
 
