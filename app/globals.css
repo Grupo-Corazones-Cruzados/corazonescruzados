@@ -5078,8 +5078,8 @@ html[data-gcc-app='centralizado'], html[data-gcc-app='centralizado'] body { back
 /* ═══ EL AGENTE DE PRESUPUESTOS (Fernando, 2026-11-06) ═══
    Va en un portal al `body`, fuera de `.claro-publico`: colores literales. Al cerrarse se encoge hacia la
    burbuja de abajo a la derecha, y al abrirse crece desde ella. */
-/* Por encima de los avisos del panel: uno de ellos llegó a tapar el botón de enviar. */
-.presu-velo { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(20, 14, 40, 0.42); opacity: 0; transition: opacity 260ms ease-out; font-family: 'Inter', system-ui, sans-serif; color: #1c1b22; }
+/* Por encima de los avisos de sonner (999999999): uno de ellos tapaba el botón de enviar. */
+.presu-velo { position: fixed; inset: 0; z-index: 2147483000; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(20, 14, 40, 0.42); opacity: 0; transition: opacity 260ms ease-out; font-family: 'Inter', system-ui, sans-serif; color: #1c1b22; }
 .presu-velo.es-visible { opacity: 1; }
 .presu-marco { position: relative; display: flex; flex-direction: column; width: min(600px, 100%); max-height: 100%; overflow: hidden; border-radius: 24px; background: #fff; box-shadow: 0 40px 90px -30px rgba(45, 27, 105, 0.6); transform: translate(32vw, 34vh) scale(0.12); transform-origin: bottom right; opacity: 0; transition: transform 360ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms ease-out, width 320ms cubic-bezier(0.22, 1, 0.36, 1), height 320ms cubic-bezier(0.22, 1, 0.36, 1); }
 .presu-velo.es-visible .presu-marco { transform: none; opacity: 1; }
