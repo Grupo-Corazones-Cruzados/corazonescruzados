@@ -64,6 +64,25 @@ async function quienSoy() {
   return { ipHash: hashIp(ip), dispositivo: almacen.get(COOKIE_DISPOSITIVO)?.value || null, libre };
 }
 
+/** El equipo que hace la petición, para otros límites por IP o navegador (`lib/presupuestos`). */
+export const identidadDeEquipo = quienSoy;
+
+/** La cookie de equipo de este navegador; si no la tenía, se la pone. */
+export async function asegurarCookieDeEquipo(): Promise<string> {
+  const almacen = await cookies();
+  const actual = almacen.get(COOKIE_DISPOSITIVO)?.value;
+  if (actual) return actual;
+  const id = randomBytes(24).toString('hex');
+  almacen.set(COOKIE_DISPOSITIVO, id, {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge: UN_ANIO,
+  });
+  return id;
+}
+
 export interface EstadoRegistro {
   bloqueado: boolean;
   /** Cuándo vuelve a poder registrar (ISO), si está bloqueado. */
