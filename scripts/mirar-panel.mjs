@@ -1,8 +1,10 @@
 /**
  * MIRAR UNA PANTALLA DEL PANEL — con sesión, en el navegador de verdad.
  *
- *   npm run build && npx next start -p 3099 &
- *   node scripts/mirar-panel.mjs <carpeta-destino> [ruta] [ancho] [alto]
+ *   npm run build && PERMITIR_SECRETO_DE_PRUEBA=1 npx next start -p 3099 &
+ *   node scripts/mirar-panel.mjs
+ *
+ * Sin JWT_SECRET, `next start` falla cerrado (lib/auth/secreto.ts) salvo con esa variable. <carpeta-destino> [ruta] [ancho] [alto]
  *
  * ── POR QUÉ EXISTE ───────────────────────────────────────────────────────────
  * Las pantallas de `/dashboard` exigen contraseña **y un código enviado al correo**,

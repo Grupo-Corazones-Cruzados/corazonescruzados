@@ -11921,7 +11921,7 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 
 ---
 
-# SEGURIDAD DEL SERVIDOR PROPIO (M1) Y DE LA PLATAFORMA (2026-11-07) · 60 %
+# SEGURIDAD DEL SERVIDOR PROPIO (M1) Y DE LA PLATAFORMA (2026-11-07) · 65 %
 **Objetivo:** tratar todos los riesgos y tipos de ataque del servidor local antes y después de la mudanza. **Rol:** responsable de seguridad e infraestructura. **Fuente:** auditoría de solo lectura del M1, de la Mac de desarrollo, de la tailnet y `npm audit`. Nada se cambió.
 
 ## Hallazgos (2026-11-07)
@@ -11941,7 +11941,13 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 | ✅ | Bien: FileVault, SIP, Gatekeeper, Postgres solo en 127.0.0.1 con scram, servicios como usuario sin privilegios, entornos con permisos 600, app y productos solo en 127.0.0.1 | — | M1 |
 
 ## Preguntas abiertas
-- **P1 ¿Las cuentas críticas tienen segundo factor?** Apple, GitHub, Cloudflare, Namecheap, Railway, Google y el correo. Si alguien toma GitHub, publica código en el servidor; si toma Namecheap o Cloudflare, se lleva el dominio. ⏸
-- **P2 ¿Qué más hay en la red de casa?** Router (contraseña de admin, firmware, UPnP), cámaras y otros equipos: comparten red con el M1. ⏸
-- **P3 ¿El lugar del M1 está a salvo de robo y de acceso ajeno?** ⏸
-- **P4 ¿Quién más usa la red o los equipos?** ⏸
+- **P1 ¿Las cuentas críticas tienen segundo factor?** ✅ Sí, todas (Fernando, 2026-11-07).
+- **P2 ¿Qué más hay en la red de casa?** ✅ La Mac M4 Pro, un iPhone XR, un iPhone 17 y un iPad Pro 11. La contraseña de administración del router la conoce y no la ha cambiado (pendiente sugerido). (Fernando, 2026-11-07)
+- **P3 ¿El lugar del M1 está a salvo de robo?** ✅ Sí, según Fernando: no se lo pueden llevar. Baja el peso de H10.
+- **P4 ¿Quién más usa la red o los equipos?** ❓ Sin respuesta; se asume solo Fernando.
+
+## Fase 1 — hecha y publicada (2026-11-07, commit 682049a0)
+- **H2 cerrado:** `lib/auth/secreto.ts`. En producción sin `JWT_SECRET` lanza en vez de usar la clave por defecto; el middleware rechaza la sesión (falla cerrado). La usan `jwt.ts`, `middleware.ts`, el captcha, el registro libre y las solicitudes de presupuesto. Probado con `next start`: un token firmado con la clave por defecto da 307 a `/auth` y 401 en `/api/auth/me`, con y sin `JWT_SECRET`; el bueno entra. En local `next start` necesita `PERMITIR_SECRETO_DE_PRUEBA=1` o una clave propia.
+- **H1 reducido:** next 15.5.29 en la app y los cinco productos, sharp 0.35.5, node-forge 1.4.3 (firma del SRI probada con el certificado real, sin enviar nada). **0 críticas**; quedan 11 altas en la app y 2 por producto: la cadena de puppeteer (pide la 25), postcss del build (pide next 16) y zod (pide la 4). Son la **fase 1b**, con pruebas, porque cambian de versión mayor.
+- **H9 cerrado:** `xlsx` no se usaba; fuera.
+- Trampa: `npm audit fix --omit=dev` **poda las devDependencies** del `node_modules` (se fue `@tailwindcss/postcss` y el build cayó); después hay que hacer `npm install`. Y el arreglo automático subió puppeteer a 24.43, que cambió los tipos de `waitUntil`: se fijó en 24.40.
