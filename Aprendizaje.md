@@ -11918,3 +11918,30 @@ Quiere GCC World en servidor propio por **control**, y Railway solo para proyect
 
 ## Sin medir / abierto
 Causa de Postgres, causa del crecimiento de la app, memoria real de los productos sin precarga, si los clientes pagan sus proyectos, uso real de los proyectos pequeños, latencia a otro proveedor.
+
+---
+
+# SEGURIDAD DEL SERVIDOR PROPIO (M1) Y DE LA PLATAFORMA (2026-11-07) · 60 %
+**Objetivo:** tratar todos los riesgos y tipos de ataque del servidor local antes y después de la mudanza. **Rol:** responsable de seguridad e infraestructura. **Fuente:** auditoría de solo lectura del M1, de la Mac de desarrollo, de la tailnet y `npm audit`. Nada se cambió.
+
+## Hallazgos (2026-11-07)
+| # | Hallazgo | Gravedad | Alcance |
+|---|---|---|---|
+| H1 | `next@15.5.12` con vulnerabilidad **crítica** (request smuggling en rewrites); además `sharp` (libvips), `node-forge` (firma RSA, la usa la factura del SRI), `ws`, `lodash`, `mysql2`, `basic-ftp`, `extract-zip`. App: 1 crítica, 33 altas; cada producto, 1 crítica y 8-10 altas | Crítica | **Producción hoy (Railway)** y el M1 |
+| H2 | `lib/auth/jwt.ts` usa `"your-secret-key-change-in-production"` si falta `JWT_SECRET`: con un entorno mal copiado, cualquiera fabrica sesiones de admin. Los productos sí fallan sin `JWT_SECRETO` | Crítica si falta la variable | App |
+| H3 | Cortafuegos de macOS **apagado** | Alta | M1 |
+| H4 | Abiertos a toda la red: Compartir pantalla y Gestión remota (ARD 3283), Compartir archivos (SMB), receptor AirPlay (5000/7000), Compartir multimedia (3689), SSH con contraseña | Alta | M1 en la red de casa |
+| H5 | macOS 26.2 con **26.7.2 pendiente** (seguridad; requiere reinicio y desbloqueo de FileVault) | Alta | M1 |
+| H6 | Llave SSH de la Mac de desarrollo hacia el M1 **sin frase de paso**: quien robe esa Mac entra al servidor | Media-alta | Mac de desarrollo |
+| H7 | Tailnet: nodos viejos (`railway-app`, «Luis's MacBook Pro» antiguo, caducados) y sin saber si hay reglas de acceso: el iPhone o el iPad llegan al SSH del M1 | Media | Tailscale |
+| H8 | Node 22.3.0 (junio de 2024) en el M1; Railway usa 22.23 | Media | M1 |
+| H9 | `xlsx@0.18.5` sin arreglo en npm (contaminación de prototipo y ReDoS); hay que confirmar dónde se usa | Media | App |
+| H10 | La clave del SSD de respaldos vive en el propio M1 (`~/.gcc-respaldos/clave-ssd`): un robo del equipo encendido y con sesión abierta la expone. FileVault cubre el equipo apagado | Baja-media | M1 |
+| H11 | Usuario `macports` en el M1 (de una instalación antigua) | Baja | M1 |
+| ✅ | Bien: FileVault, SIP, Gatekeeper, Postgres solo en 127.0.0.1 con scram, servicios como usuario sin privilegios, entornos con permisos 600, app y productos solo en 127.0.0.1 | — | M1 |
+
+## Preguntas abiertas
+- **P1 ¿Las cuentas críticas tienen segundo factor?** Apple, GitHub, Cloudflare, Namecheap, Railway, Google y el correo. Si alguien toma GitHub, publica código en el servidor; si toma Namecheap o Cloudflare, se lleva el dominio. ⏸
+- **P2 ¿Qué más hay en la red de casa?** Router (contraseña de admin, firmware, UPnP), cámaras y otros equipos: comparten red con el M1. ⏸
+- **P3 ¿El lugar del M1 está a salvo de robo y de acceso ajeno?** ⏸
+- **P4 ¿Quién más usa la red o los equipos?** ⏸
