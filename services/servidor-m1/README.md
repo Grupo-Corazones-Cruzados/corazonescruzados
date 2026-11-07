@@ -30,4 +30,5 @@ como segunda opción. Contexto y medidas en `Aprendizaje.md` («GCC World en el 
 - **Sin sudo por SSH:** lo que pide administrador lo ejecuta Fernando con `ssh -t … 'sudo …'`; la contraseña no pasa por nosotros.
 
 ## Pendiente
+Lo que tiene que hacer Fernando a mano: [`TAREAS-DE-FERNANDO.md`](TAREAS-DE-FERNANDO.md).
 Cloudflare (tras cerrar la transferencia de `grupocc.org`), traspaso automático a Railway, mudanza de madrugada, entornos reales con claves.
