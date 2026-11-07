@@ -11896,6 +11896,11 @@ Quiere GCC World en servidor propio por **control**, y Railway solo para proyect
   - **Con el M1 apagado, roto o robado no se puede enviar nada:** mantenimiento hasta recuperarlo. Sigue haciendo falta un respaldo diario fuera del M1 (propuesto: a la Mac de desarrollo por Tailscale).
   - **La pantalla no puede salir del M1:** la sirve Cloudflare. Hace falta 503 en las API y aviso en las pantallas ya abiertas. Los teléfonos ya reintentan posiciones y auxilio por voz; el botón de auxilio falla y pide llamar al 911.
   - Fernando planea a futuro luz e internet propios ante cortes de la zona.
+- **Limpieza del M1 (2026-11-06, autorizada por Fernando):** Escritorio, Descargas, Películas, Música, Papelera, herramientas de desarrollo, Arc, AnyDesk y VS Code movidos a `/Volumes/GCC-Respaldos/limpieza-m1-2026-11-06/` (5,1 GB, cifrado, con `registro.txt`), no borrados. Memoria libre de 42 % a 65 %. Respaldo, gastos del SRI, Tailscale, Chrome, Node y Postgres.app siguen.
+  - **Sin tocar a propósito:** la fototeca (iCloud Fotos activo), `Library/CloudStorage` (tres OneDrive) y iCloud Drive: un cambio allí puede propagarse a la nube. Hay que cerrar esas cuentas en el propio equipo antes.
+  - **Pendiente de Fernando:** `~/limpieza-admin.sh` con sudo, para las apps y servicios de `root`. Cinco imágenes de Descargas no se dejan leer ni por SSH (`com.apple.macl`).
+  - **Acceso:** solo SSH por Tailscale; AnyDesk retirado y Chrome Remote Desktop no corría. Si Tailscale falla, hay que ir al equipo.
+  - **Hallazgo aparte:** `~/.gcc-sri/registro.log` tiene 1.760 de 1.787 líneas con «fetch failed», y 1-3 por hora, desde antes de la limpieza. Sin investigar.
 - **P21 FileVault y reinicios · ✅** En macOS 26 se desbloquea por SSH con Inicio de sesión remoto activo, mejor por cable; Tailscale no corre antes del desbloqueo, así que hace falta otro equipo en la misma red. Con la batería, un corte corto no reinicia: cae el módem. Recomendación: mantener FileVault y dejar a Railway sosteniendo el servicio hasta desbloquear.
 - **Orden:** Cloudflare exige tocar los servidores de nombres: después de cerrar la transferencia del dominio (vence 2026-11-15).
 
