@@ -331,6 +331,7 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🖥️ RUMBO: GCC WORLD EN EL M1 (Fernando, 2026-11-06, sin implementar):** por control; M1 dedicado y por cable; Railway para proyectos pequeños y como respaldo si el M1 cae (viable en diseño, sin probar). Detalle en `Aprendizaje.md` («GCC World en el M1»).
 - **💸 COSTOS DE RAILWAY (2026-11-06, informe; sin cambios aplicados):** los $7,50 de Servidor-GCC son el acumulado del ciclo, unos $0,39/día. Espacio de trabajo ~$25,6/mes con piso PRO de $20. Casi todo es RAM. Ahorro realista $4-7/mes; se recomienda seguir en Railway. La app crece de 320 a ~700 MB en días sin despliegues y Postgres pasó de 190 a 320 MB el 29 oct, causa sin probar. Detalle en `Aprendizaje.md` («OPTIMIZACIÓN DE COSTOS DE RAILWAY»). Pendiente la decisión de Fernando.
 - **🛡️ CONTROL PSICOSOCIAL: PRIMERA SECCIÓN, RASTREO (Fernando, 2026-11-04).** Sistema nuevo de Centralizado
   (colaborador · implementación, celda «Planificador», slug `control-psicosocial`, tablas `cp_`, migración 080). Será «máximo

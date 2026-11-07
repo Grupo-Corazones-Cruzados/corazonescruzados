@@ -11885,5 +11885,12 @@ Arquitecto de soluciones Azure y seguridad corporativa, con enfoque de preventa.
 - **Hobby:** $5 con $5 incluidos; solo conviene si el consumo baja claramente de $20. Un solo desarrollador; confirmar límites en la documentación oficial.
 - Revisar si pasa de ~$100/mes (criterio ya anotado en octubre).
 
+## GCC World en el M1 — decisión de rumbo (Fernando, 2026-11-06)
+Quiere GCC World en servidor propio por **control**, y Railway solo para proyectos pequeños y demostraciones. El M1 queda dedicado, conectado por cable al módem y administrado desde aquí. Asume el riesgo de la luz y las paradas de Peter Tours durante la implementación. Pide que Railway entre en servicio si el M1 cae. **Aún sin implementar.**
+- **Estado del M1 (2026-11-06, por SSH):** MacBook Air M1, 8 GB, macOS 26.2, 36 días encendido, FileVault activo, batería al 81 % con 507 ciclos, por wifi. Tiene sri-gastos y respaldo-bd; sin Node, Postgres ni Docker. Sin ventilador: vigilar calor con carga sostenida. Dos puertos: cable de red requiere concentrador USB-C con carga.
+- **P20 ¿Se puede encender Railway si cae el M1? · 🔎 Viable en diseño, sin probar.** Vigilante fuera de casa; Cloudflare manda el tráfico a Railway; la copia de la base (WAL-G a R2, sin puertos abiertos) se promueve. El regreso al M1 es manual para no tener dos bases principales. Faltan: Postgres con WAL-G en Railway, precios de Cloudflare y R2, y la prueba real desconectando el M1.
+- **P21 FileVault y reinicios · ✅** En macOS 26 se desbloquea por SSH con Inicio de sesión remoto activo, mejor por cable; Tailscale no corre antes del desbloqueo, así que hace falta otro equipo en la misma red. Con la batería, un corte corto no reinicia: cae el módem. Recomendación: mantener FileVault y dejar a Railway sosteniendo el servicio hasta desbloquear.
+- **Orden:** Cloudflare exige tocar los servidores de nombres: después de cerrar la transferencia del dominio (vence 2026-11-15).
+
 ## Sin medir / abierto
 Causa de Postgres, causa del crecimiento de la app, memoria real de los productos sin precarga, si los clientes pagan sus proyectos, uso real de los proyectos pequeños, latencia a otro proveedor.
