@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { claveIA, mensajeDeErrorIA, MODELO_IA } from '@/lib/ia/openai';
 import { buscarMiembros, cargarCatalogo, instrucciones, leerTrabajo, type Catalogo } from './contexto';
+import { consultarCuenta, instruccionesDeCuenta, modulosDe, type Cuenta } from './cuenta';
 import { MAX_TOKENS_SESION, type Mensaje, type Presupuesto } from './db';
 
 /**
@@ -17,6 +18,15 @@ export type EventoAgente =
   | { tipo: 'error'; texto: string };
 
 const MAX_VUELTAS = 8;
+
+const herramientaDeCuenta = (c: Cuenta) => ({
+  type: 'function', name: 'consultar_mi_cuenta', strict: true,
+  description: 'Lee los datos de la propia cuenta de quien conversa en un módulo. busqueda filtra por texto; vacía trae lo más reciente.',
+  parameters: {
+    type: 'object', additionalProperties: false, required: ['modulo', 'busqueda'],
+    properties: { modulo: { type: 'string', enum: modulosDe(c.rol) }, busqueda: { type: 'string' } },
+  },
+});
 
 const herramientas = (c: Catalogo) => [
   {
@@ -113,7 +123,9 @@ async function vuelta(cuerpo: Record<string, unknown>, emitir: (e: EventoAgente)
 }
 
 /** Corre un turno completo y lo guarda. El bloqueo de la sesión lo pone y lo quita quien llama. */
-export async function correrTurno(sesion: any, texto: string, emitir: (e: EventoAgente) => void) {
+export async function correrTurno(sesion: any, texto: string, emitir: (e: EventoAgente) => void, cuentaDeSesion: Cuenta | null = null) {
+  // Solo en una sesión de la cuenta: una anónima abierta en el mismo equipo puede leerla otra persona.
+  const cuenta = cuentaDeSesion && sesion.user_id === cuentaDeSesion.userId && modulosDe(cuentaDeSesion.rol).length ? cuentaDeSesion : null;
   const catalogo = await cargarCatalogo(sesion.solucion);
   if (!catalogo) throw new Error('La solución ya no existe.');
   const items: any[] = [...(sesion.items ?? []), { role: 'user', content: texto }];
@@ -132,8 +144,8 @@ export async function correrTurno(sesion: any, texto: string, emitir: (e: Evento
   try {
     const base = {
       model: MODELO_IA,
-      instructions: instrucciones(catalogo),
-      tools: herramientas(catalogo),
+      instructions: instrucciones(catalogo) + (cuenta ? instruccionesDeCuenta(cuenta) : ''),
+      tools: [...herramientas(catalogo), ...(cuenta ? [herramientaDeCuenta(cuenta)] : [])],
       max_output_tokens: 6000,
       reasoning: { effort: 'low' },
       store: false,
@@ -157,6 +169,9 @@ export async function correrTurno(sesion: any, texto: string, emitir: (e: Evento
           if (ll.name === 'leer_trabajo') {
             emitir({ tipo: 'estado', texto: 'Revisando trabajos parecidos…' });
             salida = await leerTrabajo(a.tipo, a.id, catalogo);
+          } else if (ll.name === 'consultar_mi_cuenta' && cuenta) {
+            emitir({ tipo: 'estado', texto: 'Revisando tu cuenta…' });
+            salida = await consultarCuenta(cuenta, String(a.modulo), String(a.busqueda ?? ''));
           } else if (ll.name === 'buscar_miembros') {
             emitir({ tipo: 'estado', texto: 'Buscando miembros…' });
             salida = await buscarMiembros(String(a.consulta ?? ''));

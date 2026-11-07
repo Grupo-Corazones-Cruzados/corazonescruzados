@@ -21,7 +21,6 @@ import ChatDock from '@/components/chat/ChatDock';
 import NotificationsDock from '@/components/notifications/NotificationsDock';
 import AvisoReuniones from '@/components/calendar/AvisoReuniones';
 import { HuecoBarraAcciones } from '@/components/dashboard/BarraAcciones';
-import { useAuth } from '@/components/providers/AuthProvider';
 import AgentePresupuestos from '@/components/sitio/AgentePresupuestos';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -43,7 +42,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
  * del proveedor, y un componente no puede consumir un contexto que él mismo monta.
  */
 function Panel({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
   const { tema, oscuro } = useTemaPanel();
   const entrada = useEntrada();
   // El espacio de trabajo tiene su cuadro de escritura justo donde flotan estos botones.
@@ -117,8 +115,8 @@ function Panel({ children }: { children: React.ReactNode }) {
       {!sinMuelle && <NotificationsDock />}
       <AvisoReuniones />
       {!sinMuelle && <ChatDock />}
-      {/* El agente de GCC, para las cuentas de cliente (Fernando, 2026-11-06). */}
-      {!sinMuelle && user?.role === 'client' && <AgentePresupuestos />}
+      {/* El agente de GCC. A miembros y candidatos además les lee los datos de su cuenta. */}
+      {!sinMuelle && <AgentePresupuestos />}
     </div>
   );
 }

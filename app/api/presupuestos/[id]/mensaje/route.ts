@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
+import { getCurrentUser } from '@/lib/auth/jwt';
 import { correrTurno } from '@/lib/presupuestos/agente';
+import { cargarCuenta } from '@/lib/presupuestos/cuenta';
 import { MAX_TOKENS_SESION, sesionDeEsteEquipo } from '@/lib/presupuestos/db';
 
 /** Un mensaje de la conversación. Responde en NDJSON, un evento por línea, a medida que el agente trabaja. */
@@ -28,12 +30,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   );
   if (!rowCount) return NextResponse.json({ error: 'El agente todavía está respondiendo.' }, { status: 409 });
 
+  const usuario = await getCurrentUser();
+  const cuenta = usuario ? await cargarCuenta(usuario) : null;
+
   const cuerpo = new ReadableStream({
     async start(control) {
       const codificar = new TextEncoder();
       const emitir = (e: unknown) => { try { control.enqueue(codificar.encode(`${JSON.stringify(e)}\n`)); } catch { /* el navegador se fue; el turno sigue y se guarda */ } };
       try {
-        await correrTurno(sesion, limpio, emitir);
+        await correrTurno(sesion, limpio, emitir, cuenta);
       } catch (e) {
         console.error('[presupuestos] turno', (e as Error).message);
         emitir({ tipo: 'error', texto: 'El agente no pudo responder. Inténtalo otra vez.' });

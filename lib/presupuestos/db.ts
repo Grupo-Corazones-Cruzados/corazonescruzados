@@ -65,6 +65,7 @@ export function sesionPublica(r: any) {
     presupuesto: (r.presupuesto ?? null) as Presupuesto | null,
     tokens: Number(r.tokens),
     maxTokens: MAX_TOKENS_SESION,
+    deCuenta: !!r.user_id,
     enviada: r.enviada_tipo ? { tipo: r.enviada_tipo as string, id: Number(r.enviada_id) } : null,
   };
 }

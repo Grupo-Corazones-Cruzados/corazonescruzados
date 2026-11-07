@@ -23,6 +23,7 @@ type Sesion = {
   presupuesto: Presupuesto | null;
   tokens: number;
   maxTokens: number;
+  deCuenta: boolean;
   enviada: { tipo: string; id: number } | null;
 };
 
@@ -69,12 +70,15 @@ export default function AgentePresupuestos({ solucion = 'tecnologia' }: { soluci
   const [usadas, setUsadas] = useState(0);
   const [maximo, setMaximo] = useState(3);
   const [libre, setLibre] = useState(false);
+  const [logueado, setLogueado] = useState(false);
   const [texto, setTexto] = useState('');
   const [ocupado, setOcupado] = useState(false);
   const [estado, setEstado] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [vista, setVista] = useState<'charla' | 'panel'>('charla');
   const fin = useRef<HTMLDivElement>(null);
+  // Una carga lenta no puede pisar una conversación que ya empezó.
+  const empezada = useRef(false);
 
   const activa = sesiones.find((s) => s.id === activaId) ?? null;
   const conConversacion = !!activa?.mensajes.length;
@@ -92,13 +96,19 @@ export default function AgentePresupuestos({ solucion = 'tecnologia' }: { soluci
 
   useEffect(() => {
     setMontado(true);
+    let vigente = true;
     fetch(`/api/presupuestos?solucion=${solucion}`).then((r) => r.json()).then((j) => {
+      if (!vigente || empezada.current) return;
       setSesiones(j.sesiones ?? []);
-      setActivaId(j.sesiones?.at(-1)?.id ?? null);
+      // Con cuenta se empieza en una sesión de la cuenta: las anónimas no leen sus datos.
+      const lista: Sesion[] = j.sesiones ?? [];
+      setActivaId((j.conSesion ? lista.filter((s) => s.deCuenta) : lista).at(-1)?.id ?? null);
+      setLogueado(!!j.conSesion);
       setUsadas(j.usadas ?? 0);
       setMaximo(j.maximo ?? 3);
       setLibre(!!j.libre);
     }).catch(() => {});
+    return () => { vigente = false; };
   }, [solucion]);
 
   useEffect(() => {
@@ -123,6 +133,7 @@ export default function AgentePresupuestos({ solucion = 'tecnologia' }: { soluci
   }, []);
 
   const crear = async (): Promise<string | null> => {
+    empezada.current = true;
     const r = await fetch('/api/presupuestos', {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ solucion }),
     });
@@ -139,6 +150,7 @@ export default function AgentePresupuestos({ solucion = 'tecnologia' }: { soluci
     const limpio = texto.trim();
     if (!limpio || ocupado) return;
     setError(null);
+    empezada.current = true;
     setOcupado(true);
     setEstado('Pensando…');
     try {
@@ -170,7 +182,10 @@ export default function AgentePresupuestos({ solucion = 'tecnologia' }: { soluci
             setEstado(null);
             cambiar(id, (s) => {
               const m = [...s.mensajes];
-              m[m.length - 1] = { rol: 'agente', texto: m[m.length - 1].texto + ev.delta };
+              const ultimo = m[m.length - 1];
+              // Si la lista se recargó a mitad de la respuesta, el último puede no ser del agente.
+              if (ultimo?.rol === 'agente') m[m.length - 1] = { rol: 'agente', texto: ultimo.texto + ev.delta };
+              else m.push({ rol: 'agente', texto: ev.delta });
               return { ...s, mensajes: m };
             });
           } else if (ev.tipo === 'estado') setEstado(ev.texto);
@@ -228,7 +243,9 @@ export default function AgentePresupuestos({ solucion = 'tecnologia' }: { soluci
                   <h3>{abrirAlEntrar ? '¿Qué te gustaría presupuestar para tu negocio?' : '¿En qué te ayudo?'}</h3>
                   <p>{abrirAlEntrar
                     ? 'Cuéntame tu idea o el problema que quieres resolver. Te doy un rango de precio basado en proyectos y tickets que ya hemos terminado.'
-                    : 'Pregúntame sobre el negocio, nuestros productos, pagos o miembros, o cuéntame tu idea para presupuestarla.'}</p>
+                    : logueado
+                      ? 'Pregúntame sobre el negocio o sobre tus tickets, proyectos, clientes y facturas, o cuéntame una idea para presupuestarla.'
+                      : 'Pregúntame sobre el negocio, nuestros productos, pagos o miembros, o cuéntame tu idea para presupuestarla.'}</p>
                 </div>
                 {error && <p className="presu-error" style={{ padding: '10px 24px 0', textAlign: 'center' }}>{error}</p>}
                 {!puedeNueva && (!activa || agotada) ? <PedirSesion maximo={maximo} /> : (
@@ -268,7 +285,7 @@ export default function AgentePresupuestos({ solucion = 'tecnologia' }: { soluci
                   </section>
                   {conPanel && (
                     <aside className="presu-panel" hidden={esTelefono() && vista !== 'panel'}>
-                      <PanelPresupuesto sesion={activa!} ocupado={ocupado}
+                      <PanelPresupuesto sesion={activa!} ocupado={ocupado} logueado={logueado}
                         alEnviar={(enviada) => cambiar(activa!.id, (s) => ({ ...s, enviada }))} />
                     </aside>
                   )}
@@ -308,8 +325,8 @@ function Compositor({ texto, setTexto, enviar, ocupado, enfocar }: {
   );
 }
 
-function PanelPresupuesto({ sesion, ocupado, alEnviar }: {
-  sesion: Sesion; ocupado: boolean; alEnviar: (e: { tipo: string; id: number }) => void;
+function PanelPresupuesto({ sesion, ocupado, logueado, alEnviar }: {
+  sesion: Sesion; ocupado: boolean; logueado: boolean; alEnviar: (e: { tipo: string; id: number }) => void;
 }) {
   const [paso, setPaso] = useState<'resumen' | 'identificar' | 'alta' | 'codigo'>('resumen');
   const [identificacion, setIdentificacion] = useState('');
@@ -383,6 +400,8 @@ function PanelPresupuesto({ sesion, ocupado, alEnviar }: {
               if (j) setPaso('codigo');
             }}>{busy ? 'Enviando…' : 'Enviar código'}</button>
           </>
+        ) : logueado ? (
+          <p className="presu-texto">Un momento…</p>
         ) : (
           <>
             <label className="presu-campo">RUC, cédula o pasaporte
@@ -469,7 +488,15 @@ function PanelPresupuesto({ sesion, ocupado, alEnviar }: {
         <strong>{fmt2(a.precio_min)} a {fmt2(a.precio_max)} USD</strong>
         <small>Rango según trabajos parecidos. GCC lo confirma al revisar tu solicitud.</small>
       </div>
-      <button type="button" className="presu-principal" disabled={ocupado} onClick={() => { setError(null); setPaso('identificar'); }}>Aceptar y enviar la solicitud</button>
+      <button type="button" className="presu-principal" disabled={ocupado} onClick={async () => {
+        setError(null);
+        setPaso('identificar');
+        // Con sesión iniciada no se piden datos: ya se sabe quién es.
+        if (logueado) {
+          const j = await pedir({ paso: 'identificar' });
+          if (j?.conSesion) setConSesion(j.conSesion);
+        }
+      }}>Aceptar y enviar la solicitud</button>
     </div>
   );
 }
