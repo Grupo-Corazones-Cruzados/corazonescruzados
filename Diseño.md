@@ -6326,6 +6326,9 @@ Pantalla de alto completo con `PanelHastaElPie desdeAncho={0}`: raíl de 300 px 
   - **Burbuja al elegir un nodo:** pieza y rol, título, descripción y origen en mono. La vista lleva el nodo al tercio de arriba, la burbuja lo sigue, no se sale del lienzo y deja pasar el puntero para no frenar el desplazamiento. Se cierra al pulsar el fondo.
   - **El radio de un nodo va en `style`:** `bg-digi-card border rounded-lg` es «tarjeta» para el tema, que le impone su borde y su sombra; eso borraba el color de las piezas y el anillo de la elegida.
 
+## Aviso de mantenimiento (2026-11-07)
+`components/providers/AvisoMantenimiento.tsx` y la página del Worker (`services/mantenimiento/worker.js`) se ven igual que la pantalla sin conexión de la app móvil (`movil/www/error.html`): fondo `#faf9f8` (oscuro `#1f1f1f` por `prefers-color-scheme`), cuadro de marca `#4B2D8E` de 64 px, título «Mantenimiento» y el texto de Fernando, literal. Colores escritos a mano a propósito, como en `error.html`: tiene que verse igual dentro y fuera del tema del panel. Sin botones: se recarga sola cada 30 s al volver el servidor.
+
 ## Control Psicosocial — el mapa ES la pantalla (Fernando, 2026-11-05)
 `components/centralized/systems/ControlPsicosocialSystem.tsx`. *«Principalmente centradas en el mapa […] dentro del mapa controles […] botones de más que al hacer clic aparecen las opciones, y luego así la navegación según la opción elegida.»* Vale para teléfono y computador; sustituye a las columnas de tarjeta, tabla y detalle del 2026-11-04.
 - **De borde a borde hasta el pie:** márgenes negativos que anulan el relleno de `main`, sin la franja de ruta de los demás sistemas. El alto se mide contra `[data-app-footer]`, y otra vez a los 400 ms: durante la animación de entrada de la página todo está desplazado 10 px. Medido: 92 % de la ventana a 1440 px y 87 % a 390 px.

@@ -4,6 +4,7 @@ import { AuthProvider } from '@/components/providers/AuthProvider';
 import RegistroServiceWorker from '@/components/providers/RegistroServiceWorker';
 import RelojesNativos from '@/components/providers/RelojesNativos';
 import ProteccionNativa from '@/components/providers/ProteccionNativa';
+import AvisoMantenimiento from '@/components/providers/AvisoMantenimiento';
 import SincronizadorBorradores from '@/components/providers/SincronizadorBorradores';
 import { SITIO } from '@/lib/sitio/contenido';
 import './globals.css';
@@ -161,6 +162,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <RegistroServiceWorker />
         <RelojesNativos />
         <ProteccionNativa />
+        <AvisoMantenimiento />
         <SincronizadorBorradores />
         <AuthProvider>
           {children}
