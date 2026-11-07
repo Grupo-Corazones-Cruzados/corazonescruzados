@@ -10,7 +10,7 @@
 #   services/servidor-m1/publicar.sh HEAD       → publica el commit local (pruebas)
 #
 # Configuración local, fuera del repositorio: ~/.gcc-servidor.env con M1_HOST y M1_CLAVE.
-set -euo pipefail
+set -eo pipefail   # sin -u: el bash 3.2 de macOS trata una lista vacía como variable sin definir
 
 [ -f "$HOME/.gcc-servidor.env" ] && . "$HOME/.gcc-servidor.env"
 : "${M1_HOST:?Falta M1_HOST en ~/.gcc-servidor.env}"; : "${M1_CLAVE:?Falta M1_CLAVE en ~/.gcc-servidor.env}"
