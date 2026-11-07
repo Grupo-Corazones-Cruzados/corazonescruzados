@@ -3,9 +3,10 @@ import { accessRoleOf, canAccessModule, type AccessRole } from '@/lib/dashboard/
 import { miembroEnProyectoSql } from '@/lib/projects/permisos';
 
 /**
- * LOS DATOS DE LA PROPIA CUENTA, para miembros y candidatos (Fernando, 2026-11-06). Solo lee las filas
- * asociadas a esa persona, aunque su módulo le deje ver más: el filtro sale de la sesión del servidor, y
- * del modelo solo llegan el módulo y el texto a buscar. Nunca se reciben identificadores de otra persona.
+ * LOS DATOS DE LA CUENTA (Fernando, 2026-11-06 y 2026-11-07). Miembros, candidatos y clientes leen solo
+ * las filas asociadas a ellos, aunque su módulo les deje ver más; el administrador lee todo, salvo los
+ * recordatorios, que son privados de cada persona. El filtro sale de la sesión del servidor, y del modelo
+ * solo llegan el módulo y el texto a buscar. Nunca se reciben identificadores de otra persona.
  * Ver `gcc-hay-sesion-no-es-tuyo`.
  */
 
@@ -41,15 +42,18 @@ const MODULOS = {
 } as const;
 export type ModuloCuenta = keyof typeof MODULOS;
 
-export const modulosDe = (rol: AccessRole) =>
-  (Object.keys(MODULOS) as ModuloCuenta[]).filter((m) => canAccessModule(rol, MODULOS[m]))
-    // Sin esto, el cliente también tendría consultas de cuenta: de momento son de miembros y candidatos.
-    .filter(() => rol !== 'client');
+/** El cliente consulta lo suyo aunque no tenga el módulo: sus facturas, por ejemplo, le llegan por correo. */
+const DEL_CLIENTE: ModuloCuenta[] = ['mis_tickets', 'mis_proyectos', 'mis_facturas', 'mis_suscripciones', 'mi_perfil'];
+
+export const modulosDe = (rol: AccessRole): ModuloCuenta[] =>
+  rol === 'client' ? DEL_CLIENTE : (Object.keys(MODULOS) as ModuloCuenta[]).filter((m) => canAccessModule(rol, MODULOS[m]));
 
 export async function consultarCuenta(c: Cuenta, modulo: string, busqueda: string) {
   if (!modulosDe(c.rol).includes(modulo as ModuloCuenta)) return { error: 'Tu cuenta no tiene acceso a ese módulo.' };
   const q = `%${busqueda.trim()}%`;
   const LIMITE = 15;
+  // El administrador ve todo: su condición de pertenencia es siempre verdadera.
+  const todo = c.rol === 'admin';
   switch (modulo as ModuloCuenta) {
     case 'mis_tickets': {
       const { rows } = await pool.query(
@@ -59,7 +63,7 @@ export async function consultarCuenta(c: Cuenta, modulo: string, busqueda: strin
            FROM gcc_world.tickets t
            LEFT JOIN gcc_world.clients cl ON cl.id = t.client_id
            LEFT JOIN gcc_world.members m ON m.id = t.member_id
-          WHERE (t.user_id = $1::uuid OR ($2::bigint IS NOT NULL AND t.member_id = $2) OR t.client_id = ANY($3::bigint[]))
+          WHERE (${todo} OR t.user_id = $1::uuid OR ($2::bigint IS NOT NULL AND t.member_id = $2) OR t.client_id = ANY($3::bigint[]))
             AND (t.title ILIKE $4 OR t.description ILIKE $4)
           ORDER BY t.created_at DESC LIMIT ${LIMITE}`,
         [c.userId, c.memberId, c.clienteIds, q],
@@ -75,7 +79,7 @@ export async function consultarCuenta(c: Cuenta, modulo: string, busqueda: strin
                 (SELECT array_agg(r.title ORDER BY r.id) FROM gcc_world.project_requirements r WHERE r.project_id = p.id) AS lista_requerimientos
            FROM gcc_world.projects p
            LEFT JOIN gcc_world.clients cl ON cl.id = p.client_id
-          WHERE (p.created_by_user_id = $1::text OR p.client_id = ANY($2::bigint[])
+          WHERE (${todo} OR p.created_by_user_id = $1::text OR p.client_id = ANY($2::bigint[])
                  OR ($3::bigint IS NOT NULL AND ${miembroEnProyectoSql('p', '$3::bigint')}))
             AND (p.title ILIKE $4 OR p.description ILIKE $4)
           ORDER BY p.created_at DESC LIMIT ${LIMITE}`,
@@ -88,7 +92,7 @@ export async function consultarCuenta(c: Cuenta, modulo: string, busqueda: strin
         `SELECT cl.name AS nombre, cl.company AS empresa, cl.email AS correo, cl.phone AS telefono
            FROM gcc_world.clients cl
           WHERE cl.user_id IS DISTINCT FROM $1
-            AND (($2::bigint IS NOT NULL AND cl.created_by_member_id = $2)
+            AND (${todo} OR ($2::bigint IS NOT NULL AND cl.created_by_member_id = $2)
                  OR cl.id IN (SELECT client_id FROM gcc_world.tickets WHERE user_id = $1 AND client_id IS NOT NULL)
                  OR cl.id IN (SELECT client_id FROM gcc_world.projects WHERE created_by_user_id = $1::text AND client_id IS NOT NULL))
             AND (cl.name ILIKE $3 OR COALESCE(cl.company, '') ILIKE $3)
@@ -101,7 +105,7 @@ export async function consultarCuenta(c: Cuenta, modulo: string, busqueda: strin
       const { rows } = await pool.query(
         `SELECT i.invoice_number AS numero, i.status AS estado, i.sri_status AS estado_sri, i.total::float8 AS total, i.created_at::date AS fecha, i.client_name_sri AS cliente
            FROM gcc_world.invoices i
-          WHERE (($1::bigint IS NOT NULL AND i.member_id = $1) OR i.client_id = ANY($2::bigint[])
+          WHERE (${todo} OR ($1::bigint IS NOT NULL AND i.member_id = $1) OR i.client_id = ANY($2::bigint[])
                  OR i.ticket_id IN (SELECT id FROM gcc_world.tickets WHERE user_id = $3::uuid OR ($1::bigint IS NOT NULL AND member_id = $1))
                  OR i.project_id IN (SELECT id FROM gcc_world.projects WHERE created_by_user_id = $3::text OR ($1::bigint IS NOT NULL AND assigned_member_id = $1)))
             AND (COALESCE(i.invoice_number, '') ILIKE $4 OR COALESCE(i.client_name_sri, '') ILIKE $4)
@@ -113,7 +117,7 @@ export async function consultarCuenta(c: Cuenta, modulo: string, busqueda: strin
     case 'mis_suscripciones': {
       const { rows } = await pool.query(
         `SELECT s.title AS titulo, s.status AS estado, s.monthly_cost::float8 AS costo_mensual, s.currency AS moneda, s.start_date AS inicio
-           FROM gcc_world.subscriptions s WHERE s.client_id = ANY($1::bigint[]) AND s.title ILIKE $2
+           FROM gcc_world.subscriptions s WHERE (${todo} OR s.client_id = ANY($1::bigint[])) AND s.title ILIKE $2
           ORDER BY s.start_date DESC LIMIT ${LIMITE}`,
         [c.clienteIds, q],
       );
@@ -145,9 +149,12 @@ export async function consultarCuenta(c: Cuenta, modulo: string, busqueda: strin
 /** Lo que el agente sabe de quién le habla. Va al final de las instrucciones, para no romper el caché. */
 export function instruccionesDeCuenta(c: Cuenta): string {
   const modulos = modulosDe(c.rol);
-  const quien = c.rol === 'candidate' ? 'candidato' : 'miembro';
+  const quien = { candidate: 'candidato', member: 'miembro', admin: 'administrador', client: 'cliente' }[c.rol];
+  const alcance = c.rol === 'admin'
+    ? 'Es administrador: \`consultar_mi_cuenta\` le devuelve los datos de toda la organización (menos los recordatorios, que son solo suyos), y puedes contarle todo lo que traiga, incluidos clientes, costos y fechas.'
+    : 'De ahí puedes contarle lo que su cuenta ya ve en la plataforma, incluidos los clientes de sus propios trabajos, sus fechas y sus costos: las reglas de «Lo que NUNCA compartes» siguen valiendo para todo lo que no sea de su cuenta.';
   return `\n\n## Quién te habla
 Es un ${quien} con sesión iniciada${c.nombre ? `: ${c.nombre}` : ''}. Consulta sus datos con \`consultar_mi_cuenta\`, módulos: ${modulos.join(', ')}.
-De ahí puedes contarle lo que su cuenta ya ve en la plataforma, incluidos los clientes de sus propios trabajos, sus fechas y sus costos: las reglas de «Lo que NUNCA compartes» siguen valiendo para todo lo que no sea de su cuenta. Si la herramienta no trae algo, no lo tienes: no lo deduzcas ni digas que no existe, dile que lo revise en su módulo.
+${alcance} Si la herramienta no trae algo, no lo tienes: no lo deduzcas ni digas que no existe, dile que lo revise en su módulo.
 Solo puedes leer: no creas, cambias ni borras nada de su cuenta.`;
 }

@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { asegurarCookieDeEquipo, identidadDeEquipo } from '@/lib/registro/limite';
+import { cargarCuenta } from './cuenta';
 
 /**
  * LAS SESIONES DEL AGENTE (Fernando, 2026-11-06): quien entra sin cuenta tiene hasta 3 sesiones en
@@ -11,6 +12,8 @@ import { asegurarCookieDeEquipo, identidadDeEquipo } from '@/lib/registro/limite
 
 export const MAX_SESIONES = 3;
 export const MAX_TOKENS_SESION = 500_000;
+/** Cuentas de cliente: una sesión al día. Miembros, candidatos y administradores no tienen tope de sesiones. */
+export const MAX_SESIONES_CLIENTE_DIA = 1;
 /** Freno general: rotar de IP y borrar cookies no puede consumir sin fin. */
 export const MAX_TOKENS_DIA = 10_000_000;
 
@@ -110,9 +113,18 @@ export async function crearSesion(solucion: string): Promise<{ sesion: any } | E
   if (Number(d.t) >= MAX_TOKENS_DIA) {
     return { error: 'El agente de presupuestos no está disponible por ahora. Inténtalo mañana.', estado: 503 };
   }
+  const usuario = await getCurrentUser();
+  // Un cliente con cuenta: una sesión por día (Fernando, 2026-11-07). El día es el de Ecuador.
+  if (usuario && (await cargarCuenta(usuario)).rol === 'client') {
+    const { rows: [h] } = await pool.query(
+      `SELECT COUNT(*)::int AS n FROM gcc_world.presupuesto_sesiones
+        WHERE user_id = $1 AND (creada AT TIME ZONE 'America/Guayaquil')::date = (NOW() AT TIME ZONE 'America/Guayaquil')::date`,
+      [usuario.userId],
+    );
+    if (h.n >= MAX_SESIONES_CLIENTE_DIA) return { error: 'Ya usaste tu sesión de hoy. Mañana podrás abrir otra; mientras tanto sigue en la de hoy.', estado: 429 };
+  }
   const dispositivo = await asegurarCookieDeEquipo();
   const { ipHash } = await identidadDeEquipo();
-  const usuario = await getCurrentUser();
   const { rows: [r] } = await pool.query(
     `INSERT INTO gcc_world.presupuesto_sesiones (dispositivo, ip_hash, solucion, user_id) VALUES ($1, $2, $3, $4) RETURNING *`,
     [dispositivo, ipHash, solucion, usuario?.userId ?? null],
