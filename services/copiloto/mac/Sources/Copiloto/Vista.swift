@@ -85,15 +85,10 @@ struct Widget: View {
       cabecera
       if !plegado {
         Divider().opacity(0.4)
-        if let a = m.aviso {
-          HStack(alignment: .top, spacing: 6) {
-            Image(systemName: "exclamationmark.triangle").foregroundStyle(.orange)
-            Text(a).font(.system(size: 11.5)).fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
-            Button { m.aviso = nil } label: { Image(systemName: "xmark").font(.system(size: 9)) }.buttonStyle(.plain).help("Cerrar aviso")
-          }
-          .padding(.horizontal, 12).padding(.vertical, 7)
-        }
+        if m.activo && m.dispositivo != "mac" { avisoFila("El micrófono lo tiene el iPhone: este Mac no está escuchando.") }
+        if let a = m.avisoMic { avisoFila(a) }
+        if let a = m.avisoSistema { avisoFila(a) }
+        if let a = m.aviso { avisoFila(a) { m.aviso = nil } }
         Picker("", selection: $vista) {
           Text("Respuestas").tag(0)
           Text("Transcripción").tag(1)
@@ -115,10 +110,24 @@ struct Widget: View {
     }
   }
 
+  private var escuchaBien: Bool { m.dispositivo == "mac" && m.avisoMic == nil && m.avisoSistema == nil }
+
+  private func avisoFila(_ texto: String, cerrar: (() -> Void)? = nil) -> some View {
+    HStack(alignment: .top, spacing: 6) {
+      Image(systemName: "exclamationmark.triangle").foregroundStyle(.orange)
+      Text(texto).font(.system(size: 11.5)).fixedSize(horizontal: false, vertical: true)
+      Spacer(minLength: 0)
+      if let cerrar {
+        Button(action: cerrar) { Image(systemName: "xmark").font(.system(size: 9)) }.buttonStyle(.plain).help("Cerrar aviso")
+      }
+    }
+    .padding(.horizontal, 12).padding(.vertical, 7)
+  }
+
   private var cabecera: some View {
     HStack(spacing: 9) {
-      Circle().fill(!m.conectado ? .red : m.activo ? .green : .gray).frame(width: 8, height: 8)
-        .help(!m.conectado ? "El núcleo no responde" : m.activo ? "Escuchando" : "Desactivado")
+      Circle().fill(!m.conectado ? .red : !m.activo ? .gray : escuchaBien ? .green : .orange).frame(width: 8, height: 8)
+        .help(!m.conectado ? "El núcleo no responde" : !m.activo ? "Desactivado" : escuchaBien ? "Escuchando" : "No está escuchando bien")
       if let i = imagenPersonaje { Image(nsImage: i).resizable().scaledToFit().frame(width: 20, height: 20) }
       Text(m.dictando != nil ? "Te escucho…" : "Gumdramon").font(.system(size: 13, weight: .semibold))
       if m.activo && !plegado {

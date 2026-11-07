@@ -36,13 +36,18 @@ final class Modelo: ObservableObject {
   @Published var sesionURL: URL?
   @Published var nivelMic: Float = 0
   @Published var nivelSistema: Float = 0
-  @Published var sinAudioSistema = false
+  /// Lo que le pasa a la captura ahora mismo. Se quita solo cuando vuelve el audio.
+  @Published var avisoMic: String?
+  @Published var avisoSistema: String?
+  /// Quién tiene el micrófono según el núcleo; el audio de los demás se descarta.
+  @Published var dispositivo = "mac"
 
   private let base = URL(string: ProcessInfo.processInfo.environment["COPILOTO_URL"] ?? "http://127.0.0.1:3793")!
   private let mic = CapturaMicrofono()
   private let sistema = CapturaSistema()
   private var tareaEventos: Task<Void, Never>?
   private let envio = Enviador()
+  private var capturando = false
   let voz = VozGumdramon()
   /// Apagada al instalar: una voz inesperada en plena reunión la oiría también el cliente por altavoces.
   @Published var vozActiva = UserDefaults.standard.bool(forKey: "vozActiva") {
@@ -104,7 +109,11 @@ final class Modelo: ObservableObject {
     }
   }
 
+  /// Se llama al activar y también al enterarse de que el núcleo sigue activo, p. ej. si la app se cerró
+  /// y se reabrió a media reunión: si no, el indicador sale verde sin que se esté escuchando nada.
   private func iniciarCaptura() {
+    guard !capturando else { return }
+    capturando = true
     let peticionAudio: (String) -> URLRequest = { [weak self] canal in
       var c = URLComponents(url: self!.base.appendingPathComponent("audio"), resolvingAgainstBaseURL: false)!
       c.queryItems = [URLQueryItem(name: "canal", value: canal)]
@@ -124,14 +133,14 @@ final class Modelo: ObservableObject {
       envio.agregar(d, a: rSis)
       Task { @MainActor in self?.nivelSistema = n }
     }
-    do { try mic.iniciar() } catch { aviso = error.localizedDescription }
-    do { try sistema.iniciar(); sinAudioSistema = false } catch {
-      sinAudioSistema = true
-      aviso = "Sin audio del equipo: \(error.localizedDescription)"
-    }
+    mic.alEstado = { [weak self] m in self?.avisoMic = m }
+    sistema.alEstado = { [weak self] m in self?.avisoSistema = m }
+    mic.iniciar()
+    sistema.iniciar()
   }
 
   private func detenerCaptura() {
+    capturando = false
     mic.detener()
     sistema.detener()
     nivelMic = 0
@@ -192,7 +201,12 @@ final class Modelo: ObservableObject {
     switch evento {
     case "estado":
       let nuevo = j["activo"] as? Bool ?? false
-      if !nuevo && activo { detenerCaptura() }
+      dispositivo = j["dispositivo"] as? String ?? "mac"
+      if nuevo && dispositivo == "mac" {
+        if AVCaptureDevice.authorizationStatus(for: .audio) == .authorized { iniciarCaptura() }
+      } else if capturando {
+        detenerCaptura()
+      }
       activo = nuevo
     case "transcripcion":
       lineas.append(Linea(quien: j["quien"] as? String ?? "", texto: j["texto"] as? String ?? ""))
