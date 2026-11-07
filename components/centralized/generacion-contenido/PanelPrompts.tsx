@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { RotateCcw } from 'lucide-react';
-import { WideEditPanel } from '@/components/ui/EditDialog';
+import { EDIT_INPUT, WideEditPanel } from '@/components/ui/EditDialog';
+import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import { CLAVES_PROMPT, PROMPT_LABEL } from '@/lib/centralized/generacion-contenido';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -23,6 +24,7 @@ export default function PanelPrompts({ open, onClose }: { open: boolean; onClose
   const [porDefecto, setPorDefecto] = useState<Record<string, string>>({});
   const [clave, setClave] = useState<string>('base');
   const [guardando, setGuardando] = useState(false);
+  const enEscritorio = useConsultaMedia(PANTALLA_LG);
 
   useEffect(() => {
     if (!open) return;
@@ -61,8 +63,14 @@ export default function PanelPrompts({ open, onClose }: { open: boolean; onClose
       saveLabel="Guardar prompt"
     >
       <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-3">
-        {/* Rail de prompts: uno por entregable, más el contexto base. */}
-        <div className="bg-digi-card border border-digi-border rounded-lg overflow-hidden h-max">
+        {/* Rail de prompts: uno por entregable, más el contexto base. En el teléfono, siete filas se
+            comían la pantalla y no se veía lo que se edita: ahí es un selector. Se decide qué se monta. */}
+        {!enEscritorio && (
+          <select value={clave} onChange={(e) => setClave(e.target.value)} aria-label="Prompt" className={EDIT_INPUT}>
+            {CLAVES_PROMPT.map((c) => <option key={c} value={c}>{PROMPT_LABEL[c]}{(prompts[c] ?? '') !== (porDefecto[c] ?? '') ? ' · editado' : ''}</option>)}
+          </select>
+        )}
+        {enEscritorio && <div className="bg-digi-card border border-digi-border rounded-lg overflow-hidden h-max">
           {CLAVES_PROMPT.map((c) => {
             const activo = c === clave;
             const tocado = (prompts[c] ?? '') !== (porDefecto[c] ?? '');
@@ -82,21 +90,21 @@ export default function PanelPrompts({ open, onClose }: { open: boolean; onClose
               </button>
             );
           })}
-        </div>
+        </div>}
 
         <div className="flex flex-col gap-2 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-[12px] font-semibold text-digi-text opacity-70" style={mf}>
+            {enEscritorio && <span className="text-[12px] font-semibold text-digi-text opacity-70" style={mf}>
               {PROMPT_LABEL[clave]}
-            </span>
-            <span className="text-[11px] text-digi-muted" style={mf}>
+            </span>}
+            <span className="text-[11px] text-digi-muted whitespace-nowrap" style={mf}>
               {(prompts[clave] ?? '').length} caracteres
             </span>
             <button
               type="button"
               onClick={() => setPrompts((p) => ({ ...p, [clave]: porDefecto[clave] ?? '' }))}
               disabled={!modificado}
-              className="ml-auto inline-flex items-center gap-1 text-[11.5px] text-digi-muted hover:text-accent disabled:opacity-40"
+              className="ml-auto inline-flex items-center gap-1 whitespace-nowrap text-[11.5px] text-digi-muted hover:text-accent disabled:opacity-40"
               style={mf}
             >
               <RotateCcw className="w-3.5 h-3.5" /> Volver al original
@@ -105,9 +113,9 @@ export default function PanelPrompts({ open, onClose }: { open: boolean; onClose
           <textarea
             value={prompts[clave] ?? ''}
             onChange={(e) => setPrompts((p) => ({ ...p, [clave]: e.target.value }))}
-            rows={26}
+            rows={enEscritorio ? 26 : 16}
             spellCheck={false}
-            className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-[12.5px] leading-relaxed text-digi-text focus:border-accent focus:outline-none font-mono"
+            className="field-control w-full px-3 py-2 bg-digi-darker border-2 border-digi-border text-[16px] lg:text-[12.5px] leading-relaxed text-digi-text focus:border-accent focus:outline-none font-mono"
           />
         </div>
       </div>

@@ -104,7 +104,8 @@ export default function CentralizedSystemPage() {
         <span className="hidden sm:inline text-[12px] text-digi-muted" style={mf}>{cell}</span>
         <span className="text-digi-muted/50">/</span>
         <span className="min-w-0 text-[13px] font-semibold text-digi-text" style={mf}>{system.name}</span>
-        {isAdmin && (
+        {/* Generación de Contenido solo vive en la Mac de Fernando: no hay acceso que compartir. */}
+        {isAdmin && slug !== 'generacion-de-contenido' && (
           <button
             onClick={() => setShareOpen(true)}
             className="ml-auto hidden lg:inline-flex items-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors"
@@ -113,7 +114,7 @@ export default function CentralizedSystemPage() {
             <Share2 className="w-3.5 h-3.5" /> Compartir acceso
           </button>
         )}
-        {isAdmin && (
+        {isAdmin && slug !== 'generacion-de-contenido' && (
           <span className="lg:hidden flex ml-auto">
             <MenuMas items={[{ label: 'Compartir acceso', icon: Share2, onClick: () => setShareOpen(true) }]} />
           </span>

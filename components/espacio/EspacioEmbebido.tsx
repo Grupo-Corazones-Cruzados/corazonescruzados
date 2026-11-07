@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Loader2, Lock } from 'lucide-react';
 import PixelInput from '@/components/ui/PixelInput';
@@ -52,7 +52,7 @@ export default function EspacioEmbebido({ titulo = 'Espacio de trabajo', childre
   }
 
   return (
-    <div className={`corp tema-progreso tema-${tema} ${oscuro ? 'dark' : ''} h-dvh p-0 bg-digi-dark`}>
+    <div className={`corp tema-progreso tema-${tema} ${oscuro ? 'dark' : ''} h-dvh p-0 bg-digi-dark`} style={{ '--seguro-arriba': '0px', '--seguro-abajo': '0px' } as CSSProperties}>
       {estado === 'dentro' && (children ?? <EspacioTrabajo />)}
       {estado === 'cargando' && <div className="h-full flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}
       {estado === 'clave' && (

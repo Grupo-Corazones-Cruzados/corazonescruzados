@@ -44,7 +44,7 @@ export default function EspacioEnApp({ ruta = RUTA_EMBEBIDA, titulo = 'Espacio d
   const src = direccion ? `${direccion}${ruta}?tema=${encodeURIComponent(tema)}&oscuro=${oscuro ? 1 : 0}` : null;
 
   return (
-    <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} respiro={enTelefono ? 0 : 12} className="relative bg-digi-card lg:border lg:border-digi-border lg:rounded-lg overflow-hidden max-lg:pb-[var(--seguro-abajo)]">
+    <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} respiro={enTelefono ? 0 : 12} className={`relative bg-digi-card lg:border lg:border-digi-border lg:rounded-lg overflow-hidden ${ruta === RUTA_EMBEBIDA ? 'max-lg:pb-[var(--seguro-abajo)]' : ''}`}>
       {src && <iframe key={intento} src={src} title={titulo} allow="microphone" className={`w-full h-full border-0 ${estado === 'listo' ? '' : 'invisible'}`} />}
       {estado === 'cargando' && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}
       {estado === 'sin-conexion' && (
