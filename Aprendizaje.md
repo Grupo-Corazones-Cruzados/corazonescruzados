@@ -11921,7 +11921,7 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 
 ---
 
-# SEGURIDAD DEL SERVIDOR PROPIO (M1) Y DE LA PLATAFORMA (2026-11-07) · 65 %
+# SEGURIDAD DEL SERVIDOR PROPIO (M1) Y DE LA PLATAFORMA (2026-11-07) · 72 %
 **Objetivo:** tratar todos los riesgos y tipos de ataque del servidor local antes y después de la mudanza. **Rol:** responsable de seguridad e infraestructura. **Fuente:** auditoría de solo lectura del M1, de la Mac de desarrollo, de la tailnet y `npm audit`. Nada se cambió.
 
 ## Hallazgos (2026-11-07)
@@ -11951,3 +11951,10 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 - **H1 reducido:** next 15.5.29 en la app y los cinco productos, sharp 0.35.5, node-forge 1.4.3 (firma del SRI probada con el certificado real, sin enviar nada). **0 críticas**; quedan 11 altas en la app y 2 por producto: la cadena de puppeteer (pide la 25), postcss del build (pide next 16) y zod (pide la 4). Son la **fase 1b**, con pruebas, porque cambian de versión mayor.
 - **H9 cerrado:** `xlsx` no se usaba; fuera.
 - Trampa: `npm audit fix --omit=dev` **poda las devDependencies** del `node_modules` (se fue `@tailwindcss/postcss` y el build cayó); después hay que hacer `npm install`. Y el arreglo automático subió puppeteer a 24.43, que cambió los tipos de `waitUntil`: se fijó en 24.40.
+
+## Fase 2 — M1 endurecido (2026-11-07)
+- **H3, H4 cerrados** con `services/servidor-m1/endurecer.sh` (lo ejecutó Fernando con su contraseña): cortafuegos de macOS encendido e invisible; filtro pf que rechaza todo lo que entra salvo SSH. Comprobado desde fuera, por la red de casa y por Tailscale: de 22, 88, 445, 3283, 3689, 5000, 5900, 7000, 3100 y 5433 **solo responde el 22**. SSH: sin root, solo `fernandogonzalez`, solo llave desde fuera (una contraseña por Tailscale da «Permission denied (publickey)»); con contraseña solo desde 192.168.100.0/26, para no arriesgar el desbloqueo de FileVault por SSH. ARD y SMB apagados.
+- **Seguro anti-bloqueo**: el filtro se retira solo a los 5 minutos si nadie confirma; lo confirmó un vigilante desde la M4 tras abrir conexiones NUEVAS por las dos vías y comprobar la salida a internet y la app (8 s).
+- **H8 cerrado:** Node 22.23.4 en `~/gcc/runtime/node` (el de Homebrew no se puede actualizar en macOS 26). App, productos, worker y tarea del SRI reiniciados y respondiendo.
+- **Efecto no buscado:** apagar ARD apagó también Compartir pantalla. Volver a encenderlo (solo alcanzable por Tailscale) queda a decisión de Fernando.
+- **Pendiente de la fase 2:** frase de paso en la llave SSH de la M4 (H6), quitar nodos viejos de Tailscale (H7), macOS 26.7.2 cuando Fernando esté en casa (H5), contraseña del router.
