@@ -11852,3 +11852,38 @@ Arquitecto de soluciones Azure y seguridad corporativa, con enfoque de preventa.
 ## Riesgos
 - Con Private Endpoint hay que resolver los nombres a IP privadas desde la oficina: lo hace su DNS interno o no llega nadie.
 - Equipo de firma como punto único de fallo: cola, alerta, equipo de reemplazo y aviso de vencimiento del certificado.
+
+---
+
+# OPTIMIZACIÓN DE COSTOS DE RAILWAY (2026-11-06) · 75 %
+**Objetivo:** controlar el consumo y decidir con datos cómo ahorrar. **Rol:** ingeniero de infraestructura y costos. **Fuentes:** API de Railway (`usage`, `metrics` a 5 min, despliegues), estadísticas de Postgres, código. Solo lectura; nada se cambió.
+
+## Medido
+- **Los $7,50 de Servidor-GCC son el ACUMULADO del ciclo 16 oct → 16 nov**, no un gasto diario. Llegó a unos $5 alrededor del 1 de noviembre, no dos días antes. Gasto real: $0,34/día (25-30 oct) → $0,37-0,48/día (1-6 nov), unos $12/mes.
+- **Espacio de trabajo:** $17,60 en 21,3 días → **~$25,6 al cierre**. El PRO cobra `max(20, consumo)`: solo los ~$5,6 sobre el piso son ahorrables mientras se siga en PRO.
+- **Casi todo es RAM** (93 %). CPU, salida y disco son céntimos.
+- **Servidor-GCC en el ciclo:** app 2,82 · Postgres 1,91 · automatizaciones 1,64 · su worker 0,71 · los otros cuatro productos, dormidos, 0,38 en total.
+- **App:** media 434 MB, 320 recién desplegada. Del 1 al 4 nov, sin despliegues, subió de 408 a ~700 MB (por eso el pico de $0,48 del 3 nov). Con 34-44 despliegues al día la memoria se reinicia y no se ve: **al bajar el ritmo de desarrollo la app costará más**. Picos de >1 GB: solo 3 en 14 días; el exceso sobre 500 MB valió $0,15. Las métricas por hora de Railway exageran (máx 3,1 GB): usar 5 min. Tampoco sirven para ver si un servicio duerme: repiten el último valor.
+- **Postgres:** ~190 MB hasta el 28 oct, ~320 MB desde el 29 oct, con un salto de +90 MB a las 04:30 EC sin despliegue. **Causa no probada.** Los respaldos del M1 quedan descartados como causa única: del 13 al 17 oct corrían y seguía en ~200 MB. `shared_buffers` ya es 128 MB. BD de 206 MB, 146 MB de `automatizaciones` (`mensajes` 77, `eventos_webhook` 59, unos 1,2 MB/día).
+- **Automatizaciones:** subió de 240 a ~350 MB con el despliegue del 31 oct, igual que reservas y planificaciones; `package-lock` y Next (15.5.26) no cambiaron. Causa no probada (¿Node del builder?). Por costo, despierta ~85-90 % del tiempo. Peter Tours manda ~1.250 webhooks/día; hay 47 % del tiempo en huecos >10 min, así que como mucho dormiría ~37 %.
+- **Productos sin `preloadEntriesOnStart: false`:** ninguno de los cinco lo tiene; la app sí desde octubre. Sin medir en ellos.
+- **Control Psicosocial NO es la causa:** 241 filas, 120 kB, y la subida empezó una semana antes.
+- **Despliegues:** no aparecen en la tarifa de Railway y reinician la memoria; no son un costo.
+
+## Palancas (estimadas salvo lo dicho)
+1. App: encontrar el crecimiento o limitarlo (`--max-old-space-size`, `MALLOC_ARENA_MAX=2`): $1-3,5/mes.
+2. Postgres: reinicio de prueba en horario tranquilo y, según resultado, investigar: hasta $1,3/mes.
+3. Unir `automatizaciones-worker` al producto, que casi nunca duerme: ~$0,9/mes.
+4. `preloadEntriesOnStart: false` en los productos: hasta ~$1/mes, medir primero.
+5. Revisar proyectos sin uso claro: `humble-elegance` (solo Postgres, $0,47), `GCC-Camiones` ($0,62), `Deyby-Passerelle` ($0,27). Borrar es irreversible: decide Fernando.
+6. Otros proyectos: Bellaflor ~$5,1, Diego ~$4,8, Motordesa ~$3,7. Pendiente: ¿los pagan esos clientes?
+**Suma:** ~$4-7/mes, lo que deja el total alrededor del piso de $20. Por debajo de eso no se ahorra en PRO.
+
+## Proveedor
+- **Quedarse en Railway por ahora.** VPS de 8 GB: DigitalOcean ~$48/mes (más que hoy); Hetzner es el barato, pero con subidas fuertes en 2026 y CX/CAX reportados sin disponibilidad. Precios de terceros y contradictorios: confirmar antes de decidir.
+- A $25/mes, el ahorro máximo (~$15/mes) no paga una migración de cinco productos con clientes (estimado: 15-30 h) ni operar el servidor, los respaldos y la seguridad.
+- **Hobby:** $5 con $5 incluidos; solo conviene si el consumo baja claramente de $20. Un solo desarrollador; confirmar límites en la documentación oficial.
+- Revisar si pasa de ~$100/mes (criterio ya anotado en octubre).
+
+## Sin medir / abierto
+Causa de Postgres, causa del crecimiento de la app, memoria real de los productos sin precarga, si los clientes pagan sus proyectos, uso real de los proyectos pequeños, latencia a otro proveedor.
