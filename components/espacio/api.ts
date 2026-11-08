@@ -8,8 +8,11 @@ export class ErrorEspacio extends Error {
 const LLAVE_TOKEN = 'espacio_token';
 export const RUTA_EMBEBIDA = '/espacio';
 export const RUTA_CONTENIDO = '/contenido';
-/** Aplicación instalada: la nativa del teléfono o la del escritorio. */
-export const esAppInstalada = () => !!(window as any).Capacitor?.isNativePlatform?.() || window.matchMedia('(display-mode: standalone)').matches;
+/** Aplicación instalada: la nativa del teléfono, la web del escritorio (Safari, «Añadir al Dock») o
+ *  la nativa de la Mac (`movil/escritorio-mac`), que se anuncia con el puente `gccEscritorio`. */
+export const esAppInstalada = () => !!(window as any).Capacitor?.isNativePlatform?.()
+  || !!(window as any).webkit?.messageHandlers?.gccEscritorio
+  || window.matchMedia('(display-mode: standalone)').matches;
 export const rutaAcceso = (volver: string) => `/espacio-acceso?volver=${encodeURIComponent(volver)}`;
 /** Solo rutas de aquí: un enlace no puede mandar a otra web tras escribir la contraseña. */
 export const destinoSeguro = (v: string | null | undefined) => (v && v.startsWith('/') && !v.startsWith('//') && !v.includes('\\') ? v : '/dashboard/admin/espacio');
