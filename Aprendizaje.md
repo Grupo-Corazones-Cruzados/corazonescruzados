@@ -12034,7 +12034,7 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 - ✅ **Probado en local (2026-11-07):** `/grupo` conectado (la comprobación contra Meta devolvió el token del número de prueba vencido: dato real) y `/demo` sin número, claro/oscuro, 1280 y 390 px, `scrollWidth` = ancho, sin errores de consola. No se probó un alta real: necesita un cliente con su teléfono.
 
 
-# PRODUCTOS SIN SUBDOMINIO (2026-11-08) · 25 %
+# PRODUCTOS SIN SUBDOMINIO (2026-11-08) · 55 %
 **Objetivo:** que los cinco productos se sirvan desde `app.grupocc.org` y desaparezcan sus subdominios, en Railway y en
 Cloudflare. **Decisión de Fernando (2026-11-08):** «eliminarlos de verdad» (descartadas: ocultarlos con redirección,
 o dejarlos). **Rol:** arquitecto de plataforma.
@@ -12119,3 +12119,22 @@ Decide si los pck van dentro de la app de tiendas o se descargan.
 - Exportar con hilos: obliga a COOP/COEP, que rompe iframes, pagos y ventanas emergentes.
 - WebGPU / Forward+: la web de Godot no los admite y un 2D no los necesita.
 - C# en Godot: no exporta a la web.
+
+## Reservas migrado (2026-11-08, commit de0eeb11)
+- **Pasarela** `app/p/[producto]/[[...ruta]]/route.ts` en GCC World: reenvía a `PRODUCTO_<P>_ORIGEN` (Railway:
+  `https://<p>-production-….up.railway.app`; M1: `http://127.0.0.1:310x` en `~/gcc/env/app`). Solo pasan las cookies
+  `<p>_…`; redirecciones internas vuelven relativas; el middleware ya no mira `/p/`. Sin rewrites de next.config
+  (se fijan al compilar y el M1 se compila en la M4).
+- Productos reconocidos por clave (`productoDeUrl`), no por anfitrión. `/api/productos/entrar` redirige en relativo.
+- Reservas: `basePath` `/p/reservas` (`src/lib/base.ts`, `conBase`), `allowedOrigins` de Server Actions, el
+  subdominio viejo redirige (307) a `app.grupocc.org/p/reservas/…`. Cron: `RESERVAS_URL` del `nightly-cron` =
+  `…up.railway.app/p/reservas`.
+- **Probado:** local de punta a punta (marco → pase → panel real, Reportes, Excel, cookies aisladas); producción y
+  M1: recursos, manifiesto, iconos, `www` y redirección del subdominio.
+- ⚠️ **Caída de ~30 min (2026-11-08, ~19:50-20:25 hora del servidor):** el despliegue de Reservas falló porque la
+  comprobación de salud de Railway seguía en `/` (con `basePath` da 404) y GCC World ya apuntaba el marco a
+  `/p/reservas`. Además, **relanzar un despliegue reutiliza la configuración vieja**: hubo que lanzar uno nuevo
+  (`serviceInstanceDeployV2`). **Para los demás:** cambiar ANTES `healthcheckPath` a `/p/<p>` y que el producto se
+  despliegue y responda antes de apuntar GCC World (la variable `PRODUCTO_<P>_ORIGEN` y la `url` de `tipos.ts`).
+- Falta: Pedidos, Catering (y su `APP_URL` de correos), Planificaciones (4 `fetch`, adjuntos de 12 MB, IA larga),
+  Automatizaciones (webhook y alta de Meta, worker); datos `member_portfolio_items`; borrar dominios al final.
