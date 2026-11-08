@@ -12191,3 +12191,18 @@ Fernando pidió solo guardar lo aprendido; no se construye nada todavía. Fuente
 - Coordinación: la sesión «Publicación Tiendas GCC» rediseña los cuatro productos respetando `conBase`.
 - Falta: Automatizaciones (webhook y alta de Meta con Fernando, worker), datos `member_portfolio_items`, borrar los
   dominios (Railway por API; Cloudflare con token o a mano).
+
+### P11 — ¿Cómo se consigue un arte con identidad propia, hecho a mano y con libertad? · 🔎 Propuesto a Fernando (2026-11-08)
+- **Primero una biblia de estilo** dibujada por Fernando: paleta propia cerrada (~32-48 colores),
+  una sola densidad de píxel, regla de contorno, luz y proporciones, y **piezas maestras** a mano (el
+  personaje, un suelo, un árbol, una casa). La IA y cualquier otro asset se miden contra ellas.
+  `GUIA-SPRITES.html` y `PALETA.html` existían en el repo y faltan en la Mac (se recuperan desde git).
+- **A mano:** Pixaki (iPad, ya lo tiene) o **Aseprite** en la Mac usando el iPad como tableta
+  (Sidecar), con el plugin `godot-aseprite-wizard` para importar las animaciones a Godot.
+  Procreate solo para estampas, retratos y fondos.
+- **IA como borrador, no como producto final:** Gemini (como en el prólogo) o herramientas de
+  pixel art como PixelLab / Retro Diffusion, siempre con referencia a sus piezas maestras. Después
+  se ajusta a su paleta y rejilla y se repasa a mano. Se puede hacer un script que fuerce la paleta y
+  la rejilla.
+- **Riesgo:** el repo de GitHub es **PÚBLICO**: todo el arte del juego que se suba ahí queda a la
+  vista de cualquiera. Proponer que los originales vayan a un repo o almacenamiento privado.
