@@ -24,6 +24,10 @@ import {
   Briefcase, Plus, Table2, Smartphone, Share2, ExternalLink,
 } from 'lucide-react';
 import GeneradorQR from '@/components/herramientas/GeneradorQR';
+import FormatosExcel from '@/components/herramientas/FormatosExcel';
+import HistorialHerramienta from '@/components/herramientas/HistorialHerramienta';
+import HistorialEnlaces from '../tools/enlaces/page';
+import HistorialEntregas from '../tools/entregas/page';
 import AppMovil from '@/components/herramientas/AppMovil';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { accessRoleOf } from '@/lib/dashboard/access';
@@ -109,6 +113,14 @@ function Herramientas() {
 
   // Enlace de un solo uso (lo que el panel compartido no trae: título, indicaciones, cliente)
   const [enlaceOpen, setEnlaceOpen] = useState(false);
+  // El historial de cada herramienta (`HistorialHerramienta`): el formulario se abre en el panel
+  // derecho y cada uso se anota; `versionUsos` hace que la lista se vuelva a pedir.
+  const [formAbierto, setFormAbierto] = useState(false);
+  const [versionUsos, setVersionUsos] = useState(0);
+  const anotarUso = (herramienta: string, titulo: string, detalle: Record<string, string>) => {
+    fetch('/api/herramientas/usos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ herramienta, titulo, detalle }) })
+      .then(() => setVersionUsos((v) => v + 1)).catch(() => {});
+  };
   const [enlaceTitulo, setEnlaceTitulo] = useState('');
   const [enlaceIndicaciones, setEnlaceIndicaciones] = useState('');
   const [enlaceExigeCuenta, setEnlaceExigeCuenta] = useState(false);
@@ -185,6 +197,7 @@ function Herramientas() {
   const cerrarEntrega = () => {
     if (subidaEntrega.subiendo) { toast.error('Espera a que terminen de subir los archivos'); return; }
     setEntregaOpen(false);
+    setVersionUsos((v) => v + 1);
     // Sin generar: el borrador y sus archivos sobran (van a la papelera de Drive).
     const p = entregaId.current;
     if (p && !entregaPublicada.current) p.then((id) => fetch(`/api/entregas/${id}`, { method: 'DELETE' })).catch(() => {});
@@ -249,6 +262,7 @@ function Herramientas() {
       const name = convertFile.name.replace(/\.[^.]+$/, '') + '.' + convertTo;
       setConvertProgress(100);
       setConvertResult({ blob, name });
+      anotarUso('convert', convertFile.name, { formato: `${convertFrom.toUpperCase()} → ${convertTo.toUpperCase()}`, tamano: `${fmt2(convertFile.size / 1024 / 1024)} MB` });
       triggerDownload(blob, name);
       toast.success('Conversión completada');
     } catch (err: any) {
@@ -278,6 +292,7 @@ function Herramientas() {
       const name = transcribeFile.name.replace(/\.[^.]+$/, '') + '.txt';
       setTranscribeProgress(100);
       setTranscribeResult({ blob, name });
+      anotarUso('transcribe', transcribeFile.name, { tamano: `${fmt2(transcribeFile.size / 1024 / 1024)} MB` });
       setTranscribePhase('done');
       triggerDownload(blob, name);
       toast.success('Transcripción completada');
@@ -497,10 +512,39 @@ function Herramientas() {
       <PageHeader title="Herramientas" description="Utilidades de uso interno" />
 
       {/* Sin cabecera de sección: el nombre va arriba, como el título de Comunicados. */}
-      {enSeccion && (
-        <div className="max-w-2xl">
-          <h1 className="text-[18px] font-semibold text-digi-text mb-3" style={mf}>{tool?.name}</h1>
-          {cuerpoHerramienta()}
+      {/* EN LAS APPS, CADA HERRAMIENTA ABRE EN SU HISTORIAL (Fernando, 2026-11-08): lo primero es el panel
+          de usos y el formulario se abre en el panel derecho. Enlace y Entrega de un solo uso tienen
+          su propio historial; el Descargador solo instala la app y no tiene usos que listar. */}
+      {enSeccion && tool && (
+        <div>
+          <h1 className="text-[18px] font-semibold text-digi-text mb-3" style={mf}>{tool.name}</h1>
+          {tool.id === 'enlace-unico' || tool.id === 'entrega-unica' ? (
+            <>
+              <div className="flex justify-end mb-3">
+                <button type="button" onClick={tool.id === 'enlace-unico' ? abrirEnlace : abrirEntrega} className={BTN_PRIMARY}>
+                  <Plus className="w-4 h-4" /> {tool.id === 'enlace-unico' ? 'Generar enlace' : 'Generar entrega'}
+                </button>
+              </div>
+              {tool.id === 'enlace-unico' ? <HistorialEnlaces key={versionUsos} /> : <HistorialEntregas key={versionUsos} />}
+            </>
+          ) : ['convert', 'transcribe', 'qr', 'formatos-excel'].includes(tool.id) ? (
+            <HistorialHerramienta
+              herramienta={tool.id}
+              Icono={tool.Icon}
+              accion={({ convert: 'Nueva conversión', transcribe: 'Nueva transcripción', qr: 'Nuevo código QR', 'formatos-excel': 'Nuevo formato' } as Record<string, string>)[tool.id]}
+              unidad={['uso', 'usos']}
+              etiquetas={{ formato: 'Formato', tamano: 'Tamaño', salida: 'Salida', papel: 'Papel', hojas: 'Hojas' }}
+              version={versionUsos}
+              abierto={formAbierto}
+              onAbrir={() => { setFormAbierto(true); if (tool.id === 'convert') resetConvert(); if (tool.id === 'transcribe') resetTranscribe(); }}
+              onCerrar={() => setFormAbierto(false)}
+              formulario={tool.id === 'qr' ? <GeneradorQR alUsar={(enlace, d) => anotarUso('qr', enlace, d)} />
+                : tool.id === 'formatos-excel' ? <FormatosExcel alUsar={(nombre, d) => anotarUso('formatos-excel', nombre, d)} />
+                : cuerpoHerramienta()}
+            />
+          ) : (
+            <div className="max-w-2xl">{cuerpoHerramienta()}</div>
+          )}
         </div>
       )}
 
@@ -559,7 +603,7 @@ function Herramientas() {
       )}
 
       <PanelCompartirEnlace
-        open={enlaceOpen} onClose={() => setEnlaceOpen(false)}
+        open={enlaceOpen} onClose={() => { setEnlaceOpen(false); setVersionUsos((v) => v + 1); }}
         title="Generar enlace de un solo uso"
         intro={<>Quien lo abra podrá enviar <strong>un texto y hasta 10 archivos</strong> (100 MB cada uno). Al enviar, el enlace se cierra.</>}
         duraciones={VIGENCIAS} duracionInicial={168}

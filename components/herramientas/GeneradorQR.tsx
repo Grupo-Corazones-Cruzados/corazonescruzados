@@ -52,7 +52,8 @@ function descargar(href: string, nombre: string) {
  * Se genera en el navegador (`qrcode`): el enlace no sale del equipo. PNG en el tamaño
  * elegido o SVG (vectorial, para imprenta), y copiar la imagen para pegarla donde sea.
  */
-export default function GeneradorQR() {
+/** `alUsar`: cada descarga o copia, para el historial de la herramienta (`HistorialHerramienta`). */
+export default function GeneradorQR({ alUsar }: { alUsar?: (enlace: string, detalle: Record<string, string>) => void } = {}) {
   const [texto, setTexto] = useState('');
   const [tamano, setTamano] = useState('1024');
   const [vista, setVista] = useState<string | null>(null);
@@ -70,7 +71,7 @@ export default function GeneradorQR() {
   const png = () => qrImagen(url!, Number(tamano));
 
   const bajarPng = async () => {
-    try { descargar(await png(), nombreArchivo(url!, 'png')); }
+    try { descargar(await png(), nombreArchivo(url!, 'png')); alUsar?.(url!, { formato: `PNG · ${tamano} px` }); }
     catch { toast.error('No se pudo generar el PNG'); }
   };
 
@@ -80,6 +81,7 @@ export default function GeneradorQR() {
       const href = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
       descargar(href, nombreArchivo(url!, 'svg'));
       setTimeout(() => URL.revokeObjectURL(href), 1000);
+      alUsar?.(url!, { formato: 'SVG' });
     } catch { toast.error('No se pudo generar el SVG'); }
   };
 
@@ -89,6 +91,7 @@ export default function GeneradorQR() {
       const blob = png().then((d) => fetch(d)).then((r) => r.blob());
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       toast.success('Código QR copiado');
+      alUsar?.(url!, { formato: 'Copiado como imagen' });
     } catch { toast.error('Este navegador no deja copiar imágenes; descárgalo en PNG'); }
   };
 

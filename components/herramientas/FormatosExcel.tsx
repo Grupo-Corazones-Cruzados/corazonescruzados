@@ -54,7 +54,8 @@ function Pagina({ plan, indice, ancho, libro }: { plan: any; indice: number; anc
  * en el navegador: el archivo no se sube a ningún servidor. La usa el panel y la página pública
  * del acceso compartido (`/herramienta/<token>`); `onUso` avisa cada vez que se abre un libro.
  */
-export default function FormatosExcel({ onUso }: { onUso?: () => void }) {
+/** `alUsar`: cada descarga, para el historial de la herramienta (`HistorialHerramienta`). */
+export default function FormatosExcel({ onUso, alUsar }: { onUso?: () => void; alUsar?: (nombre: string, detalle: Record<string, string>) => void }) {
   const [libro, setLibro] = useState<Libro | null>(null);
   const [archivo, setArchivo] = useState<File | null>(null);
   const [cargando, setCargando] = useState<string | null>(null);
@@ -112,6 +113,7 @@ export default function FormatosExcel({ onUso }: { onUso?: () => void }) {
       const ext = (libro.fileName.match(/\.(xls[xm])$/i) || [, 'xlsx'])[1];
       descargar(blob, `${base()}_${formato.paperName}.${ext}`);
       toast.success('Excel descargado');
+      alUsar?.(libro.fileName, { salida: 'Excel', papel: formato.paperName, hojas: String(elegidas.length) });
     } catch (e: any) { console.error(e); toast.error(`No se pudo generar el Excel: ${e?.message || e}`); }
     finally { setProgreso(null); }
   };
@@ -123,6 +125,7 @@ export default function FormatosExcel({ onUso }: { onUso?: () => void }) {
       const r = await pdfDe(libro, formato, elegidas, (texto: string, valor: number) => setProgreso({ texto, valor: valor || 0.001 }));
       descargar(r.blob, `${base()}_${formato.paperName}.pdf`);
       toast.success(`PDF descargado: ${fmtInt(r.pages)} ${r.pages === 1 ? 'hoja' : 'hojas'}, ${tamano(r.blob.size)}`);
+      alUsar?.(libro.fileName, { salida: 'PDF', papel: formato.paperName, hojas: String(r.pages) });
     } catch (e: any) { console.error(e); toast.error(`No se pudo generar el PDF: ${e?.message || e}`); }
     finally { setProgreso(null); }
   };
