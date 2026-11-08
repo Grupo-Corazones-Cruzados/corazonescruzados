@@ -9,6 +9,8 @@ import { usePathname } from 'next/navigation';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
 import SelectorTema from '@/components/dashboard/SelectorTema';
+import FichaUsuario from '@/components/dashboard/FichaUsuario';
+import { movimientoDelMenu } from '@/components/accesos/nivelMenu';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 import ModuleTutorialsModal from '@/components/dashboard/ModuleTutorialsModal';
 import DialogoVerComoOtro from '@/components/dashboard/DialogoVerComoOtro';
@@ -18,7 +20,7 @@ import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench, FilePen,
   Settings, LifeBuoy, ShieldCheck, Workflow,
-  LogOut, Eye, Undo2, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info, LayoutGrid, AppWindow,
+  LogOut, Undo2, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info, LayoutGrid, AppWindow,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -29,13 +31,6 @@ interface NavItem {
 }
 interface NavGroup { title: string; items: NavItem[]; }
 
-// Etiqueta del rol efectivo (candidato/cliente/miembro/admin) para mostrar al usuario.
-const ROLE_LABEL_ES: Record<AccessRole, string> = {
-  candidate: 'Candidato',
-  client: 'Cliente',
-  member: 'Miembro',
-  admin: 'Admin',
-};
 
 // Iconos por nombre: el catálogo de módulos (`lib/dashboard/modules.ts`) es data pura
 // (también lo usan rutas de servidor), así que el componente resuelve el icono aquí.
@@ -149,6 +144,8 @@ export default function DashboardSidebar() {
   const [appTel, setAppTel] = useState<AppDeTelefono | null>(null);
   useEffect(() => { setAppTel(appDeTelefono()); }, []);
   const enApp = !!appTel;
+  // En las apps Progreso es un nivel por debajo de Accesos: su menú entra «avanzando» (`nivelMenu`).
+  const [movimiento] = useState(() => (appDeTelefono() ? movimientoDelMenu('progreso') : ''));
 
   const accessRole = accessRoleOf(user);
   const { blockedModules } = usePolicyEffects();
@@ -231,11 +228,11 @@ export default function DashboardSidebar() {
             className="rounded-full select-none shrink-0 motion-reduce:animate-none"
             style={{ animation: 'slowSpin 12s linear infinite reverse' }}
           />
-          {!collapsed && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>GCC WORLD</span>}
+          {!collapsed && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>{enApp ? 'PROGRESO' : 'GCC WORLD'}</span>}
         </Link>
 
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-2 px-2">
+        <nav className={`flex-1 overflow-y-auto py-2 px-2 ${movimiento}`}>
           {groups.map((group, gi) => (
             <div key={group.title} className={gi > 0 ? 'mt-2' : ''}>
               {/* ⚠️ ALTO CONSTANTE (`h-7`), esté el menú abierto o cerrado. Es lo que hace
@@ -328,46 +325,8 @@ export default function DashboardSidebar() {
             </div>
           )}
 
-          {user && (() => {
-            /* La ficha del usuario. Para un ADMINISTRADOR es además el botón que abre
-               «ver como otro usuario»: la foto de perfil es donde uno busca «quién soy»,
-               así que es también donde tiene sentido preguntar «¿y si fuera otro?».
-               Para el resto es texto, no un botón muerto que no hace nada al pulsarlo. */
-            const contenido = (
-              <>
-                {user.avatar_url ? (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={user.avatar_url} alt="" className="w-8 h-8 rounded-full border border-digi-border object-cover shrink-0" />
-                ) : (
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center bg-accent-light border border-accent/20 text-accent text-[12px] font-semibold shrink-0" style={mf}>
-                    {(user.first_name?.[0] || user.email[0]).toUpperCase()}
-                  </div>
-                )}
-                {!collapsed && (
-                  <div className="min-w-0 text-left">
-                    <p className="text-[12px] font-medium text-digi-text truncate" style={mf}>{user.first_name || user.email.split('@')[0]}</p>
-                    <p className="text-[10px] text-digi-muted" style={mf}>{ROLE_LABEL_ES[accessRole]}</p>
-                  </div>
-                )}
-                {esAdmin && !collapsed && <Eye className="w-3.5 h-3.5 text-digi-muted ml-auto shrink-0" />}
-              </>
-            );
-
-            const clases = `flex items-center gap-2.5 mb-2 w-full ${collapsed ? 'justify-center' : ''}`;
-
-            return esAdmin ? (
-              <button
-                type="button"
-                onClick={() => setVerComoOtro(true)}
-                title="Ver la plataforma como otro usuario"
-                className={`${clases} rounded-md p-1 -m-1 transition-[filter] duration-150 hover:brightness-125`}
-              >
-                {contenido}
-              </button>
-            ) : (
-              <div className={clases}>{contenido}</div>
-            );
-          })()}
+          {/* La ficha de la cuenta; para el administrador abre «ver como otro usuario». */}
+          <FichaUsuario estrecho={collapsed} alPulsar={esAdmin ? () => setVerComoOtro(true) : undefined} />
 
           {/* Dos botones, con el MISMO comportamiento al pasar por encima: no cambian de
               relleno ni de borde, solo suben el brillo. El botón de contraer sigue fuera,

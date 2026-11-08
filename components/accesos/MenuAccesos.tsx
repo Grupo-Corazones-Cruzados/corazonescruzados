@@ -7,9 +7,11 @@ import { usePathname } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
+import FichaUsuario from '@/components/dashboard/FichaUsuario';
 import { useConsultaMedia } from '@/lib/hooks/useConsultaMedia';
 import { definicionTema } from '@/lib/temas';
 import { iconoDeProducto, useAccesos } from './useAccesos';
+import { movimientoDelMenu } from './nivelMenu';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -29,6 +31,8 @@ export default function MenuAccesos() {
   const [sobreElMenu, setSobreElMenu] = useState(false);
   const telefono = useConsultaMedia('(max-width: 63.99rem)');
   const estrecho = !telefono && !sobreElMenu && !abierto;
+  // Al volver de Progreso, el contenido entra desde la izquierda (`nivelMenu`).
+  const [movimiento] = useState(() => movimientoDelMenu('accesos'));
 
   useEffect(() => { cerrar(); }, [pathname, cerrar]);
 
@@ -63,7 +67,7 @@ export default function MenuAccesos() {
           {!estrecho && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>GCC WORLD</span>}
         </Link>
 
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 px-2" style={mf}>
+        <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-2 px-2 ${movimiento}`} style={mf}>
           <Grupo titulo="Apps" primero>
             {apps.map((a) => (
               <button key={a.id} type="button" onClick={a.abrir} title={estrecho ? a.titulo : undefined} className={fila}>
@@ -102,6 +106,7 @@ export default function MenuAccesos() {
         </nav>
 
         <div className="shrink-0 p-2 border-t border-digi-border">
+          <FichaUsuario estrecho={estrecho} />
           <button onClick={signOut} aria-label="Cerrar sesión" title="Cerrar sesión"
             className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[12px] font-medium transition-[filter] duration-150 hover:brightness-125"
             style={{ ...mf, color: '#F0A6AE', background: 'rgba(224, 90, 106, 0.14)' }}>

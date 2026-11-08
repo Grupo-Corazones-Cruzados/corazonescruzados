@@ -18,6 +18,7 @@ import CabeceraMovil from '@/components/dashboard/CabeceraMovil';
 import CabeceraSeccion from '@/components/dashboard/CabeceraSeccion';
 import MenuCentralizado from '@/components/centralized/MenuCentralizado';
 import MenuAccesos from '@/components/accesos/MenuAccesos';
+import { anotarRuta } from '@/components/accesos/nivelMenu';
 import { ProveedorMenuMovil } from '@/components/dashboard/MenuMovil';
 import DashboardBreadcrumb from '@/components/dashboard/DashboardBreadcrumb';
 import DashboardAccessGuard from '@/components/dashboard/DashboardAccessGuard';
@@ -59,6 +60,8 @@ function Panel({ children }: { children: React.ReactNode }) {
   const enCentralizado = seccion && (pathname === '/dashboard/centralized' || pathname.startsWith('/dashboard/centralized/'));
   // Accesos lleva su propio menú lateral (Apps, Productos, Herramientas) y la cabecera del teléfono.
   const enAccesos = seccion && pathname === '/dashboard/accesos';
+  // Después de montar lo nuevo: los menús leen de qué ruta se venía (`nivelMenu`).
+  useEffect(() => { anotarRuta(pathname); }, [pathname]);
   const mainRef = useRef<HTMLElement>(null);
   // Las transiciones de teléfono de `movimiento.css` solo corren dentro de una app.
   useEffect(() => {
