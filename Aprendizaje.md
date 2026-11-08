@@ -11978,8 +11978,8 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 | H3 | Cortafuegos de macOS **apagado** | Alta | M1 |
 | H4 | Abiertos a toda la red: Compartir pantalla y Gestión remota (ARD 3283), Compartir archivos (SMB), receptor AirPlay (5000/7000), Compartir multimedia (3689), SSH con contraseña | Alta | M1 en la red de casa |
 | H5 | macOS 26.2 con **26.7.2 pendiente** (seguridad; requiere reinicio y desbloqueo de FileVault) — ✅ 2026-11-08: Fernando lo actualizó a **27.2** junto al equipo; filtro, cortafuegos, SSH, servicios y Tailscale siguieron en pie tras el reinicio | Alta | M1 |
-| H6 | Llave SSH de la Mac de desarrollo hacia el M1 **sin frase de paso**: quien robe esa Mac entra al servidor | Media-alta | Mac de desarrollo |
-| H7 | Tailnet: nodos viejos (`railway-app`, «Luis's MacBook Pro» antiguo, caducados) y sin saber si hay reglas de acceso: el iPhone o el iPad llegan al SSH del M1 | Media | Tailscale |
+| H6 | Llave SSH de la Mac de desarrollo hacia el M1 **sin frase de paso**: quien robe esa Mac entra al servidor — ✅ 2026-11-08: frase puesta y guardada en el llavero (`UseKeychain`); con el agente vacío se carga sola | Media-alta | Mac de desarrollo |
+| H7 | Tailnet: nodos viejos (`railway-app`, «Luis's MacBook Pro» antiguo, caducados) y sin saber si hay reglas de acceso: el iPhone o el iPad llegan al SSH del M1 — ✅ 2026-11-08: nodos caducados borrados y la llave del M1 sin caducidad (H12). Reglas de acceso por equipo: sin hacer, todos los equipos son de Fernando | Media | Tailscale |
 | H8 | Node 22.3.0 (junio de 2024) en el M1; Railway usa 22.23 | Media | M1 |
 | H9 | `xlsx@0.18.5` sin arreglo en npm (contaminación de prototipo y ReDoS); hay que confirmar dónde se usa | Media | App |
 | H10 | La clave del SSD de respaldos vive en el propio M1 (`~/.gcc-respaldos/clave-ssd`): un robo del equipo encendido y con sesión abierta la expone. FileVault cubre el equipo apagado | Baja-media | M1 |

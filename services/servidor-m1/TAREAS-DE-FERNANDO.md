@@ -47,7 +47,7 @@ Para usarlo: Finder → **Ir → Conectarse al servidor** → `vnc://100.73.251.
 
 ## B. En la MacBook M4 Pro
 
-### ☐ B1. Frase de paso en la llave SSH (2 minutos)
+### ✅ B1. Frase de paso en la llave SSH (hecho por Fernando, 2026-11-08; comprobado: con el agente vacío el llavero la carga solo y `publicar.sh` entra sin pedirla)
 **Por qué:** hoy, quien use la M4 Pro sin ti puede entrar al servidor. `~/.ssh/config` ya está preparado para
 guardar la frase en el llavero.
 1. Abrir la **Terminal** de la M4 Pro.
@@ -72,7 +72,7 @@ que `publicar.sh` sigue funcionando sin pedirla.
 
 ## C. Desde cualquier navegador (no depende de una Mac)
 
-### ☐ C1. Tailscale: que la llave del M1 no caduque (2 minutos)
+### ✅ C1. Tailscale: que la llave del M1 no caduque (hecho por Fernando, 2026-11-08; comprobado: sin caducidad)
 **Por qué:** el **2027-04-07** el M1 saldría de Tailscale y se perdería el acceso remoto sin aviso.
 1. Abrir **login.tailscale.com/admin/machines** e iniciar sesión.
 2. Buscar **«Fernando's MacBook Air»** (`100.73.251.124`).
@@ -81,7 +81,7 @@ que `publicar.sh` sigue funcionando sin pedirla.
 
 **Qué debe verse:** en la caducidad aparece **«Expiry disabled»** en vez de una fecha.
 
-### ☐ C2. Tailscale: borrar los equipos viejos (1 minuto)
+### ✅ C2. Tailscale: borrar los equipos viejos (hecho por Fernando, 2026-11-08; se fue también el iPhone, que no hace falta para el servidor: para volver a tenerlo, iniciar sesión en la app de Tailscale del iPhone)
 En la misma página:
 1. **railway-app** (aparece *Expired*): **⋯ → Remove → Remove machine**.
 2. La **«Luis's MacBook Pro»** que dice **Expired**: **⋯ → Remove**. Hay dos con ese nombre: **no borrar la que
