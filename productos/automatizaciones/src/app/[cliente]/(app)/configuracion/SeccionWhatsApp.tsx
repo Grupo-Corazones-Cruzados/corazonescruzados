@@ -112,7 +112,17 @@ export default function SeccionWhatsApp({
             wabaId: d.data?.messaging_account_ids?.[0] ?? d.data?.waba_id,
             phoneNumberId: d.data?.phone_number_id,
           };
-        if (d.event === 'CANCEL') toast.info('Se cerró la ventana de Meta sin terminar.');
+        // Meta dice en qué pantalla se quedó y, si falló, con qué código (p. ej. 3441045:
+        // número no elegible; 3441049: conectado a otro proveedor). Se enseña tal cual:
+        // es lo único que permite diagnosticar un alta sin adivinar.
+        if (d.event === 'CANCEL') {
+          const paso = d.data?.current_step ? ` (pantalla: ${d.data.current_step})` : '';
+          const fallo = d.data?.error_message
+            ? ` Meta: ${d.data.error_message}${d.data?.error_code ? ` [${d.data.error_code}]` : ''}`
+            : '';
+          console.info('[alta WhatsApp] CANCEL', d.data);
+          toast.info(`Se cerró la ventana de Meta sin terminar${paso}.${fallo}`, { duration: 20000 });
+        }
       } catch { /* mensajes de Meta que no son del alta */ }
     };
     window.addEventListener('message', alMensaje);
@@ -161,9 +171,12 @@ export default function SeccionWhatsApp({
            * número» en vez de la coexistencia. En v5 la coexistencia viene activada por
            * defecto; `version` va DENTRO de `extras`.
            */
-          // `featureType` también: si Meta no tiene v5 habilitada para la app, sirve el
-          // launch como v4, y en v4 la coexistencia solo se activa con él. En v5 sobra.
-          extras: { version: 'v5', featureType: 'whatsapp_business_app_onboarding' },
+          //
+          // ⚠️ EN v4/v5 NO HAY BOTÓN DE «CONECTAR CUENTA EXISTENTE» (Meta, default-flow:
+          // «Phone Number First»). La primera pantalla es «Agrega tu número»; la coexistencia
+          // entra SOLA al escribir un número que está en la app WhatsApp Business, y sigue con
+          // un código QR que se escanea desde la app. Ver el aviso de la pantalla.
+          extras: { version: 'v5' },
         },
       );
     } catch (e) {
@@ -278,16 +291,18 @@ export default function SeccionWhatsApp({
             <div className="mb-4 flex items-start gap-2.5 rounded border border-borde bg-error-suave px-3 py-2.5 text-[12.5px] leading-relaxed text-error">
               <ShieldAlert className="mt-px h-4 w-4 shrink-0" />
               <span>
-                En la ventana de Meta elige <strong>conectar tu cuenta existente de WhatsApp Business</strong>.
-                Si eliges dar de alta un número nuevo, el número sale del teléfono y tu equipo pierde
-                WhatsApp Web en el acto, sin forma de deshacerlo.
+                En la ventana de Meta escribe tu número en <strong>«Ingresar un nuevo número de teléfono»</strong>.
+                Si está en WhatsApp Business, Meta te pedirá <strong>escanear un código QR desde la app</strong>:
+                ese es el camino correcto. Si en vez del QR te pide un código por SMS o llamada,
+                <strong>cierra la ventana</strong>: ese camino saca el número del teléfono y tu equipo pierde WhatsApp Web.
               </span>
             </div>
 
             <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-tenue">Antes de empezar</p>
             <ul className="space-y-2 text-[13px] text-texto">
               <Requisito>El número está en la aplicación <strong>WhatsApp Business</strong> (no en la normal), versión 2.24.17 o superior.</Requisito>
-              <Requisito>Tienes el teléfono a mano: hay que confirmar la conexión desde la aplicación.</Requisito>
+              <Requisito>Tienes el teléfono a mano: hay que escanear un código QR desde la aplicación.</Requisito>
+              <Requisito>El número no está conectado a otro proveedor (en la app: Ajustes ▸ Cuenta ▸ Plataforma empresarial).</Requisito>
               <Requisito>Entras con la cuenta de Facebook que administra el portafolio comercial de tu negocio.</Requisito>
             </ul>
 
@@ -312,7 +327,7 @@ export default function SeccionWhatsApp({
       <Confirmar
         abierto={confirmarAlta}
         titulo="Antes de abrir Meta"
-        mensaje="En la ventana de Meta hay que elegir «conectar una cuenta existente». Si se elige dar de alta un número nuevo, el número sale del teléfono y tu equipo pierde WhatsApp Web en el acto, sin forma de deshacerlo."
+        mensaje="Escribe tu número en «Ingresar un nuevo número de teléfono». Lo correcto es que Meta te pida escanear un código QR desde la app WhatsApp Business. Si te pide un código por SMS o llamada, cierra la ventana: ese camino saca el número del teléfono y tu equipo pierde WhatsApp Web."
         textoAceptar="Entendido, abrir Meta"
         peligro={false}
         alAceptar={abrirMeta}
