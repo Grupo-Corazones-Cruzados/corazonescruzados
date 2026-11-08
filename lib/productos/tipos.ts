@@ -37,9 +37,8 @@ export const productoDeUrl = (url: string | null | undefined): string => {
 };
 
 /**
- * DÓNDE VIVE CADA PRODUCTO. Desde el 2026-11-08 (Fernando: sin subdominios) se sirven desde GCC World
- * bajo `/p/<producto>` (la pasarela `app/p/[producto]`), con dirección RELATIVA. Los que aún tienen su
- * subdominio están a medio migrar: se pasan uno a uno junto con su `basePath`.
+ * DÓNDE VIVE CADA PRODUCTO. Desde el 2026-11-08 (Fernando: sin subdominios) los cinco se sirven desde
+ * GCC World bajo `/p/<producto>` (la pasarela `app/p/[producto]`), con dirección RELATIVA.
  */
 export const PRODUCTOS = [
   { clave: 'reservas', esquema: 'reservas', nombre: 'Gestión de Reservas', url: '/p/reservas' },
@@ -49,5 +48,5 @@ export const PRODUCTOS = [
   // Quinto producto (2026-09-23): la sección «Automatizaciones» dejó de vivir dentro de la
   // plataforma y pasó a venderse como los demás, 5 $/mes con el agente de IA y las
   // campañas de correo y de WhatsApp dentro.
-  { clave: 'automatizaciones', esquema: 'automatizaciones', nombre: 'Automatizaciones de WhatsApp', url: 'https://automatizaciones.grupocc.org', gccSuscripcion: true },
+  { clave: 'automatizaciones', esquema: 'automatizaciones', nombre: 'Automatizaciones de WhatsApp', url: '/p/automatizaciones', gccSuscripcion: true },
 ] as const;
