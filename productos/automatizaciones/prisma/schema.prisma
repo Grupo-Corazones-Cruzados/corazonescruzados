@@ -111,6 +111,15 @@ model Inquilino {
   contactoEmail    String? @map("contacto_email")
   contactoTelefono String? @map("contacto_telefono")
 
+  // ── Datos del negocio (Configuración ▸ Negocio, 2026-11-08)
+  razonSocial       String? @map("razon_social")
+  identificacion    String? @db.VarChar(20)
+  direccion         String?
+  correoFacturacion String? @map("correo_facturacion")
+  /// Va en la URL del logo subido (`/<cliente>/logo?v=N`). 0 = no hay logo subido.
+  logoVersion       Int     @default(0) @map("logo_version")
+  logo              Logo?
+
   creado      DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
   actualizado DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
@@ -835,4 +844,15 @@ enum Direccion {
   SALIENTE
 
   @@map("direccion")
+}
+
+/// El logo subido por el cliente, en su propia tabla para que leer el inquilino no lo arrastre.
+model Logo {
+  inquilinoId Int       @id @map("inquilino_id")
+  inquilino   Inquilino @relation(fields: [inquilinoId], references: [id], onDelete: Cascade)
+  datos       Bytes
+  tipo        String    @db.VarChar(40)
+  actualizado DateTime  @default(now()) @map("actualizado_en") @db.Timestamptz(3)
+
+  @@map("logos")
 }

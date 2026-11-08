@@ -1,11 +1,12 @@
-import { exigirContexto } from '@/lib/inquilino';
+import { exigirContexto, topeUsuarios } from '@/lib/inquilino';
+import { urlLogo } from '@/lib/marca';
 import { EXIGE_ROL } from '@/lib/modulos';
 import { prisma } from '@/lib/db';
-import { hayCloudinary } from '@/lib/imagenes';
 import { miOrigen } from '@/acciones/configuracion';
 import { vistaSuscripcion } from '@/lib/vistaSuscripcion';
 import { pool } from '@/lib/db';
-import ConfiguracionCliente, { type MarcaVista, type PagoVista } from './ConfiguracionCliente';
+import ConfiguracionCliente, { type NegocioVista, type PagoVista } from './ConfiguracionCliente';
+import type { UsuarioVista } from './SeccionUsuarios';
 import type { ConexionVista } from './SeccionWhatsApp';
 
 export const dynamic = 'force-dynamic';
@@ -22,13 +23,34 @@ export default async function PaginaConfiguracion({ params }: { params: Promise<
     take: 12,
   });
 
-  const marca: MarcaVista = {
+  const negocio: NegocioVista = {
     nombre: inquilino.nombre,
-    colorAcento: inquilino.colorAcento,
-    tema: inquilino.tema,
-    logoUrl: inquilino.logoUrl,
+    logoUrl: urlLogo(inquilino),
     zonaHoraria: inquilino.zonaHoraria,
+    razonSocial: inquilino.razonSocial,
+    identificacion: inquilino.identificacion,
+    direccion: inquilino.direccion,
+    correoFacturacion: inquilino.correoFacturacion,
+    contactoNombre: inquilino.contactoNombre,
+    contactoEmail: inquilino.contactoEmail,
+    contactoTelefono: inquilino.contactoTelefono,
   };
+
+  // Los usuarios del negocio: antes, la página «Cuentas» (2026-11-08).
+  const filas = await prisma.usuario.findMany({
+    where: { inquilinoId: inquilino.id },
+    orderBy: [{ activo: 'desc' }, { rol: 'asc' }, { nombre: 'asc' }],
+  });
+  const lista: UsuarioVista[] = filas.map((u) => ({
+    id: u.id,
+    usuario: u.usuario,
+    nombre: u.nombre,
+    rol: u.rol,
+    origen: u.origen,
+    activo: u.activo,
+    ultimoAcceso: u.ultimoAcceso ? u.ultimoAcceso.toISOString() : null,
+    esYo: u.id === ctx.sesion.uid,
+  }));
 
   // El mismo objeto que recibe la pantalla de impago: una sola forma de contar lo que
   // se debe, y por tanto un solo sitio donde aparece el botón de pagar.
@@ -70,10 +92,10 @@ export default async function PaginaConfiguracion({ params }: { params: Promise<
   return (
     <ConfiguracionCliente
       slug={cliente}
-      marca={marca}
+      negocio={negocio}
+      usuarios={{ lista, tope: topeUsuarios(inquilino), activas: filas.filter((u) => u.activo).length }}
       suscripcion={suscripcion}
       pagos={historial}
-      hayCloudinary={hayCloudinary}
       miOrigen={await miOrigen(cliente)}
       conexion={conexion}
       meta={{ appId: process.env.WHATSAPP_APP_ID || null, configId: process.env.WHATSAPP_ES_CONFIG_ID || null }}

@@ -61,8 +61,15 @@ body {
   color: var(--color-texto);
 }
 
-* {
-  border-color: var(--color-borde);
+/*
+  ⚠️ EN UNA CAPA, NO SUELTA. Fuera de capa, esta regla ganaba a TODAS las utilidades de
+  Tailwind v4 (que viven en @layer utilities): un `border-transparent` salía gris. Así nació
+  la «sombra» curva a la izquierda de cada opción del menú (Fernando, 2026-11-08).
+*/
+@layer base {
+  * {
+    border-color: var(--color-borde);
+  }
 }
 
 /* Campo de formulario — alto 34 px, el del panel de GCC. */
@@ -83,9 +90,10 @@ textarea.campo {
   padding: 8px 10px;
   line-height: 1.45;
 }
+/* Foco = borde gris medio, sin halo ni morado (regla de Fernando, 2026-09-29, igual que GCC World). */
 .campo:focus {
-  border-color: var(--color-acento);
-  box-shadow: 0 0 0 1px var(--color-acento);
+  border-color: var(--color-tenue);
+  box-shadow: none;
 }
 .campo:disabled {
   background: var(--color-realce);
@@ -157,4 +165,32 @@ body {
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+
+/*
+  TEMA MIXTO DE GCC WORLD — el único del producto (Fernando, 2026-11-08: «la app tenga un
+  tema por defecto y será el tema mixto de gcc world»). Fondo y tarjetas en CLARO; lo que
+  FLOTA (panel lateral, ventanitas, burbujas, menús, el menú «Más») en el oscuro violáceo de
+  Aventura, con los mismos valores que `.corp.tema-mixto` de GCC World (app/temas.css).
+  ⚠️ Una superficie flotante NUEVA lleva la clase `superficie-flotante` o saldrá clara.
+*/
+.tema-mixto .superficie-flotante {
+  color-scheme: dark;
+  --color-fondo: #110d22;
+  --color-tarjeta: #17122b;
+  --color-texto: #f1eefb;
+  --color-tenue: #a99fc7;
+  --color-borde: #2c2449;
+  --color-realce: #221b3b;
+  --color-acento: #8267d4;
+  --color-acento-fuerte: #9179df;
+  --color-acento-suave: #2a2050;
+  --color-acento-contraste: #ffffff;
+  --color-exito: #7bc043;
+  --color-exito-suave: rgba(107, 183, 0, 0.13);
+  --color-aviso: #e0b34d;
+  --color-aviso-suave: rgba(224, 179, 77, 0.13);
+  --color-error: #f1707b;
+  --color-error-suave: rgba(241, 112, 123, 0.13);
+  color: var(--color-texto);
 }

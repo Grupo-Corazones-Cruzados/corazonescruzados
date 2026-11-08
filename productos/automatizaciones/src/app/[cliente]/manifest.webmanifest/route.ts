@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { ACENTO_GCC, esHexValido } from '@/lib/marca';
+import { ACENTO_GCC } from '@/lib/marca';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,12 +18,13 @@ export async function GET(_: Request, { params }: { params: Promise<{ cliente: s
   const { cliente } = await params;
   const inquilino = await prisma.inquilino.findUnique({
     where: { slug: cliente },
-    select: { nombre: true, colorAcento: true, tema: true },
+    select: { nombre: true },
   });
   if (!inquilino) return NextResponse.json({ error: 'No existe' }, { status: 404 });
 
-  const color = esHexValido(inquilino.colorAcento) ? inquilino.colorAcento : ACENTO_GCC;
-  const fondo = inquilino.tema === 'OSCURO' ? '#1b1a19' : '#faf9f8';
+  // Un solo tema en el producto (2026-11-08): el violeta del grupo sobre el fondo claro.
+  const color = ACENTO_GCC;
+  const fondo = '#faf9f8';
 
   return NextResponse.json(
     {
@@ -32,7 +33,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ cliente: s
       description: 'Automatizaciones de WhatsApp: conversaciones, envíos y el agente.',
       id: `/${cliente}/`,
       // La entrada decide sola: con sesión, a su puesto; sin ella, al acceso.
-      start_url: `/${cliente}`,
+      // Dentro del ámbito (`/<cliente>/`): fuera de él el navegador ignora `scope`.
+      start_url: `/${cliente}/panel`,
       scope: `/${cliente}/`,
       display: 'standalone',
       orientation: 'portrait',
@@ -40,6 +42,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ cliente: s
       theme_color: color,
       background_color: fondo,
       icons: [
+        { src: '/icono-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: '/icono-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
         { src: '/apple-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
         { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
       ],

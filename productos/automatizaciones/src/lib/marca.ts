@@ -93,3 +93,11 @@ export function tokensDeMarca(colorAcento: string, oscuro: boolean): TokensMarca
     '--color-acento-contraste': aHex(encima),
   };
 }
+
+/**
+ * La dirección del logo del inquilino. El subido (en la base, versionado) manda; si no hay,
+ * el antiguo por dirección (de antes de 2026-11-08), que ya no se puede escribir a mano.
+ */
+export function urlLogo(i: { slug: string; logoVersion: number; logoUrl: string | null }): string | null {
+  return i.logoVersion > 0 ? `/${i.slug}/logo?v=${i.logoVersion}` : i.logoUrl;
+}

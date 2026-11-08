@@ -263,7 +263,7 @@ export function PanelLateral({
         aria-modal="true"
         aria-label={titulo}
         className={cn(
-          'relative flex h-full w-full flex-col bg-tarjeta shadow-2xl border-l border-borde pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]',
+          'superficie-flotante relative flex h-full w-full flex-col bg-tarjeta shadow-2xl border-l border-borde pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]',
           'transition-transform duration-200 ease-out',
           visible ? 'translate-x-0' : 'translate-x-full',
           anchos,
@@ -319,7 +319,7 @@ export function Ventanita({
         aria-modal="true"
         aria-label={titulo}
         className={cn(
-          'relative w-full max-w-md rounded-md border border-borde bg-tarjeta shadow-2xl',
+          'superficie-flotante relative w-full max-w-md rounded-md border border-borde bg-tarjeta shadow-2xl',
           'transition-[opacity,transform] duration-200 ease-out',
           visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95',
         )}
@@ -500,13 +500,13 @@ export function RailFiltro({
           </select>
         </div>
       )}
-      <div className={cn('tarjeta hidden p-1.5 lg:block lg:w-[220px] shrink-0', className)}>
+      <div className={cn('tarjeta hidden p-1 lg:block lg:w-[200px] shrink-0', className)}>
         {titulo && (
           <p className="px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-tenue">
             {titulo}
           </p>
         )}
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col gap-0.5">
           {opciones.map((o) => {
             const sel = o.valor === activo;
             const Icono = o.icono;
@@ -515,10 +515,9 @@ export function RailFiltro({
                 key={o.valor}
                 onClick={() => alElegir(o.valor)}
                 className={cn(
-                  'flex w-full items-center gap-2.5 whitespace-nowrap rounded px-2.5 py-2 text-left text-[13px] transition-colors foco-visible',
-                  sel
-                    ? 'bg-acento-suave text-acento font-semibold border-l-2 border-acento'
-                    : 'text-texto hover:bg-realce border-l-2 border-transparent',
+                  // Compacto y sin borde a la izquierda, como el raíl de GCC World (2026-11-08).
+                  'flex h-8 w-full items-center gap-2.5 whitespace-nowrap rounded px-2.5 text-left text-[13px] transition-colors foco-visible',
+                  sel ? 'bg-acento-suave text-acento font-semibold' : 'text-texto hover:bg-realce',
                 )}
               >
                 {Icono && <Icono className={cn('h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-tenue')} />}
@@ -598,7 +597,7 @@ export function BurbujaDetalles({ texto, detalles = [], titulo = 'Detalles', cla
           <span role="dialog" aria-label={titulo}
             style={{ top: sitio.top, left: sitio.left, width: sitio.ancho, transformOrigin: `${sitio.flecha}px 0` }}
             className={cn(
-              'fixed z-50 block rounded-md border border-borde bg-tarjeta p-1.5 shadow-lg',
+              'superficie-flotante fixed z-50 block rounded-md border border-borde bg-tarjeta p-1.5 shadow-lg',
               'transition duration-200 ease-out',
               visible ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0',
             )}>

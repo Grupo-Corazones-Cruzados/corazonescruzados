@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { UserPlus, KeyRound, Copy, ShieldCheck, Link2, UserX, UserCheck, Save } from 'lucide-react';
 import { Boton, Campo, Entrada, Selector, Insignia, Tarjeta, PanelLateral, Tabla, PieAcciones } from '@/componentes/ui';
-import { CabeceraPagina, AccionesTarjeta } from '@/componentes/Navegacion';
+import { AccionesTarjeta } from '@/componentes/Navegacion';
 import { crearUsuario, cambiarActivo, regenerarClave } from '@/acciones/usuarios';
 
 export type UsuarioVista = {
@@ -22,6 +22,10 @@ export type UsuarioVista = {
 const ETIQUETA_ROL = { ADMIN: 'Administrador', OPERADOR: 'Operador', CONSULTA: 'Consulta' } as const;
 
 /**
+ * LOS USUARIOS DEL NEGOCIO — una sección de Configuración desde el 2026-11-08 (Fernando:
+ * «que desde allí se pueda administrar los usuarios de la organización y quitemos el módulo
+ * de usuarios»). Antes era la página «Cuentas».
+ *
  * LAS CUENTAS DEL CLIENTE. La pantalla que pidió Fernando el 2026-09-23 para que el
  * dueño del inquilino cree a su gente sin depender de GCC.
  *
@@ -34,19 +38,23 @@ const ETIQUETA_ROL = { ADMIN: 'Administrador', OPERADOR: 'Operador', CONSULTA: '
  * desde `/gcc`; aquí se ven, pero ni se crean ni se les toca la contraseña. Que se vean
  * importa: el administrador tiene que saber quién puede entrar a su empresa.
  */
-export default function PanelUsuarios({
+export default function SeccionUsuarios({
   slug,
   usuarios,
   tope,
   activas,
+  abierto,
+  setAbierto,
 }: {
   slug: string;
   usuarios: UsuarioVista[];
   tope: number | null;
   activas: number;
+  /** El panel de «Crear usuario» lo abre también la barra del teléfono (en Configuración). */
+  abierto: boolean;
+  setAbierto: (v: boolean) => void;
 }) {
   const router = useRouter();
-  const [abierto, setAbierto] = useState(false);
   const [enCurso, arranca] = useTransition();
   const [claveNueva, setClaveNueva] = useState<{ texto: string; de: string } | null>(null);
 
@@ -71,32 +79,9 @@ export default function PanelUsuarios({
   }
 
   return (
-    <>
-      {/*
-        «Crear cuenta» es la PRINCIPAL de la pantalla: en el teléfono va a la barra de abajo.
-        El tope es INFORMACIÓN, no un botón: va en `extra`, bajo el título, en todos los anchos.
-      */}
-      <CabeceraPagina
-        titulo="Cuentas"
-        descripcion="Quién entra a tu empresa y con qué permisos. Las cuentas que creas aquí son de tu empresa: su contraseña se genera al crearla, se enseña una sola vez y no da acceso a GCC World."
-        /* El tope se enseña SIEMPRE, no solo cuando estorba. */
-        extra={
-          <Insignia tono={lleno ? 'error' : 'neutro'}>
-            {tope === null ? `${activas} cuentas activas` : `${activas} de ${tope} cuentas activas`}
-          </Insignia>
-        }
-        acciones={
-          <Boton
-            icono={UserPlus}
-            onClick={() => setAbierto(true)}
-            disabled={lleno}
-            title={lleno ? `Tu plan permite ${tope} cuentas activas y ya tienes ${activas}.` : undefined}
-          >
-            Crear cuenta
-          </Boton>
-        }
-      />
-      <div className="px-4 py-5 sm:px-6">
+      <div className="space-y-3">
+      {/* «Crear usuario» es la principal: arriba a la derecha de la tarjeta en escritorio y en la
+          barra de abajo en el teléfono (la pone Configuración). El tope es información. */}
 
       {claveNueva && (
         <Tarjeta className="mb-3 border-acento p-4">
@@ -122,10 +107,27 @@ export default function PanelUsuarios({
 
       {/* Registros en TABLA (galería en el teléfono) con el recuento al pie (reglas 2026-10-29/30). */}
       <Tarjeta className="overflow-hidden">
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <h2 className="hidden text-[14px] font-semibold text-texto lg:block">Usuarios</h2>
+            <Insignia tono={lleno ? 'error' : 'neutro'}>
+              {tope === null ? `${activas} activos` : `${activas} de ${tope} activos`}
+            </Insignia>
+          </div>
+          <Boton
+            icono={UserPlus}
+            className="hidden lg:inline-flex"
+            onClick={() => setAbierto(true)}
+            disabled={lleno}
+            title={lleno ? `Tu plan permite ${tope} usuarios activos y ya tienes ${activas}.` : undefined}
+          >
+            Crear usuario
+          </Boton>
+        </div>
         <Tabla
           filas={usuarios}
           claveFila={(u) => u.id}
-          recuento={`${usuarios.length} ${usuarios.length === 1 ? 'cuenta' : 'cuentas'} · ${activas} ${activas === 1 ? 'activa' : 'activas'}`}
+          recuento={`${usuarios.length} ${usuarios.length === 1 ? 'usuario' : 'usuarios'} · ${activas} ${activas === 1 ? 'activo' : 'activos'}`}
           columnas={[
             { clave: 'nombre', titulo: 'Persona', ancho: '30%', render: (u) => (
               <div className="min-w-0">
@@ -191,11 +193,11 @@ export default function PanelUsuarios({
       <PanelLateral
         abierto={abierto}
         alCerrar={() => setAbierto(false)}
-        titulo="Crear una cuenta"
+        titulo="Crear un usuario"
         pie={
           <PieAcciones>
             <Boton variante="secundario" type="button" onClick={() => setAbierto(false)} disabled={enCurso}>Cancelar</Boton>
-            <Boton form="form-cuenta" type="submit" icono={Save} disabled={enCurso}>{enCurso ? 'Creando…' : 'Crear cuenta'}</Boton>
+            <Boton form="form-cuenta" type="submit" icono={Save} disabled={enCurso}>{enCurso ? 'Creando…' : 'Crear usuario'}</Boton>
           </PieAcciones>
         }
       >
@@ -216,6 +218,5 @@ export default function PanelUsuarios({
         </form>
       </PanelLateral>
       </div>
-    </>
   );
 }

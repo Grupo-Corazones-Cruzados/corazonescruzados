@@ -9,7 +9,6 @@ import {
   MessagesSquare,
   SlidersHorizontal,
   Send,
-  Users,
   Settings,
   LogOut,
   Ellipsis,
@@ -75,9 +74,11 @@ const PRINCIPAL: Item[] = [
  *
  * Y «Automatizaciones» tampoco: dentro del producto sobra, porque el producto ES eso.
  */
+// «Cuentas» ya no es un destino: los usuarios se administran en Configuración ▸ Usuarios
+// (Fernando, 2026-11-08: «que desde allí se pueda administrar los usuarios de la organización
+// y quitemos el módulo de usuarios»).
 const ADMINISTRACION: Item[] = [
-  { ruta: 'usuarios', etiqueta: 'Cuentas', icono: Users, tambien: [] },
-  { ruta: 'configuracion', etiqueta: 'Configuración', icono: Settings, tambien: ['suscripcion'] },
+  { ruta: 'configuracion', etiqueta: 'Configuración', icono: Settings, tambien: ['suscripcion', 'usuarios'] },
 ];
 
 const estaActivo = (ruta: string, slug: string, item: Item) =>
@@ -141,9 +142,9 @@ function ContenidoMenu({ slug, cliente, logoUrl, usuario, rol, montados, colapsa
         className={cn(
           'relative flex items-center gap-3 rounded-md h-9 text-[13px] transition-colors foco-visible',
           colapsado ? 'justify-center px-0' : 'px-3',
-          activo
-            ? 'bg-acento-suave font-semibold text-acento border-l-2 border-acento'
-            : 'border-l-2 border-transparent text-texto hover:bg-realce',
+          // Sin borde a la izquierda (Fernando, 2026-11-08: «quitar esa sombra que tiene cada
+          // opción»). Lo elegido se marca solo con el fondo y el color, como en GCC World.
+          activo ? 'bg-acento-suave font-semibold text-acento' : 'text-texto hover:bg-realce',
         )}
       >
         <item.icono className={cn('h-[18px] w-[18px] shrink-0', activo ? 'text-acento' : 'text-tenue')} />
@@ -323,7 +324,7 @@ export function BarraInferior(props: Props) {
             // Pulsar la pantalla en la que ya se está no cambia la ruta: se cierra igual.
             onClick={(e) => (e.target as HTMLElement).closest('a') && setAbierto(false)}
             className={cn(
-              'absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-borde bg-tarjeta pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-2xl',
+              'superficie-flotante absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-borde bg-tarjeta pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-2xl',
               'transition-transform duration-200 ease-out',
               visible ? 'translate-x-0' : '-translate-x-full',
             )}
@@ -512,7 +513,7 @@ function MenuMas({ acciones }: { acciones: AccionMenu[] }) {
           <div className="fixed inset-0 z-40" onClick={() => setAbierto(false)} />
           <div role="menu"
             className={cn(
-              'absolute right-0 top-full z-50 mt-1.5 w-60 origin-top-right overflow-hidden rounded-md border border-borde bg-tarjeta py-1 shadow-lg',
+              'superficie-flotante absolute right-0 top-full z-50 mt-1.5 w-60 origin-top-right overflow-hidden rounded-md border border-borde bg-tarjeta py-1 shadow-lg',
               'transition duration-200 ease-out',
               visible ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0',
             )}>

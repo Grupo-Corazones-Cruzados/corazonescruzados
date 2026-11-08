@@ -1,33 +1,20 @@
 import type { ReactNode, CSSProperties } from 'react';
-import { tokensDeMarca, neutrosDeTema } from '@/lib/marca';
+import { ACENTO_GCC, tokensDeMarca, neutrosDeTema } from '@/lib/marca';
 import { cn } from '@/lib/utils';
 
 /**
- * Envuelve la aplicación con la marca del inquilino: su color pasa a ser el acento
- * y su tema decide los neutros. Los componentes no se enteran — siguen usando
- * `bg-acento` y `text-tenue` como siempre.
+ * Envuelve la aplicación con el TEMA ÚNICO del producto: el Mixto de GCC World con el
+ * violeta del grupo (Fernando, 2026-11-08). El cliente ya NO elige color ni tema; las
+ * columnas `color_acento` y `tema` del inquilino quedan en la base sin uso.
  */
-export function AplicaMarca({
-  colorAcento,
-  tema,
-  className,
-  children,
-}: {
-  colorAcento: string;
-  tema: 'CLARO' | 'OSCURO';
-  className?: string;
-  children: ReactNode;
-}) {
-  const oscuro = tema === 'OSCURO';
-  const n = neutrosDeTema(oscuro);
+export function AplicaMarca({ className, children }: { className?: string; children: ReactNode }) {
+  const n = neutrosDeTema(false);
   return (
     <>
-      {/* `color-scheme` además hace que los calendarios y las barras de
-          desplazamiento nativas sigan el tema del inquilino. */}
       <style>{`html,body{background:${n.fondo};color:${n.texto};color-scheme:${n.esquema}}`}</style>
       <div
-        className={cn(oscuro && 'oscuro', 'min-h-[calc(100dvh-env(safe-area-inset-top))] bg-fondo text-texto', className)}
-        style={tokensDeMarca(colorAcento, oscuro) as CSSProperties}
+        className={cn('tema-mixto min-h-[calc(100dvh-env(safe-area-inset-top))] bg-fondo text-texto', className)}
+        style={tokensDeMarca(ACENTO_GCC, false) as CSSProperties}
       >
         {children}
       </div>

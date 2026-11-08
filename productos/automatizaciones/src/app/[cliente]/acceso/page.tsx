@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { leerSesionUsuario } from '@/lib/sesion';
 import { AplicaMarca, LogoHotel } from '@/componentes/Marca';
+import { urlLogo } from '@/lib/marca';
 import FormularioAcceso from './FormularioAcceso';
 
 export const dynamic = 'force-dynamic';
@@ -26,13 +27,11 @@ export default async function PaginaAcceso({ params }: { params: Promise<{ clien
 
   return (
     <AplicaMarca
-      colorAcento={inquilino.colorAcento}
-      tema={inquilino.tema}
       className="flex items-center justify-center px-4 py-10"
     >
       <div className="tarjeta w-full max-w-sm p-8">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <LogoHotel nombre={inquilino.nombre} logoUrl={inquilino.logoUrl} tamano={52} />
+          <LogoHotel nombre={inquilino.nombre} logoUrl={urlLogo(inquilino)} tamano={52} />
           <div>
             <h1 className="text-[17px] font-semibold text-texto">{inquilino.nombre}</h1>
             <p className="text-[12px] text-tenue">Automatizaciones de WhatsApp</p>

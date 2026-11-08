@@ -22,7 +22,7 @@ export default async function PaginaSuscripcion({ params }: { params: Promise<{ 
   const ctx = await exigirSesionDelCliente(cliente);
 
   return (
-    <AplicaMarca colorAcento={ctx.inquilino.colorAcento} tema={ctx.inquilino.tema}>
+    <AplicaMarca>
       <div className="mx-auto max-w-xl px-4 py-8 sm:px-6 sm:py-12">
         <h1 className="mb-1 text-[19px] font-semibold text-texto sm:text-[22px]">Suscripción</h1>
         <p className="mb-5 text-[13px] text-tenue">{ctx.inquilino.nombre}</p>

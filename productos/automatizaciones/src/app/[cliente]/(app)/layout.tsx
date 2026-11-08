@@ -1,5 +1,6 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { AplicaMarca } from '@/componentes/Marca';
+import { urlLogo } from '@/lib/marca';
 import { BarraLateral, BarraInferior, HuecoBarraAcciones } from '@/componentes/Navegacion';
 import { AvisoEscaparate } from '@/componentes/AvisoEscaparate';
 
@@ -21,11 +22,11 @@ export default async function LayoutApp({
   const { inquilino, sesion, montados } = await exigirContexto(cliente);
 
   return (
-    <AplicaMarca colorAcento={inquilino.colorAcento} tema={inquilino.tema}>
+    <AplicaMarca>
       <BarraLateral
         slug={cliente}
         cliente={inquilino.nombre}
-        logoUrl={inquilino.logoUrl}
+        logoUrl={urlLogo(inquilino)}
         usuario={sesion.nombre}
         rol={sesion.rol}
         montados={montados}
@@ -65,7 +66,7 @@ export default async function LayoutApp({
       <BarraInferior
         slug={cliente}
         cliente={inquilino.nombre}
-        logoUrl={inquilino.logoUrl}
+        logoUrl={urlLogo(inquilino)}
         usuario={sesion.nombre}
         rol={sesion.rol}
         montados={montados}

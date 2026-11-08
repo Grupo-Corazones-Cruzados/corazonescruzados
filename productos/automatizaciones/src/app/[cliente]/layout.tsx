@@ -1,17 +1,18 @@
 import type { Metadata, Viewport } from 'next';
 import { prisma } from '@/lib/db';
-import { ACENTO_GCC, esHexValido } from '@/lib/marca';
+import { ACENTO_GCC } from '@/lib/marca';
 
 type Params = Promise<{ cliente: string }>;
 
 async function marcaDe(cliente: string) {
   const inq = await prisma.inquilino.findUnique({
     where: { slug: cliente },
-    select: { nombre: true, colorAcento: true },
+    select: { nombre: true },
   });
   return {
     nombre: inq?.nombre ?? 'Automatizaciones de WhatsApp',
-    color: inq && esHexValido(inq.colorAcento) ? inq.colorAcento : ACENTO_GCC,
+    // Color fijo del grupo: el producto tiene un solo tema (2026-11-08).
+    color: ACENTO_GCC,
   };
 }
 

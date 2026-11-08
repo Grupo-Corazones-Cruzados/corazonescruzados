@@ -5,51 +5,98 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura, contextoApi } from '@/lib/inquilino';
-import { esHexValido } from '@/lib/marca';
-import { subirImagen } from '@/lib/imagenes';
 import { verificarCuentaGcc } from '@/lib/cuentaGcc';
 
 export type Resultado = { ok: true; mensaje?: string; url?: string } | { ok: false; error: string };
 
-const Marca = z.object({
-  nombre: z.string().trim().min(2, 'Escribe el nombre.').max(80),
-  colorAcento: z.string().trim(),
-  tema: z.enum(['CLARO', 'OSCURO']),
-  logoUrl: z.string().trim().url('La dirección del logo no es válida.').optional().or(z.literal('')),
+const opcional = (max: number) => z.string().trim().max(max).optional().transform((v) => v || null);
+
+/**
+ * CONFIGURACIÓN ▸ NEGOCIO (Fernando, 2026-11-08). Lo que antes era «Marca» sin el color ni
+ * el tema —el producto tiene un solo tema—: el nombre, la zona horaria, los datos de
+ * facturación y los de contacto.
+ */
+const Negocio = z.object({
+  nombre: z.string().trim().min(2, 'Escribe el nombre del negocio.').max(80),
   zonaHoraria: z.string().trim().min(3),
+  razonSocial: opcional(160),
+  identificacion: z.string().trim().max(20).optional()
+    .transform((v) => (v ? v.replace(/\s/g, '') : null))
+    .refine((v) => v === null || /^[0-9A-Za-z-]{5,20}$/.test(v), 'La identificación solo lleva números, letras o guiones.'),
+  direccion: opcional(240),
+  correoFacturacion: z.string().trim().max(160).optional()
+    .transform((v) => v || null)
+    .refine((v) => v === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'El correo de facturación no es válido.'),
+  contactoNombre: opcional(120),
+  contactoEmail: z.string().trim().max(160).optional()
+    .transform((v) => v || null)
+    .refine((v) => v === null || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), 'El correo de contacto no es válido.'),
+  contactoTelefono: opcional(40),
 });
 
-export async function guardarMarca(slug: string, datos: FormData): Promise<Resultado> {
+export async function guardarNegocio(slug: string, datos: FormData): Promise<Resultado> {
   const permiso = await contextoEscritura(slug, 'ADMIN');
   if (!permiso.ok) return { ok: false, error: permiso.error };
 
-  const leido = Marca.safeParse(Object.fromEntries(datos));
+  const leido = Negocio.safeParse(Object.fromEntries(datos));
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
-  const d = leido.data;
-  if (!esHexValido(d.colorAcento))
-    return { ok: false, error: 'El color tiene que ser un hexadecimal como #4B2D8E.' };
 
-  await prisma.inquilino.update({
-    where: { id: permiso.ctx.inquilino.id },
-    data: {
-      nombre: d.nombre,
-      colorAcento: d.colorAcento.toUpperCase(),
-      tema: d.tema,
-      logoUrl: d.logoUrl || null,
-      zonaHoraria: d.zonaHoraria,
-    },
-  });
-  // 'layout' porque la marca vive en el armazón: el menú y el papel cambian de color.
+  await prisma.inquilino.update({ where: { id: permiso.ctx.inquilino.id }, data: leido.data });
+  // 'layout': el nombre vive en el armazón (menú, título).
   revalidatePath(`/${slug}`, 'layout');
-  return { ok: true, mensaje: 'Marca guardada.' };
+  return { ok: true, mensaje: 'Datos del negocio guardados.' };
 }
 
+/** PNG, JPEG o WebP, reconocidos por sus primeros bytes (no por lo que diga el navegador). */
+function tipoDeImagen(b: Uint8Array): string | null {
+  if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return 'image/png';
+  if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg';
+  if (String.fromCharCode(...b.slice(0, 4)) === 'RIFF' && String.fromCharCode(...b.slice(8, 12)) === 'WEBP') return 'image/webp';
+  return null;
+}
+
+const MAX_LOGO = 512 * 1024;
+
+/**
+ * EL LOGO SE SUBE COMO ARCHIVO, NUNCA COMO DIRECCIÓN (Fernando, 2026-11-08). Se guarda en la
+ * base (tabla `logos`) y se sirve desde `/<cliente>/logo?v=N`. SVG no: un SVG puede llevar
+ * código, y se serviría desde nuestro propio dominio.
+ */
 export async function subirLogo(slug: string, datos: FormData): Promise<Resultado> {
   const permiso = await contextoEscritura(slug, 'ADMIN');
   if (!permiso.ok) return { ok: false, error: permiso.error };
   const archivo = datos.get('archivo');
   if (!(archivo instanceof File) || !archivo.size) return { ok: false, error: 'Elige una imagen.' };
-  return subirImagen(archivo, `${permiso.ctx.inquilino.slug}/marca`);
+  if (archivo.size > MAX_LOGO) return { ok: false, error: 'El logo pesa más de 512 KB. Usa una imagen más pequeña.' };
+
+  const bytes = new Uint8Array(await archivo.arrayBuffer());
+  const tipo = tipoDeImagen(bytes);
+  if (!tipo) return { ok: false, error: 'El logo tiene que ser PNG, JPG o WebP.' };
+
+  const id = permiso.ctx.inquilino.id;
+  await prisma.$transaction([
+    prisma.logo.upsert({
+      where: { inquilinoId: id },
+      create: { inquilinoId: id, datos: Buffer.from(bytes), tipo },
+      update: { datos: Buffer.from(bytes), tipo, actualizado: new Date() },
+    }),
+    // El antiguo logo por dirección deja de usarse en cuanto hay uno subido.
+    prisma.inquilino.update({ where: { id }, data: { logoVersion: { increment: 1 }, logoUrl: null } }),
+  ]);
+  revalidatePath(`/${slug}`, 'layout');
+  return { ok: true, mensaje: 'Logo subido.' };
+}
+
+export async function quitarLogo(slug: string): Promise<Resultado> {
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const id = permiso.ctx.inquilino.id;
+  await prisma.$transaction([
+    prisma.logo.deleteMany({ where: { inquilinoId: id } }),
+    prisma.inquilino.update({ where: { id }, data: { logoVersion: 0, logoUrl: null } }),
+  ]);
+  revalidatePath(`/${slug}`, 'layout');
+  return { ok: true, mensaje: 'Logo quitado.' };
 }
 
 /**
