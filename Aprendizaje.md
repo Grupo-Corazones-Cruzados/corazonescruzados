@@ -12052,3 +12052,70 @@ o dejarlos). **Rol:** arquitecto de plataforma.
   streaming). 🔎 en curso.
 - P2 ¿La pasarela de Next (rewrites) conserva el host original y aguanta streaming y subidas grandes? ❓ probar.
 - P3 Orden: Reservas primero como modelo, luego los demás; los dominios se borran al final. ❓ confirmar con el inventario.
+
+# CÓMO PUBLICAR EL JUEGO DE AVENTURA EN WEB Y EN LA APP DE TIENDAS (2026-11-08) · 70 %
+
+**Objetivo (Fernando, 2026-11-08):** antes de desarrollar Aventura, aprender de cómo se llevaron los
+Zelda al navegador y decidir infraestructura, arquitectura y stack para que el MISMO juego funcione
+en la web y dentro de la app GCC World de App Store/Play. Estilo de referencia: **Guardian Tales**.
+**Rol:** arquitecto de motores de juego multiplataforma (web/WASM + móvil).
+
+## Fuentes consultadas (2026-11-08)
+- `github.com/sp00nznet/linksawakening-portable`: Link's Awakening DX **recompilado de forma estática**
+  a C (gb-recompiled) → SDL2 + Emscripten → wasm de ~14 MB; «carga, pinta y suena» (prueba del
+  2026-10-20). El usuario pone su ROM: el código y los datos van separados.
+- `github.com/snesrev/zelda3`: A Link to the Past reescrito a C (~80 kLOC) desde el desensamblado, con
+  el PPU y el DSP de LakeSnes y los datos aparte. Es nativo; no tiene versión oficial para navegador.
+- `NotRexed/SkyboundTotk` (+ Wasm.rip): TotK **recompilado** de ARM64 a C con render **WebGPU** (wgpu).
+  Su autor dice que corre a ~60 fps en el prólogo dentro del navegador. Es experimental y no se ha
+  publicado.
+- `velzie.rip/blog/celeste-wasm` (Celeste/Terraria): descompilan el C#, lo vuelven a compilar con
+  .NET WASM y Emscripten, usan WebGL2 y WASMFS, hilos en un worker y AOT. Sin AOT iban a ~2 fps.
+- Documentación de Godot (exportar para la web): un solo hilo es el valor por defecto y funciona en
+  iOS/macOS. La web solo admite el render Compatibility (WebGL2). **El nativo de Android/iOS siempre
+  rinde mucho mejor que el WASM.** C# no exporta a la web.
+- Apple 4.7 (cambio de nov-2025): los minijuegos HTML5 se tratan como código nativo. Hay rechazos
+  cuando el juego HTML5 es **el propósito principal** de la app; dentro de una app más amplia se acepta.
+- Guardian Tales: Unity (Kong Studios), 2D cenital chibi con puzles.
+
+## Preguntas y respuestas
+### P1 — ¿Qué técnica usaron los Zelda en el navegador? · ✅ Resuelta
+Ninguno es un juego «web». Todos son **código C/C++/C# compilado a WebAssembly + WebGL/WebGPU, con
+los datos aparte del código**. Es lo mismo que hace ya el export web de Godot. Lo que sí sirve de
+ellos: (1) separar código y datos y descargar los datos por partes; (2) un solo hilo para no depender
+de COOP/COEP; (3) la memoria y el audio en Safari de iOS son el punto débil; (4) WebGPU solo hace
+falta para 3D pesado. Ninguno pasó por una tienda.
+### P2 — ¿Cambiar de motor? · ✅ Resuelta (recomendación)
+No. Godot 4.7 cubre de sobra un 2D estilo Guardian Tales (TileMapLayer, marioneta por piezas ya
+hecha), exporta a la web y a iOS/Android nativos desde el mismo proyecto, y Fernando ya aprende con él.
+Unity (lo que usa Guardian Tales) pesa más en la web y obliga a usar C#. Phaser obligaría a rehacer todo.
+### P3 — ¿Web dentro del WebView o nativo en la app de tiendas? · 🔎 Investigando
+Recomendación por fases. **Fase A:** el export web actual dentro de la app (lo que ya está en
+producción, un solo hilo, gl_compatibility). Se le pone un presupuesto medido: 60 fps en un Android
+de gama media y en un iPhone, memoria < ~400 MB y carga inicial < 25 MB. **Fase B (si no llega):**
+Godot nativo embebido en la app como pantalla propia (plugin de Capacitor). Hay que verificar el
+estado de LibGodot / «Godot como biblioteca» en 4.7 antes de comprometerse.
+### P4 — ¿Cómo habla el juego con la plataforma? · ✅ Resuelta (recomendación)
+Por la API de Next con un **token de juego corto** (JWT de `jose`) que la app entrega al arrancar.
+Así funciona igual en la web, en el WebView y en nativo, y deja de depender de que la cookie viaje
+(hoy la hoja del personaje se inyecta con `copyToFS`). El servidor es la fuente de verdad del
+guardado, de los desbloqueos y de la **moneda**: la moneda se canjea en el marketplace, así que nunca
+se decide en el cliente. `user://` (IndexedDB en la web) solo sirve de caché.
+### P5 — ¿Desde dónde se sirve el juego? · ✅ Resuelta (recomendación)
+Hoy se sirve desde `public/game` dentro de la imagen de Next (54 MB). Eso ata cada push del juego a
+un despliegue de la plataforma y causó el «100 % congelado» cuando se publicó mientras alguien
+cargaba. Propuesta: archivos con nombre por hash (`index.<hash>.pck`) en almacenamiento de objetos
+con CDN (Cloudflare R2), `Cache-Control: immutable`, y un `manifest.json` corto que dice qué versión
+toca. **Un pck base pequeño + un pck por zona** (`ProjectSettings.load_resource_pack`) que se baja al
+entrar en la zona.
+### P6 — ¿Hace falta servidor en tiempo real (cooperativo/arena como Guardian Tales)? · ⏸ Fernando
+Si hay multijugador en vivo, se añade un servicio aparte (WebSocket) en Railway. Si no, basta HTTP.
+### P7 — ¿Debe funcionar sin conexión? · ⏸ Fernando
+Decide si los pck van dentro de la app de tiendas o se descargan.
+### P8 — ¿La primera versión de tiendas sale con Aventura? · ⏸ Fernando (es la P6 de la sección de apps)
+
+## No hacer
+- Emular ni recompilar: eso sirve para portar un juego que ya existe, no para crear uno nuevo.
+- Exportar con hilos: obliga a COOP/COEP, que rompe iframes, pagos y ventanas emergentes.
+- WebGPU / Forward+: la web de Godot no los admite y un 2D no los necesita.
+- C# en Godot: no exporta a la web.
