@@ -68,8 +68,11 @@ export default function Mapa4P({ sistemas: cargados, rutaActual }: { sistemas: S
               return (
                 <button key={clave} type="button" disabled={n === 0} onClick={() => setElegida(clave)}
                   title={`${cellName(piso.key, paso.key)} · ${piso.label} · ${paso.label}`}
+                  // La elegida, con el degradado de las fichas de `Cifra`: dentro del raíl del cajón el
+                  // acento es un rosa claro y el blanco encima no se leía (Fernando, 2026-11-08).
+                  style={activa ? { backgroundImage: 'var(--degradado-icono)' } : undefined}
                   className={`min-h-[72px] rounded-lg border p-1.5 flex flex-col justify-between text-left transition-colors ${
-                    activa ? 'bg-accent border-accent text-white'
+                    activa ? 'bg-accent border-transparent text-white'
                       : n > 0 ? 'bg-digi-card border-accent/40 text-digi-text hover:border-accent'
                         : 'bg-digi-card/40 border-digi-border text-digi-muted opacity-50'}`}>
                   <span className="text-[10.5px] font-semibold leading-tight line-clamp-3 hyphens-auto">{cellName(piso.key, paso.key)}</span>
