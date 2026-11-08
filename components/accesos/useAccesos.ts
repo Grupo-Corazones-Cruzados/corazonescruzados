@@ -9,15 +9,19 @@ import { accessRoleOf } from '@/lib/dashboard/access';
 import { herramientasPara, type Herramienta } from '@/lib/herramientas/catalogo';
 import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 import { markGameEntry } from '@/lib/world/gameEntry';
-import type { Plataforma } from '@/lib/productos/plataformas';
+import type { AccesoProducto } from '@/lib/productos/tipos';
 import type { TemaId } from '@/lib/temas';
 
 export type AppAcceso = { id: string; titulo: string; Icono: LucideIcon; tema: TemaId; abrir: () => void };
 
-/** Cada producto sirve su icono de app en `/apple-icon.png` (180 px), el mismo del teléfono. */
-export function iconoDeProducto(url: string): string | null {
-  try { return `${new URL(url).origin}/apple-icon.png`; } catch { return null; }
-}
+/**
+ * El icono de app de cada producto, servido desde la PROPIA plataforma (`public/productos-iconos/`,
+ * 96 px): pedirlo a cada producto (`<producto>.grupocc.org/apple-icon.png`) hacía esperar a cinco
+ * servicios distintos y a veces llegaba tarde (Fernando, 2026-11-08). Son copias del
+ * `src/app/apple-icon.png` de cada producto: si uno cambia de icono, se vuelve a copiar
+ * (`sips -Z 96 productos/<p>/src/app/apple-icon.png --out public/productos-iconos/<p>.png`).
+ */
+export const iconoDeProducto = (producto: string) => `/productos-iconos/${producto}.png`;
 
 /**
  * LO QUE OFRECE ACCESOS a esta cuenta en esta app: las apps (Progreso, Aventura y, en GCC Miembros,
@@ -30,17 +34,26 @@ export function useAccesos() {
   const rol = accessRoleOf(user);
   const esEquipo = rol === 'admin' || rol === 'member';
   const [app, setApp] = useState<AppDeTelefono | null>(null);
-  const [productos, setProductos] = useState<Plataforma[] | null>(null);
+  const [productos, setProductos] = useState<AccesoProducto[] | null>(null);
   const [entrandoAlJuego, setEntrandoAlJuego] = useState(false);
   const rutasEspacio = useRutasEspacio();
 
   useEffect(() => { setApp(appDeTelefono()); }, []);
+  // La última lista conocida se pinta al instante y la del servidor la reemplaza al llegar: los
+  // productos de una cuenta casi nunca cambian. `/api/productos/accesos` es la consulta ligera (sin
+  // portadas ni soluciones, que el menú no usa).
   useEffect(() => {
     if (!user) return;
-    fetch('/api/plataformas')
-      .then((r) => (r.ok ? r.json() : { plataformas: [] }))
-      .then((j) => setProductos(j.plataformas ?? []))
-      .catch(() => setProductos([]));
+    const llave = `gcc_accesos_productos:${user.id}`;
+    try { const g = localStorage.getItem(llave); if (g) setProductos(JSON.parse(g)); } catch { /* sin caché */ }
+    fetch('/api/productos/accesos')
+      .then((r) => (r.ok ? r.json() : { data: {} }))
+      .then((j) => {
+        const lista = Object.values(j.data ?? {}).flat() as AccesoProducto[];
+        setProductos(lista);
+        try { localStorage.setItem(llave, JSON.stringify(lista)); } catch { /* da igual */ }
+      })
+      .catch(() => setProductos((p) => p ?? []));
   }, [user]);
 
   /** Con personaje y cuenta en regla se entra directo; si no, la portada lleva por la intro. */

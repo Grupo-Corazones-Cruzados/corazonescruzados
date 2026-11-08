@@ -82,7 +82,7 @@ export default function MenuAccesos() {
               {productos!.map((p) => (
                 <button key={p.url} type="button" onClick={() => abrirProducto(p.url)} title={estrecho ? p.productoNombre : undefined} className={fila}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={iconoDeProducto(p.url) ?? ''} alt="" className="w-6 h-6 shrink-0 rounded-md" />
+                  <img src={iconoDeProducto(p.producto)} alt="" width={24} height={24} decoding="async" className="w-6 h-6 shrink-0 rounded-md" />
                   {!estrecho && <span className="truncate">{p.productoNombre}</span>}
                 </button>
               ))}

@@ -58,7 +58,8 @@ export const DIAS_DE_GRACIA = 30;
 export async function accesosDelUsuario(email: string | null | undefined): Promise<Record<string, AccesoProducto[]>> {
   const salida: Record<string, AccesoProducto[]> = {};
   if (!email) return salida;
-  for (const p of PRODUCTOS) {
+  // Los cinco productos a la vez, no uno tras otro: el menú de Accesos espera esta respuesta (2026-11-08).
+  const porProducto = await Promise.all(PRODUCTOS.map(async (p): Promise<[string, AccesoProducto[]] | null> => {
     try {
       const pagadoHasta = 'gccSuscripcion' in p
         ? `CASE WHEN i.gcc_suscripcion_id IS NULL THEN s.pagado_hasta ELSE ${PAGADO_HASTA_GCC} END`
@@ -76,10 +77,10 @@ export async function accesosDelUsuario(email: string | null | undefined): Promi
           ORDER BY nombre`,
         [email, DIAS_DE_GRACIA],
       );
-      if (!rows.length) continue;
+      if (!rows.length) return null;
       const hoy = new Date();
       hoy.setUTCHours(0, 0, 0, 0);
-      salida[anfitrionDe(p.url)] = rows.map((r: { slug: string; nombre: string; cortesia: boolean; pagado_hasta: Date | null }) => {
+      return [anfitrionDe(p.url), rows.map((r: { slug: string; nombre: string; cortesia: boolean; pagado_hasta: Date | null }) => {
         const pagado = r.pagado_hasta ? new Date(r.pagado_hasta) : null;
         const retraso = r.cortesia || !pagado ? null : Math.max(0, Math.round((hoy.getTime() - pagado.getTime()) / 86_400_000));
         return {
@@ -92,11 +93,13 @@ export async function accesosDelUsuario(email: string | null | undefined): Promi
           pagadoHasta: pagado ? pagado.toISOString().slice(0, 10) : null,
           diasDeRetraso: retraso,
         };
-      });
+      })];
     } catch (e: any) {
       // Un esquema que no existe (base de desarrollo) no rompe el marketplace.
       console.error(`[productos/accesos] ${p.esquema}:`, e?.message);
+      return null;
     }
-  }
+  }));
+  for (const par of porProducto) if (par) salida[par[0]] = par[1];
   return salida;
 }
