@@ -109,10 +109,11 @@ export default async function PaginaPanel({
           </span>
         </div>
       )}
-      <div className="px-4 py-5 sm:px-6">
+      {/* Alto completo: la última tarjeta se alarga hasta el pie (regla del panel, 2026-11-08). */}
+      <div className="flex flex-1 flex-col px-4 py-5 sm:px-6">
       {/* Un inquilino recién creado no tiene nada montado: el primer paso es conectar el número. */}
       {!conAgente && (
-        <Tarjeta>
+        <Tarjeta className="flex flex-1 flex-col justify-center">
           <EstadoVacio
             icono={Plug}
             titulo="Conecta tu número de WhatsApp para empezar"
@@ -176,7 +177,7 @@ export default async function PaginaPanel({
       {conAgente && (
       <>
       <h2 className="mb-2 mt-6 text-[15px] font-semibold text-texto">Últimas conversaciones</h2>
-      <Tarjeta className="divide-y divide-borde">
+      <Tarjeta className="flex-1 divide-y divide-borde">
         {recientes.length === 0 && (
           <p className="px-4 py-6 text-center text-[13px] text-tenue">Todavía no hay conversaciones.</p>
         )}

@@ -103,7 +103,8 @@ export default function Envios({
         Y desde `xl` las plantillas y el historial van EN PARALELO, que es como se usan:
         se mira qué plantilla está aprobada y, al lado, cómo fue el último envío.
       */}
-      <div className="space-y-4 px-4 py-5 sm:px-6">
+      {/* Alto completo: la fila de abajo se alarga hasta el pie (regla del panel, 2026-11-08). */}
+      <div className="flex flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
         {/* ── Lanzar un envío ───────────────────────────────────────────────── */}
         {puedeOperar && (
           <Tarjeta className="p-4 sm:p-5">
@@ -161,7 +162,7 @@ export default function Envios({
           </Tarjeta>
         )}
 
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid flex-1 gap-4 xl:grid-cols-2">
         {/* ── Las plantillas y su estado: TABLA con recuento al pie ─────────────── */}
         <Tarjeta className="overflow-hidden">
           <h2 className="px-4 pt-4 pb-2 text-[14px] font-semibold text-texto">Tus plantillas</h2>
