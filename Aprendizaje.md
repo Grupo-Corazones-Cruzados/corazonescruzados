@@ -12034,7 +12034,7 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 - ✅ **Probado en local (2026-11-07):** `/grupo` conectado (la comprobación contra Meta devolvió el token del número de prueba vencido: dato real) y `/demo` sin número, claro/oscuro, 1280 y 390 px, `scrollWidth` = ancho, sin errores de consola. No se probó un alta real: necesita un cliente con su teléfono.
 
 
-# PRODUCTOS SIN SUBDOMINIO (2026-11-08) · 80 %
+# PRODUCTOS SIN SUBDOMINIO (2026-11-08) · 92 %
 **Objetivo:** que los cinco productos se sirvan desde `app.grupocc.org` y desaparezcan sus subdominios, en Railway y en
 Cloudflare. **Decisión de Fernando (2026-11-08):** «eliminarlos de verdad» (descartadas: ocultarlos con redirección,
 o dejarlos). **Rol:** arquitecto de plataforma.
@@ -12206,3 +12206,18 @@ Fernando pidió solo guardar lo aprendido; no se construye nada todavía. Fuente
   la rejilla.
 - **Riesgo:** el repo de GitHub es **PÚBLICO**: todo el arte del juego que se suba ahí queda a la
   vista de cualquiera. Proponer que los originales vayan a un repo o almacenamiento privado.
+
+## Automatizaciones migrado (2026-11-08) — los cinco bajo /p/
+- `basePath`, conBase en entrada, manifiesto, logo (`lib/marca.ts`), foto y descargas. **Meta no sigue
+  redirecciones**: en el subdominio viejo, `/api/agente/webhook` se REENVÍA (rewrite externo de servidor a servidor,
+  cuerpo intacto para la firma) a `app.grupocc.org/p/automatizaciones/api/agente/webhook`; Next no admite un rewrite
+  interno fuera del basePath. Comprobado: el webhook viejo llega al producto (403 sin firma, no 307) y el nuevo pasa la
+  verificación de Meta con el token real (devuelve el reto).
+- Worker `APP_URL` y cron `AUTOMATIZACIONES_URL` = `https://automatizaciones-production-6784.up.railway.app/p/automatizaciones`;
+  `APP_URL` del producto = `https://app.grupocc.org/p/automatizaciones`. Una variable cambiada por la CLI no siempre
+  redespliega: el worker hubo que lanzarlo con `serviceInstanceDeployV2`.
+- Hubo ~2 min (21:52-21:54) en que el producto nuevo ya estaba y GCC World aún no tenía `PRODUCTO_AUTOMATIZACIONES_ORIGEN`:
+  otra sesión subió mi commit antes de tiempo (comparten el repo). Meta reintenta lo no aceptado.
+- M1: su base copia no tiene la columna `inquilinos.razon_social` (migración 014 de Automatizaciones) → 500 en
+  `/<cliente>/acceso`. Pendiente refrescar la copia.
+- **Siguiente:** Fernando cambia la URL del webhook en Meta; después se borran los dominios.
