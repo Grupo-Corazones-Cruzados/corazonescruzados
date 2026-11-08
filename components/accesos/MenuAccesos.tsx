@@ -23,20 +23,26 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
  * el botón de `CabeceraMovil` y entra ya con su ancho. Arriba la marca; abajo, Salir: en las apps es
  * el único sitio desde el que se cierra sesión.
  */
-export default function MenuAccesos() {
+/**
+ * `capa`: es la PRIMERA capa de dos (Fernando, 2026-11-08: «el menú 1 con apps, productos y
+ * herramientas; al elegir Progreso, una capa de menú adicional con lo suyo»). Se queda como raíl de
+ * iconos a la izquierda de la segunda capa (en el teléfono, también dentro del menú abierto) y
+ * marca cuál está abierta (`activo`).
+ */
+export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; activo?: string }) {
   const pathname = usePathname();
   const { signOut } = useAuth();
   const { abierto, cerrar } = useMenuMovil();
   const { apps, productos, herramientas, rutaHerramienta, abrirProducto, entrandoAlJuego } = useAccesos();
   const [sobreElMenu, setSobreElMenu] = useState(false);
   const telefono = useConsultaMedia('(max-width: 63.99rem)');
-  const estrecho = !telefono && !sobreElMenu && !abierto;
+  const estrecho = capa ? (telefono || !sobreElMenu) : (!telefono && !sobreElMenu && !abierto);
   // Al volver de Progreso, el contenido entra desde la izquierda (`nivelMenu`).
   const [movimiento] = useState(() => movimientoDelMenu('accesos'));
 
   useEffect(() => { cerrar(); }, [pathname, cerrar]);
 
-  const fila = `relative flex items-center gap-2.5 rounded-md h-9 w-full text-[13px] font-medium transition-colors text-digi-muted hover:text-digi-text hover:bg-white/[0.06] ${estrecho ? 'justify-center px-0' : 'px-2.5'}`;
+  const fila = (id?: string) => `relative flex items-center gap-2.5 rounded-md h-9 w-full text-[13px] font-medium transition-colors ${id && id === activo ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-white/[0.06]'} ${estrecho ? 'justify-center px-0' : 'px-2.5'}`;
 
   const Grupo = ({ titulo, primero, children }: { titulo: string; primero?: boolean; children: ReactNode }) => (
     <div className={primero ? '' : 'mt-2'}>
@@ -52,13 +58,14 @@ export default function MenuAccesos() {
 
   return (
     <>
+      {/* Como primera capa, el velo lo pone la segunda (`DashboardSidebar`): uno solo. */}
       <div aria-hidden onClick={cerrar}
-        className={`fixed inset-0 bg-black/40 z-40 lg:hidden transition-opacity duration-200 ease-out ${abierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} />
+        className={`fixed inset-0 bg-black/40 z-40 lg:hidden ${capa ? 'hidden' : ''} transition-opacity duration-200 ease-out ${abierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} />
       <div aria-hidden
         className={`hidden lg:block fixed inset-0 z-30 bg-black/45 pointer-events-none transition-opacity duration-200 ${sobreElMenu ? 'opacity-100' : 'opacity-0'}`} />
 
       <aside onMouseEnter={() => setSobreElMenu(true)} onMouseLeave={() => setSobreElMenu(false)}
-        className={`rail fixed top-0 left-0 h-full pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] ${abierto ? 'z-50' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width,translate] duration-200 ease-out
+        className={`rail fixed top-0 left-0 h-full pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] ${abierto || (capa && sobreElMenu) ? 'z-[55]' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width,translate] duration-200 ease-out
           ${estrecho ? 'w-16' : telefono ? 'w-64' : 'w-64 shadow-2xl'}
           ${abierto ? 'translate-x-0 shadow-xl' : '-translate-x-full lg:translate-x-0'}`}>
         <Link href="/dashboard/accesos" className={`flex items-center gap-2.5 h-14 border-b border-digi-border hover:bg-white/[0.05] transition-colors shrink-0 ${estrecho ? 'justify-center px-0' : 'px-4'}`}>
@@ -70,7 +77,7 @@ export default function MenuAccesos() {
         <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-2 px-2 ${movimiento}`} style={mf}>
           <Grupo titulo="Apps" primero>
             {apps.map((a) => (
-              <button key={a.id} type="button" onClick={a.abrir} title={estrecho ? a.titulo : undefined} className={fila}>
+              <button key={a.id} type="button" onClick={a.abrir} title={estrecho ? a.titulo : undefined} className={fila(a.id)}>
                 {/* El color del tema con que se abre cada app. */}
                 <span className="w-6 h-6 shrink-0 rounded-md grid place-items-center border border-white/15"
                   style={{ background: definicionTema(a.tema)?.muestra.acento === '#fafafa' ? '#000' : definicionTema(a.tema)?.muestra.acento }}>
@@ -84,7 +91,7 @@ export default function MenuAccesos() {
           {(productos?.length ?? 0) > 0 && (
             <Grupo titulo="Productos">
               {productos!.map((p) => (
-                <button key={p.url} type="button" onClick={() => abrirProducto(p.url)} title={estrecho ? p.productoNombre : undefined} className={fila}>
+                <button key={p.url} type="button" onClick={() => abrirProducto(p.url)} title={estrecho ? p.productoNombre : undefined} className={fila(`${p.producto}/${p.slug}`)}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={iconoDeProducto(p.producto)} alt="" width={24} height={24} decoding="async" className="w-6 h-6 shrink-0 rounded-md" />
                   {!estrecho && <span className="truncate">{p.productoNombre}</span>}
@@ -96,7 +103,7 @@ export default function MenuAccesos() {
           {herramientas.length > 0 && (
             <Grupo titulo="Herramientas">
               {herramientas.map((h) => (
-                <Link key={h.id} href={rutaHerramienta(h)} title={estrecho ? h.name : undefined} className={fila}>
+                <Link key={h.id} href={rutaHerramienta(h)} title={estrecho ? h.name : undefined} className={fila(h.id)}>
                   <span className="w-6 h-6 shrink-0 grid place-items-center"><h.Icon className="w-[18px] h-[18px]" strokeWidth={2} /></span>
                   {!estrecho && <span className="truncate">{h.name}</span>}
                 </Link>
@@ -106,7 +113,8 @@ export default function MenuAccesos() {
         </nav>
 
         <div className="shrink-0 p-2 border-t border-digi-border">
-          <FichaUsuario estrecho={estrecho} />
+          {/* Con dos capas, la cuenta la muestra la segunda (que además abre «ver como»): una sola vez. */}
+          {!capa && <FichaUsuario estrecho={estrecho} />}
           <button onClick={signOut} aria-label="Cerrar sesión" title="Cerrar sesión"
             className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[12px] font-medium transition-[filter] duration-150 hover:brightness-125"
             style={{ ...mf, color: '#F0A6AE', background: 'rgba(224, 90, 106, 0.14)' }}>

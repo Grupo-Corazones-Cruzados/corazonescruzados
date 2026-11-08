@@ -127,3 +127,8 @@ html[data-gcc-app] *, html[data-gcc-app] *::backdrop { -webkit-backdrop-filter: 
 .menu-avanza { animation: menuAvanza 280ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 .menu-vuelve { animation: menuVuelve 280ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 @media (prefers-reduced-motion: reduce) { .menu-avanza, .menu-vuelve { animation: none; } }
+
+/* DOS CAPAS DE MENÚ (apps, Progreso): lo fijo que esquivaba un menú de 4rem esquiva ahora dos. */
+@media (min-width: 64rem) {
+  .corp.dos-capas [data-app-footer] { left: 8rem !important; }
+}

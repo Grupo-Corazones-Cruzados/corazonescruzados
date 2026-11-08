@@ -20,7 +20,7 @@ import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench, FilePen,
   Settings, LifeBuoy, ShieldCheck, Workflow,
-  LogOut, Undo2, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info, LayoutGrid, AppWindow,
+  LogOut, Undo2, LayoutDashboard, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info, LayoutGrid, AppWindow,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -152,7 +152,8 @@ export default function DashboardSidebar() {
   const groups = NAV_GROUPS
     .map((g) => ({ ...g, items: g.items.filter((it) => canAccessModule(accessRole, it.href) && (accessRole === 'admin' || !isPathBlocked(it.href, blockedModules))
       && (it.href !== '/dashboard/plataformas' || tienePlataformas)
-      && (it.href !== '/dashboard/accesos' || enApp)
+      // Accesos ya no es un módulo: en las apps es la primera capa (`MenuAccesos`) y en la web no existe.
+      && it.href !== '/dashboard/accesos'
       // En las apps Herramientas, Plataformas (los productos) y Centralizado se abren desde Accesos.
       && !(enApp && ['/dashboard/tools', '/dashboard/plataformas', '/dashboard/centralized'].includes(it.href))) }))
     .filter((g) => g.items.length > 0);
@@ -212,13 +213,22 @@ export default function DashboardSidebar() {
         /* ⚠️ Los niveles, de abajo arriba: pie (z-20) · velo de escritorio (z-30) ·
            menú cerrado (z-40) · velo del teléfono (z-40) · menú abierto en teléfono
            (z-50). El menú siempre por encima de su propio velo. */
-        className={`rail fixed top-0 left-0 h-full pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] ${mobileOpen ? 'z-50' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width,translate] duration-200 ease-out
+        className={`rail fixed top-0 ${enApp ? 'left-16' : 'left-0'} h-full pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] ${mobileOpen ? 'z-50' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width,translate] duration-200 ease-out
           ${collapsed ? 'w-16' : telefono ? 'w-56' : 'w-56 shadow-2xl'}
-          ${mobileOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full lg:translate-x-0'}
+          ${mobileOpen ? 'translate-x-0 shadow-xl' : enApp ? '-translate-x-[calc(100%+4rem)] lg:translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
         {/* Brand */}
-        <Link href={enApp ? '/dashboard/accesos' : '/'} className={`flex items-center gap-2.5 h-14 border-b border-digi-border hover:bg-white/[0.05] transition-colors shrink-0 ${collapsed ? 'justify-center px-0' : 'px-4'}`}>
+        {/* En las apps es la segunda capa: la marca ya está en la primera, aquí va el nombre de la app. */}
+        {enApp ? (
+          <Link href="/dashboard" className={`flex items-center gap-2.5 h-14 border-b border-digi-border hover:bg-white/[0.05] transition-colors shrink-0 ${collapsed ? 'justify-center px-0' : 'px-4'}`}>
+            <span className="w-[30px] h-[30px] shrink-0 rounded-lg grid place-items-center border border-white/15" style={{ background: '#7c5ce0' }}>
+              <LayoutDashboard className="w-4 h-4 text-white" strokeWidth={2} />
+            </span>
+            {!collapsed && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>PROGRESO</span>}
+          </Link>
+        ) : (
+          <Link href="/" className={`flex items-center gap-2.5 h-14 border-b border-digi-border hover:bg-white/[0.05] transition-colors shrink-0 ${collapsed ? 'justify-center px-0' : 'px-4'}`}>
           {/* El LOGO, no el indicador de carga. Eran el mismo componente y dejaron de
               serlo (2026-08-28): un anillo girando en la esquina de la marca no dice
               «GCC World», dice «espera». Aquí el logo gira despacio porque es la firma
@@ -228,8 +238,9 @@ export default function DashboardSidebar() {
             className="rounded-full select-none shrink-0 motion-reduce:animate-none"
             style={{ animation: 'slowSpin 12s linear infinite reverse' }}
           />
-          {!collapsed && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>{enApp ? 'PROGRESO' : 'GCC WORLD'}</span>}
+          {!collapsed && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>GCC WORLD</span>}
         </Link>
+        )}
 
         {/* Nav */}
         <nav className={`flex-1 overflow-y-auto py-2 px-2 ${movimiento}`}>
