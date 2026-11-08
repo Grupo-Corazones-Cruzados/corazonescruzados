@@ -12034,7 +12034,7 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 - ✅ **Probado en local (2026-11-07):** `/grupo` conectado (la comprobación contra Meta devolvió el token del número de prueba vencido: dato real) y `/demo` sin número, claro/oscuro, 1280 y 390 px, `scrollWidth` = ancho, sin errores de consola. No se probó un alta real: necesita un cliente con su teléfono.
 
 
-# PRODUCTOS SIN SUBDOMINIO (2026-11-08) · 55 %
+# PRODUCTOS SIN SUBDOMINIO (2026-11-08) · 80 %
 **Objetivo:** que los cinco productos se sirvan desde `app.grupocc.org` y desaparezcan sus subdominios, en Railway y en
 Cloudflare. **Decisión de Fernando (2026-11-08):** «eliminarlos de verdad» (descartadas: ocultarlos con redirección,
 o dejarlos). **Rol:** arquitecto de plataforma.
@@ -12176,3 +12176,17 @@ la BD. Nunca se rompe la partida de un jugador por cambiar la historia.
    ese prólogo es la prueba de concepto en Android (fps, memoria, sesión).
 Fernando pidió solo guardar lo aprendido; no se construye nada todavía. Fuente de verdad del juego:
 `godot/Videojuego.md` §3-bis.
+
+## Pedidos, Catering y Planificaciones migrados (2026-11-08, sin caída)
+- Publicados en dos fases: primero los productos con `basePath` (el marco seguía por el subdominio, que ya redirigía a
+  la ruta nueva), comprobados en producción (13-14 recursos, manifiesto, iconos, redirección); después `tipos.ts`
+  (21797df1). Pasarela: `PRODUCTO_PEDIDOS/CATERING/PLANIFICACIONES_ORIGEN` en Railway y en el M1. Cron:
+  `PEDIDOS_URL` y `CATERING_URL` del `nightly-cron` con `/p/<p>`.
+- Trampas de la API de Railway: `serviceInstanceUpdate` da «Not Authorized» a ratos (reintentar minutos después);
+  un despliegue que arranca justo tras cambiar `healthcheckPath` aún usa el valor viejo (relanzar con
+  `serviceInstanceDeployV2`); `APP_URL` de los tres productos NO se deja cambiar («Problem processing request»).
+- ⚠️ **Requisito antes de borrar dominios:** `APP_URL` de Catering debe ser `https://app.grupocc.org/p/catering`
+  (enlaces de sus correos, `acciones/clientes.ts`); hoy apunta al subdominio, que redirige. Cambiarlo en el panel.
+- Coordinación: la sesión «Publicación Tiendas GCC» rediseña los cuatro productos respetando `conBase`.
+- Falta: Automatizaciones (webhook y alta de Meta con Fernando, worker), datos `member_portfolio_items`, borrar los
+  dominios (Railway por API; Cloudflare con token o a mano).
