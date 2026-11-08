@@ -11974,3 +11974,16 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 - **La prueba cazó un fallo:** con un correo inexistente la ruta anotaba el fallo pero no miraba el bloqueo, así que el tope por IP nunca saltaba, y el 429 solo de las cuentas reales las delataba. Sin probar en marcha habría salido así.
 - **Límites conocidos:** la IP sale de `x-forwarded-for`, que se puede inventar (lo que protege es el tope por cuenta; Cloudflare dará la IP real con `CF-Connecting-IP`). Quien conoce un correo puede bloquearle la contraseña 15 minutos; la passkey sigue entrando. En los productos el 429 se ve como un «no vale» genérico.
 - **Pendiente de la fase 2:** frase de paso en la llave SSH de la M4 (H6), quitar nodos viejos de Tailscale (H7), macOS 26.7.2 cuando Fernando esté en casa (H5), contraseña del router.
+
+
+# CONEXIÓN CON WHATSAPP DESDE EL INQUILINO (Automatizaciones, 2026-11-07) · 95 %
+
+**Objetivo:** que cada inquilino del producto Automatizaciones conecte su número de WhatsApp desde su propia Configuración.
+**Rol:** integrador de la API de WhatsApp Cloud (proveedor de tecnología).
+
+- ✅ **¿Existía ya el alta en el producto?** No. `lib/agente/meta.ts` tenía `canjearCodigo`, `suscribirWaba`… sin ningún llamador; la pantalla y la ruta vivían en la plataforma y se borraron en dbe8f077 (`AgenteConexion.tsx`, `/api/admin/flows/[id]/agente/conectar`). Se portó la lógica tal cual (fuente: git).
+- ✅ **¿Cuántos canales por inquilino?** Uno: Estudio, Envíos y plantillas leen `canales WHERE inquilino_id ORDER BY id LIMIT 1` (fuente: código y BD).
+- ✅ **¿Quién conecta?** El ADMIN del inquilino (decisión tomada en esta sesión; si Fernando prefiere que solo GCC conecte, basta con exigir `cortesia` o un operador en `conectarWhatsApp`).
+- ✅ **¿Variables en Railway?** Faltaban `WHATSAPP_ES_CONFIG_ID` y `WHATSAPP_TOKEN` en `automatizaciones`; puestas como referencias.
+- ⏸ **Dominio del SDK en la app de Meta** (`automatizaciones.grupocc.org`): solo Fernando tiene acceso. Hasta que se añada, la ventana de Meta no abre (por eso 95 %).
+- ✅ **Probado en local (2026-11-07):** `/grupo` conectado (la comprobación contra Meta devolvió el token del número de prueba vencido: dato real) y `/demo` sin número, claro/oscuro, 1280 y 390 px, `scrollWidth` = ancho, sin errores de consola. No se probó un alta real: necesita un cliente con su teléfono.

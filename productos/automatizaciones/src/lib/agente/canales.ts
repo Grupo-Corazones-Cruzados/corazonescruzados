@@ -33,6 +33,8 @@ export interface Canal {
   contactos_sincronizados_en: string | null;
   /** Cuándo se pidió el historial de 180 días. Un solo intento por alta, en 24 h. */
   historial_sincronizado_en: string | null;
+  /** Hora del último alta completada; abre el plazo de 24 h de la agenda. */
+  conectado_en: string | null;
   ultimo_error: string | null;
   /** Presentes en la fila pero NUNCA se devuelven al navegador. */
   wa_token_cifrado: string | null;

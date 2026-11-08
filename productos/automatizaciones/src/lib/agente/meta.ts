@@ -85,6 +85,31 @@ export async function wabasDelToken(tokenCliente: string): Promise<string[]> {
 }
 
 /**
+ * Si el token del cliente sigue valiendo y CUÁNDO deja de valer.
+ *
+ * Existe por lo del 2026-10-27: el token de Peter Tours era el de 60 días del alta y
+ * venció sin que nadie lo viera; el agente estuvo dos días sin poder contestar. La
+ * pantalla de la conexión enseña la fecha para que eso se vea antes de que pase.
+ * `expires_at = 0` en Meta significa «no vence».
+ */
+export async function estadoDelToken(token: string): Promise<{ valido: boolean; venceEn: string | null }> {
+  const appId = process.env.WHATSAPP_APP_ID;
+  const appSecret = process.env.WHATSAPP_APP_SECRET;
+  if (!appId || !appSecret) throw new Error('Faltan WHATSAPP_APP_ID o WHATSAPP_APP_SECRET en el servidor');
+
+  const url = new URL(`${G}/debug_token`);
+  url.searchParams.set('input_token', token);
+  url.searchParams.set('access_token', `${appId}|${appSecret}`);
+
+  const res = await fetch(url);
+  const cuerpo = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`No se pudo leer el token: ${cuerpo?.error?.message ?? res.status}`);
+  const d = cuerpo?.data ?? {};
+  const vence = Number(d.expires_at ?? 0);
+  return { valido: Boolean(d.is_valid), venceEn: vence > 0 ? new Date(vence * 1000).toISOString() : null };
+}
+
+/**
  * Suscribe NUESTRA app a los webhooks de la cuenta del cliente.
  *
  * Sin esto no llega ni un mensaje de ese cliente, y todo *parece* correcto: el número

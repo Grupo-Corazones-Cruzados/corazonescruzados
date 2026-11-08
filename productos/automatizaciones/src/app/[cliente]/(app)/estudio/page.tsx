@@ -2,8 +2,9 @@ import { exigirContexto } from '@/lib/inquilino';
 import { EXIGE_ROL } from '@/lib/modulos';
 import { pool } from '@/lib/db';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { EstadoVacio } from '@/componentes/ui';
-import { Bot } from 'lucide-react';
+import Link from 'next/link';
+import { BOTON_PRIMARIO, EstadoVacio } from '@/componentes/ui';
+import { Bot, Plug } from 'lucide-react';
 import Estudio, { type CanalVista, type Instruccion, type Bloque } from './Estudio';
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,12 @@ export default async function PaginaEstudio({ params }: { params: Promise<{ clie
         <EstadoVacio
           icono={Bot}
           titulo="Todavía no hay un número conectado"
-          detalle="Cuando GCC conecte tu número de WhatsApp, aquí podrás editar lo que el agente sabe y cómo responde."
+          detalle="Conecta tu número en Configuración y aquí podrás editar lo que el agente sabe y cómo responde."
+          accion={
+            <Link href={`/${cliente}/configuracion?seccion=whatsapp`} className={`${BOTON_PRIMARIO} h-9 px-4 text-[13px]`}>
+              <Plug className="h-4 w-4" /> Conectar WhatsApp
+            </Link>
+          }
         />
       </>
     );

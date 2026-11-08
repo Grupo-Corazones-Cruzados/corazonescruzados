@@ -3,13 +3,14 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Palette, CreditCard, KeyRound, Upload } from 'lucide-react';
+import { Palette, CreditCard, KeyRound, Upload, MessageCircle } from 'lucide-react';
 import { Boton, Campo, Entrada, Selector, Insignia, Tarjeta, RailFiltro } from '@/componentes/ui';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { LogoHotel } from '@/componentes/Marca';
 import { guardarMarca, subirLogo, cambiarMiClave } from '@/acciones/configuracion';
 import { cn } from '@/lib/utils';
 import PanelSuscripcion, { type SuscripcionVista } from '@/componentes/PanelSuscripcion';
+import SeccionWhatsApp, { type ConexionVista } from './SeccionWhatsApp';
 
 export type MarcaVista = {
   nombre: string;
@@ -31,7 +32,7 @@ export type PagoVista = {
   id: number; periodo: string; monto: number; moneda: string; estado: string; metodo: string; pagadoEn: string | null;
 };
 
-type Seccion = 'marca' | 'suscripcion' | 'cuenta';
+export type Seccion = 'marca' | 'whatsapp' | 'suscripcion' | 'cuenta';
 
 /**
  * CONFIGURACIÓN CON SUBMENÚ, como en Gestión de Pedidos (Fernando, 2026-09-23: «no
@@ -49,6 +50,10 @@ export default function ConfiguracionCliente({
   pagos,
   hayCloudinary,
   miOrigen,
+  conexion,
+  meta,
+  esCortesia,
+  seccionInicial = 'marca',
 }: {
   slug: string;
   marca: MarcaVista;
@@ -56,16 +61,22 @@ export default function ConfiguracionCliente({
   pagos: PagoVista[];
   hayCloudinary: boolean;
   miOrigen: 'GCC' | 'PRODUCTO' | null;
+  conexion: ConexionVista | null;
+  /** Identificadores PÚBLICOS de la app de Meta (el secreto no sale del servidor). */
+  meta: { appId: string | null; configId: string | null };
+  esCortesia: boolean;
+  seccionInicial?: Seccion;
 }) {
-  const [seccion, setSeccion] = useState<Seccion>('marca');
+  const [seccion, setSeccion] = useState<Seccion>(seccionInicial);
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <CabeceraPagina titulo="Configuración" descripcion="La marca, tu suscripción y tu cuenta" />
+      <CabeceraPagina titulo="Configuración" descripcion="La marca, la conexión con WhatsApp, tu suscripción y tu cuenta" />
       {/* La misma norma que el Estudio: el contenedor ocupa el alto disponible. */}
       <div className="flex min-h-0 flex-1 flex-col gap-4 p-4 sm:p-6 lg:flex-row">
         <RailFiltro
           opciones={[
             { valor: 'marca', etiqueta: 'Marca', icono: Palette },
+            { valor: 'whatsapp', etiqueta: 'WhatsApp', icono: MessageCircle },
             { valor: 'suscripcion', etiqueta: 'Suscripción', icono: CreditCard },
             { valor: 'cuenta', etiqueta: 'Mi cuenta', icono: KeyRound },
           ]}
@@ -74,6 +85,9 @@ export default function ConfiguracionCliente({
         />
         <div className="desplaza min-h-0 min-w-0 flex-1 overflow-y-auto">
           {seccion === 'marca' && <SeccionMarca slug={slug} marca={marca} hayCloudinary={hayCloudinary} />}
+          {seccion === 'whatsapp' && (
+            <SeccionWhatsApp slug={slug} conexion={conexion} appId={meta.appId} configId={meta.configId} esCortesia={esCortesia} />
+          )}
           {seccion === 'suscripcion' && <SeccionSuscripcion slug={slug} s={suscripcion} pagos={pagos} />}
           {seccion === 'cuenta' && <SeccionCuenta slug={slug} miOrigen={miOrigen} />}
         </div>

@@ -331,6 +331,8 @@ model Canal {
 
   contactosSincronizadosEn DateTime? @map("contactos_sincronizados_en") @db.Timestamptz(3)
   historialSincronizadoEn  DateTime? @map("historial_sincronizado_en") @db.Timestamptz(3)
+  /// Hora del último alta completada. Abre el plazo de 24 h para pedir la agenda.
+  conectadoEn              DateTime? @map("conectado_en") @db.Timestamptz(3)
 
   creado      DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
   actualizado DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
