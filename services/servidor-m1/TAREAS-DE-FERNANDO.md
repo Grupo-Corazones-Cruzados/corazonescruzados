@@ -14,8 +14,18 @@ que se hace desde cualquier navegador. Contexto en `Aprendizaje.md` («SEGURIDAD
 ### ✅ A1. Actualizar macOS del M1 (hecho por Fernando, 2026-11-08: quedó en **macOS 27.2**)
 Comprobado tras el reinicio: servicios, filtro de red, cortafuegos, SSH, Tailscale y Node, todo en pie. Falta volver a conectar cargador y adaptador (ver A4).
 
-### ☐ A4. Volver a conectar el M1 cuando quede en su sitio
-Cargador en un puerto; adaptador (cable de red + SSD) en el otro. **Antes de las 03:30**, que corre el respaldo al SSD. Avisar a Claude: comprueba el cable (`192.168.100.15`), el SSD y lanza un respaldo de prueba.
+### ✅ A4. Volver a conectar el M1 (hecho por Fernando, 2026-11-08; comprobado: sale por el cable `192.168.100.15`, carga y el SSD se desbloquea solo)
+
+### ☐ A5. Apagar Spotlight en el M1 (a distancia, 1 minuto, desde la Terminal de la M4 Pro)
+**Por qué:** tras actualizar, Spotlight reindexa todo (un proceso al 99 % de CPU) y también indexa el SSD de
+respaldos, que tiene una base de datos dentro: el respaldo de prueba escribió a 0,9 MB/s cuando el USB da ~35. En
+un servidor no sirve para nada y ralentiza respaldos, publicaciones y la base.
+1. En la Terminal de la M4 Pro pegar:
+   ```
+   ssh -t fernandogonzalez@100.73.251.124 'sudo mdutil -a -i off && sudo mdutil -E /Volumes/GCC-Respaldos'
+   ```
+2. Escribir la contraseña del M1. Debe responder **«Indexing disabled.»** por cada disco.
+3. Avisar a Claude: comprueba que el proceso de Spotlight bajó y mide de nuevo la velocidad del SSD.
 
 <details><summary>Pasos que se usaron para actualizar</summary>
 
