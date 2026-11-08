@@ -91,7 +91,7 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
           {(productos?.length ?? 0) > 0 && (
             <Grupo titulo="Productos">
               {productos!.map((p) => (
-                <button key={p.url} type="button" onClick={() => abrirProducto(p.url)} title={estrecho ? p.productoNombre : undefined} className={fila(`${p.producto}/${p.slug}`)}>
+                <button key={p.url} type="button" onClick={() => abrirProducto(p)} title={estrecho ? p.productoNombre : undefined} className={fila(`${p.producto}/${p.slug}`)}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={iconoDeProducto(p.producto)} alt="" width={24} height={24} decoding="async" className="w-6 h-6 shrink-0 rounded-md" />
                   {!estrecho && <span className="truncate">{p.productoNombre}</span>}

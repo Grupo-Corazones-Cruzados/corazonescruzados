@@ -31,6 +31,7 @@ import {
   clienteGccPorCorreo, claveCorrecta, mandarCodigo, codigoCorrecto,
   taparCorreo, origenDeProductoValido, rpDelProducto, fichaCliente,
 } from '@/lib/productos/identidad';
+import { canjearPase } from '@/lib/productos/pases';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,6 +46,15 @@ export async function POST(req: NextRequest) {
 
   const c = await req.json().catch(() => ({}));
   const paso = String(c.paso || '');
+
+  // Canjear un pase de entrada (`lib/productos/pases.ts`): aquí no viene correo, lo devuelve el pase.
+  if (paso === 'canjear') {
+    const email = await canjearPase(String(c.ticket || ''), String(c.producto || ''), String(c.slug || ''));
+    return email
+      ? NextResponse.json({ ok: true, email })
+      : NextResponse.json({ error: 'El pase no vale (usado, caducado o de otro negocio).' }, { status: 401 });
+  }
+
   const email = String(c.email || '').trim().toLowerCase();
   if (!email) return NextResponse.json({ error: 'Falta el correo.' }, { status: 400 });
 

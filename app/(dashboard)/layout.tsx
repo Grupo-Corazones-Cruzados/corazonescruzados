@@ -7,7 +7,7 @@ import '../tema-progreso.css';
 import '../temas.css';
 import '../movimiento.css';
 
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 import AuthGuard from '@/components/providers/AuthGuard';
@@ -18,6 +18,7 @@ import CabeceraMovil from '@/components/dashboard/CabeceraMovil';
 import CabeceraSeccion from '@/components/dashboard/CabeceraSeccion';
 import MenuCentralizado from '@/components/centralized/MenuCentralizado';
 import MenuAccesos from '@/components/accesos/MenuAccesos';
+import MenuProducto from '@/components/productos/MenuProducto';
 import { anotarRuta } from '@/components/accesos/nivelMenu';
 import { ProveedorMenuMovil } from '@/components/dashboard/MenuMovil';
 import DashboardBreadcrumb from '@/components/dashboard/DashboardBreadcrumb';
@@ -60,6 +61,9 @@ function Panel({ children }: { children: React.ReactNode }) {
   const enCentralizado = seccion && (pathname === '/dashboard/centralized' || pathname.startsWith('/dashboard/centralized/'));
   // Accesos lleva su propio menú lateral (Apps, Productos, Herramientas) y la cabecera del teléfono.
   const enAccesos = seccion && pathname === '/dashboard/accesos';
+  // Un producto dentro de la app: Accesos como primera capa y el menú del producto como segunda.
+  const enProducto = seccion && pathname.startsWith('/dashboard/producto/');
+  const [, , , productoActivo, slugActivo] = pathname.split('/');
   // Después de montar lo nuevo: los menús leen de qué ruta se venía (`nivelMenu`).
   useEffect(() => { anotarRuta(pathname); }, [pathname]);
   const mainRef = useRef<HTMLElement>(null);
@@ -103,6 +107,8 @@ function Panel({ children }: { children: React.ReactNode }) {
       {!seccion && <DashboardSidebar />}
       {enCentralizado && <MenuCentralizado />}
       {enAccesos && <MenuAccesos />}
+      {enProducto && <MenuAccesos capa activo={`${productoActivo}/${decodeURIComponent(slugActivo ?? '')}`} />}
+      {enProducto && <Suspense fallback={null}><MenuProducto /></Suspense>}
       {/* ⇒ LA CABECERA DEL TELÉFONO VA EN EL FLUJO, NO PEGADA A LA VENTANA.
           Empuja al contenido en vez de taparlo, así que **ninguna página puede quedar
           debajo** — no hay «debajo». Por eso el `main` ya no necesita reservar hueco
@@ -130,7 +136,7 @@ function Panel({ children }: { children: React.ReactNode }) {
           y el único que se desplaza —y solo si su contenido no cabe— es el `main`. En
           escritorio no hay cabecera y todo sigue como siempre. */}
       <div className={`flex-1 min-w-0 flex flex-col ml-0 ${seccion && !enAccesos ? '' : enApp && !seccion ? 'lg:ml-32' : 'lg:ml-16'} max-lg:min-h-0`}>
-        {seccion && !enCentralizado && !enAccesos ? <CabeceraSeccion /> : <CabeceraMovil siempre={enCentralizado} />}
+        {seccion && !enCentralizado && !enAccesos && !enProducto ? <CabeceraSeccion /> : <CabeceraMovil siempre={enCentralizado} />}
         {/* El relleno inferior sale de la MISMA variable que el alto del pie: antes era
             `pb-14` escrito a mano contra un pie de 36 px, y al crecer el pie en teléfono
             el contenido se le habría metido debajo. */}
@@ -217,7 +223,7 @@ function useEntradaTrasCarga(mainRef: React.RefObject<HTMLElement | null>) {
  * Lo que en las apps es una sección aparte de Progreso (Fernando, 2026-11-08): Accesos, cada
  * herramienta y Centralizado. En la web siguen dentro del panel, como siempre.
  */
-const RUTAS_SECCION = ['/dashboard/accesos', '/dashboard/centralized', ...RUTAS_HERRAMIENTA];
+const RUTAS_SECCION = ['/dashboard/accesos', '/dashboard/centralized', '/dashboard/producto', ...RUTAS_HERRAMIENTA];
 function esSeccionDeApp(ruta: string) {
   return RUTAS_SECCION.some((r) => ruta === r || ruta.startsWith(r + '/'));
 }

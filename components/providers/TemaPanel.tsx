@@ -34,7 +34,7 @@ function temaDeSeccion(app: AppDeTelefono | null, ruta: string, elegido: TemaId)
   if (!app) return elegido;
   const en = (r: string) => ruta === r || ruta.startsWith(r + '/');
   if (en('/dashboard/centralized')) return 'orquidea';
-  if (en('/dashboard/accesos') || RUTAS_HERRAMIENTA.some(en)) return app === 'centralizado' ? 'corazon' : 'mixto';
+  if (en('/dashboard/accesos') || en('/dashboard/producto') || RUTAS_HERRAMIENTA.some(en)) return app === 'centralizado' ? 'corazon' : 'mixto';
   return 'claro';
 }
 

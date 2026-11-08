@@ -10,6 +10,7 @@ import { herramientasPara, type Herramienta } from '@/lib/herramientas/catalogo'
 import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 import { markGameEntry } from '@/lib/world/gameEntry';
 import type { AccesoProducto } from '@/lib/productos/tipos';
+import { PRODUCTOS_EMBEBIDOS, rutaDelProducto } from '@/lib/productos/modulos';
 import type { TemaId } from '@/lib/temas';
 
 export type AppAcceso = { id: string; titulo: string; Icono: LucideIcon; tema: TemaId; abrir: () => void };
@@ -84,10 +85,13 @@ export function useAccesos() {
       : []),
   ];
 
-  // En la app el producto se abre aquí mismo; en el navegador, en otra pestaña (como Plataformas).
-  const abrirProducto = (url: string) => {
-    if (app) window.location.href = url;
-    else window.open(url, '_blank', 'noopener');
+  // En la app, un producto que sabe entrar con la sesión de GCC World se abre DENTRO, con su menú como
+  // segunda capa (`/dashboard/producto/…`); los demás, aquí mismo como antes. En el navegador, en otra
+  // pestaña (como Plataformas).
+  const abrirProducto = (p: AccesoProducto) => {
+    if (app && PRODUCTOS_EMBEBIDOS.has(p.producto)) router.push(rutaDelProducto(p.producto, p.slug));
+    else if (app) window.location.href = p.url;
+    else window.open(p.url, '_blank', 'noopener');
   };
 
   const herramientas: Herramienta[] = herramientasPara({ esEquipo, esAdmin: rol === 'admin', app, conEspacio: !!rutasEspacio });
