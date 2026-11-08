@@ -4,15 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import { PISOS, PASOS, cellName, systemPath } from '@/lib/centralized/systems';
+import { ICONO_CELDA, ICONO_PASO, ICONO_PISO } from './iconos4P';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 export type SistemaMapa = { id: number; name: string; piso: string; paso: string; slug: string };
-
-/** Los pasos en la cabecera de la tabla: en un teléfono no caben enteros. */
-const PASO_CORTO: Record<string, string> = {
-  fundamentacion: 'Fundam.', creacion: 'Creación', implementacion: 'Implem.', gestion: 'Gestión',
-};
 
 /**
  * EL MAPA 4P — cómo se navega Centralizado en las apps (Fernando, 2026-11-08: «en vez de usar el
@@ -47,36 +43,43 @@ export default function Mapa4P({ sistemas: cargados, rutaActual }: { sistemas: S
 
   return (
     <div className="flex flex-col gap-4" style={mf}>
-      <div className="grid grid-cols-[1.25rem_repeat(4,minmax(0,1fr))] gap-1.5">
+      {/* Iconos y no textos (Fernando, 2026-11-08): celdas cuadradas que no ocupan alto ni ancho. El
+          nombre va en `aria-label`/`title` y en la cabecera de la lista de la celda elegida. */}
+      <div className="grid grid-cols-[1.75rem_repeat(4,minmax(0,1fr))] gap-1.5">
         <span />
-        {PASOS.map((p) => (
-          <span key={p.key} title={p.label} className="text-center text-[10px] font-semibold uppercase tracking-wide text-digi-muted truncate">
-            {PASO_CORTO[p.key]}
-          </span>
-        ))}
+        {PASOS.map((p) => {
+          const Icono = ICONO_PASO[p.key];
+          return (
+            <span key={p.key} title={p.label} aria-label={p.label} className="h-7 flex items-center justify-center text-digi-muted">
+              <Icono className="w-4 h-4" strokeWidth={2} />
+            </span>
+          );
+        })}
         {PISOS.map((piso) => (
           <Fila key={piso.key}>
-            <span className="flex items-center justify-center">
-              <span className="text-[10px] font-semibold uppercase tracking-wide text-digi-muted [writing-mode:vertical-rl] rotate-180">
-                {piso.label}
-              </span>
+            <span title={piso.label} aria-label={piso.label} className="flex items-center justify-center text-digi-muted">
+              {(() => { const Icono = ICONO_PISO[piso.key]; return <Icono className="w-4 h-4" strokeWidth={2} />; })()}
             </span>
             {PASOS.map((paso) => {
               const clave = `${piso.key}/${paso.key}`;
               const n = celdas[clave]?.length ?? 0;
               const activa = clave === elegida;
+              const Icono = ICONO_CELDA[piso.key][paso.key];
+              const nombre = `${cellName(piso.key, paso.key)} · ${piso.label} · ${paso.label}`;
               return (
                 <button key={clave} type="button" disabled={n === 0} onClick={() => setElegida(clave)}
-                  title={`${cellName(piso.key, paso.key)} · ${piso.label} · ${paso.label}`}
+                  title={nombre} aria-label={`${nombre}${n ? `: ${n} sistema${n === 1 ? '' : 's'}` : ''}`} aria-pressed={activa}
                   // La elegida, con el degradado de las fichas de `Cifra`: dentro del raíl del cajón el
-                  // acento es un rosa claro y el blanco encima no se leía (Fernando, 2026-11-08).
+                  // acento es un rosa claro y el blanco encima no se leía.
                   style={activa ? { backgroundImage: 'var(--degradado-icono)' } : undefined}
-                  className={`min-h-[72px] rounded-lg border p-1.5 flex flex-col justify-between text-left transition-colors ${
-                    activa ? 'bg-accent border-transparent text-white'
+                  className={`relative aspect-square rounded-xl border flex items-center justify-center transition-colors ${
+                    activa ? 'bg-accent border-transparent text-white shadow-md'
                       : n > 0 ? 'bg-digi-card border-accent/40 text-digi-text hover:border-accent'
-                        : 'bg-digi-card/40 border-digi-border text-digi-muted opacity-50'}`}>
-                  <span className="text-[10.5px] font-semibold leading-tight line-clamp-3 hyphens-auto">{cellName(piso.key, paso.key)}</span>
-                  {n > 0 && <span className={`text-[11px] font-bold tabular-nums ${activa ? 'text-white' : 'text-accent'}`}>{n}</span>}
+                        : 'bg-transparent border-digi-border/60 text-digi-muted opacity-40'}`}>
+                  <Icono className="w-5 h-5" strokeWidth={1.9} />
+                  {n > 0 && (
+                    <span className={`absolute top-1 right-1.5 text-[10px] font-bold leading-none tabular-nums ${activa ? 'text-white' : 'text-accent'}`}>{n}</span>
+                  )}
                 </button>
               );
             })}

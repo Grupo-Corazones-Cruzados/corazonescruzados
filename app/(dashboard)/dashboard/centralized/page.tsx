@@ -18,10 +18,11 @@ import PieAcciones from '@/components/ui/PieAcciones';
 import MenuMas from '@/components/ui/MenuMas';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import ShareAccessModal from '@/components/centralized/ShareAccessModal';
+import { ICONO_PISO } from '@/components/centralized/iconos4P';
 import DashboardCentralizado from '@/components/centralized/DashboardCentralizado';
 import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
 import {
-  Layers, Globe, Landmark, ClipboardList, Wrench, Boxes, Users,
+  Layers, Boxes, Users,
   Share2, Pencil, Power, ArrowRight, X,
 } from 'lucide-react';
 import {
@@ -32,9 +33,7 @@ import BarraLista from '@/components/ui/BarraLista';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-const PISO_ICONS: Record<string, any> = {
-  global: Globe, pilar: Landmark, controlador: ClipboardList, colaborador: Wrench,
-};
+const PISO_ICONS = ICONO_PISO;
 
 export default function CentralizedPage() {
   const { user } = useAuth();
