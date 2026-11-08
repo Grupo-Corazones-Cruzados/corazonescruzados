@@ -3,9 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, WifiOff } from 'lucide-react';
-import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import { BTN_SECONDARY } from '@/components/ui/Button';
-import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useTemaPanel } from '@/components/providers/TemaPanel';
 import { esAppInstalada, RUTA_EMBEBIDA } from './api';
@@ -21,14 +19,13 @@ export default function EspacioEnApp({ ruta = RUTA_EMBEBIDA, titulo = 'Espacio d
   const router = useRouter();
   const { user } = useAuth();
   const { tema, oscuro } = useTemaPanel();
-  const enTelefono = !useConsultaMedia(PANTALLA_LG);
   const [direccion, setDireccion] = useState<string | null>(null);
   const [estado, setEstado] = useState<'cargando' | 'listo' | 'sin-conexion'>('cargando');
   const [intento, setIntento] = useState(0);
   const [completa, setCompleta] = useState(false);
 
   useEffect(() => {
-    if (!esAppInstalada() || (user && user.role !== 'admin')) { router.replace('/dashboard/admin'); return; }
+    if (!esAppInstalada() || (user && user.role !== 'admin')) { router.replace('/dashboard/tools'); return; }
     fetch('/api/espacio-trabajo/direccion').then((r) => r.json()).then((j) => setDireccion(j.direccion || null)).catch(() => setEstado('sin-conexion'));
   }, [router, user]);
 
@@ -50,7 +47,9 @@ export default function EspacioEnApp({ ruta = RUTA_EMBEBIDA, titulo = 'Espacio d
   const src = direccion ? `${direccion}${ruta}?tema=${encodeURIComponent(tema)}&oscuro=${oscuro ? 1 : 0}` : null;
 
   return (
-    <PanelHastaElPie desdeAncho={0} minimo={320} desplazar={false} respiro={enTelefono ? 0 : 12} className={`relative bg-digi-card lg:border lg:border-digi-border lg:rounded-lg overflow-hidden ${ruta === RUTA_EMBEBIDA ? 'max-lg:pb-[var(--seguro-abajo)]' : ''}`}>
+    // Toda la pantalla bajo la cabecera de la sección (`CabeceraSeccion`): en las apps es una herramienta
+    // aparte de Progreso, sin pie ni márgenes (Fernando, 2026-11-08: «no está aprovechando el espacio»).
+    <div className="fixed inset-x-0 bottom-0 top-[calc(3.5rem+var(--seguro-arriba))] z-10 bg-digi-card overflow-hidden pb-[var(--seguro-abajo)]">
       {src && <iframe key={intento} src={src} title={titulo} allow="microphone" className={`border-0 ${completa ? 'fixed inset-0 z-[2147483000] w-screen h-dvh' : 'w-full h-full'} ${estado === 'listo' ? '' : 'invisible'}`} />}
       {estado === 'cargando' && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}
       {estado === 'sin-conexion' && (
@@ -60,6 +59,6 @@ export default function EspacioEnApp({ ruta = RUTA_EMBEBIDA, titulo = 'Espacio d
           <button type="button" className={BTN_SECONDARY} onClick={reintentar}>Reintentar</button>
         </div>
       )}
-    </PanelHastaElPie>
+    </div>
   );
 }

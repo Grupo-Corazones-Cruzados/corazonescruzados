@@ -5005,6 +5005,13 @@ html[data-gcc-app], html[data-gcc-app] body { background: #0b0d14; }
 html[data-gcc-app='progreso'], html[data-gcc-app='progreso'] body { background: #f7f5fd; }
 html[data-gcc-app='centralizado'], html[data-gcc-app='centralizado'] body { background: #050304; }
 .landing-page[data-app] > header, .landing-page[data-app] > footer { display: none; }
+/* Sin la cabecera del sitio, la portada mide la pantalla entera: medía lo que dejaba la cabecera y abajo
+   quedaba una franja (Fernando, 2026-11-08). El fondo de reserva, el de cada app. */
+.landing-page[data-app] > section:first-of-type { min-height: 100dvh; }
+/* Ni el hueco que la portada reserva para la barra de abajo del sitio, que aquí no existe. */
+.landing-page[data-app] { padding-bottom: 0 !important; }
+.landing-page[data-app='progreso'] { background: #f7f5fd; }
+.landing-page[data-app='centralizado'] { background: #050304; }
 .landing-page[data-app] .portada-zona { display: none; }
 /* Cada app con su fondo desde el primer cuadro: sin relleno y sin pintar el mundo que no se ve. */
 .landing-page[data-app='progreso'] .escena-progreso { clip-path: none !important; }
@@ -5065,7 +5072,8 @@ html[data-gcc-app='centralizado'], html[data-gcc-app='centralizado'] body { back
 @keyframes appHoja { from { transform: translateY(100%); } to { transform: none; } }
 @media (min-width: 600px) {
   .app-hoja { width: 100%; max-width: 440px; margin: 0 auto 32px; flex: none; border-radius: 28px; }
-  .corp.app-inicio { background: var(--app-cabeza); }
+  /* Sin fondo propio: debajo de la hoja sigue la portada (Fernando, 2026-11-08: «los fondos se están
+     cortando con un color debajo fijo»). */
   .landing-page[data-app] .corp-overlay:not(.onboarding-portada) { align-items: center !important; }
   .landing-page[data-app] .corp-overlay:not(.onboarding-portada) > div { max-width: 440px !important; }
   .landing-page[data-app] .auth-panel, .landing-page[data-app] .auth-marco { border-radius: 28px !important; }

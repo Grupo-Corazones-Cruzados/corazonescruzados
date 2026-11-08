@@ -2657,7 +2657,10 @@ export default function LandingPage() {
     recoveryOpen ||
     !!proposalPending ||
     !!clientPending ||
-    gameAuthOverlay;
+    gameAuthOverlay ||
+    // En las apps (teléfono y escritorio) la portada es un inicio de sesión: siempre el puntero del
+    // sistema, nunca el del videojuego (Fernando, 2026-11-08).
+    !!appTelefono;
 
   /**
    * QUÉ LADO DE LA PORTADA SE VE (Fernando, 2026-10-26) — ver `lib/sitio/portadaPartida.ts`.
