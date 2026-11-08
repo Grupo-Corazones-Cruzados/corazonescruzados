@@ -62,6 +62,7 @@ export default async function PaginaReportes({
     <ReportesCliente
       slug={hotel}
       moneda={inquilino.moneda}
+      zona={zona}
       filas={filas}
       suites={suites.map((s) => ({ id: s.id, nombre: s.nombre, ubicacion: s.ubicacion.nombre }))}
       filtro={{ desde, hasta, suite: f.suite ?? '', estado: f.estado ?? '' }}

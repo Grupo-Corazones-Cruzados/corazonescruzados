@@ -18,7 +18,7 @@ import {
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, BotonIcono, EstadoVacio, Insignia, PanelLateral, Tarjeta } from '@/componentes/ui';
 import { ETIQUETA_ESTADO_RESERVA, TONO_ESTADO_RESERVA } from '@/lib/reservas';
-import { dinero } from '@/lib/formato';
+import { dinero, horaCorta, diaCorto } from '@/lib/formato';
 import { diaLocal, sumarDias, type Dia } from '@/lib/fechas';
 import { cn } from '@/lib/utils';
 import type { EstadoReserva, EstadoPagoReserva } from '@/generated/prisma/enums';
@@ -71,6 +71,7 @@ export default function AgendaCliente({
   suites,
   pendientes,
   moneda,
+  zona,
   puedeOperar,
 }: {
   slug: string;
@@ -81,6 +82,8 @@ export default function AgendaCliente({
   suites: SuiteAgenda[];
   pendientes: ReservaPendiente[];
   moneda: string;
+  /** Zona del hotel: las horas se escriben igual en el servidor y en el navegador. */
+  zona: string;
   puedeOperar: boolean;
 }) {
   const router = useRouter();
@@ -122,26 +125,30 @@ export default function AgendaCliente({
 
   if (!ubicacion) {
     return (
-      <>
+      <div className="flex flex-1 flex-col">
         <CabeceraPagina titulo="Agenda" volver={{ href: `/${slug}/panel`, etiqueta: 'Volver al panel' }} />
-        <EstadoVacio
-          icono={Building2}
-          titulo="Todavía no hay ubicaciones"
-          detalle="La agenda se dibuja sobre las suites de cada ubicación. Créalas en Configuración."
-          accion={
-            <Link href={`/${slug}/configuracion`}>
-              <Boton>Ir a Configuración</Boton>
-            </Link>
-          }
-        />
-      </>
+        <div className="flex flex-1 flex-col p-4 sm:p-6">
+          <Tarjeta className="flex flex-1 items-center justify-center">
+            <EstadoVacio
+              icono={Building2}
+              titulo="Todavía no hay ubicaciones"
+              detalle="Créalas en Configuración."
+              accion={
+                <Link href={`/${slug}/configuracion?seccion=ubicaciones`}>
+                  <Boton>Ir a Configuración</Boton>
+                </Link>
+              }
+            />
+          </Tarjeta>
+        </div>
+      </div>
     );
   }
 
   const enlaceNueva = `/${slug}/reserva/nueva?${suites[0] ? `suite=${suites[0].id}&` : ''}desde=${diaSel}T14:00&volver=${volver}`;
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       {/*
         Cabecera: «volver al panel» es la flecha del título; «Nueva reserva» es la principal
         (en el teléfono, la barra de abajo) y «Hoy» la secundaria (en el «⋯»). La ubicación
@@ -151,8 +158,8 @@ export default function AgendaCliente({
         titulo={format(elDia, "EEEE d 'de' MMMM", { locale: es }).replace(/^\w/, (c) => c.toUpperCase())}
         descripcion={
           puedeOperar
-            ? 'Agenda de la ubicación. Pulsa un hueco para proponer una reserva a esa hora; pulsa un bloque para abrirla.'
-            : 'Agenda de la ubicación: ocupación del día por suite.'
+            ? 'Pulsa un hueco para proponer una reserva a esa hora; pulsa un bloque para abrirla.'
+            : 'Ocupación del día por suite.'
         }
         volver={{ href: `/${slug}/panel`, etiqueta: 'Volver al panel' }}
         extra={
@@ -212,10 +219,11 @@ export default function AgendaCliente({
         {cargando && <Loader2 className="ml-1 hidden h-4 w-4 shrink-0 animate-spin text-tenue sm:block" aria-label="Cargando" />}
       </div>
 
-      <div className="flex flex-col gap-4 p-4 sm:p-6 xl:flex-row">
+      {/* El cuerpo llega hasta abajo (regla 2026-11-08): las barras y el resumen se estiran. */}
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6 xl:flex-row">
         {/* Barras por suite */}
-        <div className="min-w-0 flex-1">
-          <Tarjeta className={cn('overflow-hidden transition-opacity', cargando && 'opacity-60')}>
+        <div className="flex min-w-0 flex-col xl:flex-1">
+          <Tarjeta className={cn('flex-1 overflow-hidden transition-opacity', cargando && 'opacity-60')}>
             {/* Regla de horas */}
             <div className="flex border-b border-borde bg-realce/60">
               <div className="w-20 shrink-0 sm:w-32" />
@@ -264,7 +272,7 @@ export default function AgendaCliente({
                         key={r.id}
                         href={`/${slug}/reserva/${r.id}?volver=${volver}`}
                         onClick={(e) => e.stopPropagation()}
-                        title={`${r.clienteNombre} · ${format(new Date(r.entrada), 'HH:mm')}–${format(new Date(r.salida), 'HH:mm')}`}
+                        title={`${r.clienteNombre} · ${horaCorta(r.entrada, zona)}–${horaCorta(r.salida, zona)}`}
                         className={cn(
                           'absolute inset-y-0.5 flex items-center overflow-hidden rounded px-2 text-[11px] font-semibold transition-opacity hover:opacity-90',
                           r.saleEseDia
@@ -285,8 +293,8 @@ export default function AgendaCliente({
         </div>
 
         {/* Resumen del día */}
-        <div className="xl:w-72 xl:shrink-0">
-          <Tarjeta className="p-4">
+        <div className="flex flex-1 flex-col xl:w-72 xl:flex-none xl:shrink-0">
+          <Tarjeta className="flex flex-1 flex-col p-4">
             <div className="mb-3 flex items-center justify-between gap-2">
               <h2 className="text-[10px] font-semibold uppercase tracking-wider text-tenue">
                 Resumen del día
@@ -302,7 +310,7 @@ export default function AgendaCliente({
                 className={cn('relative', pendientes.length && 'text-aviso hover:text-aviso')}
               >
                 {pendientes.length > 0 && (
-                  <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-aviso px-1 text-center text-[9px] font-bold leading-4 text-white">
+                  <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-aviso px-1 text-center text-[9px] font-bold leading-4 text-acento-contraste">
                     {pendientes.length}
                   </span>
                 )}
@@ -337,7 +345,7 @@ export default function AgendaCliente({
             {delDia.length === 0 ? (
               <p className="py-3 text-[12px] text-tenue">Sin reservas este día.</p>
             ) : (
-              <div className="desplaza max-h-80 space-y-2 overflow-y-auto">
+              <div className="desplaza min-h-0 flex-1 space-y-2 overflow-y-auto">
                 {delDia.map((r) => (
                   <Link
                     key={r.id}
@@ -351,8 +359,7 @@ export default function AgendaCliente({
                       </Insignia>
                     </div>
                     <p className="mt-0.5 text-[11px] text-tenue">
-                      {r.suite} · {format(new Date(r.entrada), 'HH:mm')} →{' '}
-                      {format(new Date(r.salida), 'HH:mm')}
+                      {r.suite} · {horaCorta(r.entrada, zona)} → {horaCorta(r.salida, zona)}
                     </p>
                   </Link>
                 ))}
@@ -390,8 +397,7 @@ export default function AgendaCliente({
                   <Insignia tono={TONO_ESTADO_RESERVA[r.estado]}>{ETIQUETA_ESTADO_RESERVA[r.estado]}</Insignia>
                 </div>
                 <p className="mt-0.5 truncate text-[11px] text-tenue">
-                  {r.ubicacion} · {r.suite} · {format(new Date(r.entrada), 'd MMM', { locale: es })} →{' '}
-                  {format(new Date(r.salida), 'd MMM', { locale: es })}
+                  {r.ubicacion} · {r.suite} · {diaCorto(r.entrada, zona)} → {diaCorto(r.salida, zona)}
                 </p>
                 <dl className="mt-2 grid grid-cols-3 gap-2 text-[12px]">
                   <div>
@@ -412,6 +418,6 @@ export default function AgendaCliente({
           </div>
         )}
       </PanelLateral>
-    </>
+    </div>
   );
 }

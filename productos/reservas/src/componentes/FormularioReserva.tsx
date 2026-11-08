@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { AlertCircle, CalendarCheck, Save } from 'lucide-react';
-import { Boton, Campo, Entrada, AreaTexto, Selector } from '@/componentes/ui';
+import { Save } from 'lucide-react';
+import { Boton, Campo, Entrada, AreaTexto, Selector, PieAcciones } from '@/componentes/ui';
 import { crearReserva, actualizarReserva } from '@/acciones/reservas';
 import { noches } from '@/lib/reservas';
 import { dinero } from '@/lib/formato';
@@ -48,6 +48,9 @@ export default function FormularioReserva({
   inicial,
   moneda,
   alGuardar,
+  id = 'form-reserva',
+  sinPie = false,
+  alEstado,
 }: {
   slug: string;
   suites: SuiteOpcion[];
@@ -56,9 +59,17 @@ export default function FormularioReserva({
   moneda: string;
   /** Si se da, al guardar se llama a esto en vez de saltar al detalle (el panel de edición cierra y recarga). */
   alGuardar?: () => void;
+  /** Para unir botones de fuera (el pie fijo de un panel) con `form=`. */
+  id?: string;
+  /**
+   * Dentro de un `PanelLateral` el pie lo pone el panel (regla del pie fijo, 2026-10-31): el
+   * formulario no pinta sus botones y cuenta su estado con `alEstado` para que el panel los
+   * deshabilite igual.
+   */
+  sinPie?: boolean;
+  alEstado?: (e: { enCurso: boolean; bloqueado: boolean }) => void;
 }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [enCurso, arranca] = useTransition();
 
   const [suiteId, setSuiteId] = useState(
@@ -94,17 +105,18 @@ export default function FormularioReserva({
     return { noches: noches(e, x), total: noches(e, x) * s.precioNoche };
   }, [suiteId, entrada, salida, suites]);
 
+  useEffect(() => alEstado?.({ enCurso, bloqueado: cuenta.excede }), [alEstado, enCurso, cuenta.excede]);
+
   function enviar(datos: FormData) {
-    setError(null);
     arranca(async () => {
       const r = reserva
         ? await actualizarReserva(slug, reserva.id, datos)
         : await crearReserva(slug, datos);
       if (!r.ok) {
-        setError(r.error);
+        toast.error(r.error);
         return;
       }
-      toast.success(reserva ? 'Reserva actualizada' : 'Reserva creada');
+      toast.success(reserva ? 'Guardado.' : 'Reserva creada.');
       if (alGuardar) {
         alGuardar();
         return;
@@ -119,47 +131,38 @@ export default function FormularioReserva({
 
   if (!suites.length) {
     return (
-      <p className="rounded border border-borde bg-aviso-suave px-3 py-2 text-[13px] text-aviso">
-        No hay suites creadas todavía. Créalas en Configuración antes de registrar una reserva.
-      </p>
+      <p className="text-[13px] text-aviso">No hay suites. Créalas en Configuración.</p>
     );
   }
 
   return (
-    <form action={enviar} className="space-y-4">
-      {inicial?.propuesta && (
-        <p className="flex items-start gap-2 rounded border border-borde bg-acento-suave px-3 py-2 text-[12px] text-acento">
-          <CalendarCheck className="mt-px h-4 w-4 shrink-0" />
-          La entrada y la salida vienen del hueco que pulsaste en la agenda: revísalas antes de guardar.
-        </p>
-      )}
-      <Campo etiqueta="Suite" requerido>
-        <Selector name="suiteId" value={suiteId} onChange={(e) => setSuiteId(e.target.value)} required>
-          {porUbicacion.map(([ubicacion, lista]) => (
-            <optgroup key={ubicacion} label={ubicacion}>
-              {lista.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nombre}
-                  {s.precioNoche ? ` — ${dinero(s.precioNoche, moneda)}/noche` : ''}
-                </option>
-              ))}
-            </optgroup>
-          ))}
-        </Selector>
-      </Campo>
-
+    <form id={id} action={enviar} className="flex flex-1 flex-col gap-4">
+      {/* Rejilla de dos columnas: se aprovecha el ancho del panel. */}
       <div className="grid gap-4 sm:grid-cols-2">
+        <Campo etiqueta="Suite" requerido>
+          <Selector name="suiteId" value={suiteId} onChange={(e) => setSuiteId(e.target.value)} required>
+            {porUbicacion.map(([ubicacion, lista]) => (
+              <optgroup key={ubicacion} label={ubicacion}>
+                {lista.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nombre}
+                    {s.precioNoche ? ` — ${dinero(s.precioNoche, moneda)}/noche` : ''}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </Selector>
+        </Campo>
         <Campo etiqueta="Huésped" requerido>
           <Entrada name="clienteNombre" defaultValue={reserva?.clienteNombre} required />
         </Campo>
         <Campo etiqueta="Teléfono">
           <Entrada name="telefono" defaultValue={reserva?.telefono ?? ''} inputMode="tel" />
         </Campo>
+        <Campo etiqueta="Documento de identidad">
+          <Entrada name="documento" defaultValue={reserva?.documento ?? ''} />
+        </Campo>
       </div>
-
-      <Campo etiqueta="Documento de identidad">
-        <Entrada name="documento" defaultValue={reserva?.documento ?? ''} />
-      </Campo>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Campo etiqueta="Entrada" requerido>
@@ -207,49 +210,39 @@ export default function FormularioReserva({
         </Campo>
       </div>
 
-      {sugerido && (
-        <p className="-mt-2 text-[12px] text-tenue">
-          {sugerido.noches} {sugerido.noches === 1 ? 'noche' : 'noches'} ·{' '}
+      {/* Una línea con la cuenta tal como va a quedar; la tarifa sugerida es una ACCIÓN. */}
+      <div className="-mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]">
+        <span className={cn('font-semibold', cuenta.excede ? 'text-error' : cuenta.pagada ? 'text-exito' : 'text-aviso')}>
+          {cuenta.excede ? 'El abono supera el total' : cuenta.pagada ? 'Pagada' : `Saldo ${dinero(cuenta.saldo, moneda)}`}
+        </span>
+        {sugerido && (
           <button
             type="button"
             onClick={() => setPrecio(sugerido.total.toFixed(2))}
-            className="font-semibold text-acento underline underline-offset-2"
+            className="text-acento underline underline-offset-2 hover:text-acento-fuerte"
           >
-            usar {dinero(sugerido.total, moneda)}
+            {sugerido.noches} {sugerido.noches === 1 ? 'noche' : 'noches'} · usar {dinero(sugerido.total, moneda)}
           </button>
-        </p>
-      )}
+        )}
+      </div>
 
-      <p className={cn('-mt-2 text-[12px]', cuenta.excede ? 'text-error' : cuenta.pagada ? 'text-exito' : 'text-aviso')}>
-        {cuenta.excede
-          ? 'El valor pagado supera el precio total.'
-          : cuenta.pagada
-            ? 'Cuenta saldada: la reserva quedará como pagada.'
-            : `Saldo pendiente: ${dinero(cuenta.saldo, moneda)}. Quedará como pago pendiente.`}
-      </p>
-
-      <Campo etiqueta="Comentarios">
-        <AreaTexto name="comentarios" rows={3} defaultValue={reserva?.comentarios ?? ''} />
+      {/* El último campo crece hasta el pie: el texto largo aprovecha el alto (regla 2026-11-08). */}
+      <Campo etiqueta="Comentarios" className="flex flex-1 flex-col">
+        <AreaTexto name="comentarios" rows={4} defaultValue={reserva?.comentarios ?? ''} className="min-h-24 flex-1" />
       </Campo>
 
-      {error && (
-        <p
-          role="alert"
-          className="flex items-start gap-2 rounded border border-borde bg-error-suave px-3 py-2 text-[12px] text-error"
-        >
-          <AlertCircle className="mt-px h-4 w-4 shrink-0" />
-          {error}
-        </p>
+      {!sinPie && (
+        <div className="mt-auto border-t border-borde pt-4">
+          <PieAcciones>
+            <Boton type="button" variante="secundario" onClick={() => router.back()} disabled={enCurso}>
+              Cancelar
+            </Boton>
+            <Boton type="submit" icono={Save} disabled={enCurso || cuenta.excede}>
+              {enCurso ? 'Guardando…' : reserva ? 'Guardar' : 'Crear reserva'}
+            </Boton>
+          </PieAcciones>
+        </div>
       )}
-
-      <div className="flex items-center justify-end gap-2 border-t border-borde pt-4">
-        <Boton type="button" variante="secundario" onClick={() => router.back()} disabled={enCurso}>
-          Cancelar
-        </Boton>
-        <Boton type="submit" icono={Save} disabled={enCurso || cuenta.excede}>
-          {enCurso ? 'Guardando…' : reserva ? 'Guardar cambios' : 'Crear reserva'}
-        </Boton>
-      </div>
     </form>
   );
 }

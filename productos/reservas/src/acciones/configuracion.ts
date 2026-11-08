@@ -4,17 +4,18 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura } from '@/lib/inquilino';
-import { esHexValido } from '@/lib/marca';
 import { subirImagen } from '@/lib/imagenes';
 
 export type Resultado = { ok: true; url?: string } | { ok: false; error: string };
 
-// ── Marca ───────────────────────────────────────────────────────────────────
-const Marca = z.object({
+// ── Negocio ─────────────────────────────────────────────────────────────────
+/**
+ * NEGOCIO (antes «Marca», 2026-11-08, como en Automatizaciones): sin color ni tema —el producto
+ * tiene un solo tema— y sin dirección del logo escrita a mano: el logo se SUBE como archivo y se
+ * guarda al subirlo (`subirLogo`). Las columnas `color_acento` y `tema` se quedan como están.
+ */
+const Negocio = z.object({
   nombre: z.string().trim().min(2, 'Escribe el nombre del alojamiento.').max(80),
-  colorAcento: z.string().trim(),
-  tema: z.enum(['CLARO', 'OSCURO']),
-  logoUrl: z.string().trim().url('La dirección del logo no es válida.').optional().or(z.literal('')),
   moneda: z.string().trim().length(3, 'La moneda son tres letras (USD, EUR…).').toUpperCase(),
 });
 
@@ -23,30 +24,22 @@ export async function guardarMarca(slug: string, datos: FormData): Promise<Resul
   if (!permiso.ok) return { ok: false, error: permiso.error };
   const { ctx } = permiso;
 
-  const leido = Marca.safeParse(Object.fromEntries(datos));
+  const leido = Negocio.safeParse(Object.fromEntries(datos));
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
   const d = leido.data;
 
-  if (!esHexValido(d.colorAcento))
-    return { ok: false, error: 'El color tiene que ser un hexadecimal como #4B2D8E.' };
-
   await prisma.inquilino.update({
     where: { id: ctx.inquilino.id },
-    data: {
-      nombre: d.nombre,
-      colorAcento: d.colorAcento.toUpperCase(),
-      tema: d.tema,
-      logoUrl: d.logoUrl || null,
-      moneda: d.moneda,
-    },
+    data: { nombre: d.nombre, moneda: d.moneda },
   });
 
-  // 'layout' porque la marca la pinta el armazón: cambiar solo esta página dejaría
-  // la barra lateral con el color viejo hasta la siguiente navegación completa.
+  // 'layout' porque el nombre lo pinta el armazón (el menú): cambiar solo esta página dejaría
+  // el menú con el nombre viejo hasta la siguiente navegación completa.
   revalidatePath(`/${slug}`, 'layout');
   return { ok: true };
 }
 
+/** Sube el logo y lo deja puesto: no hace falta pulsar «Guardar» después. */
 export async function subirLogo(slug: string, datos: FormData): Promise<Resultado> {
   const permiso = await contextoEscritura(slug, 'ADMIN');
   if (!permiso.ok) return { ok: false, error: permiso.error };
@@ -54,7 +47,21 @@ export async function subirLogo(slug: string, datos: FormData): Promise<Resultad
   const archivo = datos.get('archivo');
   if (!(archivo instanceof File) || !archivo.size)
     return { ok: false, error: 'Elige una imagen.' };
-  return subirImagen(archivo, `${ctx.inquilino.slug}/marca`);
+  const r = await subirImagen(archivo, `${ctx.inquilino.slug}/marca`);
+  if (!r.ok) return r;
+  await prisma.inquilino.update({ where: { id: ctx.inquilino.id }, data: { logoUrl: r.url } });
+  revalidatePath(`/${slug}`, 'layout');
+  return r;
+}
+
+/** Quita el logo: en su lugar se ve la inicial del alojamiento. */
+export async function quitarLogo(slug: string): Promise<Resultado> {
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
+  await prisma.inquilino.update({ where: { id: ctx.inquilino.id }, data: { logoUrl: null } });
+  revalidatePath(`/${slug}`, 'layout');
+  return { ok: true };
 }
 
 export async function subirFoto(slug: string, datos: FormData): Promise<Resultado> {

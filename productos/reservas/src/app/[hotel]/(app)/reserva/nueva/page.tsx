@@ -43,11 +43,16 @@ export default async function PaginaNuevaReserva({
   const preseleccion = suite && opciones.some((o) => String(o.id) === suite) ? Number(suite) : undefined;
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       {/* Volver es la flecha del título; crear la reserva es el pie del propio formulario. */}
-      <CabeceraPagina titulo="Nueva reserva" volver={{ href: volverA, etiqueta: 'Volver' }} />
-      <div className="p-4 sm:p-6">
-        <div className="tarjeta mx-auto max-w-2xl p-5 sm:p-6">
+      <CabeceraPagina
+        titulo="Nueva reserva"
+        volver={{ href: volverA, etiqueta: 'Volver' }}
+        descripcion={propuesta !== null ? 'La entrada viene del hueco que pulsaste en la agenda: revísala antes de guardar.' : undefined}
+      />
+      {/* La tarjeta llega hasta abajo y aprovecha el ancho (rejilla de dos columnas). */}
+      <div className="flex flex-1 flex-col p-4 sm:p-6">
+        <div className="tarjeta flex flex-1 flex-col p-5 sm:p-6">
           <FormularioReserva
             slug={hotel}
             suites={opciones}
@@ -61,6 +66,6 @@ export default async function PaginaNuevaReserva({
           />
         </div>
       </div>
-    </>
+    </div>
   );
 }

@@ -103,6 +103,7 @@ export default async function PaginaAgenda({
       suites={datos}
       pendientes={deudas}
       moneda={inquilino.moneda}
+      zona={zona}
       puedeOperar={sesion.rol !== 'CONSULTA'}
     />
   );

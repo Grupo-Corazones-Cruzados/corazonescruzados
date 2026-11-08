@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { ACENTO_GCC, esHexValido } from '@/lib/marca';
+import { TEMA } from '@/lib/marca';
 import { conBase } from '@/lib/base';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
  * EL MANIFIESTO, POR HOTEL. Es lo que hace que la aplicación anclada al inicio
  * del teléfono se abra y se mantenga como una app (`display: standalone`) en vez
  * de saltar al navegador al cambiar de módulo (Fernando, 2026-09-20). Lleva el
- * nombre y el color del inquilino, y su ámbito es la carpeta del hotel: todo lo
+ * nombre del inquilino y el color del tema único, y su ámbito es la carpeta del hotel: todo lo
  * que cuelga de /<hotel>/ —panel, agenda, acceso— se queda dentro.
  *
  * Es público a propósito: el navegador pide el manifiesto SIN cookies, y aquí
@@ -19,12 +19,13 @@ export async function GET(_: Request, { params }: { params: Promise<{ hotel: str
   const { hotel } = await params;
   const inquilino = await prisma.inquilino.findUnique({
     where: { slug: hotel },
-    select: { nombre: true, colorAcento: true, tema: true },
+    select: { nombre: true },
   });
   if (!inquilino) return NextResponse.json({ error: 'No existe' }, { status: 404 });
 
-  const color = esHexValido(inquilino.colorAcento) ? inquilino.colorAcento : ACENTO_GCC;
-  const fondo = inquilino.tema === 'OSCURO' ? '#1b1a19' : '#faf9f8';
+  // Un solo tema en el producto (2026-11-08): el oscuro de WhatsApp (ver lib/marca.ts).
+  const color = TEMA.fondo;
+  const fondo = TEMA.fondo;
 
   return NextResponse.json(
     {

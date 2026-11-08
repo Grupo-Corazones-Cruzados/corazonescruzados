@@ -37,8 +37,6 @@ export default async function PaginaAcceso({ params }: { params: Promise<{ hotel
 
   return (
     <AplicaMarca
-      colorAcento={inquilino.colorAcento}
-      tema={inquilino.tema}
       className="flex items-center justify-center px-4 py-10"
     >
       <div className="tarjeta w-full max-w-sm p-8">

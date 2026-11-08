@@ -2,8 +2,6 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { Building2, CalendarClock, LogIn, LogOut, Plus, BedDouble } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { CabeceraPagina } from '@/componentes/Navegacion';
@@ -18,6 +16,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { EstadoReserva, EstadoPagoReserva } from '@/generated/prisma/enums';
 import { miniatura } from '@/lib/miniatura';
+import { diaYHora, diaCorto, horaCorta } from '@/lib/formato';
 
 export type ReservaVista = {
   id: number;
@@ -48,11 +47,14 @@ const aFechas = (r: ReservaVista) => ({
 export default function PanelCliente({
   slug,
   hotel,
+  zona,
   ubicaciones,
   puedeOperar,
 }: {
   slug: string;
   hotel: string;
+  /** Zona del hotel: las horas se escriben igual en el servidor y en el navegador. */
+  zona: string;
   ubicaciones: UbicacionVista[];
   puedeOperar: boolean;
 }) {
@@ -101,24 +103,28 @@ export default function PanelCliente({
 
   if (!ubicaciones.length) {
     return (
-      <>
+      <div className="flex flex-1 flex-col">
         <CabeceraPagina titulo={hotel} descripcion="Panel de control" />
-        <EstadoVacio
-          icono={Building2}
-          titulo="Todavía no hay ubicaciones"
-          detalle="Crea la primera ubicación y sus suites en Configuración; el panel se llena solo."
-          accion={
-            <Link href={`/${slug}/configuracion`}>
-              <Boton>Ir a Configuración</Boton>
-            </Link>
-          }
-        />
-      </>
+        <div className="flex flex-1 flex-col p-4 sm:p-6">
+          <Tarjeta className="flex flex-1 items-center justify-center">
+            <EstadoVacio
+              icono={Building2}
+              titulo="Todavía no hay ubicaciones"
+              detalle="Créalas en Configuración."
+              accion={
+                <Link href={`/${slug}/configuracion?seccion=ubicaciones`}>
+                  <Boton>Ir a Configuración</Boton>
+                </Link>
+              }
+            />
+          </Tarjeta>
+        </div>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       {/* Las cuentas del hotel entero son INFORMACIÓN, no botones: van en la línea de estado
           bajo el título. Con una sola ubicación serían las mismas de su tarjeta: se omiten. */}
       <CabeceraPagina
@@ -147,9 +153,11 @@ export default function PanelCliente({
         />
       </div>
 
-      <div className="flex flex-col gap-4 p-4 sm:p-6 xl:flex-row">
+      {/* El cuerpo llega hasta abajo (regla 2026-11-08): en escritorio las tres columnas se
+          estiran y «Próximos 7 días» se desplaza por dentro; en el teléfono crece la última. */}
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6 xl:min-h-0 xl:flex-row">
         {/* Ubicaciones */}
-        <div className="xl:w-64 xl:shrink-0">
+        <div className="desplaza xl:w-64 xl:shrink-0 xl:overflow-y-auto">
           <h2 className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-tenue">
             Ubicaciones
           </h2>
@@ -177,7 +185,7 @@ export default function PanelCliente({
                     'tarjeta relative min-w-0 cursor-pointer overflow-hidden p-3 text-left transition-[box-shadow,background-color] foco-visible',
                     // La seleccionada se RODEA con un borde del acento (Fernando,
                     // 2026-09-20): el cambio de fondo solo no se distinguía.
-                    sel ? 'border-acento bg-acento-suave ring-2 ring-acento' : 'hover:bg-realce',
+                    sel ? 'border-acento bg-acento-suave ring-2 ring-inset ring-acento' : 'hover:bg-realce',
                   )}
                 >
                   <div className="flex items-center gap-2.5">
@@ -214,7 +222,7 @@ export default function PanelCliente({
                   <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
                     <span className="text-exito">{cuenta('libre', u.suites)} libres</span>
                     <span className="text-aviso">{cuenta('por-salir', u.suites)} por salir</span>
-                    <span className="text-acento">{cuenta('ocupada', u.suites)} ocup.</span>
+                    <span className="text-info">{cuenta('ocupada', u.suites)} ocup.</span>
                   </div>
                 </div>
               );
@@ -223,7 +231,7 @@ export default function PanelCliente({
         </div>
 
         {/* Suites */}
-        <div className="min-w-0 flex-1">
+        <div className="desplaza min-w-0 xl:flex-1 xl:overflow-y-auto">
           <h2 className="mb-2 px-1 text-[10px] font-semibold uppercase tracking-wider text-tenue">
             {actual?.nombre} ({visibles.length})
           </h2>
@@ -253,7 +261,7 @@ export default function PanelCliente({
                         <div className="mt-1">
                           <p className="truncate text-[12px] text-texto">{hoy.clienteNombre}</p>
                           <p className="text-[11px] text-tenue">
-                            Sale el {format(hoy.salida, "d 'de' MMMM, HH:mm", { locale: es })}
+                            Sale el {diaYHora(hoy.salida, zona)}
                           </p>
                         </div>
                       ) : (
@@ -279,7 +287,7 @@ export default function PanelCliente({
         </div>
 
         {/* Próximos 7 días */}
-        <div className="xl:w-80 xl:shrink-0">
+        <div className="flex flex-1 flex-col xl:w-80 xl:flex-none xl:shrink-0">
           <div className="mb-2 flex items-center gap-2 px-1">
             <CalendarClock className="h-4 w-4 text-acento" />
             <h2 className="text-[10px] font-semibold uppercase tracking-wider text-tenue">
@@ -287,12 +295,11 @@ export default function PanelCliente({
             </h2>
           </div>
           {proximos.length === 0 ? (
-            <Tarjeta className="p-6 text-center">
-              <CalendarClock className="mx-auto mb-2 h-8 w-8 text-borde" />
-              <p className="text-[12px] text-tenue">Sin entradas ni salidas próximas</p>
+            <Tarjeta className="flex flex-1 items-center justify-center">
+              <EstadoVacio icono={CalendarClock} titulo="Sin entradas ni salidas" />
             </Tarjeta>
           ) : (
-            <div className="desplaza max-h-[calc(100vh-220px)] space-y-2 overflow-y-auto">
+            <div className="desplaza min-h-0 flex-1 space-y-2 overflow-y-auto">
               {proximos.map((ev, i) => (
                 <Link
                   key={`${ev.tipo}-${ev.reserva.id}-${i}`}
@@ -315,9 +322,9 @@ export default function PanelCliente({
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-[12px] font-semibold">
-                      {format(ev.fecha, 'd MMM', { locale: es })}
+                      {diaCorto(ev.fecha, zona)}
                     </p>
-                    <p className="text-[10px] text-tenue">{format(ev.fecha, 'HH:mm')}</p>
+                    <p className="text-[10px] text-tenue">{horaCorta(ev.fecha, zona)}</p>
                   </div>
                 </Link>
               ))}
@@ -325,7 +332,7 @@ export default function PanelCliente({
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

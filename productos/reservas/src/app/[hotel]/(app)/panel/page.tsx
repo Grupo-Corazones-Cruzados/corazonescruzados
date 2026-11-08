@@ -66,6 +66,7 @@ export default async function PaginaPanel({ params }: { params: Promise<{ hotel:
     <PanelCliente
       slug={hotel}
       hotel={inquilino.nombre}
+      zona={inquilino.zonaHoraria}
       ubicaciones={datos}
       puedeOperar={sesion.rol !== 'CONSULTA'}
     />

@@ -55,11 +55,13 @@ export default async function PaginaReserva({
   ];
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       <DetalleReserva
         cabecera={{
           titulo: reserva.clienteNombre,
           volver: volverA,
+          // Lo que antes era una nota bajo la cuenta va a la burbuja (i) del título.
+          descripcion: sesion.rol === 'CONSULTA' ? 'Tu cuenta es de solo consulta: puedes ver la reserva, pero no modificarla.' : undefined,
           // Una sola línea de estado bajo el título. La suite y la ubicación ya
           // están en la tarjeta del huésped: no se repiten en la cabecera.
           extra: (
@@ -68,7 +70,7 @@ export default async function PaginaReserva({
                 {ETIQUETA_ESTADO_RESERVA[reserva.estado]}
               </Insignia>
               <Insignia tono={reserva.estadoPago === 'PAGADO' ? 'exito' : 'aviso'}>
-                {reserva.estadoPago === 'PAGADO' ? 'Pagada' : 'Pago pendiente'}
+                {reserva.estadoPago === 'PAGADO' ? 'Pagada' : 'Pendiente'}
               </Insignia>
             </div>
           ),
@@ -99,8 +101,10 @@ export default async function PaginaReserva({
         abrirEdicion={editar === '1'}
       />
 
-      <div className="grid gap-4 p-4 sm:p-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="space-y-4">
+      {/* El cuerpo llega hasta abajo (regla 2026-11-08): las dos columnas se estiran y el último
+          bloque de cada una crece. */}
+      <div className="grid flex-1 gap-4 p-4 sm:p-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <div className="flex flex-col gap-4">
           <div className="tarjeta p-5">
             <h2 className="mb-4 text-[13px] font-semibold uppercase tracking-wide text-tenue">
               Estancia
@@ -127,7 +131,7 @@ export default async function PaginaReserva({
             </div>
           </div>
 
-          <div className="tarjeta p-5">
+          <div className="tarjeta flex-1 p-5">
             <h2 className="mb-4 text-[13px] font-semibold uppercase tracking-wide text-tenue">
               Huésped
             </h2>
@@ -153,8 +157,8 @@ export default async function PaginaReserva({
           </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="tarjeta p-5">
+        <div className="flex flex-col gap-4">
+          <div className="tarjeta flex-1 p-5">
             <h2 className="mb-4 text-[13px] font-semibold uppercase tracking-wide text-tenue">
               Cuenta
             </h2>
@@ -176,13 +180,8 @@ export default async function PaginaReserva({
             </dl>
           </div>
 
-          {sesion.rol === 'CONSULTA' && (
-            <p className="tarjeta p-4 text-[12px] leading-relaxed text-tenue">
-              Tu cuenta es de solo consulta: puedes ver la reserva, pero no modificarla.
-            </p>
-          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

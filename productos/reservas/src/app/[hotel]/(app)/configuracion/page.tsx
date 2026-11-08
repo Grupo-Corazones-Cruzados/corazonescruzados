@@ -1,6 +1,8 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
 import { haySubida } from '@/lib/imagenes';
+import { cupoDeCuentas } from '@/lib/limites';
+import type { UsuarioVista } from './SeccionUsuarios';
 import ConfiguracionCliente from './ConfiguracionCliente';
 
 export const dynamic = 'force-dynamic';
@@ -12,7 +14,27 @@ export default async function PaginaConfiguracion({
   params: Promise<{ hotel: string }>;
 }) {
   const { hotel } = await params;
-  const { inquilino } = await exigirContexto(hotel, 'ADMIN');
+  const { inquilino, sesion } = await exigirContexto(hotel, 'ADMIN');
+
+  // Los usuarios del alojamiento: antes, la página «Usuarios» (2026-11-08).
+  const cuentas = await prisma.usuario.findMany({
+    where: { inquilinoId: inquilino.id },
+    orderBy: [{ activo: 'desc' }, { rol: 'asc' }, { nombre: 'asc' }],
+  });
+  const usuarios: UsuarioVista[] = cuentas.map((u) => ({
+    id: u.id,
+    usuario: u.usuario,
+    nombre: u.nombre,
+    email: u.email,
+    rol: u.rol,
+    activo: u.activo,
+    ultimoAcceso: u.ultimoAcceso?.toISOString() ?? null,
+  }));
+  const cupo = await cupoDeCuentas(
+    inquilino.id,
+    // El inquilino del grupo no tiene topes (Fernando, 2026-09-16).
+    inquilino.cortesia ? null : (inquilino.suscripcion?.plan.maxUsuarios ?? null),
+  );
 
   const ubicaciones = await prisma.ubicacion.findMany({
     where: { inquilinoId: inquilino.id },
@@ -29,10 +51,10 @@ export default async function PaginaConfiguracion({
     <ConfiguracionCliente
       slug={hotel}
       haySubida={haySubida}
+      zona={inquilino.zonaHoraria}
+      usuarios={{ lista: usuarios, yoSoy: sesion.uid, cupo }}
       marca={{
         nombre: inquilino.nombre,
-        colorAcento: inquilino.colorAcento,
-        tema: inquilino.tema,
         logoUrl: inquilino.logoUrl,
         moneda: inquilino.moneda,
       }}

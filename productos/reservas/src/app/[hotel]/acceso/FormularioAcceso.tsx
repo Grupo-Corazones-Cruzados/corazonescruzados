@@ -108,8 +108,10 @@ export default function FormularioAcceso({ slug }: { slug: string }) {
           Quien tiene cuenta de cliente en GCC World escribe su correo y su contraseña
           de siempre; quien tiene una cuenta creada aquí escribe su usuario.
         */}
+        {/* Quien tiene cuenta de cliente de GCC World escribe ese correo; quien tiene una creada
+            aquí, su usuario. Lo explica el marcador, no una nota debajo. */}
         <Campo etiqueta="Usuario o correo">
-          <Entrada name="usuario" autoComplete="username" autoFocus required />
+          <Entrada name="usuario" autoComplete="username" autoFocus required placeholder="Tu usuario o el correo de GCC World" />
         </Campo>
         <Campo etiqueta="Contraseña">
           <Entrada name="clave" type="password" autoComplete="current-password" required />
@@ -121,10 +123,6 @@ export default function FormularioAcceso({ slug }: { slug: string }) {
           {enCurso ? 'Entrando…' : 'Entrar'}
         </Boton>
 
-        <p className="pt-1 text-center text-[11px] leading-relaxed text-tenue">
-          Si tienes cuenta de cliente de GCC World, entra con ese correo y esa contraseña:
-          es la misma para todo. Si te creó la cuenta tu administrador, pídesela a él.
-        </p>
       </form>
     );
   }
@@ -133,15 +131,9 @@ export default function FormularioAcceso({ slug }: { slug: string }) {
   if (paso === 'elegir') {
     return (
       <div className="space-y-3">
-        <div className="rounded border border-borde bg-acento-suave px-3 py-2.5 text-[12.5px] leading-relaxed text-acento">
-          <p className="flex items-center gap-1.5 font-semibold">
-            <ShieldCheck className="h-4 w-4 shrink-0" /> Un paso más
-          </p>
-          <p className="mt-0.5">
-            Tu cuenta es de <strong>cliente de GCC World</strong>, así que pedimos una segunda
-            prueba de que eres tú.
-          </p>
-        </div>
+        <p className="flex items-center gap-1.5 text-[13px] font-semibold text-texto" title="Las cuentas de GCC World piden una segunda prueba">
+          <ShieldCheck className="h-4 w-4 shrink-0 text-acento" /> Un paso más
+        </p>
 
         {aviso}
 
@@ -166,13 +158,6 @@ export default function FormularioAcceso({ slug }: { slug: string }) {
           {enCurso ? 'Enviando…' : 'Enviarme un código al correo'}
         </Boton>
 
-        {!hayPasskey && (
-          <p className="text-center text-[11px] leading-relaxed text-tenue">
-            ¿Quieres entrar sin código la próxima vez? Registra una passkey desde tu cuenta
-            de GCC World: sirve aquí y en todos los productos.
-          </p>
-        )}
-
         <Volver alVolver={() => { setPaso('clave'); setError(null); }} />
       </div>
     );
@@ -181,8 +166,8 @@ export default function FormularioAcceso({ slug }: { slug: string }) {
   // ── Paso 2, el código ──────────────────────────────────────────────────────
   return (
     <form action={comprobarCodigo} className="space-y-3">
-      <p className="rounded border border-borde bg-realce px-3 py-2.5 text-[12.5px] leading-relaxed text-tenue">
-        Te enviamos un código de seis cifras a <strong>{tapado}</strong>. Caduca en 15 minutos.
+      <p className="text-[12.5px] text-tenue">
+        Código enviado a <strong className="text-texto">{tapado}</strong>
       </p>
 
       <Campo etiqueta="Código">

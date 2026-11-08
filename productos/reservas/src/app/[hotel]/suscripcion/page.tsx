@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { CreditCard, ShieldAlert, CalendarX2 } from 'lucide-react';
 import { exigirSesionDelHotel } from '@/lib/inquilino';
 import { AplicaMarca, LogoHotel } from '@/componentes/Marca';
-import { dinero } from '@/lib/formato';
+import { dinero, fechaLarga } from '@/lib/formato';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Suscripción' };
@@ -43,8 +43,6 @@ export default async function PaginaSuscripcion({ params }: { params: Promise<{ 
 
   return (
     <AplicaMarca
-      colorAcento={inquilino.colorAcento}
-      tema={inquilino.tema}
       className="flex items-center justify-center px-4 py-10"
     >
       <div className="tarjeta w-full max-w-lg p-8">
@@ -80,12 +78,7 @@ export default async function PaginaSuscripcion({ params }: { params: Promise<{ 
               <div className="col-span-2">
                 <dt className="text-[11px] uppercase tracking-wide text-tenue">Pagado hasta</dt>
                 <dd className="font-semibold text-texto">
-                  {inquilino.suscripcion.pagadoHasta.toLocaleDateString('es-EC', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric',
-                    timeZone: 'UTC',
-                  })}
+                  {fechaLarga(inquilino.suscripcion.pagadoHasta, 'UTC')}
                 </dd>
               </div>
             )}

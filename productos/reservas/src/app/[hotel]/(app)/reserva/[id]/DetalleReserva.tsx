@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useCallback, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Pencil, Trash2, DoorOpen } from 'lucide-react';
-import { Boton, Confirmar, PanelLateral } from '@/componentes/ui';
+import { Pencil, Trash2, DoorOpen, Save } from 'lucide-react';
+import { Boton, BotonEliminar, Confirmar, PanelLateral, PieAcciones } from '@/componentes/ui';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import FormularioReserva, {
   type ReservaEditable,
@@ -35,7 +35,7 @@ export default function DetalleReserva({
   yaFinalizada,
   abrirEdicion = false,
 }: {
-  cabecera: { titulo: string; volver: string; extra?: React.ReactNode };
+  cabecera: { titulo: string; volver: string; extra?: React.ReactNode; descripcion?: string };
   slug: string;
   reserva: ReservaEditable;
   suites: SuiteOpcion[];
@@ -50,6 +50,9 @@ export default function DetalleReserva({
   const [editando, setEditando] = useState(abrirEdicion);
   const [borrando, setBorrando] = useState(false);
   const [enCurso, arranca] = useTransition();
+  // El estado del formulario, para el pie fijo del panel (que vive fuera del formulario).
+  const [formulario, setFormulario] = useState({ enCurso: false, bloqueado: false });
+  const alEstado = useCallback((e: { enCurso: boolean; bloqueado: boolean }) => setFormulario(e), []);
 
   const ejecutar = (fn: () => Promise<{ ok: boolean; error?: string }>, exito: string) =>
     arranca(async () => {
@@ -66,6 +69,7 @@ export default function DetalleReserva({
     <CabeceraPagina
       titulo={cabecera.titulo}
       volver={{ href: cabecera.volver, etiqueta: 'Volver' }}
+      descripcion={cabecera.descripcion}
       extra={cabecera.extra}
       menu={
         puedeOperar
@@ -87,14 +91,14 @@ export default function DetalleReserva({
                     ? 'Con saldo pendiente no se puede dar la salida: edita la reserva y anota el pago'
                     : undefined
               }
-              onClick={() => ejecutar(() => darSalida(slug, reserva.id), 'Salida registrada')}
+              onClick={() => ejecutar(() => darSalida(slug, reserva.id), 'Salida registrada.')}
             >
               {/* Corto: en el teléfono comparte la barra con «Editar». Que falta el pago ya lo
                   dice la línea de estado («Pago pendiente»). */}
-              {yaFinalizada ? 'Estancia terminada' : 'Registrar salida'}
+              {yaFinalizada ? 'Terminada' : 'Registrar salida'}
             </Boton>
             <Boton icono={Pencil} onClick={() => setEditando(true)} disabled={enCurso}>
-              Editar reserva
+              Editar
             </Boton>
           </>
         )
@@ -111,15 +115,29 @@ export default function DetalleReserva({
       <PanelLateral
         abierto={editando}
         alCerrar={() => setEditando(false)}
-        titulo="Editar reserva"
-        descripcion={reserva.clienteNombre}
+        titulo={reserva.clienteNombre}
         ancho="lg"
+        lleno
+        pie={
+          <PieAcciones
+            eliminar={<BotonEliminar titulo="Eliminar la reserva" disabled={formulario.enCurso || enCurso} onClick={() => setBorrando(true)} />}
+          >
+            <Boton type="button" variante="secundario" onClick={() => setEditando(false)} disabled={formulario.enCurso}>
+              Cancelar
+            </Boton>
+            <Boton form="form-reserva" type="submit" icono={Save} disabled={formulario.enCurso || formulario.bloqueado}>
+              {formulario.enCurso ? 'Guardando…' : 'Guardar'}
+            </Boton>
+          </PieAcciones>
+        }
       >
         <FormularioReserva
           slug={slug}
           suites={suites}
           reserva={reserva}
           moneda={moneda}
+          sinPie
+          alEstado={alEstado}
           alGuardar={() => {
             setEditando(false);
             // Misma pantalla sin `?editar=1`: al ser dinámica llega recién hecha.
@@ -130,8 +148,8 @@ export default function DetalleReserva({
 
       <Confirmar
         abierto={borrando}
-        titulo="Eliminar la reserva"
-        mensaje="La reserva deja de contar para la ocupación y para los reportes, pero no se borra de la base: el histórico de meses cerrados no puede cambiar hacia atrás."
+        titulo="¿Eliminar la reserva?"
+        mensaje="Deja de contar para la ocupación y los reportes; el histórico de meses cerrados no cambia."
         ocupado={enCurso}
         alCerrar={() => setBorrando(false)}
         alAceptar={() =>
@@ -141,8 +159,9 @@ export default function DetalleReserva({
               toast.error(r.error);
               return;
             }
-            toast.success('Reserva eliminada');
+            toast.success('Eliminada.');
             setBorrando(false);
+            setEditando(false);
       // Cuando se navega NO se refresca: refrescar invalida el árbol ACTUAL, que es
       // justo el que se está abandonando, y el destino es dinámico —llega recién
       // hecho igual—. (Sospeché que además cancelaba el salto; lo medí y NO era

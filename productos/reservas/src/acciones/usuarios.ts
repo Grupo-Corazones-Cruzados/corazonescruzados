@@ -66,7 +66,7 @@ export async function crearUsuario(slug: string, datos: FormData): Promise<Resul
     },
   });
 
-  revalidatePath(`/${slug}/usuarios`);
+  revalidatePath(`/${slug}/configuracion`);
   return { ok: true, clave: d.clave ? undefined : clave };
 }
 
@@ -120,7 +120,7 @@ export async function editarUsuario(
     data: { nombre, email: email || null, rol, activo },
   });
 
-  revalidatePath(`/${slug}/usuarios`);
+  revalidatePath(`/${slug}/configuracion`);
   return { ok: true };
 }
 
@@ -138,7 +138,7 @@ export async function restablecerClave(slug: string, id: number): Promise<Result
   const clave = claveAlAzar();
   await prisma.usuario.update({ where: { id }, data: { passwordHash: await bcrypt.hash(clave, 10) } });
 
-  revalidatePath(`/${slug}/usuarios`);
+  revalidatePath(`/${slug}/configuracion`);
   return { ok: true, clave };
 }
 
