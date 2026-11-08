@@ -12032,3 +12032,23 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 - ✅ **¿Variables en Railway?** Faltaban `WHATSAPP_ES_CONFIG_ID` y `WHATSAPP_TOKEN` en `automatizaciones`; puestas como referencias.
 - ⏸ **Dominio del SDK en la app de Meta** (`automatizaciones.grupocc.org`): solo Fernando tiene acceso. Hasta que se añada, la ventana de Meta no abre (por eso 95 %).
 - ✅ **Probado en local (2026-11-07):** `/grupo` conectado (la comprobación contra Meta devolvió el token del número de prueba vencido: dato real) y `/demo` sin número, claro/oscuro, 1280 y 390 px, `scrollWidth` = ancho, sin errores de consola. No se probó un alta real: necesita un cliente con su teléfono.
+
+
+# PRODUCTOS SIN SUBDOMINIO (2026-11-08) · 25 %
+**Objetivo:** que los cinco productos se sirvan desde `app.grupocc.org` y desaparezcan sus subdominios, en Railway y en
+Cloudflare. **Decisión de Fernando (2026-11-08):** «eliminarlos de verdad» (descartadas: ocultarlos con redirección,
+o dejarlos). **Rol:** arquitecto de plataforma.
+
+## Lo que se sabe
+- La entrada visible ya existe: `/dashboard/producto/<p>/<negocio>` es un marco con las dos capas de menú; el producto
+  se carga en un `iframe` desde `https://<p>.grupocc.org` (`lib/productos/tipos.ts`) con pase de un uso.
+- Apuntar el `iframe` a `*.up.railway.app` no vale: otro sitio → cookies de terceros bloqueadas → sin sesión.
+- Camino probable: cada producto con `basePath` (p. ej. `/p/reservas`) y la app principal haciendo de pasarela de esa
+  ruta hacia el servidor del producto (Railway hoy; `127.0.0.1:310x` en el M1).
+- Cloudflare aún no está activo: borrar ahí no afecta hoy, pero rompería al activar. Railway sí afecta al instante.
+
+## Preguntas abiertas
+- P1 Inventario por producto de lo que depende de su dominio (cookies, rutas absolutas, correos, PWA, webhooks,
+  streaming). 🔎 en curso.
+- P2 ¿La pasarela de Next (rewrites) conserva el host original y aguanta streaming y subidas grandes? ❓ probar.
+- P3 Orden: Reservas primero como modelo, luego los demás; los dominios se borran al final. ❓ confirmar con el inventario.

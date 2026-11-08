@@ -6429,3 +6429,10 @@ En los cinco productos el título del navegador es `GCC · <página> · <product
 - **En la fila**: debajo de la vista previa, el estado si no es Abierto (color de texto, sin relleno) y el responsable con icono de persona.
 - **Teléfono**: botón «Filtros» que abre `PanelLateral lleno` con el mismo `PanelFiltros`.
 - `MenuBoton` (`componentes/Navegacion.tsx`) es el `MenuFila` con botón de texto: el mismo menú medido en `fixed`, por eso no lo recorta ninguna columna.
+
+## La dirección de un producto (Fernando, 2026-11-08)
+Un producto se abre **dentro de GCC World**: la dirección que ve y comparte el usuario es
+`app.grupocc.org/dashboard/producto/<producto>/<negocio>` (p. ej. `/dashboard/producto/reservas/grupo`), con las dos
+capas de menú de las apps. Los subdominios propios (`reservas.grupocc.org`…) **desaparecen**: ningún enlace, correo,
+QR ni botón nuevo debe apuntar a ellos. Mientras dure la migración siguen vivos solo como motor del marco (ver
+`Aprendizaje.md` «PRODUCTOS SIN SUBDOMINIO»).
