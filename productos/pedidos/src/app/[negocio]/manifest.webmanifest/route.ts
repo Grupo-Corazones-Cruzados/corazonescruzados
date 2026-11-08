@@ -40,6 +40,8 @@ export async function GET(_: Request, { params }: { params: Promise<{ negocio: s
       theme_color: color,
       background_color: fondo,
       icons: [
+        { src: '/icono-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: '/icono-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
         { src: '/apple-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
         { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
       ],
