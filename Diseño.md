@@ -6436,3 +6436,10 @@ Un producto se abre **dentro de GCC World**: la dirección que ve y comparte el 
 capas de menú de las apps. Los subdominios propios (`reservas.grupocc.org`…) **desaparecen**: ningún enlace, correo,
 QR ni botón nuevo debe apuntar a ellos. Mientras dure la migración siguen vivos solo como motor del marco (ver
 `Aprendizaje.md` «PRODUCTOS SIN SUBDOMINIO»).
+
+## El sello de GCC en el icono de cada producto (Fernando, 2026-11-08)
+Todo producto lleva en su icono el **círculo del logo de GCC** (`public/logo-gcc-512.png`) abajo a la derecha:
+posición 17/32 y tamaño 13,6/32 del lado. Va en los cuatro sitios: `src/app/icon.svg` (pestaña, como `<image>`),
+`src/app/apple-icon.png` (180), `public/icono-192.png` y `public/icono-512.png` (en el manifiesto; a sangre y con
+el dibujo al 75 % centrado), y la copia de 96 px de la plataforma en `public/productos-iconos/<producto>.png`. Hecho
+en los cinco el 2026-11-08 (Automatizaciones primero).
