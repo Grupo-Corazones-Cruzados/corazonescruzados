@@ -1,5 +1,50 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (declarado 2026-11-08) — EL PRODUCTO «AUTOMATIZACIONES DE WHATSAPP» COMO MODELO DE LOS CINCO: TIENDAS, WEB, DISEÑO Y NAVEGACIÓN · 🔎 55 %
+
+Fernando, 2026-11-08: dejar bien definido Automatizaciones de WhatsApp para aprender de él las reglas de
+arquitectura que valdrán para todos los productos (empezando por Reservas, en ~1 h): cómo será en las tiendas,
+cómo en la web, y el diseño estandarizado de interfaz y navegación.
+
+**Rol asumido:** arquitecto de producto multiplataforma (web + app de tienda con Capacitor) y responsable del
+sistema de diseño de los productos.
+
+### Lo que ya está decidido (fuentes: MEMORIA.md, Diseño.md, `productos/automatizaciones/README.md`, código)
+- **Web:** servicio propio `automatizaciones.grupocc.org` (puerto 3014, esquema `automatizaciones`), multi-inquilino
+  por ruta `/<cliente>`, marca por inquilino (`lib/marca.ts`), puerta de mensualidad en `evaluarAcceso()`
+  (`src/lib/inquilino.ts`). 5 $/mes con las tres cosas (agente IA, correo, WhatsApp); secciones según lo MONTADO.
+  Lo pagado vive en la plataforma (`gccSuscripcion: true` en `lib/productos/accesos.ts`, `PAGADO_HASTA_GCC`).
+  Se entra con la cuenta de GCC World sin copiar la contraseña (`origen = GCC`). Instalable como PWA por inquilino
+  (`[cliente]/manifest.webmanifest`, `viewportFit: cover`, márgenes seguros).
+- **Tiendas:** no hay app propia del producto. **Todo dentro de GCC Progreso** con accesos directos (Fernando,
+  2026-11-05; deroga «GCC Productos»). Capacitor con `server.url` remoto y `allowNavigation: *.grupocc.org`, así que la
+  WebView ya puede abrir el dominio del producto. Compra en tienda (StoreKit / Play Billing), PayPhone solo en web y
+  oculto en Progreso (`usePagosEnApp`); el que pagó en web entra sin volver a pagar; en iPhone no se menciona el pago web.
+- **Diseño:** mismo lenguaje en los cinco (Catering referencia; piezas nuevas de 2026-11-08 nacieron en Automatizaciones
+  y faltan en los otros cuatro: `useSeccion`/`Secciones`/`PortadaSecciones`, `PieAcciones`/`BotonEliminar`, `recuento`
+  de `Tabla`, tres props nuevos de `CabeceraPagina`). Escritorio: menú lateral contraído a iconos que se despliega al
+  pasar el puntero. Teléfono: barra inferior de 4 destinos + «Más» (menú completo por la izquierda, «Salir» dentro);
+  lista → detalle; principales en barra abajo, secundarias en «⋯»; Configuración con raíl (portada de secciones en el teléfono).
+
+### Preguntas
+#### P1 — Desde Progreso, ¿cómo se entra al producto? · ❓ Abierta (Fernando)
+- **Por qué importa:** decide la navegación de vuelta y la sesión. Opciones: (a) la WebView de Progreso navega a
+  `automatizaciones.grupocc.org/<cliente>` y el producto lleva un «volver a GCC World»; (b) se abre embebido dentro del
+  armazón de Progreso. Hoy (a) es lo que el código ya permite.
+#### P2 — ¿Sesión única entre Progreso y el producto? · ❓ Abierta
+- **Por qué importa:** la cookie `auth_token` de `app.grupocc.org` no es la del producto; sin un paso de sesión el cliente
+  tendría que volver a escribir la contraseña dentro de la app. (La passkey ya va atada a `grupocc.org`.)
+#### P3 — ¿Qué es el «acceso directo» en iPhone? · ❓ Abierta
+- iOS no deja anclar iconos desde una app; en Android sí (ShortcutManager). ¿Basta una tarjeta «Mis productos» en el
+  inicio de Progreso, o algo más?
+#### P4 — ¿Quién compra en la tienda: el inquilino o la persona? · ❓ Abierta
+- La suscripción es del inquilino (`/peter-tours`), pero la compra de tienda la hace un Apple ID. ¿Solo el ADMIN del
+  inquilino puede comprar? ¿Se puede dar de alta un inquilino nuevo desde la app?
+#### P5 — ¿Qué partes del producto existen en la app y cuáles solo en la web? · ❓ Abierta
+- Ejemplo: el alta de WhatsApp (Embedded Signup de Meta, ventana emergente) probablemente no funcione en la WebView.
+#### P6 — ¿Avisos push del producto (mensaje nuevo, el agente pasó a humano) por Progreso? · ❓ Abierta
+#### P7 — ¿Qué del diseño de Automatizaciones quieres que sea el ESTÁNDAR para Reservas y los demás, y qué quieres cambiar? · ❓ Abierta
+
 ## Objetivo (declarado 2026-11-04) — ESPACIO DE TRABAJO LOCAL CON CLAUDE CODE PARA TODOS LOS PROYECTOS · 🔎 95 %
 
 **Necesidad (Fernando):** una sola interfaz, en el módulo Admin y solo en local (teléfono por Tailscale), para
