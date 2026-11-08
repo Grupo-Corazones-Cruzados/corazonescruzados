@@ -1,6 +1,6 @@
 import { pool } from '@/lib/db';
 import { codigoNuevo, gastarCodigo } from '@/lib/auth/codigo-acceso';
-import { verifyPassword } from '@/lib/auth/password';
+import { claveValida } from '@/lib/auth/intentos';
 import { sendCodigoDeAccesoEmail } from '@/lib/integrations/email';
 import { cuentaEncaja } from '@/lib/auth/tipos';
 import { dominioDeLasPasskeys } from '@/lib/world/webauthn';
@@ -140,12 +140,8 @@ export async function claveCorrecta(email: string, clave: string): Promise<boole
     `SELECT password_hash FROM gcc_world.users WHERE lower(email) = $1 LIMIT 1`,
     [correo],
   );
-  const hash = rows[0]?.password_hash;
-  if (!hash) {
-    await verifyPassword(clave, '$2a$12$invalidoinvalidoinvalidoinvalidoinvalidoinvalidoinvalid');
-    return false;
-  }
-  return verifyPassword(clave, hash);
+  // Con tope de fallos por cuenta (`lib/auth/intentos`). Sin el de IP: la que llega es la del producto.
+  return claveValida(correo, clave, rows[0]?.password_hash, { ip: false });
 }
 
 /** Genera el código del segundo paso y lo manda al correo de la cuenta. */

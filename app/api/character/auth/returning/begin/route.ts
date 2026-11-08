@@ -1,8 +1,8 @@
 import { pool } from '@/lib/db';
+import { claveValida, DemasiadosIntentos, respuestaDemasiadosIntentos } from '@/lib/auth/intentos';
 import { codigoNuevo } from '@/lib/auth/codigo-acceso';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { verifyPassword } from '@/lib/auth/password';
 import { sendCodigoDeAccesoEmail, sendCodigoDeRecuperacionEmail } from '@/lib/integrations/email';
 import { CLIENT_COOKIE } from '@/lib/world/session';
 
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
     if (account && expect !== 'candidate') {
       if (
         !deviceRecognized &&
-        (!account.password_hash || !(await verifyPassword(pwd, account.password_hash)))
+        !(await claveValida(cleanEmail, pwd, account.password_hash))
       ) {
         return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 });
       }
@@ -148,12 +148,13 @@ export async function POST(req: Request) {
     );
     const row = r.rows[0];
     if (!row || !row.password_hash) {
+      if (!deviceRecognized) await claveValida(cleanEmail, pwd, null);
       return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 });
     }
     if (!row.email_verified) {
       return NextResponse.json({ error: 'La cuenta aún no está confirmada' }, { status: 403 });
     }
-    if (!deviceRecognized && !(await verifyPassword(pwd, row.password_hash))) {
+    if (!deviceRecognized && !(await claveValida(cleanEmail, pwd, row.password_hash))) {
       return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 });
     }
     if (validateOnly) {
@@ -172,6 +173,7 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ ok: true, kind: 'candidate', masked: maskEmail(cleanEmail) });
   } catch (err: unknown) {
+    if (err instanceof DemasiadosIntentos) return respuestaDemasiadosIntentos();
     const msg = err instanceof Error ? err.message : 'unknown error';
     console.error('Returning begin error:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });

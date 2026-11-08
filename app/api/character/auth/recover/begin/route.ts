@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
+import { claveValida, DemasiadosIntentos, respuestaDemasiadosIntentos } from '@/lib/auth/intentos';
 import { codigoNuevo } from '@/lib/auth/codigo-acceso';
 import { NextResponse } from 'next/server';
-import { verifyPassword } from '@/lib/auth/password';
 import { sendCodigoDeRecuperacionEmail } from '@/lib/integrations/email';
 import { getWebAuthnRP } from '@/lib/world/webauthn';
 
@@ -49,6 +49,7 @@ export async function POST(req: Request) {
     );
     const row = r.rows[0];
     if (!row || !row.password_hash) {
+      await claveValida(cleanEmail, password, null); // mira el bloqueo y anota el fallo, como con una cuenta real
       return NextResponse.json(
         { error: 'Credenciales incorrectas' },
         { status: 401 },
@@ -60,7 +61,7 @@ export async function POST(req: Request) {
         { status: 403 },
       );
     }
-    const ok = await verifyPassword(password, row.password_hash);
+    const ok = await claveValida(cleanEmail, password, row.password_hash);
     if (!ok) {
       return NextResponse.json(
         { error: 'Credenciales incorrectas' },
@@ -117,6 +118,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, masked: maskEmail(row.email) });
   } catch (err: unknown) {
+    if (err instanceof DemasiadosIntentos) return respuestaDemasiadosIntentos();
     const msg = err instanceof Error ? err.message : 'unknown error';
     console.error('Recovery begin error:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });

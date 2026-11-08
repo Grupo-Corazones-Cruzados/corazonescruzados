@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
+import { claveValida, DemasiadosIntentos, respuestaDemasiadosIntentos } from '@/lib/auth/intentos';
 import { codigoNuevo } from '@/lib/auth/codigo-acceso';
-import { verifyPassword } from '@/lib/auth/password';
 import { sendCodigoDeAccesoEmail } from '@/lib/integrations/email';
 import { createToken, setAuthCookie } from '@/lib/auth/jwt';
 import { PERFILES, cuentaEncaja, esTipoValido } from '@/lib/auth/tipos';
@@ -59,9 +59,11 @@ export async function POST(req: NextRequest) {
     );
     const user = r.rows[0];
     if (!user || !user.password_hash) {
+      await claveValida(cleanEmail, password, null); // mira el bloqueo y anota el fallo, como con una cuenta real
       return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
     }
-    const ok = await verifyPassword(password, user.password_hash);
+    // Con tope de fallos por cuenta y por IP: `lib/auth/intentos`.
+    const ok = await claveValida(cleanEmail, password, user.password_hash);
     if (!ok) {
       return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
     }
@@ -167,6 +169,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, masked: maskEmail(cleanEmail) });
   } catch (error) {
+    if (error instanceof DemasiadosIntentos) return respuestaDemasiadosIntentos();
     console.error('Login begin error:', error);
     return NextResponse.json({ error: 'Error al iniciar sesión' }, { status: 500 });
   }

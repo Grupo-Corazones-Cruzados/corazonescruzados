@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
+import { claveValida, DemasiadosIntentos, respuestaDemasiadosIntentos } from '@/lib/auth/intentos';
 import { codigoNuevo } from '@/lib/auth/codigo-acceso';
 import { NextResponse } from 'next/server';
-import { verifyPassword } from '@/lib/auth/password';
 import { getWebAuthnRP } from '@/lib/world/webauthn';
 import { sendCodigoDeAccesoEmail } from '@/lib/integrations/email';
 
@@ -56,12 +56,13 @@ export async function POST(req: Request) {
     );
     const user = u.rows[0];
     if (!user || !user.password_hash) {
+      await claveValida(cleanEmail, password, null); // mira el bloqueo y anota el fallo, como con una cuenta real
       return NextResponse.json(
         { error: 'No es una cuenta de miembro o credenciales inválidas' },
         { status: 401 },
       );
     }
-    const ok = await verifyPassword(password, user.password_hash);
+    const ok = await claveValida(cleanEmail, password, user.password_hash);
     if (!ok) {
       return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 });
     }
@@ -97,6 +98,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true, masked: maskEmail(cleanEmail) });
   } catch (err: unknown) {
+    if (err instanceof DemasiadosIntentos) return respuestaDemasiadosIntentos();
     const msg = err instanceof Error ? err.message : 'unknown error';
     console.error('Member login begin error:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { pool } from '@/lib/db';
-import { verifyPassword } from '@/lib/auth/password';
+import { claveValida, DemasiadosIntentos, respuestaDemasiadosIntentos } from '@/lib/auth/intentos';
 import { sendVerificationEmail } from '@/lib/integrations/email';
 
 /**
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       `SELECT id, email, password_hash, is_verified, first_name FROM gcc_world.users WHERE LOWER(email) = $1 LIMIT 1`,
       [cleanEmail],
     );
-    if (!user?.password_hash || !(await verifyPassword(password, user.password_hash))) {
+    if (!(await claveValida(cleanEmail, password, user?.password_hash))) {
       return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 });
     }
     if (user.is_verified) {
@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     await sendVerificationEmail(user.email, token, user.first_name || undefined);
     return NextResponse.json({ ok: true });
   } catch (e) {
+    if (e instanceof DemasiadosIntentos) return respuestaDemasiadosIntentos();
     console.error('[auth/verify/reenviar]', (e as Error).message);
     return NextResponse.json({ error: 'No pudimos reenviar el correo. Inténtalo de nuevo.' }, { status: 500 });
   }

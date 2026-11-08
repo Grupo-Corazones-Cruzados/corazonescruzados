@@ -25,6 +25,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { generateAuthenticationOptions, verifyAuthenticationResponse } from '@simplewebauthn/server';
 import { pool } from '@/lib/db';
+import { DemasiadosIntentos, respuestaDemasiadosIntentos } from '@/lib/auth/intentos';
 import { cronTokenConfigured, checkCronToken } from '@/lib/cron-auth';
 import {
   clienteGccPorCorreo, claveCorrecta, mandarCodigo, codigoCorrecto,
@@ -202,6 +203,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Paso desconocido.' }, { status: 400 });
     }
   } catch (e: unknown) {
+    if (e instanceof DemasiadosIntentos) return respuestaDemasiadosIntentos();
     console.error('[identidad] ', e instanceof Error ? e.message : e);
     return NextResponse.json({ error: 'No se pudo completar.' }, { status: 500 });
   }
