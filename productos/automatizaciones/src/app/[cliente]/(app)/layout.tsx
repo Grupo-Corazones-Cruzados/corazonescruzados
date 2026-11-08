@@ -8,6 +8,7 @@ import { BarraLateral, BarraInferior, HuecoBarraAcciones } from '@/componentes/N
 import { AvisoEscaparate } from '@/componentes/AvisoEscaparate';
 import { AvisoVistaComo } from '@/componentes/AvisoVistaComo';
 import { estaEmbebido } from '@/lib/sesion';
+import { conBase } from '@/lib/base';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,7 +33,7 @@ export default async function LayoutApp({
   // (en la plataforma es un `data:` grande: no se mete en cada página).
   const yo = await prisma.usuario.findUnique({ where: { id: sesion.uid }, select: { origen: true, email: true, usuario: true } });
   const perfil = yo?.origen === 'GCC' ? await perfilGcc(yo.email ?? yo.usuario) : null;
-  const foto = perfil?.tieneFoto ? `/${cliente}/foto?u=${sesion.uid}` : null;
+  const foto = perfil?.tieneFoto ? conBase(`/${cliente}/foto?u=${sesion.uid}`) : null;
 
   // La franja de aviso: demostración o «ver como». En escritorio va a TODO el ancho, por encima
   // del menú y del contenido, para que las dos cabeceras sigan alineadas (Fernando, 2026-11-08);

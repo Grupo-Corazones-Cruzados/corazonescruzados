@@ -9,6 +9,7 @@ import { pool } from '@/lib/db';
 import ConfiguracionCliente, { type NegocioVista, type PagoVista } from './ConfiguracionCliente';
 import type { UsuarioVista } from './SeccionUsuarios';
 import type { ConexionVista } from './SeccionWhatsApp';
+import { conBase } from '@/lib/base';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Configuración' };
@@ -102,7 +103,7 @@ export default async function PaginaConfiguracion({ params }: { params: Promise<
       suscripcion={suscripcion}
       pagos={historial}
       miOrigen={await miOrigen(cliente)}
-      perfil={perfil ? { ...perfil, foto: perfil.tieneFoto ? `/${cliente}/foto?u=${ctx.sesion.uid}` : null } : null}
+      perfil={perfil ? { ...perfil, foto: perfil.tieneFoto ? conBase(`/${cliente}/foto?u=${ctx.sesion.uid}`) : null } : null}
       conexion={conexion}
       meta={{ appId: process.env.WHATSAPP_APP_ID || null, configId: process.env.WHATSAPP_ES_CONFIG_ID || null }}
       esCortesia={inquilino.cortesia}

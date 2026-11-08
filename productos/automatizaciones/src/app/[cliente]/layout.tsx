@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { prisma } from '@/lib/db';
 import { TEMA } from '@/lib/marca';
+import { conBase } from '@/lib/base';
 
 type Params = Promise<{ cliente: string }>;
 
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { cliente } = await params;
   const { nombre } = await marcaDe(cliente);
   return {
-    manifest: `/${cliente}/manifest.webmanifest`,
+    manifest: conBase(`/${cliente}/manifest.webmanifest`),
     appleWebApp: { capable: true, statusBarStyle: 'black', title: nombre },
     // Next emite `mobile-web-app-capable`; iOS sigue leyendo el suyo.
     other: { 'apple-mobile-web-app-capable': 'yes' },

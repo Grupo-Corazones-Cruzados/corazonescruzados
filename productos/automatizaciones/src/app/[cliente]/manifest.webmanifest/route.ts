@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { TEMA } from '@/lib/marca';
+import { conBase } from '@/lib/base';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,21 +32,21 @@ export async function GET(_: Request, { params }: { params: Promise<{ cliente: s
       name: `${inquilino.nombre} · Automatizaciones`,
       short_name: inquilino.nombre.slice(0, 12),
       description: 'Automatizaciones de WhatsApp: conversaciones, envíos y el agente.',
-      id: `/${cliente}/`,
+      id: conBase(`/${cliente}/`),
       // La entrada decide sola: con sesión, a su puesto; sin ella, al acceso.
       // Dentro del ámbito (`/<cliente>/`): fuera de él el navegador ignora `scope`.
-      start_url: `/${cliente}/panel`,
-      scope: `/${cliente}/`,
+      start_url: conBase(`/${cliente}/panel`),
+      scope: conBase(`/${cliente}/`),
       display: 'standalone',
       orientation: 'portrait',
       lang: 'es',
       theme_color: color,
       background_color: fondo,
       icons: [
-        { src: '/icono-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: '/icono-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-        { src: '/apple-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
-        { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+        { src: conBase('/icono-192.png'), sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: conBase('/icono-512.png'), sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: conBase('/apple-icon.png'), sizes: '180x180', type: 'image/png', purpose: 'any' },
+        { src: conBase('/icon.svg'), sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
       ],
     },
     {

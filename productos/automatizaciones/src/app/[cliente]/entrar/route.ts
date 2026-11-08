@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { evaluarAcceso } from '@/lib/inquilino';
 import { canjearPase } from '@/lib/identidadGcc';
 import { abrirSesionUsuario, cerrarPasoDos, marcarEmbebido, quitarEmbebido } from '@/lib/sesion';
+import { conBase } from '@/lib/base';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,5 +58,5 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ cliente: st
   const destino = DESTINOS.has(pedido) ? pedido : 'panel';
   const ruta = evaluarAcceso(inquilino) === 'ok' ? `/${inquilino.slug}/${destino}` : `/${inquilino.slug}/suscripcion`;
   // Relativa: detrás del proxy, el origen que ve el servidor puede ser el interno.
-  return new NextResponse(null, { status: 302, headers: { Location: ruta } });
+  return new NextResponse(null, { status: 302, headers: { Location: conBase(ruta) } });
 }
