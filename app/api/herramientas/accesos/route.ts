@@ -6,10 +6,11 @@ import { asegurarTablaAccesos, COMPARTIBLES, estadoDe, nuevoToken, urlAcceso, va
 import { sendAccesoHerramientaEmail } from '@/lib/integrations/email';
 
 /**
- * GET /api/herramientas/accesos — los accesos compartidos: los míos, o todos si soy admin.
+ * GET /api/herramientas/accesos?herramienta=<id> — los accesos compartidos de ESA herramienta (sin
+ * el parámetro, de todas): los míos, o todos si soy admin.
  * POST /api/herramientas/accesos — comparte una herramienta y, si viene `email`, lo manda por correo.
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   const user = await getCurrentUser();
   if (!user) return NextResponse.json({ error: 'Inicia sesión' }, { status: 401 });
   if (!esEquipo(user.role)) return NextResponse.json({ error: 'Sin acceso' }, { status: 403 });
@@ -23,8 +24,9 @@ export async function GET() {
        LEFT JOIN gcc_world.clients c ON c.id = a.client_id
        LEFT JOIN gcc_world.users u ON u.id = a.creado_por
       WHERE ($1::boolean OR a.creado_por = $2::uuid)
+        AND ($3::text IS NULL OR a.herramienta = $3)
       ORDER BY a.creado_en DESC`,
-    [user.role === 'admin', String(user.userId)],
+    [user.role === 'admin', String(user.userId), req.nextUrl.searchParams.get('herramienta')],
   );
   const data = rows.map((r: any) => ({
     ...r, estado: estadoDe(r), validacion: validacionDe(r), url: urlAcceso(r.token), token: undefined,

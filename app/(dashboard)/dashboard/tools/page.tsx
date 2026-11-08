@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import PageHeader from '@/components/ui/PageHeader';
@@ -27,6 +27,7 @@ import ConvertirArchivos from '@/components/herramientas/ConvertirArchivos';
 import TranscribirAudio from '@/components/herramientas/TranscribirAudio';
 import FormatosExcel from '@/components/herramientas/FormatosExcel';
 import HistorialHerramienta from '@/components/herramientas/HistorialHerramienta';
+import PanelAccesos from '@/components/herramientas/PanelAccesos';
 import { AccionNuevaCtx } from '@/components/herramientas/AccionNueva';
 import HistorialEnlaces from '../tools/enlaces/page';
 import HistorialEntregas from '../tools/entregas/page';
@@ -73,7 +74,6 @@ function Herramientas() {
   const [app, setApp] = useState<AppDeTelefono | null>(null);
   useEffect(() => { setApp(appDeTelefono()); }, []);
   const rutasEspacio = useRutasEspacio();
-  const router = useRouter();
   const tools = useMemo(
     () => herramientasPara({ esEquipo, esAdmin: rol === 'admin', app, conEspacio: !!rutasEspacio }),
     [esEquipo, rol, app, rutasEspacio],
@@ -137,6 +137,10 @@ function Herramientas() {
     setAccesoOpen(true);
   };
   const clienteAcceso = clientesConCuenta?.find((c) => String(c.id) === accesoCliente);
+  // Los accesos de la herramienta abierta, en el panel derecho (`PanelAccesos`); `versionAccesos`
+  // cambia al cerrar el formulario de compartir para que la lista traiga el nuevo.
+  const [accesosOpen, setAccesosOpen] = useState(false);
+  const [versionAccesos, setVersionAccesos] = useState(0);
 
   // Entrega de un solo uso (Fernando, 2026-10-19): misma forma que el enlace, pero los archivos
   // los sube el miembro. Se suben al elegirlos, a un BORRADOR que nace con el primero; si el
@@ -227,7 +231,7 @@ function Herramientas() {
   const bloqueCompartir = () => !tool || !esEquipo || !tool.compartible ? null : (
     <div className="space-y-2 pt-3 mt-3 border-t border-digi-border">
       <button onClick={abrirAcceso} className={`${BTN_SECONDARY} w-full`}><Share2 className="w-4 h-4" /> Compartir acceso</button>
-      <Link href="/dashboard/tools/accesos" className={`${BTN_SECONDARY} w-full`}><Table2 className="w-4 h-4" /> Ver accesos compartidos</Link>
+      <button onClick={() => setAccesosOpen(true)} className={`${BTN_SECONDARY} w-full`}><Table2 className="w-4 h-4" /> Accesos</button>
     </div>
   );
 
@@ -328,7 +332,7 @@ function Herramientas() {
               onAbrir={() => { setFormAbierto(true); setFormKey((k) => k + 1); }}
               onCerrar={() => setFormAbierto(false)}
               acciones={esEquipo && tool.compartible ? [
-                { label: 'Accesos', icon: Table2, onClick: () => router.push('/dashboard/tools/accesos'), tipo: 'secundaria' },
+                { label: 'Accesos', icon: Table2, onClick: () => setAccesosOpen(true), tipo: 'secundaria' },
                 { label: 'Compartir', icon: Share2, onClick: abrirAcceso, tipo: 'secundaria' },
               ] : undefined}
               formulario={tool.id === 'qr' ? <GeneradorQR alUsar={(enlace, d) => anotarUso('qr', enlace, d)} />
@@ -439,8 +443,13 @@ function Herramientas() {
         )}
       </PanelCompartirEnlace>
 
+      {tool?.compartible && esEquipo && (
+        <PanelAccesos herramienta={tool.id} nombre={tool.name} open={accesosOpen} version={versionAccesos}
+          onClose={() => setAccesosOpen(false)} onCompartir={abrirAcceso} />
+      )}
+
       <PanelCompartirEnlace
-        open={accesoOpen} onClose={() => setAccesoOpen(false)}
+        open={accesoOpen} onClose={() => { setAccesoOpen(false); setVersionAccesos((v) => v + 1); }}
         title="Compartir acceso a la herramienta"
         intro={<>Quien abra el enlace podrá usar <strong>{tool?.name}</strong> las veces que necesite, hasta que venza o lo cierres.</>}
         duraciones={VIGENCIAS_ACCESO} duracionInicial={720}
