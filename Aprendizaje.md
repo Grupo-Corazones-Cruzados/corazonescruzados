@@ -12108,9 +12108,9 @@ cargaba. Propuesta: archivos con nombre por hash (`index.<hash>.pck`) en almacen
 con CDN (Cloudflare R2), `Cache-Control: immutable`, y un `manifest.json` corto que dice qué versión
 toca. **Un pck base pequeño + un pck por zona** (`ProjectSettings.load_resource_pack`) que se baja al
 entrar en la zona.
-### P6 — ¿Hace falta servidor en tiempo real (cooperativo/arena como Guardian Tales)? · ⏸ Fernando
+### P6 — ¿Hace falta servidor en tiempo real (cooperativo/arena como Guardian Tales)? · ✅ Resuelta (Fernando, 2026-11-08): sí, misiones cooperativas + lobby de reunión; arena a futuro
 Si hay multijugador en vivo, se añade un servicio aparte (WebSocket) en Railway. Si no, basta HTTP.
-### P7 — ¿Debe funcionar sin conexión? · ⏸ Fernando
+### P7 — ¿Debe funcionar sin conexión? · ✅ Resuelta (Fernando, 2026-11-08): no, por ahora; solo Progreso tiene modo sin conexión
 Decide si los pck van dentro de la app de tiendas o se descargan.
 ### P8 — ¿La primera versión de tiendas sale con Aventura? · ⏸ Fernando (es la P6 de la sección de apps)
 
@@ -12169,3 +12169,10 @@ restricción, pero se usa el mismo sistema para no tener dos caminos.
 ### P10 — Guardados que sobreviven a 200 caminos · ✅ Resuelta (regla)
 La partida lleva su número de versión y el servidor la migra al cargarla, igual que una migración de
 la BD. Nunca se rompe la partida de un jugador por cambiar la historia.
+
+## Orden de trabajo (Fernando, 2026-11-08)
+1. Versión web: **diseñar un prólogo**.
+2. Cuando Fernando decida que esa versión está lista, se pasa a la versión nativa del teléfono, y
+   ese prólogo es la prueba de concepto en Android (fps, memoria, sesión).
+Fernando pidió solo guardar lo aprendido; no se construye nada todavía. Fuente de verdad del juego:
+`godot/Videojuego.md` §3-bis.

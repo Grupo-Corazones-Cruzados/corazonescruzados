@@ -210,6 +210,47 @@ nueva se mide en el lienzo de 960×540, nunca en píxeles de ventana.**
   la reducción sale con aliasing. El nearest global es para los **sprites** de pixel-art.
 - Fuente **Silkscreen** (`assets/Fonts/`, misma que la landing de la plataforma).
 
+## 3-bis. ⭐ ARQUITECTURA DE PUBLICACIÓN Y RUMBO (decidido por Fernando, 2026-11-08)
+
+Antes de construir Aventura se estudió cómo se llevaron los Zelda al navegador (Link's Awakening
+DX recompilado a C con Emscripten, A Link to the Past reescrito a C, TotK recompilado con WebGPU).
+Todos son código compilado a WASM + WebGL, con los datos aparte del código: lo mismo que ya hace el
+export web de Godot. **Se sigue con Godot 4.7 en 2D**, sin cambiar de motor. Detalle e investigación:
+`Aprendizaje.md` § «CÓMO PUBLICAR EL JUEGO DE AVENTURA».
+
+**Decisiones de Fernando:**
+1. **Versión NATIVA de teléfono prevista desde el inicio**, porque *«el videojuego se va a expandir
+   mucho en su historia, al igual que hemos expandido el progreso»*. Será Godot nativo embebido en
+   la app única GCC World (LibGodot + plugin de Capacitor). El export web queda para la web y como
+   respaldo.
+2. **ORDEN DE TRABAJO:** primero **la versión web, empezando por diseñar un prólogo**. Cuando
+   Fernando dé por lista una versión, se pasa a la nativa en el teléfono, y **ese prólogo es el banco
+   de pruebas** de la implementación nativa (fps, memoria, sesión de la app → juego; Android primero).
+3. **Multijugador:** habrá **misiones cooperativas** y un **lobby de reunión** donde se ven los
+   jugadores. **La arena / PvP competitivo queda a futuro** y no está decidida.
+4. **Sin modo sin conexión:** el juego exige conexión (solo Progreso funciona sin ella).
+
+**Reglas de arquitectura que se cumplen YA en la versión web, para que el salto a nativo no
+obligue a rehacer nada:**
+- **Scripts dentro del binario, historia como DATOS.** Apple (2.5.2) no deja descargar código, y un
+  `.pck` con GDScript lo es. Mapas, arte, audio, diálogos, misiones, condiciones de desbloqueo y
+  recompensas van en recursos/JSON que interpreta el motor. Un camino nuevo se publica desde el
+  servidor; solo una MECÁNICA nueva requiere versión de la tienda. Hay que diseñar así el prólogo y
+  los diálogos desde ahora: nada de historia escrita en el código de un script.
+- **El servidor manda:** guardado, desbloqueos por perfil y sobre todo la **moneda**, que se canjea
+  en el marketplace. El dispositivo solo guarda una caché.
+- **Token de juego corto** que entrega la app al arrancar, en lugar de depender de la cookie (hoy la
+  hoja del personaje se inyecta con `copyToFS`).
+- **Partidas con versión** que el servidor migra al cargarlas: un cambio de historia nunca rompe una
+  partida.
+- **Sin hilos, render Compatibility, GDScript (nunca C#).**
+- **Reparto:** un pck base pequeño y uno por zona (`ProjectSettings.load_resource_pack`), servidos
+  desde una CDN con nombres por hash. Propuesto, aún sin construir.
+- **Tiempo real (para el lobby y las misiones cooperativas):** `WebSocketMultiplayerPeer` de Godot,
+  que funciona igual en web y nativo, contra un servicio propio en Railway que manda en las misiones.
+  En el lobby basta sincronizar posición y presencia a baja frecuencia. Planificado, sin construir;
+  se decide al llegar a esa fase.
+
 ## 4. Pipeline de ARTE con IA — `tools/generar_estampas.py`
 
 **Herramienta:** Gemini **"Nano Banana"** (`MODELO = "gemini-2.5-flash-image"`; Pro =
@@ -935,6 +976,10 @@ en `MEMORIA.md` → *Decisiones recientes*):
   economía. Fernando aprende Godot guiado en paralelo.
 
 ## 10. Registro de aprendizajes/decisiones
+
+- **2026-11-08 (RUMBO DE PUBLICACIÓN):** web primero con un prólogo nuevo como banco de pruebas, y
+  después la versión nativa del teléfono embebida en GCC World; misiones cooperativas y lobby de
+  reunión; sin modo sin conexión; arena a futuro. Detalle en §3-bis.
 
 - **2026-08-02 (⛔ CORRECCIÓN DE MÉTODO — solo Fernando evalúa las imágenes):** al generar la
   estampa 115 encadené **cinco tiradas seguidas** decidiendo yo, mirando cada resultado, que
