@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { esEquipo } from '@/lib/enlaces';
-import { asegurarTablaAccesos, COMPARTIBLES, estadoDe, nuevoToken, urlAcceso } from '@/lib/herramientas/accesos';
+import { asegurarTablaAccesos, COMPARTIBLES, estadoDe, nuevoToken, urlAcceso, validacionDe, type Validacion } from '@/lib/herramientas/accesos';
 import { sendAccesoHerramientaEmail } from '@/lib/integrations/email';
 
 /**
@@ -27,7 +27,7 @@ export async function GET() {
     [user.role === 'admin', String(user.userId)],
   );
   const data = rows.map((r: any) => ({
-    ...r, estado: estadoDe(r), url: urlAcceso(r.token), token: undefined,
+    ...r, estado: estadoDe(r), validacion: validacionDe(r), url: urlAcceso(r.token), token: undefined,
     herramienta_nombre: COMPARTIBLES[r.herramienta]?.nombre || r.herramienta,
   }));
   return NextResponse.json({ data });
@@ -44,10 +44,14 @@ export async function POST(req: NextRequest) {
   const titulo = String(b.titulo || '').trim().slice(0, 200);
   const horas = Math.min(Math.max(Number(b.horas) || 168, 1), 8760);
   const email = b.email ? String(b.email).trim().toLowerCase() : '';
-  const exigeCuenta = !!b.exige_cuenta;
-  const clientId = exigeCuenta ? Number(b.client_id) || null : null;
+  // `validacion`: ninguna · cuenta (cualquier cuenta de GCC World) · cliente (solo la suya).
+  // `exige_cuenta` suelto es el formato de antes: equivale a «cliente».
+  const validacion: Validacion = ['ninguna', 'cuenta', 'cliente'].includes(b.validacion)
+    ? b.validacion : b.exige_cuenta ? 'cliente' : 'ninguna';
+  const exigeCuenta = validacion !== 'ninguna';
+  const clientId = validacion === 'cliente' ? Number(b.client_id) || null : null;
 
-  if (exigeCuenta) {
+  if (validacion === 'cliente') {
     if (!clientId) return NextResponse.json({ error: 'Elige el cliente que debe iniciar sesión' }, { status: 400 });
     const { rows: [c] } = await pool.query(
       `SELECT 1 FROM gcc_world.clients c JOIN gcc_world.users u ON u.id = c.user_id
@@ -75,7 +79,7 @@ export async function POST(req: NextRequest) {
         [String(user.userId)],
       );
       await sendAccesoHerramientaEmail({
-        email, herramienta: COMPARTIBLES[herramienta].nombre, titulo, url, vence: venceEn, remitente: u?.nombre || undefined, exigeCuenta,
+        email, herramienta: COMPARTIBLES[herramienta].nombre, titulo, url, vence: venceEn, remitente: u?.nombre || undefined, exigeCuenta, cualquierCuenta: validacion === 'cuenta',
       });
       enviado = true;
     } catch (err: any) { console.error('[accesos] no salió el correo', err?.message); }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { acceso, COMPARTIBLES, porToken } from '@/lib/herramientas/accesos';
+import { acceso, COMPARTIBLES, porToken, validacionDe } from '@/lib/herramientas/accesos';
 
 /**
  * GET /api/herramienta-publica/<token> — qué herramienta abre el enlace, o por qué no.
@@ -11,7 +11,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ tok
   const a = await porToken(token);
   const user = await getCurrentUser();
   const r = acceso(a, user ? { userId: String(user.userId) } : null);
-  if (!r.ok) return NextResponse.json({ data: { motivo: r.motivo, sesion: user?.email ?? null } });
+  // La validación sí se dice: cambia lo que se le pide (cualquier cuenta o la del cliente).
+  if (!r.ok) return NextResponse.json({ data: { motivo: r.motivo, sesion: user?.email ?? null, validacion: a ? validacionDe(a) : null } });
   return NextResponse.json({
     data: {
       motivo: null, herramienta: a.herramienta, nombre: COMPARTIBLES[a.herramienta].nombre,

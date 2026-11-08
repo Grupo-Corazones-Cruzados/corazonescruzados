@@ -1,4 +1,5 @@
-import { usuarioDeHerramientas } from '@/lib/herramientas/acceso';
+import { usuarioOAcceso } from '@/lib/herramientas/acceso';
+import { contarUso } from '@/lib/herramientas/accesos';
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI, { toFile } from 'openai';
 import fs from 'fs/promises';
@@ -45,7 +46,8 @@ function collapseSentenceRuns(text: string): string {
 export async function POST(req: NextRequest) {
   const tempFiles: string[] = [];
   try {
-    const acceso = await usuarioDeHerramientas();
+    // Con sesión, o con el token de un acceso compartido a esta herramienta.
+    const acceso = await usuarioOAcceso(req, 'transcribe');
     if (acceso.error) return acceso.error;
 
     const formData = await req.formData();
@@ -166,6 +168,7 @@ export async function POST(req: NextRequest) {
     const originalName = file.name.replace(/\.[^.]+$/, '');
     const asciiName = originalName.normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^\x20-\x7E]/g, '_');
     const encodedName = encodeURIComponent(originalName);
+    if (acceso.accesoId) await contarUso(acceso.accesoId).catch(() => {});
     return new NextResponse(fullText, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',

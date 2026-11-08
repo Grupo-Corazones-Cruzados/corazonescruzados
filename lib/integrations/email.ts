@@ -597,7 +597,7 @@ export async function sendEnlaceUnicoEmail(params: {
 
 /** Acceso a una herramienta: el enlace para usarla hasta que venza (ver `lib/herramientas/accesos`). */
 export async function sendAccesoHerramientaEmail(params: {
-  email: string; herramienta: string; titulo?: string; url: string; vence: Date; remitente?: string; exigeCuenta: boolean;
+  email: string; herramienta: string; titulo?: string; url: string; vence: Date; remitente?: string; exigeCuenta: boolean; cualquierCuenta?: boolean;
 }) {
   const vence = params.vence.toLocaleDateString('es-EC', { timeZone: MEMBER_TZ, day: 'numeric', month: 'long', year: 'numeric' });
   const html = emailShell(
@@ -605,7 +605,7 @@ export async function sendAccesoHerramientaEmail(params: {
     emailHeading(escapeHtml(params.herramienta), params.remitente ? `Te la comparte ${escapeHtml(params.remitente)}` : 'GCC World') +
     (params.titulo ? emailParagraph(escapeHtml(params.titulo)) : '') +
     emailParagraph(params.exigeCuenta
-      ? `Abre el enlace e ${accentStrong('inicia sesión con tu cuenta de GCC World')} para usarla.`
+      ? `Abre el enlace e ${accentStrong('inicia sesión con tu cuenta de GCC World')} para usarla${params.cualquierCuenta ? ' (si no tienes, puedes crearla ahí mismo)' : ''}.`
       : 'Abre el enlace para usarla.') +
     emailButton(params.url, 'Abrir la herramienta') +
     emailNote(`Puedes usarla las veces que necesites hasta el ${escapeHtml(vence)}.`),

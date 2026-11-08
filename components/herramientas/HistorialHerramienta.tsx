@@ -7,7 +7,7 @@ import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
-import BarraLista from '@/components/ui/BarraLista';
+import BarraLista, { type AccionLista } from '@/components/ui/BarraLista';
 import type { UsoHerramienta } from '@/lib/herramientas/usos';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -44,7 +44,7 @@ const fecha = (s: string) =>
  * velo). Solo se guarda el registro de cada uso (`lib/herramientas/usos.ts`).
  */
 export default function HistorialHerramienta({
-  herramienta, Icono, accion, formulario, abierto, onAbrir, onCerrar, version, unidad, etiquetas = {},
+  herramienta, Icono, accion, formulario, abierto, onAbrir, onCerrar, version, unidad, etiquetas = {}, acciones = [],
 }: {
   herramienta: string;
   Icono: ComponentType<{ className?: string }>;
@@ -59,6 +59,8 @@ export default function HistorialHerramienta({
   unidad: [string, string];
   /** Nombre visible de cada clave del detalle. */
   etiquetas?: Record<string, string>;
+  /** Botones secundarios antes del principal (Compartir y Accesos en las compartibles). */
+  acciones?: AccionLista[];
 }) {
   const [usos, setUsos] = useState<UsoHerramienta[] | null>(null);
   const [deTodos, setDeTodos] = useState(false);
@@ -113,7 +115,7 @@ export default function HistorialHerramienta({
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
             <div className="min-w-0">
               <BarraLista busqueda={busqueda} onBusqueda={setBusqueda} placeholder="Buscar en el historial..."
-                acciones={[{ label: accion, icon: Plus, onClick: onAbrir, tipo: 'primaria' }]} />
+                acciones={[...acciones, { label: accion, icon: Plus, onClick: onAbrir, tipo: 'primaria' }]} />
               <PixelDataTable
                 unidad={unidad}
                 singleLine

@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import PageHeader from '@/components/ui/PageHeader';
@@ -10,7 +10,6 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelSelect from '@/components/ui/PixelSelect';
 import PixelModal from '@/components/ui/PixelModal';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
-import { fmt2 } from '@/lib/format';
 import PanelCompartirEnlace from '@/components/ui/PanelCompartirEnlace';
 import Interruptor from '@/components/ui/Interruptor';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
@@ -20,10 +19,12 @@ import { EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { ListaSubidas, useSubidaArchivos } from '@/components/ui/SubidaArchivos';
 import {
-  UploadCloud, Download, CheckCircle2, LayoutGrid, Wand2, Wrench,
+  LayoutGrid, Wand2, Wrench,
   Briefcase, Plus, Table2, Smartphone, Share2, ExternalLink,
 } from 'lucide-react';
 import GeneradorQR from '@/components/herramientas/GeneradorQR';
+import ConvertirArchivos from '@/components/herramientas/ConvertirArchivos';
+import TranscribirAudio from '@/components/herramientas/TranscribirAudio';
 import FormatosExcel from '@/components/herramientas/FormatosExcel';
 import HistorialHerramienta from '@/components/herramientas/HistorialHerramienta';
 import { AccionNuevaCtx } from '@/components/herramientas/AccionNueva';
@@ -32,12 +33,11 @@ import HistorialEntregas from '../tools/entregas/page';
 import AppMovil from '@/components/herramientas/AppMovil';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { accessRoleOf } from '@/lib/dashboard/access';
-import { HERRAMIENTAS, herramientasPara, type Herramienta } from '@/lib/herramientas/catalogo';
+import { herramientasPara, type Herramienta } from '@/lib/herramientas/catalogo';
 import { useRutasEspacio } from '@/components/espacio/useRutasEspacio';
 import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
-const df = { fontFamily: 'var(--font-display)' } as const;
 
 
 // Categorías (tipos de herramienta).
@@ -60,10 +60,6 @@ const VIGENCIAS_ACCESO = [...VIGENCIAS, { v: 2160, l: '3 meses' }, { v: 8760, l:
 type ClienteConCuenta = { id: number; nombre: string; email: string };
 
 
-const CONVERSIONS: Record<string, string[]> = {
-  m4a: ['mp3'], mp4: ['mp3'], wav: ['mp3'], ogg: ['mp3'], webm: ['mp3'], mp3: ['wav', 'ogg'],
-};
-
 export default function ToolsPage() {
   // `useSearchParams` pide un Suspense por encima para poder compilar la página.
   return <Suspense fallback={null}><Herramientas /></Suspense>;
@@ -77,6 +73,7 @@ function Herramientas() {
   const [app, setApp] = useState<AppDeTelefono | null>(null);
   useEffect(() => { setApp(appDeTelefono()); }, []);
   const rutasEspacio = useRutasEspacio();
+  const router = useRouter();
   const tools = useMemo(
     () => herramientasPara({ esEquipo, esAdmin: rol === 'admin', app, conEspacio: !!rutasEspacio }),
     [esEquipo, rol, app, rutasEspacio],
@@ -91,32 +88,17 @@ function Herramientas() {
   useEffect(() => {
     if (herramientaUrl && tools.some((t) => t.id === herramientaUrl)) {
       setSelectedTool(herramientaUrl);
-      if (herramientaUrl === 'convert') resetConvert();
-      else if (herramientaUrl === 'transcribe') resetTranscribe();
+      setFormKey((k) => k + 1);
     }
   }, [tools, herramientaUrl]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Convert state
-  const [convertFrom, setConvertFrom] = useState('m4a');
-  const [convertTo, setConvertTo] = useState('mp3');
-  const [convertFile, setConvertFile] = useState<File | null>(null);
-  const [converting, setConverting] = useState(false);
-  const [convertProgress, setConvertProgress] = useState(0);
-  const [convertResult, setConvertResult] = useState<{ blob: Blob; name: string } | null>(null);
-  const convertInputRef = useRef<HTMLInputElement>(null);
-
-  // Transcribe state
-  const [transcribeFile, setTranscribeFile] = useState<File | null>(null);
-  const [transcribePhase, setTranscribePhase] = useState<'idle' | 'processing' | 'done'>('idle');
-  const [transcribeProgress, setTranscribeProgress] = useState(0);
-  const [transcribeResult, setTranscribeResult] = useState<{ blob: Blob; name: string } | null>(null);
-  const transcribeInputRef = useRef<HTMLInputElement>(null);
 
   // Enlace de un solo uso (lo que el panel compartido no trae: título, indicaciones, cliente)
   const [enlaceOpen, setEnlaceOpen] = useState(false);
   // El historial de cada herramienta (`HistorialHerramienta`): el formulario se abre en el panel
   // derecho y cada uso se anota; `versionUsos` hace que la lista se vuelva a pedir.
   const [formAbierto, setFormAbierto] = useState(false);
+  // Convertir y Transcribir empiezan de cero al elegirlas o al abrir su formulario: se montan con otra `key`.
+  const [formKey, setFormKey] = useState(0);
   const [versionUsos, setVersionUsos] = useState(0);
   const anotarUso = (herramienta: string, titulo: string, detalle: Record<string, string>) => {
     fetch('/api/herramientas/usos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ herramienta, titulo, detalle }) })
@@ -143,14 +125,15 @@ function Herramientas() {
   // con «para quién» en vez de título y sin texto que pedir. Ver `lib/herramientas/accesos`.
   const [accesoOpen, setAccesoOpen] = useState(false);
   const [accesoTitulo, setAccesoTitulo] = useState('');
-  const [accesoExigeCuenta, setAccesoExigeCuenta] = useState(false);
+  // Validación del acceso: solo el enlace · cualquier cuenta de GCC World · la cuenta de un cliente.
+  const [accesoValidacion, setAccesoValidacion] = useState<'ninguna' | 'cuenta' | 'cliente'>('ninguna');
   const [accesoCliente, setAccesoCliente] = useState('');
   useEffect(() => {
     if (!accesoOpen || clientesConCuenta) return;
     fetch('/api/enlaces/clientes').then((r) => r.json()).then((d) => setClientesConCuenta(d.data || [])).catch(() => setClientesConCuenta([]));
   }, [accesoOpen, clientesConCuenta]);
   const abrirAcceso = () => {
-    setAccesoTitulo(''); setAccesoExigeCuenta(false); setAccesoCliente('');
+    setAccesoTitulo(''); setAccesoValidacion('ninguna'); setAccesoCliente('');
     setAccesoOpen(true);
   };
   const clienteAcceso = clientesConCuenta?.find((c) => String(c.id) === accesoCliente);
@@ -220,118 +203,14 @@ function Herramientas() {
     });
   }, [cat, search, tools]);
 
-  const resetConvert = () => { setConvertFrom('m4a'); setConvertTo('mp3'); setConvertFile(null); setConverting(false); setConvertProgress(0); setConvertResult(null); };
-  const resetTranscribe = () => { setTranscribeFile(null); setTranscribePhase('idle'); setTranscribeProgress(0); setTranscribeResult(null); };
 
   const selectTool = (id: string) => {
     // El Espacio de trabajo y Gumdramon no tienen pantalla aquí: van a la suya.
     const abre = tools.find((t) => t.id === id)?.abre;
     if (abre && rutasEspacio) { window.location.href = rutasEspacio[abre]; return; }
     setSelectedTool(id);
-    if (id === 'convert') resetConvert();
-    else if (id === 'transcribe') resetTranscribe();
+    setFormKey((k) => k + 1);
   };
-
-  const triggerDownload = (blob: Blob, name: string) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = name;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 3000);
-  };
-
-  // --- Convert ---
-  const handleConvert = async () => {
-    if (!convertFile) return;
-    setConverting(true); setConvertProgress(0); setConvertResult(null);
-    const interval = setInterval(() => setConvertProgress(prev => Math.min(prev + Math.random() * 8, 90)), 300);
-    try {
-      const formData = new FormData();
-      formData.append('file', convertFile);
-      formData.append('from', convertFrom);
-      formData.append('to', convertTo);
-      const res = await fetch('/api/tools/convert', { method: 'POST', body: formData });
-      clearInterval(interval);
-      if (!res.ok) {
-        let msg = 'Error al convertir';
-        try { const err = await res.json(); msg = err.error || msg; } catch { /* response wasn't JSON */ }
-        throw new Error(msg);
-      }
-      const blob = await res.blob();
-      const name = convertFile.name.replace(/\.[^.]+$/, '') + '.' + convertTo;
-      setConvertProgress(100);
-      setConvertResult({ blob, name });
-      anotarUso('convert', convertFile.name, { formato: `${convertFrom.toUpperCase()} → ${convertTo.toUpperCase()}`, tamano: `${fmt2(convertFile.size / 1024 / 1024)} MB` });
-      triggerDownload(blob, name);
-      toast.success('Conversión completada');
-    } catch (err: any) {
-      clearInterval(interval);
-      toast.error(err.message || 'Error al convertir');
-      setConvertProgress(0);
-      setConverting(false);
-    }
-  };
-
-  // --- Transcribe (server-side via /api/tools/transcribe with FFmpeg segmentation) ---
-  const handleTranscribe = async () => {
-    if (!transcribeFile) return;
-    setTranscribePhase('processing'); setTranscribeProgress(0); setTranscribeResult(null);
-    const progressInterval = setInterval(() => setTranscribeProgress(prev => Math.min(prev + Math.random() * 6, 90)), 500);
-    try {
-      const form = new FormData();
-      form.append('file', transcribeFile);
-      const res = await fetch('/api/tools/transcribe', { method: 'POST', body: form });
-      clearInterval(progressInterval);
-      if (!res.ok) {
-        let msg = 'Error al transcribir';
-        try { const err = await res.json(); msg = err.error || msg; } catch {}
-        throw new Error(msg);
-      }
-      const blob = await res.blob();
-      const name = transcribeFile.name.replace(/\.[^.]+$/, '') + '.txt';
-      setTranscribeProgress(100);
-      setTranscribeResult({ blob, name });
-      anotarUso('transcribe', transcribeFile.name, { tamano: `${fmt2(transcribeFile.size / 1024 / 1024)} MB` });
-      setTranscribePhase('done');
-      triggerDownload(blob, name);
-      toast.success('Transcripción completada');
-    } catch (err: any) {
-      clearInterval(progressInterval);
-      toast.error(err.message || 'Error al transcribir');
-      setTranscribeProgress(0);
-      setTranscribePhase('idle');
-    }
-  };
-
-  const ProgressBar = ({ value, done }: { value: number; done?: boolean }) => (
-    <div className="w-full h-2 rounded-full bg-digi-border/60 overflow-hidden">
-      <div className={`h-full rounded-full transition-all duration-300 ${done ? 'bg-green-500' : 'bg-accent'}`} style={{ width: `${value}%` }} />
-    </div>
-  );
-
-  const ResultBlock = ({ result, onReset, label }: { result: { blob: Blob; name: string }; onReset: () => void; label: string }) => (
-    <div className="space-y-2 pt-3 border-t border-digi-border">
-      <p className="flex items-center justify-center gap-1.5 text-[12px] text-green-700 font-medium" style={mf}>
-        <CheckCircle2 className="w-4 h-4" /> {label}
-      </p>
-      <button onClick={() => triggerDownload(result.blob, result.name)}
-        className="w-full inline-flex items-center justify-center gap-1.5 py-2 bg-accent text-white text-sm font-medium rounded hover:bg-accent-hover transition-colors" style={mf}>
-        <Download className="w-4 h-4" /> Descargar {result.name}
-      </button>
-      <button onClick={onReset} className="pixel-btn pixel-btn-secondary w-full text-sm" style={mf}>Usar de nuevo</button>
-    </div>
-  );
-
-  const Dropzone = ({ onClick, file, hint }: { onClick: () => void; file: File | null; hint: string }) => (
-    <div onClick={onClick}
-      className="w-full py-6 px-3 rounded-lg border-2 border-dashed border-digi-border hover:border-accent/50 hover:bg-accent-light/40 cursor-pointer text-center transition-colors">
-      <UploadCloud className="w-6 h-6 text-digi-muted mx-auto mb-1.5" />
-      <p className="text-[12px] text-digi-text" style={mf}>{file ? file.name : hint}</p>
-      {file && <p className="text-[11px] text-digi-muted mt-0.5" style={mf}>{fmt2((file.size / 1024 / 1024))} MB</p>}
-    </div>
-  );
 
   const tool = tools.find((t) => t.id === selectedTool) || null;
   // Por debajo de `xl` la herramienta se abre ENCIMA, no bajo la lista (Fernando, 2026-10-23).
@@ -340,7 +219,17 @@ function Herramientas() {
   // En una app, la herramienta elegida en Accesos se abre sola, como sección propia, sin la lista.
   const enSeccion = !!app && !!tool;
   const cuerpoHerramienta = () => !tool ? null
-    : tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'formatos-excel' ? renderFormatosExcel() : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace();
+    : tool.id === 'convert' ? <ConvertirArchivos key={formKey} descripcion={tool.description} alUsar={(t, d) => anotarUso('convert', t, d)} />
+    : tool.id === 'transcribe' ? <TranscribirAudio key={formKey} alUsar={(t, d) => anotarUso('transcribe', t, d)} /> : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'formatos-excel' ? renderFormatosExcel() : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace();
+
+  // Compartir con alguien de fuera por un enlace con token (`lib/herramientas/accesos`): en cada
+  // herramienta `compartible`, solo para el equipo. En las apps va en la barra del historial.
+  const bloqueCompartir = () => !tool || !esEquipo || !tool.compartible ? null : (
+    <div className="space-y-2 pt-3 mt-3 border-t border-digi-border">
+      <button onClick={abrirAcceso} className={`${BTN_SECONDARY} w-full`}><Share2 className="w-4 h-4" /> Compartir acceso</button>
+      <Link href="/dashboard/tools/accesos" className={`${BTN_SECONDARY} w-full`}><Table2 className="w-4 h-4" /> Ver accesos compartidos</Link>
+    </div>
+  );
 
   // Panel derecho: usar la herramienta seleccionada.
   const renderToolPanel = () => {
@@ -367,7 +256,7 @@ function Herramientas() {
             <p className="text-[11px] text-digi-muted" style={mf}>{CATEGORY_LABEL[tool.category]}</p>
           </div>
         </div>
-        <div className="p-4">{cuerpoHerramienta()}</div>
+        <div className="p-4">{cuerpoHerramienta()}{bloqueCompartir()}</div>
       </PanelHastaElPie>
     );
   };
@@ -386,98 +275,6 @@ function Herramientas() {
     />
   );
 
-  const renderConvert = () => {
-    if (converting) {
-      return (
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-[12px]" style={mf}>
-              <span className="text-digi-muted">{convertProgress < 100 ? 'Convirtiendo...' : 'Completado'}</span>
-              <span className="text-accent font-medium">{Math.round(convertProgress)}%</span>
-            </div>
-            <ProgressBar value={convertProgress} done={convertProgress >= 100} />
-          </div>
-          {convertResult ? (
-            <ResultBlock result={convertResult} onReset={resetConvert} label="Archivo convertido exitosamente" />
-          ) : (
-            <p className="text-[11px] text-digi-muted text-center" style={mf}>Procesando… no cierres la página</p>
-          )}
-        </div>
-      );
-    }
-    return (
-      <div className="space-y-3">
-        <p className="text-[12px] text-digi-muted" style={mf}>{HERRAMIENTAS[0].description}</p>
-        <div className="grid grid-cols-2 gap-3">
-          <PixelSelect label="Formato origen" value={convertFrom}
-            onChange={(e) => {
-              setConvertFrom(e.target.value);
-              const targets = CONVERSIONS[e.target.value] || [];
-              if (targets.length > 0 && !targets.includes(convertTo)) setConvertTo(targets[0]);
-            }}
-            options={Object.keys(CONVERSIONS).map((f) => ({ value: f, label: f.toUpperCase() }))} />
-          <PixelSelect label="Formato destino" value={convertTo}
-            onChange={(e) => setConvertTo(e.target.value)}
-            options={(CONVERSIONS[convertFrom] || []).map((f) => ({ value: f, label: f.toUpperCase() }))} />
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Archivo</label>
-          <Dropzone onClick={() => convertInputRef.current?.click()} file={convertFile}
-            hint={`Haz clic para seleccionar un archivo .${convertFrom}`} />
-          <input ref={convertInputRef} type="file" accept={`.${convertFrom}`} onChange={e => setConvertFile(e.target.files?.[0] || null)} className="hidden" />
-        </div>
-        <button onClick={handleConvert} disabled={!convertFile} className="pixel-btn pixel-btn-primary w-full text-sm disabled:opacity-50" style={mf}>
-          Iniciar conversión
-        </button>
-      </div>
-    );
-  };
-
-  const renderTranscribe = () => {
-    if (transcribePhase === 'processing') {
-      return (
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-[12px]" style={mf}>
-              <span className="text-digi-muted">Transcribiendo...</span>
-              <span className="text-accent font-medium">{Math.round(transcribeProgress)}%</span>
-            </div>
-            <ProgressBar value={transcribeProgress} />
-          </div>
-          <p className="text-[11px] text-digi-muted text-center" style={mf}>Procesando… no cierres la página</p>
-        </div>
-      );
-    }
-    if (transcribePhase === 'done' && transcribeResult) {
-      return (
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-[12px]" style={mf}>
-              <span className="text-green-700 font-medium">Completado</span>
-              <span className="text-green-700 font-medium">100%</span>
-            </div>
-            <ProgressBar value={100} done />
-          </div>
-          <ResultBlock result={transcribeResult} onReset={resetTranscribe} label="Audio transcrito exitosamente" />
-        </div>
-      );
-    }
-    return (
-      <div className="space-y-3">
-        <p className="text-[12px] text-digi-muted" style={mf}>Sube un archivo de audio (MP3, M4A, WAV, OGG, WEBM) para transcribirlo a texto.</p>
-        <div className="flex flex-col gap-1">
-          <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Archivo de audio</label>
-          <Dropzone onClick={() => transcribeInputRef.current?.click()} file={transcribeFile}
-            hint="Haz clic para seleccionar un archivo de audio" />
-          <input ref={transcribeInputRef} type="file" accept=".mp3,.m4a,.mp4,.wav,.ogg,.webm" onChange={e => setTranscribeFile(e.target.files?.[0] || null)} className="hidden" />
-        </div>
-        <button onClick={handleTranscribe} disabled={!transcribeFile} className="pixel-btn pixel-btn-primary w-full text-sm disabled:opacity-50" style={mf}>
-          Iniciar transcripción
-        </button>
-      </div>
-    );
-  };
-
   const renderEnlace = () => (
     <div className="space-y-3">
       <p className="text-[12px] text-digi-muted" style={mf}>{tool?.description}</p>
@@ -491,12 +288,6 @@ function Herramientas() {
     <div className="space-y-3">
       <p className="text-[12px] text-digi-muted" style={mf}>{tool?.description}</p>
       <Link href="/dashboard/tools/formatos-excel" className={`${BTN_PRIMARY} w-full`}><ExternalLink className="w-4 h-4" /> Abrir herramienta</Link>
-      {esEquipo && (
-        <>
-          <button onClick={abrirAcceso} className={`${BTN_SECONDARY} w-full`}><Share2 className="w-4 h-4" /> Compartir acceso</button>
-          <Link href="/dashboard/tools/accesos" className={`${BTN_SECONDARY} w-full`}><Table2 className="w-4 h-4" /> Ver accesos compartidos</Link>
-        </>
-      )}
     </div>
   );
 
@@ -534,8 +325,12 @@ function Herramientas() {
               etiquetas={{ formato: 'Formato', tamano: 'Tamaño', salida: 'Salida', papel: 'Papel', hojas: 'Hojas' }}
               version={versionUsos}
               abierto={formAbierto}
-              onAbrir={() => { setFormAbierto(true); if (tool.id === 'convert') resetConvert(); if (tool.id === 'transcribe') resetTranscribe(); }}
+              onAbrir={() => { setFormAbierto(true); setFormKey((k) => k + 1); }}
               onCerrar={() => setFormAbierto(false)}
+              acciones={esEquipo && tool.compartible ? [
+                { label: 'Accesos', icon: Table2, onClick: () => router.push('/dashboard/tools/accesos'), tipo: 'secundaria' },
+                { label: 'Compartir', icon: Share2, onClick: abrirAcceso, tipo: 'secundaria' },
+              ] : undefined}
               formulario={tool.id === 'qr' ? <GeneradorQR alUsar={(enlace, d) => anotarUso('qr', enlace, d)} />
                 : tool.id === 'formatos-excel' ? <FormatosExcel alUsar={(nombre, d) => anotarUso('formatos-excel', nombre, d)} />
                 : cuerpoHerramienta()}
@@ -596,7 +391,7 @@ function Herramientas() {
       {/* La herramienta en teléfono y tableta. En escritorio NO se monta: ver `enTelefono`. */}
       {enTelefono && !enSeccion && (
         <PixelModal open={!!tool} onClose={() => setSelectedTool(null)} title={tool?.name || 'Herramienta'} size="md">
-          {cuerpoHerramienta()}
+          {cuerpoHerramienta()}{bloqueCompartir()}
         </PixelModal>
       )}
 
@@ -647,20 +442,22 @@ function Herramientas() {
       <PanelCompartirEnlace
         open={accesoOpen} onClose={() => setAccesoOpen(false)}
         title="Compartir acceso a la herramienta"
-        intro={<>Quien abra el enlace podrá usar <strong>{tool?.name}</strong> las veces que necesite, sin cuenta, hasta que venza o lo cierres.</>}
+        intro={<>Quien abra el enlace podrá usar <strong>{tool?.name}</strong> las veces que necesite, hasta que venza o lo cierres.</>}
         duraciones={VIGENCIAS_ACCESO} duracionInicial={720}
         correoInicial={clienteAcceso?.email || ''}
         etiquetaCorreo="Correo de quien la usará (para enviarlo)"
-        aviso={accesoExigeCuenta
+        aviso={accesoValidacion === 'cliente'
           ? <>Solo podrá usarla quien inicie sesión con la cuenta de <strong>{clienteAcceso?.nombre}</strong>.</>
-          : 'Cualquiera con este enlace puede usarla mientras esté vigente.'}
-        puedeGenerar={!!tool?.compartible && (!accesoExigeCuenta || !!accesoCliente)}
+          : accesoValidacion === 'cuenta'
+            ? 'Podrá usarla quien inicie sesión con una cuenta de GCC World; si no tiene, la crea al entrar.'
+            : 'Cualquiera con este enlace puede usarla mientras esté vigente.'}
+        puedeGenerar={!!tool?.compartible && (accesoValidacion !== 'cliente' || !!accesoCliente)}
         generar={async ({ horas, email, enviar }) => {
           const r = await fetch('/api/herramientas/accesos', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               herramienta: tool?.id, titulo: accesoTitulo, horas, email: enviar ? email : undefined,
-              exige_cuenta: accesoExigeCuenta, client_id: accesoExigeCuenta ? Number(accesoCliente) : null,
+              validacion: accesoValidacion, client_id: accesoValidacion === 'cliente' ? Number(accesoCliente) : null,
             }),
           });
           const d = await r.json();
@@ -673,11 +470,13 @@ function Herramientas() {
           <input value={accesoTitulo} onChange={(e) => setAccesoTitulo(e.target.value)} maxLength={200}
             placeholder="Ej.: Contabilidad de la empresa" className={EDIT_INPUT} style={mf} />
         </EditField>
-        <div className="flex items-center justify-between gap-3 py-1">
-          <span className="text-[12px] font-semibold text-digi-text opacity-70" style={mf}>Pedir la cuenta del cliente</span>
-          <Interruptor activo={accesoExigeCuenta} onChange={setAccesoExigeCuenta} etiqueta="Pedir la cuenta del cliente" />
-        </div>
-        {accesoExigeCuenta && (
+        <PixelSelect label="Validación" value={accesoValidacion} onChange={(e) => setAccesoValidacion(e.target.value as typeof accesoValidacion)}
+          options={[
+            { value: 'ninguna', label: 'Solo el enlace' },
+            { value: 'cuenta', label: 'Cuenta de GCC World' },
+            { value: 'cliente', label: 'Cuenta de un cliente' },
+          ]} />
+        {accesoValidacion === 'cliente' && (
           <PixelSelect label="Cliente" value={accesoCliente} onChange={(e) => setAccesoCliente(e.target.value)}
             placeholder={clientesConCuenta === null ? 'Cargando…' : clientesConCuenta.length ? 'Elige el cliente' : 'Ningún cliente tiene cuenta'}
             options={(clientesConCuenta || []).map((c) => ({ value: String(c.id), label: `${c.nombre} · ${c.email}` }))} />

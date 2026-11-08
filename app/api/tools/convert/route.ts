@@ -1,4 +1,5 @@
-import { usuarioDeHerramientas } from '@/lib/herramientas/acceso';
+import { usuarioOAcceso } from '@/lib/herramientas/acceso';
+import { contarUso } from '@/lib/herramientas/accesos';
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, unlink, readFile } from 'fs/promises';
 import { execFile } from 'child_process';
@@ -26,7 +27,8 @@ const SUPPORTED_CONVERSIONS: Record<string, string[]> = {
 export async function POST(req: NextRequest) {
   const tempFiles: string[] = [];
   try {
-    const acceso = await usuarioDeHerramientas();
+    // Con sesión, o con el token de un acceso compartido a esta herramienta.
+    const acceso = await usuarioOAcceso(req, 'convert');
     if (acceso.error) return acceso.error;
 
     const formData = await req.formData();
@@ -67,6 +69,7 @@ export async function POST(req: NextRequest) {
     };
 
     const originalName = file.name.replace(/\.[^.]+$/, '');
+    if (acceso.accesoId) await contarUso(acceso.accesoId).catch(() => {});
     return new NextResponse(outputBuffer, {
       headers: {
         'Content-Type': mimeTypes[toFormat] || 'application/octet-stream',

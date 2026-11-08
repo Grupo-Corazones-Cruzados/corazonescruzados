@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
-import { acceso as accesoEnlace, estadoDe, nuevoToken } from '@/lib/enlaces';
+import { estadoDe, nuevoToken, type Acceso } from '@/lib/enlaces';
+import { HERRAMIENTAS } from '@/lib/herramientas/catalogo';
 
 /**
  * ⇒ ACCESO PÚBLICO A UNA HERRAMIENTA (Fernando, 2026-10-27).
@@ -12,13 +13,26 @@ import { acceso as accesoEnlace, estadoDe, nuevoToken } from '@/lib/enlaces';
  * hasta que vence o se cierra a mano. Estados: vigente · cerrado · vencido (calculado con
  * `vence_en`, sin cron, igual que el enlace).
  *
- * Solo se comparten las herramientas de `COMPARTIBLES`: las que corren enteras en el
- * navegador, así quien entra con el token no llega a nada del servidor ni del Drive.
+ * ⇒ TODAS LAS QUE TIENEN SENTIDO FUERA (Fernando, 2026-11-08: «por cada herramienta dejemos una
+ * forma de compartir… a través de un token temporal que incluso pueda llevar validación de
+ * cuenta»). Las marcadas `compartible` en el catálogo: Formatos de Excel y QR corren en el
+ * navegador; Convertir y Transcribir llaman a su API con el token en `x-acceso-herramienta`
+ * (`lib/herramientas/acceso.ts › usuarioOAcceso`), que solo abre ESA herramienta y cuenta el uso.
+ * No se comparten las de un solo uso (ya son un enlace para alguien de fuera y escriben en el
+ * Drive), el Descargador (es una app que se instala) ni Espacio y Gumdramon (llegan a la máquina).
+ *
+ * VALIDACIÓN (sin columnas nuevas): `exige_cuenta` falso → basta el enlace; verdadero sin
+ * `client_id` → cualquier cuenta de GCC World con sesión; verdadero con `client_id` → solo la
+ * cuenta de ese cliente.
  */
 
-export const COMPARTIBLES: Record<string, { nombre: string }> = {
-  'formatos-excel': { nombre: 'Formatos de impresión para Excel' },
-};
+export const COMPARTIBLES: Record<string, { nombre: string }> = Object.fromEntries(
+  HERRAMIENTAS.filter((h) => h.compartible).map((h) => [h.id, { nombre: h.name }]),
+);
+
+export type Validacion = 'ninguna' | 'cuenta' | 'cliente';
+export const validacionDe = (a: { exige_cuenta: boolean; client_id: number | null }): Validacion =>
+  !a.exige_cuenta ? 'ninguna' : a.client_id ? 'cliente' : 'cuenta';
 
 const APP_URL = (process.env.NEXT_PUBLIC_APP_URL || 'https://app.grupocc.org').replace(/\/$/, '');
 export const urlAcceso = (token: string) => `${APP_URL}/herramienta/${token}`;
@@ -67,10 +81,23 @@ export async function porToken(token: string) {
 }
 
 /**
- * ¿Puede usar la herramienta quien tiene esta sesión? Las mismas reglas que el enlace de un
- * solo uso (vigente, y la cuenta del cliente si la pide); aquí nunca sale «usado».
+ * ¿Puede usar la herramienta quien tiene esta sesión? Vigente y, según la validación, con
+ * sesión de cualquier cuenta o con la del cliente. Aquí nunca sale «usado»: no se gasta.
  */
-export function acceso(a: any, user: { userId: string } | null) {
-  if (a && !COMPARTIBLES[a.herramienta]) return { ok: false as const, motivo: 'no_existe' as const };
-  return accesoEnlace(a, user);
+export function acceso(a: any, user: { userId: string } | null): Acceso {
+  if (!a || !COMPARTIBLES[a.herramienta]) return { ok: false, motivo: 'no_existe' };
+  const estado = estadoDe(a);
+  if (estado !== 'vigente') return { ok: false, motivo: estado };
+  if (a.exige_cuenta) {
+    if (!user) return { ok: false, motivo: 'necesita_sesion' };
+    if (a.client_id && (!a.cliente_user_id || String(a.cliente_user_id) !== String(user.userId))) {
+      return { ok: false, motivo: 'otra_cuenta' };
+    }
+  }
+  return { ok: true };
+}
+
+/** Anota un uso del acceso (se llama cuando la herramienta terminó, no al abrir la página). */
+export async function contarUso(id: number) {
+  await pool.query(`UPDATE gcc_world.herramienta_accesos SET usos = usos + 1, ultimo_uso = NOW() WHERE id = $1`, [id]);
 }

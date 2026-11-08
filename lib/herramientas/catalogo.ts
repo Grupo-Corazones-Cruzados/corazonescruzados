@@ -31,10 +31,10 @@ export type Herramienta = {
 };
 
 export const HERRAMIENTAS: Herramienta[] = [
-  { id: 'convert', name: 'Convertir Archivos', Icon: Repeat2, category: 'edicion', description: 'Convierte archivos de audio entre formatos (M4A, MP4, WAV, OGG → MP3, etc.).' },
-  { id: 'transcribe', name: 'Transcribir Audio', Icon: Captions, category: 'edicion', description: 'Transcribe archivos de audio a texto usando inteligencia artificial (Whisper).' },
+  { id: 'convert', name: 'Convertir Archivos', Icon: Repeat2, category: 'edicion', compartible: true, description: 'Convierte archivos de audio entre formatos (M4A, MP4, WAV, OGG → MP3, etc.).' },
+  { id: 'transcribe', name: 'Transcribir Audio', Icon: Captions, category: 'edicion', compartible: true, description: 'Transcribe archivos de audio a texto usando inteligencia artificial (Whisper).' },
   { id: 'formatos-excel', name: 'Formatos de impresión para Excel', Icon: Printer, category: 'edicion', compartible: true, description: 'Corrige la impresión de un libro de Excel (papel, márgenes, títulos y número de página) y lo descarga en Excel o PDF.' },
-  { id: 'qr', name: 'Enlace a código QR', Icon: QrCode, category: 'edicion', description: 'Convierte un enlace en un código QR para descargar en PNG o SVG.' },
+  { id: 'qr', name: 'Enlace a código QR', Icon: QrCode, category: 'edicion', compartible: true, description: 'Convierte un enlace en un código QR para descargar en PNG o SVG.' },
   { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', soloEquipo: true, description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
   { id: 'descargador-video', name: 'Descargador de video', Icon: MonitorDown, category: 'app', soloMiembrosApp: true, description: 'App para Android que guarda en el teléfono videos o audio a partir de un enlace.' },
   { id: 'entrega-unica', name: 'Entrega de un solo uso', Icon: PackageOpen, category: 'gestion', soloEquipo: true, description: 'Envía un mensaje y hasta 10 archivos con un enlace que se cierra cuando lo descargan.' },

@@ -3,10 +3,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import MarcoPublico, { AvisoPublico, CargandoPublico } from '@/components/public/MarcoPublico';
 import FormatosExcel from '@/components/herramientas/FormatosExcel';
+import GeneradorQR from '@/components/herramientas/GeneradorQR';
+import ConvertirArchivos from '@/components/herramientas/ConvertirArchivos';
+import TranscribirAudio from '@/components/herramientas/TranscribirAudio';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { Link2Off, LogIn } from 'lucide-react';
 
-type Datos = { motivo: string | null; herramienta?: string; nombre?: string; titulo?: string | null; vence_en?: string; sesion: string | null };
+type Datos = { motivo: string | null; herramienta?: string; nombre?: string; titulo?: string | null; vence_en?: string; sesion: string | null; validacion?: string | null };
 
 const MOTIVOS: Record<string, { titulo: string; texto: string }> = {
   no_existe: { titulo: 'Enlace no disponible', texto: 'Este enlace no existe. Revisa que lo hayas copiado completo.' },
@@ -52,7 +55,9 @@ export default function HerramientaPortal({ token }: { token: string }) {
     cuerpo = <CargandoPublico />;
   } else if (datos.motivo === 'necesita_sesion') {
     cuerpo = tarjeta(LogIn, 'Inicia sesión para usarla',
-      'Este acceso es para un cliente de GCC World: entra con tu cuenta y volverás aquí.',
+      datos.validacion === 'cuenta'
+        ? 'Este acceso pide una cuenta de GCC World: entra o crea la tuya y volverás aquí.'
+        : 'Este acceso es para un cliente de GCC World: entra con tu cuenta y volverás aquí.',
       <a href={entrar} className={BTN_PRIMARY}><LogIn className="w-4 h-4" /> Iniciar sesión</a>);
   } else if (datos.motivo === 'otra_cuenta') {
     cuerpo = tarjeta(LogIn, 'Este acceso es para otra cuenta',
@@ -70,6 +75,11 @@ export default function HerramientaPortal({ token }: { token: string }) {
           {datos.titulo && <p className="text-[13.5px] text-digi-muted mt-1">{datos.titulo}</p>}
         </div>
         {datos.herramienta === 'formatos-excel' && <FormatosExcel onUso={usar} />}
+        {/* QR corre en el navegador: el uso se cuenta aquí. Convertir y Transcribir mandan el token a
+            su API, que comprueba el acceso y cuenta el uso ella misma. */}
+        {datos.herramienta === 'qr' && <div className="max-w-2xl mx-auto bg-digi-card border border-digi-border rounded-xl p-5"><GeneradorQR alUsar={usar} /></div>}
+        {datos.herramienta === 'convert' && <div className="max-w-2xl mx-auto bg-digi-card border border-digi-border rounded-xl p-5"><ConvertirArchivos token={token} /></div>}
+        {datos.herramienta === 'transcribe' && <div className="max-w-2xl mx-auto bg-digi-card border border-digi-border rounded-xl p-5"><TranscribirAudio token={token} /></div>}
       </div>
     );
   }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { getCurrentUser, type TokenPayload } from '@/lib/auth/jwt';
 import { accessRoleOf, canAccess, type AccessRole } from '@/lib/dashboard/access';
+import { acceso, porToken } from '@/lib/herramientas/accesos';
 
 /**
  * ¿Quien tiene sesión puede usar Herramientas? Lo decide la MISMA matriz que el menú y el
@@ -29,4 +30,27 @@ export async function usuarioDeHerramientas(): Promise<
     return { error: NextResponse.json({ error: 'No tienes acceso a Herramientas' }, { status: 403 }) };
   }
   return { user, rol };
+}
+
+/**
+ * Lo mismo, o un ACCESO COMPARTIDO a ESTA herramienta (`lib/herramientas/accesos`): si llega
+ * `x-acceso-herramienta`, manda el token y no la sesión (quien lo usa puede no tener cuenta, o
+ * una sin permiso de Herramientas). Un token de otra herramienta no abre esta. `accesoId` sirve
+ * para contar el uso cuando la API termina bien.
+ */
+export async function usuarioOAcceso(req: Request, herramienta: string): Promise<
+  { accesoId: number | null; error?: undefined } | { error: NextResponse }
+> {
+  const token = req.headers.get('x-acceso-herramienta');
+  if (!token) {
+    const r = await usuarioDeHerramientas();
+    return r.error ? { error: r.error } : { accesoId: null };
+  }
+  const a = await porToken(token);
+  const user = await getCurrentUser();
+  const r = acceso(a, user ? { userId: String(user.userId) } : null);
+  if (!r.ok || a.herramienta !== herramienta) {
+    return { error: NextResponse.json({ error: 'Este acceso ya no está disponible', motivo: r.ok ? 'no_existe' : r.motivo }, { status: 409 }) };
+  }
+  return { accesoId: a.id as number };
 }

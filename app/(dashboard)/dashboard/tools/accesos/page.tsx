@@ -20,7 +20,7 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 type Variante = 'default' | 'info' | 'success' | 'warning' | 'error';
 type Acceso = {
   id: number; url: string; herramienta: string; herramienta_nombre: string; titulo: string; cliente_nombre: string | null;
-  exige_cuenta: boolean; estado: 'vigente' | 'cerrado' | 'vencido'; vence_en: string; enviado_a: string | null;
+  exige_cuenta: boolean; validacion?: 'ninguna' | 'cuenta' | 'cliente'; estado: 'vigente' | 'cerrado' | 'vencido'; vence_en: string; enviado_a: string | null;
   creado_en: string; usos: number; ultimo_uso: string | null; cerrado_en: string | null; creador_nombre: string | null;
 };
 
@@ -112,7 +112,8 @@ export default function AccesosPage() {
       <div className="space-y-2">
         {fila('Estado', <PixelBadge variant={ESTADO[sel.estado].v}>{ESTADO[sel.estado].label}</PixelBadge>)}
         {fila('Herramienta', sel.herramienta_nombre)}
-        {fila('Cliente', sel.cliente_nombre ? `${sel.cliente_nombre}${sel.exige_cuenta ? ' · pide su cuenta' : ''}` : '—')}
+        {fila('Validación', { ninguna: 'Solo el enlace', cuenta: 'Cuenta de GCC World', cliente: 'Cuenta del cliente' }[sel.validacion ?? 'ninguna'])}
+        {sel.cliente_nombre && fila('Cliente', sel.cliente_nombre)}
         {sel.enviado_a && fila('Enviado a', sel.enviado_a)}
         {isAdmin && fila('Creado por', sel.creador_nombre || '—')}
         {fila('Creado', fecha(sel.creado_en))}
