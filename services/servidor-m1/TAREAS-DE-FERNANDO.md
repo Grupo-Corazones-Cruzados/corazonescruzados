@@ -121,6 +121,13 @@ líneas de los bots de entrenamiento). 27 registros, todos **DNS only**: los 14 
 preguntando a `dante.ns.cloudflare.com`: responden igual que los de Microsoft.
 **Servidores de nombres asignados:** `dante.ns.cloudflare.com` y `dell.ns.cloudflare.com` (no son secretos).
 
+### ☐ C6. Cloudflare: quitar los registros de los productos (los subdominios ya no existen)
+En dash.cloudflare.com → `grupocc.org` → **DNS → Records**, borrar (**Edit → Delete**) estos 10:
+- CNAME `reservas`, `pedidos`, `catering`, `planificaciones`, `automatizaciones`
+- TXT `_railway-verify.reservas`, `_railway-verify.pedidos`, `_railway-verify.catering`,
+  `_railway-verify.planificaciones`, `_railway-verify.automatizaciones`
+**NO borrar** `_railway-verify.www`, `www` ni `app`. Deben quedar 17 registros.
+
 ### ☐ C5. Después, con Claude: poner esos servidores de nombres en Namecheap
 Se hace juntos al terminar C4: crear la cuenta de Cloudflare (o entrar) y cambiar en Namecheap los dos servidores
 de nombres que dé Cloudflare. Claude prepara antes todos los registros (correo, `www`, productos, passkeys) para

@@ -12034,7 +12034,7 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 - ✅ **Probado en local (2026-11-07):** `/grupo` conectado (la comprobación contra Meta devolvió el token del número de prueba vencido: dato real) y `/demo` sin número, claro/oscuro, 1280 y 390 px, `scrollWidth` = ancho, sin errores de consola. No se probó un alta real: necesita un cliente con su teléfono.
 
 
-# PRODUCTOS SIN SUBDOMINIO (2026-11-08) · 92 %
+# PRODUCTOS SIN SUBDOMINIO (2026-11-08) · ✅ HECHO
 **Objetivo:** que los cinco productos se sirvan desde `app.grupocc.org` y desaparezcan sus subdominios, en Railway y en
 Cloudflare. **Decisión de Fernando (2026-11-08):** «eliminarlos de verdad» (descartadas: ocultarlos con redirección,
 o dejarlos). **Rol:** arquitecto de plataforma.
@@ -12221,3 +12221,13 @@ Fernando pidió solo guardar lo aprendido; no se construye nada todavía. Fuente
 - M1: su base copia no tiene la columna `inquilinos.razon_social` (migración 014 de Automatizaciones) → 500 en
   `/<cliente>/acceso`. Pendiente refrescar la copia.
 - **Siguiente:** Fernando cambia la URL del webhook en Meta; después se borran los dominios.
+
+## Cierre (2026-11-08)
+- Fernando cambió en Meta la URL del webhook a `app.grupocc.org/p/automatizaciones/api/agente/webhook` y añadió
+  `app.grupocc.org` a los dominios del SDK de JavaScript. Comprobado en los registros HTTP: la verificación (GET 200,
+  22:31) y un mensaje real (POST 200, 22:35) entraron por la dirección nueva y el worker lo procesó.
+- Fichas del marketplace (`member_portfolio_items` 1, 25, 29, 30, 31): `project_url` y `demo_url` a
+  `https://app.grupocc.org/p/<p>` (demos 200).
+- **Borrados en Railway** los cinco dominios (`<p>.grupocc.org`); quedan `app` y `www`. Los viejos dan 404.
+- Falta: quitar de la zona de Cloudflare (aún sin activar) los 5 CNAME de productos y sus 5 `_railway-verify`
+  (NO el de `www`).
