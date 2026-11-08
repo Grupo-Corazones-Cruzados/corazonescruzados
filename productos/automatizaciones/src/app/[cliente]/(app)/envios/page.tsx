@@ -69,6 +69,7 @@ export default async function PaginaEnvios({ params }: { params: Promise<{ clien
         cuando: e.creado_en.toISOString(), error: e.error,
       }))}
       puedeOperar={sesion.rol !== 'CONSULTA'}
+      puedeConectar={sesion.rol === 'ADMIN'}
     />
   );
 }

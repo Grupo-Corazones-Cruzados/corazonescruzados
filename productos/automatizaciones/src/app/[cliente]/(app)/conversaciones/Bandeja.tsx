@@ -8,6 +8,7 @@ import { Boton, Insignia, Tarjeta } from '@/componentes/ui';
 import { cambiarBot } from '@/acciones/conversaciones';
 import { costoEnDolares, costoLegible } from '@/lib/ia/precios';
 import { cn } from '@/lib/utils';
+import { fechaHora } from '@/lib/formato';
 
 export type ConversacionLista = {
   id: number;
@@ -127,7 +128,7 @@ export default function Bandeja({
                 {!c.botActivo && <Hand className="h-3.5 w-3.5 shrink-0 text-aviso" />}
               </div>
               <p className="truncate text-[11.5px] text-tenue">
-                {c.ultimo ? new Date(c.ultimo).toLocaleString('es-EC') : 'Sin mensajes'}
+                {c.ultimo ? fechaHora(c.ultimo) : 'Sin mensajes'}
               </p>
             </Link>
           ))}
@@ -235,7 +236,7 @@ export default function Bandeja({
                       {m.texto || <span className="opacity-70">[{m.tipo}]</span>}
                     </p>
                     <p className="mt-1 text-[10px] opacity-70">
-                      {new Date(m.creado).toLocaleString('es-EC')}
+                      {fechaHora(m.creado)}
                       {m.enviadoOk === false && (
                         <span className="ml-1 inline-flex items-center gap-0.5" title={m.errorEnvio ?? undefined}>
                           <AlertCircle className="h-3 w-3" /> no salió

@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { X, Search, Loader2, Inbox, ChevronDown, Info } from 'lucide-react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { X, Search, Loader2, Inbox, ChevronDown, ChevronRight, Info, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 /**
@@ -455,16 +456,19 @@ export function RailFiltro({
   alElegir,
   titulo,
   className,
+  soloEscritorio = false,
 }: {
   opciones: OpcionRail[];
   activo: string;
   alElegir: (v: string) => void;
   titulo?: string;
   className?: string;
+  /** Sin la versión del teléfono: la página usa la portada de secciones (`Secciones`). */
+  soloEscritorio?: boolean;
 }) {
   return (
     <>
-      {opciones.length <= 3 ? (
+      {soloEscritorio ? null : opciones.length <= 3 ? (
         <div role="tablist" aria-label={titulo}
           className={cn('grid gap-0.5 rounded-md border border-borde bg-realce p-0.5 lg:hidden', className)}
           style={{ gridTemplateColumns: `repeat(${opciones.length}, minmax(0, 1fr))` }}>
@@ -759,6 +763,7 @@ export function Tabla<T>({
   alPulsarFila,
   filaActiva,
   vacio,
+  recuento,
 }: {
   columnas: Columna<T>[];
   filas: T[];
@@ -766,6 +771,12 @@ export function Tabla<T>({
   alPulsarFila?: (f: T) => void;
   filaActiva?: (f: T) => boolean;
   vacio?: ReactNode;
+  /**
+   * «N cuentas», «3 de 5 aprobadas»… Va en la ÚLTIMA franja de la propia tarjeta, con su
+   * fondo y un borde arriba, en la tabla y en la galería (regla 2026-10-29/31): nunca una
+   * línea suelta encima o debajo de la lista.
+   */
+  recuento?: ReactNode;
 }) {
   if (!filas.length) return <>{vacio ?? <EstadoVacio titulo="No hay nada que mostrar" />}</>;
   const alinea = (a?: string) =>
@@ -815,7 +826,8 @@ export function Tabla<T>({
       ))}
     </div>
     <div className="desplaza hidden overflow-x-auto md:block">
-      <table className="w-full border-collapse text-[13px]">
+      {/* Con anchos fijos las columnas no saltan al cambiar el contenido (regla 2026-10-29). */}
+      <table className={cn('w-full border-collapse text-[13px]', columnas.some((c) => c.ancho) && 'table-fixed')}>
         <thead>
           <tr className="border-b border-borde bg-tarjeta">
             {columnas.map((c) => (
@@ -853,6 +865,134 @@ export function Tabla<T>({
         </tbody>
       </table>
     </div>
+    {recuento && (
+      <div className="border-t border-borde bg-realce px-3 py-2 text-[12px] text-tenue">{recuento}</div>
+    )}
     </>
+  );
+}
+
+// ── Secciones de una página (Configuración, Estudio…) ──────────────────────
+/**
+ * PÁGINAS DE VARIAS SECCIONES (regla /diseno §4-nonies, 2026-10-29).
+ *
+ * Escritorio: el raíl a la izquierda y la sección a la derecha, como siempre.
+ * Teléfono: NO se apilan ni se esconden tras un `<select>`. Primero una PORTADA con la
+ * lista de secciones (baldosa con icono + nombre + ›); al tocar una, la sección ocupa la
+ * pantalla y la cabecera lleva una flecha ← que vuelve a la portada.
+ *
+ * La sección abierta vive en la URL (`?seccion=`): el «atrás» del teléfono vuelve a la
+ * portada y un enlace puede abrir una sección directa. En escritorio se REEMPLAZA la URL
+ * (cambiar de pestaña no llena el historial); en el teléfono se APILA (atrás funciona).
+ */
+export function useSeccion(opciones: OpcionRail[]) {
+  const router = useRouter();
+  const ruta = usePathname();
+  const params = useSearchParams();
+  const pedida = params.get('seccion');
+  const valida = opciones.some((o) => o.valor === pedida);
+  const activo = valida ? (pedida as string) : opciones[0]?.valor ?? '';
+  const ir = useCallback(
+    (valor: string) => {
+      const q = new URLSearchParams(params.toString());
+      q.set('seccion', valor);
+      const destino = `${ruta}?${q.toString()}`;
+      const escritorio = typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches;
+      if (escritorio) router.replace(destino, { scroll: false });
+      else router.push(destino);
+    },
+    [params, ruta, router],
+  );
+  return {
+    activo,
+    /** ¿Hay una sección elegida en la URL? En el teléfono decide portada o sección. */
+    enUrl: valida,
+    ir,
+    /** A dónde vuelve la flecha del teléfono. */
+    hrefPortada: ruta,
+    etiqueta: opciones.find((o) => o.valor === activo)?.etiqueta ?? '',
+  };
+}
+
+export function Secciones({
+  opciones,
+  seccion,
+  children,
+}: {
+  opciones: OpcionRail[];
+  seccion: ReturnType<typeof useSeccion>;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-4 p-4 sm:p-6 lg:flex-row">
+      <RailFiltro soloEscritorio opciones={opciones} activo={seccion.activo} alElegir={seccion.ir} />
+      {!seccion.enUrl && <PortadaSecciones opciones={opciones} alElegir={seccion.ir} className="lg:hidden" />}
+      <div className={cn('desplaza min-h-0 min-w-0 flex-1 overflow-y-auto', !seccion.enUrl && 'hidden lg:block')}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function PortadaSecciones({
+  opciones,
+  alElegir,
+  className,
+}: {
+  opciones: OpcionRail[];
+  alElegir: (v: string) => void;
+  className?: string;
+}) {
+  return (
+    <nav className={cn('tarjeta divide-y divide-borde', className)} aria-label="Secciones">
+      {opciones.map((o) => {
+        const Icono = o.icono;
+        return (
+          <button
+            key={o.valor}
+            type="button"
+            onClick={() => alElegir(o.valor)}
+            className="foco-visible flex min-h-[56px] w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors active:bg-realce"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-acento-suave text-acento">
+              {Icono && <Icono className="h-[18px] w-[18px]" />}
+            </span>
+            <span className="min-w-0 flex-1 truncate text-[14.5px] text-texto">{o.etiqueta}</span>
+            {o.conteo !== undefined && <span className="text-[12px] text-tenue">{o.conteo}</span>}
+            <ChevronRight className="h-4 w-4 shrink-0 text-tenue" />
+          </button>
+        );
+      })}
+    </nav>
+  );
+}
+
+// ── Pie de un panel ─────────────────────────────────────────────────────────
+/**
+ * EL PIE DE UN PANEL ES UNA FILA (regla 2026-10-31, modelo: Pensamientos de GCC World):
+ * la papelera SOLA a la izquierda, sin texto; a la derecha los secundarios y el principal
+ * el último. Eliminar nunca lleva texto: el nombre va en `title` y `aria-label`.
+ */
+export function PieAcciones({ eliminar, children }: { eliminar?: ReactNode; children: ReactNode }) {
+  return (
+    <div className="flex w-full items-center gap-2">
+      {eliminar}
+      <div className="ml-auto flex items-center gap-2">{children}</div>
+    </div>
+  );
+}
+
+export function BotonEliminar({ titulo, onClick, disabled }: { titulo: string; onClick: () => void; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      title={titulo}
+      aria-label={titulo}
+      className="foco-visible flex h-8 w-8 shrink-0 items-center justify-center rounded border border-error/50 text-error transition-colors hover:bg-error-suave disabled:cursor-not-allowed disabled:opacity-45"
+    >
+      <Trash2 className="h-4 w-4" />
+    </button>
   );
 }

@@ -3,10 +3,12 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { RefreshCw, Send, Users2, AlertTriangle, Phone } from 'lucide-react';
-import { Boton, Campo, Selector, Insignia, Tarjeta, EstadoVacio, Confirmar } from '@/componentes/ui';
+import Link from 'next/link';
+import { RefreshCw, Send, Users2, AlertTriangle, Phone, Plug } from 'lucide-react';
+import { Boton, Campo, Selector, Insignia, Tarjeta, EstadoVacio, Confirmar, Tabla, BOTON_PRIMARIO } from '@/componentes/ui';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { sincronizar, lanzar } from '@/acciones/envios';
+import { fechaHora } from '@/lib/formato';
 
 export type PlantillaVista = {
   id: number; nombre: string; idioma: string; categoria: string; estado: string;
@@ -29,10 +31,12 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 export default function Envios({
-  slug, numero, hayCanal, plantillas, listas, envios, puedeOperar,
+  slug, numero, hayCanal, plantillas, listas, envios, puedeOperar, puedeConectar,
 }: {
   slug: string; numero: string | null; hayCanal: boolean;
   plantillas: PlantillaVista[]; listas: ListaVista[]; envios: EnvioVista[]; puedeOperar: boolean;
+  /** Solo un administrador entra a Configuración: a los demás no se les ofrece el enlace. */
+  puedeConectar: boolean;
 }) {
   const router = useRouter();
   const [enCurso, arranca] = useTransition();
@@ -52,7 +56,14 @@ export default function Envios({
         <EstadoVacio
           icono={Send}
           titulo="Todavía no hay un número conectado"
-          detalle="Los envíos por plantilla salen desde tu número de WhatsApp. Cuando GCC lo conecte, aparecerán aquí."
+          detalle={puedeConectar
+            ? 'Los envíos por plantilla salen desde tu número de WhatsApp. Conéctalo en Configuración.'
+            : 'Los envíos por plantilla salen desde tu número de WhatsApp. Pide a un administrador que lo conecte.'}
+          accion={puedeConectar ? (
+            <Link href={`/${slug}/configuracion?seccion=whatsapp`} className={`${BOTON_PRIMARIO} h-9 px-4 text-[13px]`}>
+              <Plug className="h-4 w-4" /> Conectar WhatsApp
+            </Link>
+          ) : undefined}
         />
       </>
     );
@@ -68,6 +79,7 @@ export default function Envios({
       */}
       <CabeceraPagina
         titulo="Envíos"
+        descripcion="WhatsApp solo deja escribir libremente a quien te ha escrito en las últimas 24 horas. Para el resto hacen falta plantillas, y Meta las revisa una a una."
         detalles={numero ? [{ icono: Phone, etiqueta: 'Número que envía', valor: numero, href: `tel:${numero.replace(/[^\d+]/g, '')}` }] : undefined}
         menu={puedeOperar ? [{
           etiqueta: 'Sincronizar con Meta',
@@ -95,11 +107,7 @@ export default function Envios({
         {/* ── Lanzar un envío ───────────────────────────────────────────────── */}
         {puedeOperar && (
           <Tarjeta className="p-4 sm:p-5">
-            <h2 className="text-[14px] font-semibold text-texto">Enviar una plantilla a una lista</h2>
-            <p className="mb-3 text-[12px] leading-relaxed text-tenue">
-              WhatsApp solo deja escribir libremente a quien te ha escrito en las últimas 24 horas.
-              Para el resto hacen falta plantillas, y Meta las revisa una a una.
-            </p>
+            <h2 className="mb-3 text-[14px] font-semibold text-texto">Enviar una plantilla a una lista</h2>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <Campo etiqueta="Plantilla">
@@ -133,10 +141,7 @@ export default function Envios({
                 <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Lo que recibirán</p>
                 <p className="whitespace-pre-wrap text-[12.5px] leading-relaxed text-texto">{plantilla.cuerpo}</p>
                 {plantilla.variables.length > 0 && (
-                  <p className="mt-1.5 text-[11.5px] text-tenue">
-                    Las variables se rellenan con: {plantilla.variables.join(', ')}. A quien le falte el dato le
-                    llega un guion.
-                  </p>
+                  <p className="mt-1.5 text-[11.5px] text-tenue">Variables: {plantilla.variables.join(', ')}</p>
                 )}
               </div>
             )}
@@ -148,9 +153,6 @@ export default function Envios({
             )}
 
             <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
-              {listoParaEnviar && (
-                <span className="text-[11.5px] text-tenue">Sale uno detrás de otro, no se puede deshacer.</span>
-              )}
               <Boton disabled={!listoParaEnviar || enCurso} onClick={() => setConfirmar(true)}>
                 <Send className="h-4 w-4" />
                 {lista ? `Enviar a ${lista.conTelefono}` : 'Enviar'}
@@ -160,61 +162,60 @@ export default function Envios({
         )}
 
         <div className="grid gap-4 xl:grid-cols-2">
-        {/* ── Las plantillas y su estado ────────────────────────────────────── */}
-        <Tarjeta className="p-4 sm:p-5">
-          <h2 className="mb-2 text-[14px] font-semibold text-texto">Tus plantillas</h2>
-          {plantillas.length === 0 ? (
-            <p className="rounded border border-borde bg-realce px-3 py-6 text-center text-[13px] text-tenue">
-              Todavía no hay ninguna. Pulsa «Sincronizar con Meta» para traerlas.
-            </p>
-          ) : (
-            <ul className="divide-y divide-borde">
-              {plantillas.map((p) => (
-                <li key={p.id} className="flex flex-wrap items-start justify-between gap-2 py-2.5">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13.5px] font-medium text-texto">
-                      {p.nombre} <span className="font-normal text-tenue">· {p.idioma} · {p.categoria}</span>
-                    </p>
-                    <p className="truncate text-[11.5px] text-tenue">{p.cuerpo.slice(0, 90)}</p>
-                    {p.motivoRechazo && (
-                      <p className="mt-0.5 text-[11.5px] text-error">Meta dice: {p.motivoRechazo}</p>
-                    )}
-                  </div>
-                  <Insignia tono={TONO_ESTADO[p.estado] ?? 'neutro'}>
-                    {ETIQUETA_ESTADO[p.estado] ?? p.estado}
-                  </Insignia>
-                </li>
-              ))}
-            </ul>
-          )}
+        {/* ── Las plantillas y su estado: TABLA con recuento al pie ─────────────── */}
+        <Tarjeta className="overflow-hidden">
+          <h2 className="px-4 pt-4 pb-2 text-[14px] font-semibold text-texto">Tus plantillas</h2>
+          <Tabla
+            filas={plantillas}
+            claveFila={(p) => p.id}
+            recuento={`${plantillas.length} ${plantillas.length === 1 ? 'plantilla' : 'plantillas'} · ${aprobadas.length} ${aprobadas.length === 1 ? 'aprobada' : 'aprobadas'}`}
+            vacio={<EstadoVacio titulo="Todavía no hay ninguna plantilla" detalle="Pulsa «Sincronizar con Meta» para traerlas." />}
+            columnas={[
+              { clave: 'nombre', titulo: 'Plantilla', ancho: '42%', render: (p) => (
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-texto">{p.nombre}</p>
+                  <p className="truncate text-[11.5px] text-tenue" title={p.cuerpo}>{p.cuerpo}</p>
+                  {p.motivoRechazo && <p className="mt-0.5 text-[11.5px] text-error">Meta dice: {p.motivoRechazo}</p>}
+                </div>
+              ) },
+              { clave: 'idioma', titulo: 'Idioma', ancho: '14%', render: (p) => p.idioma },
+              { clave: 'categoria', titulo: 'Categoría', ancho: '20%', render: (p) => <span className="truncate">{p.categoria}</span> },
+              { clave: 'estado', titulo: 'Estado', ancho: '24%', render: (p) => (
+                <Insignia tono={TONO_ESTADO[p.estado] ?? 'neutro'}>{ETIQUETA_ESTADO[p.estado] ?? p.estado}</Insignia>
+              ) },
+            ]}
+          />
         </Tarjeta>
 
         {/* ── Historial ─────────────────────────────────────────────────────── */}
         {envios.length > 0 && (
-          <Tarjeta className="p-4 sm:p-5">
-            <h2 className="mb-2 text-[14px] font-semibold text-texto">Envíos anteriores</h2>
-            <ul className="divide-y divide-borde">
-              {envios.map((e) => (
-                <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13.5px] text-texto">
-                      {e.plantilla}
-                      {e.lista ? <span className="text-tenue"> → {e.lista}</span> : null}
-                    </p>
-                    <p className="truncate text-[11.5px] text-tenue">
-                      {new Date(e.cuando).toLocaleString('es-EC')}
-                      {e.lanzadoPor ? ` · ${e.lanzadoPor}` : ''}
-                    </p>
+          <Tarjeta className="overflow-hidden">
+            <h2 className="px-4 pt-4 pb-2 text-[14px] font-semibold text-texto">Envíos anteriores</h2>
+            <Tabla
+              filas={envios}
+              claveFila={(e) => e.id}
+              recuento={`${envios.length} ${envios.length === 1 ? 'envío' : 'envíos'}`}
+              columnas={[
+                { clave: 'plantilla', titulo: 'Envío', ancho: '40%', render: (e) => (
+                  <div className="min-w-0">
+                    <p className="truncate text-texto">{e.plantilla}{e.lista ? <span className="text-tenue"> → {e.lista}</span> : null}</p>
                     {e.error && <p className="text-[11.5px] text-error">{e.error}</p>}
                   </div>
-                  {/* Sin píldora, dos estados juntos se leen como uno: se separan un poco más. */}
-                  <div className="flex items-center gap-3">
+                ) },
+                { clave: 'cuando', titulo: 'Cuándo', ancho: '30%', render: (e) => (
+                  <span className="text-tenue">
+                    {fechaHora(e.cuando)}
+                    {e.lanzadoPor ? ` · ${e.lanzadoPor}` : ''}
+                  </span>
+                ) },
+                { clave: 'resultado', titulo: 'Resultado', ancho: '30%', render: (e) => (
+                  <span className="flex flex-wrap items-center gap-x-3">
                     <Insignia tono="exito">{e.enviados} enviados</Insignia>
                     {e.fallidos > 0 && <Insignia tono="error">{e.fallidos} fallaron</Insignia>}
-                  </div>
-                </li>
-              ))}
-            </ul>
+                  </span>
+                ) },
+              ]}
+            />
           </Tarjeta>
         )}
         </div>

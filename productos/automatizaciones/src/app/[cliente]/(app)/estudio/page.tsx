@@ -56,8 +56,6 @@ export default async function PaginaEstudio({ params }: { params: Promise<{ clie
       WHERE canal_id = $1 ORDER BY orden, clave`,
     [canal.id],
   );
-  const { rows: [versiones] } = await pool.query(
-    `SELECT COUNT(*)::int n FROM prompts WHERE canal_id = $1`, [canal.id]);
 
   const vista: CanalVista = {
     numero: canal.numero_visible,
@@ -88,7 +86,6 @@ export default async function PaginaEstudio({ params }: { params: Promise<{ clie
       canal={vista}
       instrucciones={instrucciones}
       bloques={bloques as Bloque[]}
-      versionesGuardadas={versiones?.n ?? 0}
     />
   );
 }

@@ -5,23 +5,14 @@ import { hayCloudinary } from '@/lib/imagenes';
 import { miOrigen } from '@/acciones/configuracion';
 import { vistaSuscripcion } from '@/lib/vistaSuscripcion';
 import { pool } from '@/lib/db';
-import ConfiguracionCliente, { type MarcaVista, type PagoVista, type Seccion } from './ConfiguracionCliente';
+import ConfiguracionCliente, { type MarcaVista, type PagoVista } from './ConfiguracionCliente';
 import type { ConexionVista } from './SeccionWhatsApp';
-
-const SECCIONES: Seccion[] = ['marca', 'whatsapp', 'suscripcion', 'cuenta'];
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Configuración' };
 
-export default async function PaginaConfiguracion({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ cliente: string }>;
-  searchParams: Promise<{ seccion?: string }>;
-}) {
+export default async function PaginaConfiguracion({ params }: { params: Promise<{ cliente: string }> }) {
   const { cliente } = await params;
-  const { seccion } = await searchParams;
   const ctx = await exigirContexto(cliente, EXIGE_ROL.configuracion, 'configuracion');
   const { inquilino } = ctx;
 
@@ -87,7 +78,6 @@ export default async function PaginaConfiguracion({
       conexion={conexion}
       meta={{ appId: process.env.WHATSAPP_APP_ID || null, configId: process.env.WHATSAPP_ES_CONFIG_ID || null }}
       esCortesia={inquilino.cortesia}
-      seccionInicial={SECCIONES.includes(seccion as Seccion) ? (seccion as Seccion) : 'marca'}
     />
   );
 }

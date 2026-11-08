@@ -3,8 +3,9 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Palette, CreditCard, KeyRound, Upload, MessageCircle } from 'lucide-react';
-import { Boton, Campo, Entrada, Selector, Insignia, Tarjeta, RailFiltro } from '@/componentes/ui';
+import { Palette, CreditCard, KeyRound, Upload, MessageCircle, Save } from 'lucide-react';
+import { Boton, Campo, Entrada, Selector, Insignia, Tarjeta, Tabla, Secciones, useSeccion, type OpcionRail } from '@/componentes/ui';
+import { num2 } from '@/lib/formato';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { LogoHotel } from '@/componentes/Marca';
 import { guardarMarca, subirLogo, cambiarMiClave } from '@/acciones/configuracion';
@@ -53,7 +54,6 @@ export default function ConfiguracionCliente({
   conexion,
   meta,
   esCortesia,
-  seccionInicial = 'marca',
 }: {
   slug: string;
   marca: MarcaVista;
@@ -65,36 +65,42 @@ export default function ConfiguracionCliente({
   /** Identificadores PÚBLICOS de la app de Meta (el secreto no sale del servidor). */
   meta: { appId: string | null; configId: string | null };
   esCortesia: boolean;
-  seccionInicial?: Seccion;
 }) {
-  const [seccion, setSeccion] = useState<Seccion>(seccionInicial);
+  const s = useSeccion(SECCIONES);
+  const seccion = s.activo as Seccion;
+  // Los «Guardar» de cada sección: en escritorio viven al pie de su tarjeta; en el teléfono
+  // bajan a la barra de acciones (regla §4-nonies), unidos a su formulario por `form=`.
+  const guardarTelefono =
+    s.enUrl && seccion === 'marca' ? <Boton form="form-marca" type="submit" icono={Save}>Guardar marca</Boton>
+    : s.enUrl && seccion === 'cuenta' && miOrigen !== 'GCC' ? <Boton form="form-clave" type="submit" icono={Save}>Cambiar contraseña</Boton>
+    : undefined;
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <CabeceraPagina titulo="Configuración" descripcion="La marca, la conexión con WhatsApp, tu suscripción y tu cuenta" />
-      {/* La misma norma que el Estudio: el contenedor ocupa el alto disponible. */}
-      <div className="flex min-h-0 flex-1 flex-col gap-4 p-4 sm:p-6 lg:flex-row">
-        <RailFiltro
-          opciones={[
-            { valor: 'marca', etiqueta: 'Marca', icono: Palette },
-            { valor: 'whatsapp', etiqueta: 'WhatsApp', icono: MessageCircle },
-            { valor: 'suscripcion', etiqueta: 'Suscripción', icono: CreditCard },
-            { valor: 'cuenta', etiqueta: 'Mi cuenta', icono: KeyRound },
-          ]}
-          activo={seccion}
-          alElegir={(v) => setSeccion(v as Seccion)}
-        />
-        <div className="desplaza min-h-0 min-w-0 flex-1 overflow-y-auto">
-          {seccion === 'marca' && <SeccionMarca slug={slug} marca={marca} hayCloudinary={hayCloudinary} />}
-          {seccion === 'whatsapp' && (
-            <SeccionWhatsApp slug={slug} conexion={conexion} appId={meta.appId} configId={meta.configId} esCortesia={esCortesia} />
-          )}
-          {seccion === 'suscripcion' && <SeccionSuscripcion slug={slug} s={suscripcion} pagos={pagos} />}
-          {seccion === 'cuenta' && <SeccionCuenta slug={slug} miOrigen={miOrigen} />}
-        </div>
-      </div>
+      <CabeceraPagina
+        titulo="Configuración"
+        descripcion="La marca, la conexión con WhatsApp, tu suscripción y tu cuenta"
+        tituloTelefono={s.enUrl ? s.etiqueta : undefined}
+        volverTelefono={s.enUrl ? { href: s.hrefPortada, etiqueta: 'Volver a Configuración' } : undefined}
+        accionesTelefono={guardarTelefono}
+      />
+      <Secciones opciones={SECCIONES} seccion={s}>
+        {seccion === 'marca' && <SeccionMarca slug={slug} marca={marca} hayCloudinary={hayCloudinary} />}
+        {seccion === 'whatsapp' && (
+          <SeccionWhatsApp slug={slug} conexion={conexion} appId={meta.appId} configId={meta.configId} esCortesia={esCortesia} />
+        )}
+        {seccion === 'suscripcion' && <SeccionSuscripcion slug={slug} s={suscripcion} pagos={pagos} />}
+        {seccion === 'cuenta' && <SeccionCuenta slug={slug} miOrigen={miOrigen} />}
+      </Secciones>
     </div>
   );
 }
+
+const SECCIONES: OpcionRail[] = [
+  { valor: 'marca', etiqueta: 'Marca', icono: Palette },
+  { valor: 'whatsapp', etiqueta: 'WhatsApp', icono: MessageCircle },
+  { valor: 'suscripcion', etiqueta: 'Suscripción', icono: CreditCard },
+  { valor: 'cuenta', etiqueta: 'Mi cuenta', icono: KeyRound },
+];
 
 // ── Marca ────────────────────────────────────────────────────────────────────
 const SUGERIDOS = ['#4B2D8E', '#C9952C', '#2563EB', '#15803D', '#BE185D', '#B91C1C', '#1F2937'];
@@ -110,12 +116,11 @@ function SeccionMarca({ slug, marca, hayCloudinary }: { slug: string; marca: Mar
 
   return (
     <Tarjeta className="p-4 sm:p-5">
-      <h2 className="text-[14px] font-semibold text-texto">Tu marca</h2>
-      <p className="mb-4 text-[12px] text-tenue">
-        El nombre, el logo, el color y el tema que ve tu equipo dentro de la aplicación.
-      </p>
+      {/* En el teléfono el título lo dice ya la cabecera de la sección. */}
+      <h2 className="mb-4 hidden text-[14px] font-semibold text-texto lg:block">Tu marca</h2>
 
       <form
+        id="form-marca"
         action={(d) =>
           arranca(async () => {
             const r = await guardarMarca(slug, d);
@@ -242,7 +247,7 @@ function SeccionMarca({ slug, marca, hayCloudinary }: { slug: string; marca: Mar
               </div>
             </div>
             <span
-              className="rounded px-3 py-1.5 text-[12px] font-medium text-white"
+              className="hidden shrink-0 rounded px-3 py-1.5 text-[12px] font-medium text-white sm:inline-block"
               style={{ backgroundColor: color }}
             >
               Conversaciones
@@ -250,8 +255,8 @@ function SeccionMarca({ slug, marca, hayCloudinary }: { slug: string; marca: Mar
           </div>
         </div>
 
-        <div className="flex justify-end">
-          <Boton type="submit" tamano="lg" disabled={enCurso}>
+        <div className="hidden justify-end lg:flex">
+          <Boton type="submit" tamano="lg" icono={Save} disabled={enCurso}>
             {enCurso ? 'Guardando…' : 'Guardar marca'}
           </Boton>
         </div>
@@ -280,24 +285,24 @@ function SeccionSuscripcion({ slug, s, pagos }: { slug: string; s: SuscripcionVi
       <PanelSuscripcion slug={slug} s={s} />
 
       {pagos.length > 0 && (
-        <Tarjeta className="divide-y divide-borde">
+        <Tarjeta className="overflow-hidden">
           <p className="px-4 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-tenue">Pagos registrados</p>
-          {pagos.map((p) => (
-            <div key={p.id} className="flex items-center justify-between gap-3 px-4 py-2.5">
-              <div className="min-w-0">
-                <p className="text-[13.5px] text-texto">{p.periodo}</p>
-                <p className="truncate text-[11.5px] text-tenue">
-                  {p.pagadoEn ?? 'sin fecha'} · {ETIQUETA_METODO[p.metodo] ?? p.metodo}
-                </p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="text-[13.5px] tabular-nums text-texto">{p.monto.toFixed(2)} {p.moneda}</p>
+          <Tabla
+            filas={pagos}
+            claveFila={(p) => p.id}
+            recuento={`${pagos.length} ${pagos.length === 1 ? 'pago' : 'pagos'}`}
+            columnas={[
+              { clave: 'periodo', titulo: 'Periodo', ancho: '22%', render: (p) => <span className="text-texto">{p.periodo}</span> },
+              { clave: 'pagado', titulo: 'Pagado el', ancho: '22%', render: (p) => p.pagadoEn ?? 'sin fecha' },
+              { clave: 'metodo', titulo: 'Método', ancho: '22%', render: (p) => ETIQUETA_METODO[p.metodo] ?? p.metodo },
+              { clave: 'monto', titulo: 'Monto', ancho: '17%', alinear: 'der', render: (p) => <span className="tabular-nums">{num2(p.monto)} {p.moneda}</span> },
+              { clave: 'estado', titulo: 'Estado', ancho: '17%', render: (p) => (
                 <Insignia tono={p.estado === 'PAGADO' ? 'exito' : p.estado === 'FALLIDO' ? 'error' : 'neutro'}>
                   {p.estado === 'PAGADO' ? 'Pagado' : p.estado === 'FALLIDO' ? 'Fallido' : 'Pendiente'}
                 </Insignia>
-              </div>
-            </div>
-          ))}
+              ) },
+            ]}
+          />
         </Tarjeta>
       )}
     </div>
@@ -311,18 +316,19 @@ function SeccionCuenta({ slug, miOrigen }: { slug: string; miOrigen: 'GCC' | 'PR
 
   return (
     <Tarjeta className="p-4 sm:p-5">
-      <h2 className="text-[14px] font-semibold text-texto">Tu contraseña</h2>
+      <h2 className="hidden text-[14px] font-semibold text-texto lg:block">Tu contraseña</h2>
 
       {esDeGcc ? (
         /* Se le dice ANTES de que lo intente. Un formulario que siempre falla es peor
            que no tener formulario. */
-        <p className="mt-2 rounded border border-borde bg-realce px-3 py-2.5 text-[12.5px] leading-relaxed text-tenue">
+        <p className="rounded border lg:mt-3 border-borde bg-realce px-3 py-2.5 text-[12.5px] leading-relaxed text-tenue">
           Entras con tu <strong>cuenta de cliente de GCC World</strong>, así que aquí no hay ninguna
           contraseña que cambiar: la tuya vive en la plataforma y se cambia allí. El día que la
           cambies, cambia también tu entrada aquí.
         </p>
       ) : (
         <form
+          id="form-clave"
           action={(d) =>
             arranca(async () => {
               const r = await cambiarMiClave(slug, d);
@@ -330,15 +336,20 @@ function SeccionCuenta({ slug, miOrigen }: { slug: string; miOrigen: 'GCC' | 'PR
               toast.success(r.mensaje ?? 'Cambiada.');
             })
           }
-          className="mt-3 max-w-sm space-y-3"
+          className="space-y-4 lg:mt-3"
         >
-          <Campo etiqueta="Contraseña actual">
-            <Entrada name="actual" type="password" autoComplete="current-password" required />
-          </Campo>
-          <Campo etiqueta="Contraseña nueva">
-            <Entrada name="nueva" type="password" autoComplete="new-password" minLength={8} required />
-          </Campo>
-          <Boton type="submit" disabled={enCurso}>{enCurso ? 'Cambiando…' : 'Cambiar contraseña'}</Boton>
+          {/* Se aprovecha el ancho: dos columnas, no una columna estrecha (regla de disposición 3). */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Campo etiqueta="Contraseña actual">
+              <Entrada name="actual" type="password" autoComplete="current-password" required />
+            </Campo>
+            <Campo etiqueta="Contraseña nueva">
+              <Entrada name="nueva" type="password" autoComplete="new-password" minLength={8} required />
+            </Campo>
+          </div>
+          <div className="hidden justify-end lg:flex">
+            <Boton type="submit" tamano="lg" icono={Save} disabled={enCurso}>{enCurso ? 'Cambiando…' : 'Cambiar contraseña'}</Boton>
+          </div>
         </form>
       )}
     </Tarjeta>

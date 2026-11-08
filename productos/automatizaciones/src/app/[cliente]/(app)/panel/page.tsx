@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import { MessagesSquare, Users2, Bot, Coins, ShieldAlert } from 'lucide-react';
+import { MessagesSquare, Users2, Bot, Coins, ShieldAlert, Plug } from 'lucide-react';
 import { exigirContexto } from '@/lib/inquilino';
 import { NOMBRE_DEL_MODULO, esRutaDeModulo, EXIGE_ROL } from '@/lib/modulos';
 import { prisma } from '@/lib/db';
-import { Tarjeta, Insignia } from '@/componentes/ui';
+import { Tarjeta, Insignia, EstadoVacio, BOTON_PRIMARIO } from '@/componentes/ui';
 import { costoEnDolares, costoLegible, PRECIOS_COMPROBADOS_EN } from '@/lib/ia/precios';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 
@@ -110,6 +110,23 @@ export default async function PaginaPanel({
         </div>
       )}
       <div className="px-4 py-5 sm:px-6">
+      {/* Un inquilino recién creado no tiene nada montado: el primer paso es conectar el número. */}
+      {!conAgente && (
+        <Tarjeta>
+          <EstadoVacio
+            icono={Plug}
+            titulo="Conecta tu número de WhatsApp para empezar"
+            detalle={sesion.rol === 'ADMIN'
+              ? 'Con el número conectado aparecen las conversaciones y el estudio del agente.'
+              : 'Pide a un administrador de tu empresa que conecte el número.'}
+            accion={sesion.rol === 'ADMIN' ? (
+              <Link href={`/${cliente}/configuracion?seccion=whatsapp`} className={`${BOTON_PRIMARIO} h-9 px-4 text-[13px]`}>
+                <Plug className="h-4 w-4" /> Conectar WhatsApp
+              </Link>
+            ) : undefined}
+          />
+        </Tarjeta>
+      )}
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
         {conAgente && (
           <>
@@ -174,7 +191,7 @@ export default async function PaginaPanel({
                 {c.contacto.nombreAgenda || c.contacto.nombrePerfil || c.contacto.waId}
               </p>
               <p className="text-[11.5px] text-tenue">
-                {c.ultimoMensajeEn ? c.ultimoMensajeEn.toLocaleString('es-EC') : 'Sin mensajes'}
+                {c.ultimoMensajeEn ? c.ultimoMensajeEn.toLocaleString('es-EC', { timeZone: inquilino.zonaHoraria }) : 'Sin mensajes'}
               </p>
             </div>
             {!c.botActivo && <Insignia tono="aviso">Atendida a mano</Insignia>}

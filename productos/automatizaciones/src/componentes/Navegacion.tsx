@@ -388,6 +388,9 @@ export function CabeceraPagina({
   extra,
   volver,
   detalles,
+  tituloTelefono,
+  volverTelefono,
+  accionesTelefono,
 }: {
   titulo: string;
   descripcion?: string;
@@ -396,6 +399,14 @@ export function CabeceraPagina({
   extra?: React.ReactNode;
   volver?: { href: string; etiqueta: string };
   detalles?: Detalle[];
+  /**
+   * Una sección abierta en el teléfono (ver `Secciones`): su nombre sustituye al título y
+   * una flecha vuelve a la portada. En escritorio no cambia nada.
+   */
+  tituloTelefono?: string;
+  volverTelefono?: { href: string; etiqueta: string };
+  /** Principales que SOLO van a la barra de abajo del teléfono (en escritorio viven en su tarjeta). */
+  accionesTelefono?: React.ReactNode;
 }) {
   const [hueco, setHueco] = useState<HTMLElement | null>(null);
   useEffect(() => setHueco(document.getElementById(ID_BARRA_ACCIONES)), []);
@@ -410,9 +421,22 @@ export function CabeceraPagina({
             <ArrowLeft className="h-4 w-4" />
           </Link>
         )}
+        {volverTelefono && (
+          <Link href={volverTelefono.href} aria-label={volverTelefono.etiqueta} title={volverTelefono.etiqueta}
+            className="foco-visible -ml-1 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-tenue transition-colors hover:bg-realce hover:text-texto lg:hidden">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        )}
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-1">
-            <h1 className="truncate text-[17px] font-semibold text-texto">{titulo}</h1>
+            {tituloTelefono ? (
+              <h1 className="truncate text-[17px] font-semibold text-texto">
+                <span className="lg:hidden">{tituloTelefono}</span>
+                <span className="hidden lg:inline">{titulo}</span>
+              </h1>
+            ) : (
+              <h1 className="truncate text-[17px] font-semibold text-texto">{titulo}</h1>
+            )}
             {(descripcion || !!detalles?.length) && (
               <BurbujaDetalles texto={descripcion} detalles={detalles} titulo={detalles?.length ? `Datos de ${titulo}` : 'Ayuda'} className="shrink-0" />
             )}
@@ -427,10 +451,11 @@ export function CabeceraPagina({
           {acciones}
         </div>
       )}
-      {acciones && hueco && createPortal(
+      {(acciones || accionesTelefono) && hueco && createPortal(
         <div className="border-t border-borde bg-tarjeta px-4 py-2.5 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
           <div className="mx-auto flex max-w-md items-center justify-center gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&_button]:w-full [&_button]:justify-center">
             {acciones}
+            {accionesTelefono}
           </div>
         </div>,
         hueco,

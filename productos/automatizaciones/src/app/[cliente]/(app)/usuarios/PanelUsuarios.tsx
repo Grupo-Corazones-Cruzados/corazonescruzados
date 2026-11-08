@@ -3,8 +3,8 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { UserPlus, KeyRound, Copy, ShieldCheck, Link2, UserX, UserCheck } from 'lucide-react';
-import { Boton, Campo, Entrada, Selector, Insignia, Tarjeta, PanelLateral } from '@/componentes/ui';
+import { UserPlus, KeyRound, Copy, ShieldCheck, Link2, UserX, UserCheck, Save } from 'lucide-react';
+import { Boton, Campo, Entrada, Selector, Insignia, Tarjeta, PanelLateral, Tabla, PieAcciones } from '@/componentes/ui';
 import { CabeceraPagina, AccionesTarjeta } from '@/componentes/Navegacion';
 import { crearUsuario, cambiarActivo, regenerarClave } from '@/acciones/usuarios';
 
@@ -78,6 +78,7 @@ export default function PanelUsuarios({
       */}
       <CabeceraPagina
         titulo="Cuentas"
+        descripcion="Quién entra a tu empresa y con qué permisos. Las cuentas que creas aquí son de tu empresa: su contraseña se genera al crearla, se enseña una sola vez y no da acceso a GCC World."
         /* El tope se enseña SIEMPRE, no solo cuando estorba. */
         extra={
           <Insignia tono={lleno ? 'error' : 'neutro'}>
@@ -119,82 +120,92 @@ export default function PanelUsuarios({
         </Tarjeta>
       )}
 
-      <Tarjeta className="divide-y divide-borde">
-        {usuarios.map((u) => (
-          <div key={u.id} className="flex items-start gap-2 px-3 py-3 sm:px-4 lg:items-center">
-            <div className="min-w-0 flex-1">
-              <p className="flex flex-wrap items-center gap-1.5 text-[13.5px] font-medium text-texto">
-                <span className="truncate">{u.nombre}</span>
-                {u.esYo && <span className="text-[11px] font-normal text-tenue">(tú)</span>}
-              </p>
-              <p className="truncate text-[11.5px] text-tenue">{u.usuario}</p>
-              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <Insignia tono={u.rol === 'ADMIN' ? 'info' : 'neutro'}>{ETIQUETA_ROL[u.rol]}</Insignia>
-                {u.origen === 'GCC' ? (
-                  <Insignia tono="info" icono={Link2}>Cuenta de GCC World</Insignia>
-                ) : (
-                  <Insignia tono="neutro" icono={ShieldCheck}>Cuenta de este producto</Insignia>
-                )}
-                {!u.activo && <Insignia tono="error">Desactivada</Insignia>}
-              </p>
-            </div>
-
-            {/* Las acciones de cada cuenta son SECUNDARIAS: botones desde `lg` y «⋯» en el
-                teléfono, nunca una fila de botones con texto partida en dos. La que quita el
-                acceso va en rojo y al final. Tu propia cuenta de GCC World no tiene ninguna. */}
-            {(u.origen === 'PRODUCTO' || !u.esYo) && <AccionesTarjeta
-              acciones={[
-                ...(u.origen === 'PRODUCTO'
-                  ? [{
-                      etiqueta: 'Nueva contraseña',
-                      icono: KeyRound,
-                      deshabilitado: enCurso,
-                      alPulsar: () =>
-                        arranca(async () => {
-                          const r = await regenerarClave(slug, u.id);
-                          if (!r.ok) { toast.error(r.error); return; }
-                          if (r.clave) setClaveNueva({ texto: r.clave, de: u.nombre });
-                          router.refresh();
-                        }),
-                    }]
-                  : []),
-                ...(!u.esYo
-                  ? [{
-                      etiqueta: u.activo ? 'Desactivar' : 'Activar',
-                      icono: u.activo ? UserX : UserCheck,
-                      peligro: u.activo,
-                      deshabilitado: enCurso,
-                      alPulsar: () =>
-                        arranca(async () => {
-                          const r = await cambiarActivo(slug, u.id, !u.activo);
-                          if (!r.ok) { toast.error(r.error); return; }
-                          toast.success(r.mensaje ?? 'Hecho.');
-                          router.refresh();
-                        }),
-                    }]
-                  : []),
-              ]}
-            />}
-          </div>
-        ))}
+      {/* Registros en TABLA (galería en el teléfono) con el recuento al pie (reglas 2026-10-29/30). */}
+      <Tarjeta className="overflow-hidden">
+        <Tabla
+          filas={usuarios}
+          claveFila={(u) => u.id}
+          recuento={`${usuarios.length} ${usuarios.length === 1 ? 'cuenta' : 'cuentas'} · ${activas} ${activas === 1 ? 'activa' : 'activas'}`}
+          columnas={[
+            { clave: 'nombre', titulo: 'Persona', ancho: '30%', render: (u) => (
+              <div className="min-w-0">
+                <p className="truncate font-medium text-texto">
+                  {u.nombre}{u.esYo && <span className="ml-1 text-[11px] font-normal text-tenue">(tú)</span>}
+                </p>
+                <p className="truncate text-[11.5px] text-tenue">{u.usuario}</p>
+              </div>
+            ) },
+            { clave: 'rol', titulo: 'Rol', ancho: '15%', render: (u) => (
+              <Insignia tono={u.rol === 'ADMIN' ? 'info' : 'neutro'}>{ETIQUETA_ROL[u.rol]}</Insignia>
+            ) },
+            { clave: 'origen', titulo: 'Cuenta', ancho: '22%', render: (u) => u.origen === 'GCC'
+              ? <Insignia tono="info" icono={Link2}>De GCC World</Insignia>
+              : <Insignia tono="neutro" icono={ShieldCheck}>De este producto</Insignia> },
+            { clave: 'estado', titulo: 'Estado', ancho: '13%', render: (u) => (
+              <Insignia tono={u.activo ? 'exito' : 'error'}>{u.activo ? 'Activa' : 'Desactivada'}</Insignia>
+            ) },
+            /* Las acciones de cada cuenta son SECUNDARIAS: botones desde `lg` y «⋯» en el
+               teléfono. La que quita el acceso va en rojo y al final. Tu propia cuenta de GCC
+               World no tiene ninguna. */
+            { clave: 'acciones', titulo: '', alinear: 'der', render: (u) => (u.origen === 'PRODUCTO' || !u.esYo) ? (
+              <div className="flex justify-end">
+                <AccionesTarjeta
+                  acciones={[
+                    ...(u.origen === 'PRODUCTO'
+                      ? [{
+                          etiqueta: 'Nueva contraseña',
+                          icono: KeyRound,
+                          deshabilitado: enCurso,
+                          alPulsar: () =>
+                            arranca(async () => {
+                              const r = await regenerarClave(slug, u.id);
+                              if (!r.ok) { toast.error(r.error); return; }
+                              if (r.clave) setClaveNueva({ texto: r.clave, de: u.nombre });
+                              router.refresh();
+                            }),
+                        }]
+                      : []),
+                    ...(!u.esYo
+                      ? [{
+                          etiqueta: u.activo ? 'Desactivar' : 'Activar',
+                          icono: u.activo ? UserX : UserCheck,
+                          peligro: u.activo,
+                          deshabilitado: enCurso,
+                          alPulsar: () =>
+                            arranca(async () => {
+                              const r = await cambiarActivo(slug, u.id, !u.activo);
+                              if (!r.ok) { toast.error(r.error); return; }
+                              toast.success(r.mensaje ?? 'Hecho.');
+                              router.refresh();
+                            }),
+                        }]
+                      : []),
+                  ]}
+                />
+              </div>
+            ) : null },
+          ]}
+        />
       </Tarjeta>
 
-      <PanelLateral abierto={abierto} alCerrar={() => setAbierto(false)} titulo="Crear una cuenta">
-        <form action={crear} className="space-y-3">
+      <PanelLateral
+        abierto={abierto}
+        alCerrar={() => setAbierto(false)}
+        titulo="Crear una cuenta"
+        pie={
+          <PieAcciones>
+            <Boton variante="secundario" type="button" onClick={() => setAbierto(false)} disabled={enCurso}>Cancelar</Boton>
+            <Boton form="form-cuenta" type="submit" icono={Save} disabled={enCurso}>{enCurso ? 'Creando…' : 'Crear cuenta'}</Boton>
+          </PieAcciones>
+        }
+      >
+        <form id="form-cuenta" action={crear} className="space-y-3">
           <Campo etiqueta="Nombre de la persona">
             <Entrada name="nombre" required autoFocus />
           </Campo>
-
-          <p className="rounded border border-borde bg-realce px-3 py-2 text-[12px] leading-relaxed text-tenue">
-            Se le generará una contraseña que verás <strong>una sola vez</strong>. Es una cuenta
-            de tu empresa dentro de este producto: no da acceso a GCC World ni a ningún otro
-            sitio.
-          </p>
-
           <Campo etiqueta="Usuario">
             <Entrada name="usuario" type="text" placeholder="nombre.apellido" required />
           </Campo>
-
           <Campo etiqueta="Qué puede hacer">
             <Selector name="rol" defaultValue="OPERADOR">
               <option value="CONSULTA">Consulta — mira, no escribe</option>
@@ -202,10 +213,6 @@ export default function PanelUsuarios({
               <option value="ADMIN">Administrador — además gobierna cuentas y suscripción</option>
             </Selector>
           </Campo>
-
-          <Boton type="submit" tamano="lg" className="w-full" disabled={enCurso}>
-            {enCurso ? 'Creando…' : 'Crear cuenta'}
-          </Boton>
         </form>
       </PanelLateral>
       </div>

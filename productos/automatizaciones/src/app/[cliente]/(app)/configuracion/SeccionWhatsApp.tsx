@@ -4,10 +4,12 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  AlertTriangle, BookUser, CheckCircle2, FlaskConical, Plug, RefreshCw, ShieldAlert, Smartphone, CircleDashed,
+  AlertTriangle, BookUser, Bot, CheckCircle2, FlaskConical, Plug, RefreshCw, ShieldAlert, Smartphone, CircleDashed,
 } from 'lucide-react';
 import { Boton, Campo, Confirmar, EstadoVacio, Entrada, Insignia, Tarjeta, Ventanita } from '@/componentes/ui';
 import { AccionesTarjeta, type AccionMenu } from '@/componentes/Navegacion';
+import { esFalloDeIA } from '@/lib/fallos';
+import { fechaHora, fechaLarga } from '@/lib/formato';
 import {
   comprobarWhatsApp, conectarNumeroPrueba, conectarWhatsApp, marcarCoexistencia, pedirAgenda, type EstadoMeta,
 } from '@/acciones/whatsapp';
@@ -33,9 +35,8 @@ const PLAZO_AGENDA_MS = 24 * 60 * 60 * 1000;
 // Zona fija: el servidor pinta en UTC y el navegador en la suya; con zona distinta, React
 // rechaza la hidratación (#418). Todos los inquilinos actuales son de Ecuador.
 const ZONA = 'America/Guayaquil';
-const fecha = (iso: string) =>
-  new Date(iso).toLocaleString('es-EC', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: ZONA });
-const dia = (iso: string) => new Date(iso).toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric', timeZone: ZONA });
+const fecha = (iso: string) => fechaHora(iso, ZONA);
+const dia = (iso: string) => fechaLarga(iso, ZONA);
 
 const ESTADO: Record<string, { texto: string; tono: 'exito' | 'aviso' | 'error' | 'neutro' }> = {
   conectado: { texto: 'Conectado', tono: 'exito' },
@@ -229,6 +230,8 @@ export default function SeccionWhatsApp({
           alPulsar: () => arranca(async () => tras(await marcarCoexistencia(slug, true))) },
     ...(puedePedirAgenda ? [{ etiqueta: 'Pedir la agenda', icono: BookUser, deshabilitado: enCurso, alPulsar: () => setConfirmarAgenda(true) }] : []),
     { etiqueta: 'Volver a conectar', icono: Plug, deshabilitado: enCurso || !sdkListo, alPulsar: () => setConfirmarAlta(true) },
+    // El agente (clave de OpenAI, encendido, lo que sabe) vive en el Estudio: aquí solo la conexión.
+    { etiqueta: 'Ajustes del agente', icono: Bot, href: `/${slug}/estudio` },
   ] : [];
 
   const estado = ESTADO[conexion?.estado ?? 'sin_conectar'] ?? ESTADO.sin_conectar;
@@ -238,8 +241,8 @@ export default function SeccionWhatsApp({
       <Tarjeta className="flex h-full flex-col p-4 sm:p-5">
         {conectado ? (
           <>
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="text-[14px] font-semibold text-texto">Tu número de WhatsApp</h2>
+            <div className="mb-4 flex items-center justify-end gap-3 lg:justify-between">
+              <h2 className="hidden text-[14px] font-semibold text-texto lg:block">Tu número de WhatsApp</h2>
               <AccionesTarjeta acciones={acciones} />
             </div>
 
@@ -285,11 +288,12 @@ export default function SeccionWhatsApp({
               )}
             </dl>
 
-            {conexion!.ultimoError && <UltimoFallo texto={conexion!.ultimoError} en={conexion!.ultimoErrorEn} />}
+            {/* Solo los fallos de la CONEXIÓN; los del agente (la clave de OpenAI) los enseña el Estudio. */}
+            {conexion!.ultimoError && !esFalloDeIA(conexion!.ultimoError) && <UltimoFallo texto={conexion!.ultimoError} en={conexion!.ultimoErrorEn} />}
           </>
         ) : (
           <>
-            <h2 className="mb-4 text-[14px] font-semibold text-texto">Conectar tu número de WhatsApp</h2>
+            <h2 className="mb-4 hidden text-[14px] font-semibold text-texto lg:block">Conectar tu número de WhatsApp</h2>
 
             <div className="mb-4 flex items-start gap-2.5 rounded border border-borde bg-error-suave px-3 py-2.5 text-[12.5px] leading-relaxed text-error">
               <ShieldAlert className="mt-px h-4 w-4 shrink-0" />
