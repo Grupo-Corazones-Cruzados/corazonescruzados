@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import { CreditCard, ShieldAlert, CalendarX2 } from 'lucide-react';
 import { exigirSesionDeLaInstitucion } from '@/lib/inquilino';
 import { AplicaMarca, LogoNegocio } from '@/componentes/Marca';
-import { dinero } from '@/lib/formato';
+import { dinero, fechaLarga } from '@/lib/formato';
+import { urlLogo } from '@/lib/marca';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Suscripción' };
@@ -42,14 +43,10 @@ export default async function PaginaSuscripcion({ params }: { params: Promise<{ 
   const plan = inquilino.suscripcion?.plan;
 
   return (
-    <AplicaMarca
-      colorAcento={inquilino.colorAcento}
-      tema={inquilino.tema}
-      className="flex items-center justify-center px-4 py-10"
-    >
+    <AplicaMarca className="flex items-center justify-center px-4 py-10">
       <div className="tarjeta w-full max-w-lg p-8">
         <div className="mb-6 flex items-center gap-3">
-          <LogoNegocio nombre={inquilino.nombre} logoUrl={inquilino.logoUrl} tamano={40} />
+          <LogoNegocio nombre={inquilino.nombre} logoUrl={urlLogo(inquilino)} tamano={40} />
           <div className="min-w-0">
             <p className="truncate text-[14px] font-semibold text-texto">{inquilino.nombre}</p>
             <p className="text-[11px] text-tenue">Planificación de Clases</p>
@@ -80,12 +77,7 @@ export default async function PaginaSuscripcion({ params }: { params: Promise<{ 
               <div className="col-span-2">
                 <dt className="text-[11px] uppercase tracking-wide text-tenue">Pagado hasta</dt>
                 <dd className="font-semibold text-texto">
-                  {inquilino.suscripcion.pagadoHasta.toLocaleDateString('es-EC', {
-                    day: '2-digit',
-                    month: 'long',
-                    year: 'numeric',
-                    timeZone: 'UTC',
-                  })}
+                  {fechaLarga(inquilino.suscripcion.pagadoHasta, 'UTC')}
                 </dd>
               </div>
             )}

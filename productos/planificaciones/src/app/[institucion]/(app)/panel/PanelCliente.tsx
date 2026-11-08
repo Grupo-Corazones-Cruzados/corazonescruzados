@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpenText, Plus } from 'lucide-react';
+import { BookOpenText, Plus, CalendarCheck, Sparkles, Users } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Tarjeta, Tabla, Insignia, EstadoVacio, BOTON_PRIMARIO } from '@/componentes/ui';
 import { Cifra } from '@/componentes/campos';
@@ -39,82 +39,80 @@ export default function PanelCliente({ d }: { d: DatosPanel }) {
           </Link>
         }
       />
-      <div className="space-y-4 p-4 sm:p-6">
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
-          <Cifra etiqueta="Planificaciones creadas" valor={d.planificaciones} destacado />
-          <Cifra etiqueta="Semanas redactadas" valor={d.semanasListas} pista={d.semanasEnCurso ? `${d.semanasEnCurso} redactándose ahora` : undefined} />
+      {/* Alto completo: la última tarjeta se alarga hasta el pie (regla del panel, 2026-11-08). */}
+      <div className="flex flex-1 flex-col gap-3 px-4 py-5 sm:px-6">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
+          <Cifra icono={BookOpenText} etiqueta="Planificaciones" valor={d.planificaciones} />
+          <Cifra icono={CalendarCheck} etiqueta="Semanas redactadas" valor={d.semanasListas} pista={d.semanasEnCurso ? `${d.semanasEnCurso} en curso` : undefined} />
           <Cifra
+            icono={Sparkles}
             etiqueta="Esta semana"
             valor={d.cupo.tope === null ? d.cupo.usadas : `${d.cupo.usadas} de ${d.cupo.tope}`}
-            pista={d.cupo.tope === null ? 'planificaciones semanales generadas' : 'planificaciones semanales generadas · el contador vuelve a cero el lunes'}
+            pista={d.cupo.tope === null ? 'Generadas' : 'Generadas · vuelve a cero el lunes'}
             destacado={d.cupo.quedan !== null && d.cupo.quedan <= 5}
           />
-          <Cifra etiqueta="Cuentas" valor={d.cuentas.tope === null ? d.cuentas.usadas : `${d.cuentas.usadas} de ${d.cuentas.tope}`} pista="docentes y administración" />
+          <Cifra icono={Users} etiqueta="Cuentas" valor={d.cuentas.tope === null ? d.cuentas.usadas : `${d.cuentas.usadas} de ${d.cuentas.tope}`} />
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="grid gap-3 xl:grid-cols-2">
           <Tarjeta className="overflow-hidden">
-            <div className="border-b border-borde px-4 py-3">
-              <h2 className="text-[13px] font-semibold">Quién ha planificado</h2>
-              <p className="text-[12px] text-tenue">Por docente: planificaciones, semanas redactadas y materias.</p>
-            </div>
+            <h2 className="border-b border-borde px-4 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-tenue">Por docente</h2>
             <Tabla
               filas={d.docentes}
               claveFila={(u) => u.id}
-              vacio={<EstadoVacio icono={BookOpenText} titulo="Nadie ha planificado todavía" detalle="La primera planificación aparecerá aquí con su docente y su materia." />}
+              recuento={`${d.docentes.length} ${d.docentes.length === 1 ? 'docente' : 'docentes'}`}
+              vacio={<EstadoVacio icono={BookOpenText} titulo="Nadie ha planificado todavía" />}
               columnas={[
-                { clave: 'nombre', titulo: 'Docente', render: (u) => <span className="font-semibold">{u.nombre}</span> },
-                { clave: 'pl', titulo: 'Planificaciones', alinear: 'der', render: (u) => u.planificaciones },
-                { clave: 'sem', titulo: 'Semanas', alinear: 'der', render: (u) => u.semanas },
-                { clave: 'mat', titulo: 'Materias', render: (u) => <span className="text-tenue">{u.materias.join(' · ') || '—'}</span> },
+                { clave: 'nombre', titulo: 'Docente', ancho: '34%', render: (u) => <span className="font-semibold">{u.nombre}</span> },
+                { clave: 'pl', titulo: 'Planif.', ancho: '16%', alinear: 'der', render: (u) => u.planificaciones },
+                { clave: 'sem', titulo: 'Semanas', ancho: '16%', alinear: 'der', render: (u) => u.semanas },
+                { clave: 'mat', titulo: 'Materias', ancho: '34%', render: (u) => <span className="block truncate text-tenue" title={u.materias.join(' · ')}>{u.materias.join(' · ') || '—'}</span> },
               ]}
             />
           </Tarjeta>
 
           <Tarjeta className="overflow-hidden">
-            <div className="border-b border-borde px-4 py-3">
-              <h2 className="text-[13px] font-semibold">Por materia</h2>
-              <p className="text-[12px] text-tenue">Cuántas planificaciones y semanas hay de cada área.</p>
-            </div>
+            <h2 className="border-b border-borde px-4 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-tenue">Por materia</h2>
             <Tabla
               filas={d.materias}
               claveFila={(m) => `${m.materia}-${m.nivel}`}
+              recuento={`${d.materias.length} ${d.materias.length === 1 ? 'materia' : 'materias'}`}
               vacio={<EstadoVacio titulo="Sin materias todavía" />}
               columnas={[
-                { clave: 'materia', titulo: 'Materia', render: (m) => <span className="font-semibold">{m.materia}</span> },
-                { clave: 'nivel', titulo: 'Nivel', render: (m) => <Insignia tono="info">{ETIQUETA_NIVEL[m.nivel]}</Insignia> },
-                { clave: 'n', titulo: 'Planificaciones', alinear: 'der', render: (m) => m.planificaciones },
-                { clave: 's', titulo: 'Semanas', alinear: 'der', render: (m) => m.semanas },
+                { clave: 'materia', titulo: 'Materia', ancho: '40%', render: (m) => <span className="block truncate font-semibold">{m.materia}</span> },
+                { clave: 'nivel', titulo: 'Nivel', ancho: '28%', render: (m) => <Insignia tono="info">{ETIQUETA_NIVEL[m.nivel]}</Insignia> },
+                { clave: 'n', titulo: 'Planif.', ancho: '16%', alinear: 'der', render: (m) => m.planificaciones },
+                { clave: 's', titulo: 'Semanas', ancho: '16%', alinear: 'der', render: (m) => m.semanas },
               ]}
             />
           </Tarjeta>
         </div>
 
-        <Tarjeta className="overflow-hidden">
-          <div className="border-b border-borde px-4 py-3">
-            <h2 className="text-[13px] font-semibold">Últimas solicitudes</h2>
-            <p className="text-[12px] text-tenue">Las planificaciones semanales más recientes de toda la institución.</p>
+        <Tarjeta className="flex flex-1 flex-col overflow-hidden">
+          <h2 className="border-b border-borde px-4 py-2.5 text-[12px] font-semibold uppercase tracking-wide text-tenue">Últimas semanas</h2>
+          <div className="flex flex-1 flex-col">
+            <Tabla
+              filas={d.recientes}
+              claveFila={(s) => s.id}
+              vacio={<div className="flex flex-1 flex-col justify-center"><EstadoVacio titulo="Todavía no hay semanas" /></div>}
+              columnas={[
+                { clave: 'cuando', titulo: 'Cuándo', ancho: '16%', render: (s) => <span className="text-tenue">{s.cuando}</span> },
+                { clave: 'quien', titulo: 'Docente', ancho: '20%', render: (s) => <span className="block truncate">{s.docente}</span> },
+                {
+                  clave: 'que',
+                  titulo: 'Planificación',
+                  ancho: '24%',
+                  render: (s) => (
+                    <Link href={`/${d.slug}/planificaciones?p=${s.planificacionId}&s=${s.id}&quien=todas`} className="block truncate font-semibold text-acento hover:underline">
+                      {s.materia} · Semana {s.orden}
+                    </Link>
+                  ),
+                },
+                { clave: 'tema', titulo: 'Tema', ancho: '28%', render: (s) => <span className="block truncate text-tenue">{s.tema?.split('\n')[0] ?? '—'}</span> },
+                { clave: 'estado', titulo: 'Estado', ancho: '12%', render: (s) => <Insignia tono={s.estado === 'LISTA' ? 'exito' : s.estado === 'ERROR' ? 'error' : 'aviso'}>{ETIQUETA_ESTADO_SEMANA[s.estado]}</Insignia> },
+              ]}
+            />
           </div>
-          <Tabla
-            filas={d.recientes}
-            claveFila={(s) => s.id}
-            vacio={<EstadoVacio titulo="Todavía no hay solicitudes" />}
-            columnas={[
-              { clave: 'cuando', titulo: 'Cuándo', render: (s) => <span className="text-tenue">{s.cuando}</span> },
-              { clave: 'quien', titulo: 'Docente', render: (s) => s.docente },
-              {
-                clave: 'que',
-                titulo: 'Planificación',
-                render: (s) => (
-                  <Link href={`/${d.slug}/planificaciones?p=${s.planificacionId}&s=${s.id}&quien=todas`} className="font-semibold text-acento hover:underline">
-                    {s.materia} · Semana {s.orden}
-                  </Link>
-                ),
-              },
-              { clave: 'tema', titulo: 'Tema', render: (s) => <span className="text-tenue">{s.tema?.split('\n')[0] ?? '—'}</span> },
-              { clave: 'estado', titulo: 'Estado', render: (s) => <Insignia tono={s.estado === 'LISTA' ? 'exito' : s.estado === 'ERROR' ? 'error' : 'aviso'}>{ETIQUETA_ESTADO_SEMANA[s.estado]}</Insignia> },
-            ]}
-          />
         </Tarjeta>
       </div>
     </>

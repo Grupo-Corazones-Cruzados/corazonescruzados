@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { ACENTO_GCC, esHexValido } from '@/lib/marca';
+import { TEMA } from '@/lib/marca';
 import { conBase } from '@/lib/base';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
  * EL MANIFIESTO, POR INSTITUCIÓN. Es lo que hace que la aplicación anclada al inicio
  * del teléfono se abra como una app (`display: standalone`) y no con los controles
  * del navegador encima (Fernando, 2026-10-22; el mismo arreglo que Reservas y Catering). Lleva
- * el nombre y el color del inquilino, y su ámbito es la carpeta del institución: todo lo
+ * el nombre del inquilino y el color del tema, y su ámbito es la carpeta del institución: todo lo
  * que cuelga de /<institucion>/ —panel, módulos, acceso— se queda dentro.
  *
  * Es público a propósito: el navegador pide el manifiesto SIN cookies, y aquí no hay
@@ -19,12 +19,13 @@ export async function GET(_: Request, { params }: { params: Promise<{ institucio
   const { institucion } = await params;
   const inquilino = await prisma.inquilino.findUnique({
     where: { slug: institucion },
-    select: { nombre: true, colorAcento: true, tema: true },
+    select: { nombre: true },
   });
   if (!inquilino) return NextResponse.json({ error: 'No existe' }, { status: 404 });
 
-  const color = esHexValido(inquilino.colorAcento) ? inquilino.colorAcento : ACENTO_GCC;
-  const fondo = inquilino.tema === 'OSCURO' ? '#1b1a19' : '#faf9f8';
+  // Un solo tema para todas (2026-11-08): el oscuro de WhatsApp de `lib/marca.ts › TEMA`.
+  const color = TEMA.fondo;
+  const fondo = TEMA.fondo;
 
   return NextResponse.json(
     {

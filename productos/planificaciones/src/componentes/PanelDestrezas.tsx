@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Pencil, Trash2, ImageOff, ListChecks, Plus as PlusIcon } from 'lucide-react';
-import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Confirmar, EstadoVacio } from '@/componentes/ui';
-import { Aviso } from '@/componentes/campos';
+import { Pencil, Trash2, ImageOff, ListChecks, Plus as PlusIcon, Upload, Save } from 'lucide-react';
+import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Confirmar, EstadoVacio, PieAcciones, BotonEliminar } from '@/componentes/ui';
+import { MenuFila } from '@/componentes/Navegacion';
 import { crearDestreza, editarDestreza, eliminarDestreza, seleccionarDestreza } from '@/acciones/destrezas';
 
 export type DestrezaVista = { id: number; codigo: string; descripcion: string; imagenUrl: string | null; /** Nombre del archivo en el Drive del Grupo, si la imagen vive allí. */ imagenNombre?: string | null; materia?: string; criterio?: string | null; indicador?: string | null; activa?: boolean };
@@ -22,37 +22,61 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
   const router = useRouter();
   const [modo, setModo] = useState<'lista' | 'nueva' | DestrezaVista>('lista');
   const [borrar, setBorrar] = useState<DestrezaVista | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [vista, setVista] = useState<string | null>(null);
   const [quitarImagen, setQuitarImagen] = useState(false);
   const [enCurso, arranca] = useTransition();
+  const archivo = useRef<HTMLInputElement>(null);
   const editando = modo !== 'lista' && modo !== 'nueva' ? modo : null;
 
 
 
   const volver = () => {
     setModo('lista');
-    setError(null);
     setVista(null);
     setQuitarImagen(false);
   };
   const enviar = (d: FormData) =>
     arranca(async () => {
-      setError(null);
       if (quitarImagen) d.set('quitarImagen', 'true');
       const r = editando ? await editarDestreza(slug, editando.id, d) : await crearDestreza(slug, materiaGradoId!, d);
-      if (!r.ok) return setError(r.error);
-      toast.success(editando ? 'Destreza guardada' : 'Destreza añadida');
+      if (!r.ok) return void toast.error(r.error);
+      toast.success('Guardado.');
       volver();
       router.refresh();
     });
+
+  // El diálogo de quitar sirve en la lista (el «⋯») y en el formulario (la papelera del pie).
+  const confirmar = (
+    <Confirmar
+      abierto={!!borrar}
+      titulo="Quitar la destreza"
+      mensaje={`Se quitará «${borrar?.codigo}» de esta materia. Si alguna semana ya la usaba, quedará sin destreza hasta que la corrijas.`}
+      textoAceptar="Quitar"
+      ocupado={enCurso}
+      alCerrar={() => setBorrar(null)}
+      alAceptar={() =>
+        arranca(async () => {
+          if (!borrar) return;
+          const r = await eliminarDestreza(slug, borrar.id);
+          if (!r.ok) return void toast.error(r.error);
+          toast.success('Quitada.');
+          setBorrar(null);
+          if (modo !== 'lista') volver();
+          router.refresh();
+        })
+      }
+    />
+  );
 
   if (modo === 'lista')
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[12px] text-tenue">
-            {puedo ? `${destrezas.filter((d) => d.activa !== false).length} de ${destrezas.length} seleccionadas. Marca las que se usan en esta materia: el docente ve esas y el agente elige entre ellas; cada una arrastra su criterio y su indicador.` : `${destrezas.length} destreza${destrezas.length === 1 ? '' : 's'} seleccionada${destrezas.length === 1 ? '' : 's'} por el administrador en Unidades. El agente elige una por semana.`}
+          <p
+            className="text-[12px] text-tenue"
+            title={puedo ? 'Marca las que se usan en esta materia: el docente ve esas y el agente elige entre ellas; cada una arrastra su criterio y su indicador.' : 'Las selecciona el administrador en Unidades. El agente elige una por semana.'}
+          >
+            {puedo ? `${destrezas.filter((d) => d.activa !== false).length} de ${destrezas.length} seleccionadas` : `${destrezas.length} ${destrezas.length === 1 ? 'destreza' : 'destrezas'}`}
           </p>
           {puedo && materiaGradoId && (
             <Boton tamano="sm" icono={PlusIcon} onClick={() => setModo('nueva')} disabled={enCurso}>
@@ -60,8 +84,7 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
             </Boton>
           )}
         </div>
-        {error && <Aviso texto={error} />}
-        {destrezas.length === 0 && <EstadoVacio icono={ListChecks} titulo="Sin destrezas todavía" detalle="Las destrezas con criterio de desempeño de esta materia: el agente elige una por semana. El administrador las importa con el currículo priorizado del grado (o las añade a mano) y marca las que se usan." />}
+        {destrezas.length === 0 && <EstadoVacio icono={ListChecks} titulo="Sin destrezas" />}
         {!puedo && destrezas.length > 0 && <TablaIdentificadores destrezas={destrezas} />}
         {puedo && (
           <ul className="divide-y divide-[var(--color-borde)] rounded border border-borde">
@@ -102,52 +125,37 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
                     </dl>
                   )}
                 </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  <BotonIcono icono={Pencil} titulo="Editar" onClick={() => setModo(d)} />
-                  <BotonIcono icono={Trash2} titulo="Quitar" className="text-error" onClick={() => setBorrar(d)} />
-                </div>
+                <MenuFila acciones={[
+                  { etiqueta: 'Editar', icono: Pencil, alPulsar: () => setModo(d) },
+                  { etiqueta: 'Quitar', icono: Trash2, peligro: true, alPulsar: () => setBorrar(d) },
+                ]} />
               </li>
             ))}
           </ul>
         )}
-        <Confirmar
-          abierto={!!borrar}
-          titulo="Quitar la destreza"
-          mensaje={`Se quitará «${borrar?.codigo}» de esta materia. Si alguna semana ya la usaba, quedará sin destreza hasta que la corrijas.`}
-          textoAceptar="Quitar"
-          ocupado={enCurso}
-          alCerrar={() => setBorrar(null)}
-          alAceptar={() =>
-            arranca(async () => {
-              if (!borrar) return;
-              const r = await eliminarDestreza(slug, borrar.id);
-              if (!r.ok) return void toast.error(r.error);
-              toast.success('Destreza quitada');
-              setBorrar(null);
-              router.refresh();
-            })
-          }
-        />
+        {confirmar}
       </div>
     );
 
   const imagenActual = vista ?? (quitarImagen ? null : (editando?.imagenUrl ?? null));
   return (
+    <>
+    {confirmar}
     <form action={enviar} className="space-y-4">
       <Campo etiqueta="Código" requerido>
         <Entrada name="codigo" required defaultValue={editando?.codigo ?? ''} placeholder="CS.1.1.7." className="font-mono" autoFocus />
       </Campo>
-      <Campo etiqueta="Descripción (la destreza con criterio de desempeño, tal como está en el currículo)" requerido>
-        <AreaTexto name="descripcion" rows={4} required defaultValue={editando?.descripcion ?? ''} />
+      <Campo etiqueta="Descripción" requerido>
+        <AreaTexto name="descripcion" rows={4} required defaultValue={editando?.descripcion ?? ''} placeholder="La destreza con criterio de desempeño, tal como está en el currículo" />
       </Campo>
-      <Campo etiqueta="Criterio de evaluación (código y texto)">
+      <Campo etiqueta="Criterio de evaluación">
         <AreaTexto name="criterio" rows={3} defaultValue={editando?.criterio ?? ''} placeholder="CE.CS.1.1. Reconoce que es un ser integral…" />
       </Campo>
-      <Campo etiqueta="Indicador de evaluación (código y texto)">
+      <Campo etiqueta="Indicador de evaluación">
         <AreaTexto name="indicador" rows={3} defaultValue={editando?.indicador ?? ''} placeholder="I.CS.1.1.1. Expresa sus datos personales… (J.4.)" />
       </Campo>
-      <Campo etiqueta="Imagen o icono (PNG o JPG, hasta 300 KB; sale en el formato junto al código)">
-        <div className="flex flex-wrap items-center gap-3">
+      <Campo etiqueta="Imagen">
+        <div className="flex flex-wrap items-center gap-2" title="PNG o JPG, hasta 300 KB. Sale en el formato junto al código.">
           <div className="flex h-12 w-[110px] items-center justify-center rounded border border-borde bg-realce">
             {imagenActual ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -157,10 +165,11 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
             )}
           </div>
           <input
+            ref={archivo}
             type="file"
             name="imagen"
             accept="image/png,image/jpeg"
-            className="text-[12px] text-tenue file:mr-2 file:rounded file:border file:border-borde file:bg-tarjeta file:px-2.5 file:py-1 file:text-[12px] file:font-semibold file:text-texto hover:file:bg-realce"
+            className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (!f) return setVista(null);
@@ -170,13 +179,14 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
               lector.readAsDataURL(f);
             }}
           />
+          <Boton type="button" variante="secundario" tamano="sm" icono={Upload} onClick={() => archivo.current?.click()} disabled={enCurso}>
+            {imagenActual ? 'Cambiar' : 'Subir'}
+          </Boton>
           {imagenActual && (
-            <Boton type="button" variante="fantasma" tamano="sm" onClick={() => { setVista(null); setQuitarImagen(true); }}>
-              Quitar imagen
-            </Boton>
+            <BotonIcono type="button" icono={Trash2} titulo="Quitar la imagen" onClick={() => { if (archivo.current) archivo.current.value = ''; setVista(null); setQuitarImagen(true); }} />
           )}
         </div>
-        <Entrada name="imagenUrl" className="mt-2" placeholder="…o pega la dirección de una imagen" />
+        <Entrada name="imagenUrl" className="mt-2" placeholder="O pega la dirección de una imagen" />
       </Campo>
       {/* La imagen está en el Drive del Grupo y no se está cambiando: su nombre se puede editar
           aquí y cambia también en Drive (2026-10-13). Se edita el nombre; la extensión no. */}
@@ -186,7 +196,7 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
         const base = i > 0 ? n.slice(0, i) : n;
         const ext = i > 0 ? n.slice(i) : '';
         return (
-          <Campo etiqueta="Nombre del archivo de la imagen">
+          <Campo etiqueta="Nombre del archivo">
             <div className="flex items-center gap-2">
               <Entrada name="imagenNombre" defaultValue={base} maxLength={150} />
               {ext && <span className="shrink-0 text-[12px] text-tenue">{ext}</span>}
@@ -195,16 +205,18 @@ export function PanelDestrezas({ slug, materiaGradoId, destrezas, puedo }: { slu
           </Campo>
         );
       })()}
-      {error && <Aviso texto={error} />}
-      <div className="flex justify-end gap-2 border-t border-borde pt-4">
-        <Boton type="button" variante="secundario" onClick={volver} disabled={enCurso}>
-          Volver a la lista
-        </Boton>
-        <Boton type="submit" disabled={enCurso}>
-          {enCurso ? 'Guardando…' : editando ? 'Guardar' : 'Añadir destreza'}
-        </Boton>
+      <div className="border-t border-borde pt-4">
+        <PieAcciones eliminar={editando ? <BotonEliminar titulo="Quitar la destreza" onClick={() => setBorrar(editando)} disabled={enCurso} /> : undefined}>
+          <Boton type="button" variante="secundario" onClick={volver} disabled={enCurso}>
+            Volver
+          </Boton>
+          <Boton type="submit" icono={Save} disabled={enCurso}>
+            {enCurso ? 'Guardando…' : 'Guardar'}
+          </Boton>
+        </PieAcciones>
       </div>
     </form>
+    </>
   );
 }
 

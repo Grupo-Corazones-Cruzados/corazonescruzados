@@ -82,7 +82,7 @@ export function Dictado({ slug, alTranscribir, deshabilitado }: { slug: string; 
       disabled={deshabilitado || estado === 'transcribiendo'}
       className={cn(
         'inline-flex h-8 items-center gap-2 rounded px-3 text-[12px] font-semibold transition-colors foco-visible disabled:cursor-not-allowed disabled:opacity-50',
-        estado === 'grabando' ? 'bg-error text-white' : 'border border-borde bg-tarjeta text-texto hover:bg-realce',
+        estado === 'grabando' ? 'bg-error text-acento-contraste' : 'border border-borde bg-tarjeta text-texto hover:bg-realce',
       )}
       title={estado === 'grabando' ? 'Parar y transcribir' : 'Dictar con el micrófono'}
     >

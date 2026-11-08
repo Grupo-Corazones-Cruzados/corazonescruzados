@@ -1,41 +1,20 @@
-import type { ReactNode, CSSProperties } from 'react';
-import { tokensDeMarca, neutrosDeTema } from '@/lib/marca';
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * Envuelve la aplicación con la marca del inquilino: su color pasa a ser el acento
- * y su tema decide los neutros. Los componentes no se enteran — siguen usando
- * `bg-acento` y `text-tenue` como siempre.
+ * Envuelve la aplicación. El tema ya no lo pone este componente: está en `@theme`
+ * (globals.css) y vale en toda página. Queda como el contenedor de alto completo y como
+ * DESTINO de los portales que tienen que salir de un padre con `transform` (`.app-producto`).
  */
-export function AplicaMarca({
-  colorAcento,
-  tema,
-  className,
-  children,
-}: {
-  colorAcento: string;
-  tema: 'CLARO' | 'OSCURO';
-  className?: string;
-  children: ReactNode;
-}) {
-  const oscuro = tema === 'OSCURO';
-  const n = neutrosDeTema(oscuro);
+export function AplicaMarca({ className, children }: { className?: string; children: ReactNode }) {
   return (
-    <>
-      {/* `color-scheme` además hace que los calendarios y las barras de
-          desplazamiento nativas sigan el tema del inquilino. */}
-      <style>{`html,body{background:${n.fondo};color:${n.texto};color-scheme:${n.esquema}}`}</style>
-      <div
-        className={cn(oscuro && 'oscuro', 'min-h-[calc(100dvh-env(safe-area-inset-top))] bg-fondo text-texto', className)}
-        style={tokensDeMarca(colorAcento, oscuro) as CSSProperties}
-      >
-        {children}
-      </div>
-    </>
+    <div className={cn('app-producto min-h-[calc(100dvh-env(safe-area-inset-top))] bg-fondo text-texto', className)}>
+      {children}
+    </div>
   );
 }
 
-/** Logo del negocio, o su inicial cuando todavía no ha subido ninguno. */
+/** Logo de la institución, o su inicial cuando todavía no ha subido ninguno. */
 export function LogoNegocio({
   nombre,
   logoUrl,
@@ -46,8 +25,8 @@ export function LogoNegocio({
   tamano?: number;
 }) {
   if (logoUrl) {
-    // <img> a propósito: el logo vive en la cuenta de Cloudinary del producto y
-    // next/image obligaría a declarar el dominio de cada cuenta.
+    // <img> a propósito: el logo se sirve desde `/<slug>/logo` (o una dirección antigua) y
+    // next/image obligaría a declarar cada dominio.
     // eslint-disable-next-line @next/next/no-img-element
     return (
       <img
@@ -65,7 +44,7 @@ export function LogoNegocio({
       className="flex items-center justify-center rounded-md bg-acento text-acento-contraste font-bold"
       style={{ width: tamano, height: tamano, fontSize: tamano * 0.45 }}
     >
-      {nombre.trim().charAt(0).toUpperCase() || 'H'}
+      {nombre.trim().charAt(0).toUpperCase() || 'P'}
     </div>
   );
 }

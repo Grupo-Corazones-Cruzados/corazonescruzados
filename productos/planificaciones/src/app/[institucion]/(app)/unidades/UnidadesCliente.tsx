@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, GraduationCap, BookOpen, ChevronRight, Users, FileUp, Loader2, ListChecks } from 'lucide-react';
-import { AccionesTarjeta, CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Tarjeta, EstadoVacio, PanelLateral, Ventanita, Confirmar, Insignia, EtiquetaGrado, PaletaGrado } from '@/componentes/ui';
+import { Plus, Pencil, Trash2, GraduationCap, BookOpen, ChevronRight, Users, FileUp, Loader2, ListChecks, Save } from 'lucide-react';
+import { AccionesTarjeta, CabeceraPagina, MenuFila } from '@/componentes/Navegacion';
+import { Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Tarjeta, EstadoVacio, PanelLateral, Ventanita, Confirmar, Insignia, EtiquetaGrado, PaletaGrado, PieAcciones, BotonEliminar } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { crearGrado, renombrarGrado, eliminarGrado, crearMateria, editarMateria, eliminarMateria, importarCurriculo } from '@/acciones/unidades';
 import { cn } from '@/lib/utils';
@@ -27,7 +27,6 @@ export type GradoVista = { id: number; nombre: string; nivel: Nivel; color: stri
 export default function UnidadesCliente({ slug, grados, docentes, gradoId, materiaId, destrezas, soloLectura }: { slug: string; grados: GradoVista[]; docentes: DocenteVista[]; gradoId: number | null; materiaId: number | null; destrezas: DestrezaVista[]; soloLectura: boolean }) {
   const router = useRouter();
   const [enCurso, arranca] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const grado = grados.find((g) => g.id === gradoId) ?? grados[0] ?? null;
   const materia = grado?.materias.find((m) => m.id === materiaId) ?? null;
   const [panel, setPanel] = useState<'grado' | 'renombrar' | 'materia' | 'editarMateria' | null>(null);
@@ -46,15 +45,11 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
   }, [leyendo, router]);
 
   const ir = (g: number | null, m: number | null) => router.push(`/${slug}/unidades${g ? `?g=${g}${m ? `&m=${m}` : ''}` : ''}`);
-  const cerrar = () => {
-    setPanel(null);
-    setError(null);
-  };
+  const cerrar = () => setPanel(null);
   const conResultado = (fn: () => Promise<{ ok: boolean; error?: string; id?: number }>, hecho: string, despues?: (id?: number) => void) =>
     arranca(async () => {
-      setError(null);
       const r = await fn();
-      if (!r.ok) return setError(r.error ?? 'No se pudo completar la acción');
+      if (!r.ok) return void toast.error(r.error ?? 'No se pudo completar la acción.');
       toast.success(hecho);
       cerrar();
       despues?.(r.id);
@@ -76,23 +71,24 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
           </Boton>
         }
       />
-      <div className="flex flex-col gap-4 p-4 sm:p-6 xl:h-[calc(100vh-61px)] xl:flex-row xl:overflow-hidden">
+      {/* Alto completo: las tres columnas llegan hasta el pie y desplazan por dentro (2026-11-08). */}
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6 xl:min-h-0 xl:flex-row xl:overflow-hidden">
         {/* Grados */}
         <Tarjeta className="flex min-h-0 flex-col xl:w-[260px] xl:shrink-0">
           <div className="border-b border-borde px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide text-tenue">Grados</div>
-          <div className="desplaza min-h-0 flex-1 overflow-y-auto p-2">
-            {grados.length === 0 && <EstadoVacio icono={GraduationCap} titulo="Sin grados todavía" detalle="Crea el primero con «Nuevo grado»." />}
+          <div className="desplaza flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-1">
+            {grados.length === 0 && <div className="flex flex-1 flex-col justify-center"><EstadoVacio icono={GraduationCap} titulo="Sin grados" /></div>}
             {grados.map((g) => {
               const sel = grado?.id === g.id;
               return (
-                <button key={g.id} onClick={() => ir(g.id, null)} className={cn('mb-1 flex w-full items-center gap-2 rounded px-2.5 py-2 text-left transition-colors foco-visible', sel ? 'bg-acento-suave border-l-2 border-acento' : 'border-l-2 border-transparent hover:bg-realce')}>
+                <button key={g.id} onClick={() => ir(g.id, null)} className={cn('flex w-full items-center gap-2 rounded px-2.5 py-2 text-left transition-colors foco-visible', sel ? 'bg-acento-suave' : 'hover:bg-realce')}>
                   <span className="h-3.5 w-3.5 shrink-0 rounded-full" style={{ backgroundColor: g.color }} aria-hidden />
                   <span className="min-w-0 flex-1">
                     <span className={cn('block truncate text-[13px] font-semibold', sel ? 'text-acento' : 'text-texto')}>{g.nombre}</span>
                     <span className="block truncate text-[11px] text-tenue">{ETIQUETA_NIVEL[g.nivel]}</span>
                   </span>
                   <span className="text-[11px] text-tenue">{g.materias.length}</span>
-                  <ChevronRight className={cn('h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-borde')} />
+                  <ChevronRight className={cn('h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-tenue')} />
                 </button>
               );
             })}
@@ -101,11 +97,8 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
 
         {/* Materias del grado */}
         <Tarjeta className="flex min-h-0 flex-col xl:w-[320px] xl:shrink-0">
-          <div className="flex items-center justify-between gap-2 border-b border-borde px-3 py-2">
-            <div className="min-w-0">
-              <p className="truncate text-[13px] font-semibold text-texto">{grado?.nombre ?? 'Materias'}</p>
-              <p className="text-[11px] text-tenue">{grado ? `${grado.materias.length} materia${grado.materias.length === 1 ? '' : 's'}` : 'Elige un grado'}</p>
-            </div>
+          <div className="flex min-h-10 items-center justify-between gap-2 border-b border-borde px-3 py-1.5">
+            <p className="min-w-0 truncate text-[13px] font-semibold text-texto">{grado?.nombre ?? 'Materias'}</p>
             {grado && !soloLectura && (
               <div className="flex items-center gap-1">
                 <input
@@ -124,22 +117,24 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                 />
                 {/* Solo icono: el texto no cabe en la cabecera (Fernando, 2026-09-17). */}
                 <BotonIcono icono={grado.importacionEstado === 'LEYENDO' ? Loader2 : FileUp} titulo={grado.importacionEstado === 'LEYENDO' ? 'El agente está leyendo el currículo…' : 'Importar currículo (PDF del Ministerio): crea las materias que falten y añade o actualiza objetivos y destrezas con su criterio e indicador. Nunca borra nada'} onClick={() => entradaCurriculo.current?.click()} disabled={enCurso || (grado.importacionEstado === 'LEYENDO' && !grado.importacionAtascada)} className={grado.importacionEstado === 'LEYENDO' && !grado.importacionAtascada ? '[&>svg]:animate-spin' : ''} />
-                <BotonIcono icono={Pencil} titulo="Renombrar el grado" onClick={() => setPanel('renombrar')} />
-                <BotonIcono icono={Trash2} titulo="Eliminar el grado" className="text-error" onClick={() => setBorrarG(grado)} />
+                <MenuFila acciones={[
+                  { etiqueta: 'Renombrar', icono: Pencil, alPulsar: () => setPanel('renombrar') },
+                  { etiqueta: 'Eliminar el grado', icono: Trash2, peligro: true, alPulsar: () => setBorrarG(grado) },
+                ]} />
                 <Boton tamano="sm" icono={Plus} onClick={() => abrirMateria(null)}>
                   Materia
                 </Boton>
               </div>
             )}
           </div>
-          <div className="desplaza min-h-0 flex-1 overflow-y-auto p-2">
+          <div className="desplaza flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-1">
             {grado?.importacionEstado === 'LEYENDO' && !grado.importacionAtascada && (
               <div className="mb-2 flex items-start gap-2 rounded bg-aviso-suave px-2.5 py-2 text-[12px] text-texto">
                 <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin text-aviso" />
-                El agente está leyendo «{grado.importacionArchivo}», ámbito por ámbito. Tarda unos minutos; esta pantalla se actualiza sola.
+                Leyendo «{grado.importacionArchivo}». Esta pantalla se actualiza sola.
               </div>
             )}
-            {grado?.importacionEstado === 'LEYENDO' && grado.importacionAtascada && <div className="mb-2"><Aviso tono="aviso" texto={`La lectura de «${grado.importacionArchivo}» se interrumpió (lleva más de 15 minutos). Lo importado hasta ese punto se conserva; vuelve a subir el PDF para completar el resto.`} /></div>}
+            {grado?.importacionEstado === 'LEYENDO' && grado.importacionAtascada && <div className="mb-2"><Aviso tono="aviso" texto={`La lectura de «${grado.importacionArchivo}» se interrumpió. Lo importado se conserva: vuelve a subir el PDF.`} /></div>}
             {grado?.importacionEstado === 'ERROR' && <div className="mb-2"><Aviso texto={`No se pudo importar «${grado.importacionArchivo}»: ${grado.importacionError ?? ''}`} /></div>}
             {grado && !grado.importacionEstado && grado.importacionError && (
               <details className="mb-2 rounded bg-realce px-2.5 py-1.5 text-[11px] text-tenue">
@@ -147,16 +142,16 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                 <p className="mt-1 whitespace-pre-line">{grado.importacionError}</p>
               </details>
             )}
-            {grado && grado.materias.length === 0 && <EstadoVacio icono={BookOpen} titulo="Sin materias" detalle="Añade la primera materia de este grado o importa el currículo priorizado del Ministerio." />}
+            {grado && grado.materias.length === 0 && <div className="flex flex-1 flex-col justify-center"><EstadoVacio icono={BookOpen} titulo="Sin materias" /></div>}
             {grado?.materias.map((m) => {
               const sel = materia?.id === m.id;
               return (
-                <button key={m.id} onClick={() => ir(grado.id, m.id)} className={cn('mb-1 flex w-full items-start gap-2 rounded px-2.5 py-2 text-left transition-colors foco-visible', sel ? 'bg-acento-suave border-l-2 border-acento' : 'border-l-2 border-transparent hover:bg-realce')}>
+                <button key={m.id} onClick={() => ir(grado.id, m.id)} className={cn('flex w-full items-start gap-2 rounded px-2.5 py-2 text-left transition-colors foco-visible', sel ? 'bg-acento-suave' : 'hover:bg-realce')}>
                   <div className="min-w-0 flex-1">
                     <p className={cn('truncate text-[13px] font-semibold', sel ? 'text-acento' : 'text-texto')}>{m.nombre}</p>
-                    <p className="truncate text-[11px] text-tenue">{m.docentes.length ? m.docentes.map((d) => d.nombre).join(' · ') : 'Sin docentes asignados'}</p>
+                    <p className="truncate text-[11px] text-tenue">{m.docentes.length ? m.docentes.map((d) => d.nombre).join(' · ') : 'Sin docentes'}</p>
                   </div>
-                  <ChevronRight className={cn('mt-1 h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-borde')} />
+                  <ChevronRight className={cn('mt-1 h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-tenue')} />
                 </button>
               );
             })}
@@ -167,7 +162,7 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
         <Tarjeta className="flex min-h-0 flex-1 flex-col">
           {!materia ? (
             <div className="flex flex-1 items-center justify-center">
-              <EstadoVacio icono={BookOpen} titulo="Elige una materia" detalle="Verás su descripción, los docentes que la dan y sus unidades." />
+              <EstadoVacio icono={BookOpen} titulo="Elige una materia" />
             </div>
           ) : (
             <>
@@ -193,7 +188,7 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                 </section>
                 <section>
                   <h3 className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-tenue">
-                    <Users className="h-3.5 w-3.5" /> Docentes que dan la materia
+                    <Users className="h-3.5 w-3.5" /> Docentes
                   </h3>
                   {materia.docentes.length ? (
                     <ul className="flex flex-wrap gap-x-3 gap-y-1">
@@ -204,7 +199,7 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-[13px] text-tenue">Nadie todavía. Sin docentes asignados, ningún profesor puede elegir esta materia al planificar ni ponerla en su horario.</p>
+                    <p className="text-[13px] text-tenue">Sin docentes.</p>
                   )}
                 </section>
                 <section>
@@ -218,24 +213,24 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-[13px] text-tenue">Sin objetivos. Llegan al importar el currículo priorizado del grado.</p>
+                    <p className="text-[13px] text-tenue">Sin objetivos.</p>
                   )}
                 </section>
                 <section>
-                  <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Identificadores</h3>
                   {/* Los seleccionados, en tabla destreza · criterio · indicador (Fernando, 2026-09-18); se eligen con «Destrezas», arriba. */}
-                  <p className="mb-2 text-[12px] text-tenue">
-                    {destrezas.filter((d) => d.activa !== false).length} seleccionada{destrezas.filter((d) => d.activa !== false).length === 1 ? '' : 's'} de {destrezas.length} destreza{destrezas.length === 1 ? '' : 's'}. Se marcan con el botón «Destrezas».
-                  </p>
-                  {destrezas.some((d) => d.activa !== false) ? <TablaIdentificadores destrezas={destrezas.filter((d) => d.activa !== false)} /> : <p className="text-[13px] text-tenue">Ninguna seleccionada todavía.</p>}
+                  <h3 className="mb-1 flex items-baseline gap-2 text-[11px] font-semibold uppercase tracking-wide text-tenue">
+                    Identificadores
+                    <span className="font-normal normal-case tracking-normal">{destrezas.filter((d) => d.activa !== false).length} de {destrezas.length}</span>
+                  </h3>
+                  {destrezas.some((d) => d.activa !== false) ? <TablaIdentificadores destrezas={destrezas.filter((d) => d.activa !== false)} /> : <p className="text-[13px] text-tenue">Ninguna seleccionada.</p>}
                 </section>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <section>
-                    <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Cantidad de unidades</h3>
+                    <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Unidades</h3>
                     <p className="text-[13px] text-texto">{materia.unidades ?? <span className="text-tenue">No indicada</span>}</p>
                   </section>
                   <section>
-                    <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Planificaciones creadas</h3>
+                    <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Planificaciones</h3>
                     <p className="text-[13px] text-texto">{materia.planificaciones}</p>
                   </section>
                 </div>
@@ -246,9 +241,19 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
       </div>
 
       {/* Nuevo grado / renombrar: una o dos casillas → ventanita */}
-      <Ventanita abierto={panel === 'grado' || panel === 'renombrar'} alCerrar={cerrar} titulo={panel === 'grado' ? 'Nuevo grado' : 'Renombrar el grado'}>
-        <form action={(d) => conResultado(() => (panel === 'grado' ? crearGrado(slug, d) : renombrarGrado(slug, grado!.id, d)), panel === 'grado' ? 'Grado creado' : 'Grado renombrado', (id) => panel === 'grado' && ir(id ?? null, null))} className="space-y-4">
-          <Campo etiqueta="Nombre del grado" requerido>
+      <Ventanita
+        abierto={panel === 'grado' || panel === 'renombrar'}
+        alCerrar={cerrar}
+        titulo={panel === 'grado' ? 'Nuevo grado' : 'Renombrar el grado'}
+        pie={
+          <>
+            <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>Cancelar</Boton>
+            <Boton form="form-grado" type="submit" icono={Save} disabled={enCurso}>{enCurso ? 'Guardando…' : 'Guardar'}</Boton>
+          </>
+        }
+      >
+        <form id="form-grado" key={panel ?? 'x'} action={(d) => conResultado(() => (panel === 'grado' ? crearGrado(slug, d) : renombrarGrado(slug, grado!.id, d)), 'Guardado.', (id) => panel === 'grado' && ir(id ?? null, null))} className="space-y-4">
+          <Campo etiqueta="Nombre" requerido>
             <Entrada name="nombre" required autoFocus defaultValue={panel === 'renombrar' ? grado?.nombre : ''} placeholder="Primer grado" />
           </Campo>
           <Campo etiqueta="Nivel" requerido>
@@ -262,41 +267,42 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
           </Campo>
           {/* Al crearlo el color sale al azar; al renombrar se puede cambiar. */}
           {panel === 'renombrar' && grado && (
-            <Campo etiqueta="Color del grado">
+            <Campo etiqueta="Color">
               <PaletaGrado name="color" valor={grado.color} />
             </Campo>
           )}
-          {error && <Aviso texto={error} />}
-          <div className="flex justify-end gap-2">
-            <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>
-              Cancelar
-            </Boton>
-            <Boton type="submit" disabled={enCurso}>
-              {enCurso ? 'Guardando…' : 'Guardar'}
-            </Boton>
-          </div>
         </form>
       </Ventanita>
 
       {/* Materia: alta y edición */}
-      <PanelLateral abierto={(panel === 'materia' || panel === 'editarMateria') && !!grado} alCerrar={cerrar} titulo={panel === 'materia' ? `Nueva materia · ${grado?.nombre}` : `Editar materia · ${grado?.nombre}`} descripcion="Los docentes marcados podrán elegirla al planificar y ponerla en su horario.">
+      <PanelLateral
+        abierto={(panel === 'materia' || panel === 'editarMateria') && !!grado}
+        alCerrar={cerrar}
+        titulo={panel === 'materia' ? `Nueva materia · ${grado?.nombre}` : `Editar materia · ${grado?.nombre}`}
+        pie={
+          <PieAcciones eliminar={panel === 'editarMateria' && materia ? <BotonEliminar titulo="Eliminar la materia" onClick={() => setBorrarM(materia)} disabled={enCurso} /> : undefined}>
+            <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>Cancelar</Boton>
+            <Boton form="form-materia" type="submit" icono={Save} disabled={enCurso}>{enCurso ? 'Guardando…' : 'Guardar'}</Boton>
+          </PieAcciones>
+        }
+      >
         {grado && (
-          <form action={(d) => conResultado(() => (panel === 'materia' ? crearMateria(slug, grado.id, d) : editarMateria(slug, materia!.id, d)), panel === 'materia' ? 'Materia añadida' : 'Materia guardada', (id) => ir(grado.id, id ?? materia?.id ?? null))} className="space-y-4">
-            <Campo etiqueta="Nombre de la materia" requerido>
+          <form id="form-materia" key={panel === 'editarMateria' ? materia?.id : 'nueva'} action={(d) => conResultado(() => (panel === 'materia' ? crearMateria(slug, grado.id, d) : editarMateria(slug, materia!.id, d)), 'Guardado.', (id) => ir(grado.id, id ?? materia?.id ?? null))} className="space-y-4">
+            <Campo etiqueta="Nombre" requerido>
               <Entrada name="nombre" required autoFocus defaultValue={panel === 'editarMateria' ? materia?.nombre : ''} placeholder="Identidad y Autonomía" />
             </Campo>
             <Campo etiqueta="Descripción">
               <AreaTexto name="descripcion" rows={3} defaultValue={panel === 'editarMateria' ? (materia?.descripcion ?? '') : ''} />
             </Campo>
-            <Campo etiqueta="Cantidad de unidades (opcional)">
+            <Campo etiqueta="Unidades">
               <Entrada name="unidades" type="number" min={0} max={99} className="w-32" defaultValue={panel === 'editarMateria' ? (materia?.unidades ?? '') : ''} />
             </Campo>
-            <Campo etiqueta={`Docentes que dan la materia (${elegidos.length})`}>
+            <Campo etiqueta={`Docentes (${elegidos.length})`}>
               {elegidos.map((id) => (
                 <input key={id} type="hidden" name="docentes" value={id} />
               ))}
               <div className="desplaza max-h-56 space-y-1 overflow-y-auto rounded border border-borde p-2">
-                {docentes.length === 0 && <p className="text-[12px] text-tenue">No hay cuentas activas. Créalas en Usuarios.</p>}
+                {docentes.length === 0 && <p className="text-[12px] text-tenue">Sin cuentas activas.</p>}
                 {docentes.map((d) => {
                   const marcado = elegidos.includes(d.id);
                   return (
@@ -309,25 +315,16 @@ export default function UnidadesCliente({ slug, grados, docentes, gradoId, mater
                 })}
               </div>
             </Campo>
-            {error && <Aviso texto={error} />}
-            <div className="flex justify-end gap-2 border-t border-borde pt-4">
-              <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>
-                Cancelar
-              </Boton>
-              <Boton type="submit" disabled={enCurso}>
-                {enCurso ? 'Guardando…' : panel === 'materia' ? 'Añadir materia' : 'Guardar'}
-              </Boton>
-            </div>
           </form>
         )}
       </PanelLateral>
 
-      <PanelLateral abierto={panelDestrezas && !!materia} alCerrar={() => setPanelDestrezas(false)} titulo={`Destrezas · ${materia?.nombre ?? ''}`} descripcion="Marca las destrezas que se usan en esta materia: cada una lleva su criterio y su indicador de evaluación. Es lo que el docente ve en Identificadores y entre lo que el agente elige." ancho="lg">
+      <PanelLateral abierto={panelDestrezas && !!materia} alCerrar={() => setPanelDestrezas(false)} titulo={`Destrezas · ${materia?.nombre ?? ''}`} ancho="lg">
         {materia && <PanelDestrezas slug={slug} materiaGradoId={materia.id} destrezas={destrezas} puedo={!soloLectura} />}
       </PanelLateral>
 
-      <Confirmar abierto={!!borrarG} titulo="Eliminar el grado" mensaje={`Se eliminará «${borrarG?.nombre}» con sus ${borrarG?.materias.length ?? 0} materia(s), sus asignaciones y sus horas en los horarios. Las planificaciones ya creadas se conservan.`} ocupado={enCurso} alCerrar={() => setBorrarG(null)} alAceptar={() => borrarG && conResultado(() => eliminarGrado(slug, borrarG.id), 'Grado eliminado', () => { setBorrarG(null); ir(null, null); })} />
-      <Confirmar abierto={!!borrarM} titulo="Eliminar la materia" mensaje={`Se eliminará «${borrarM?.nombre}» de ${grado?.nombre}, con sus asignaciones y sus horas en los horarios. Las planificaciones ya creadas se conservan.`} ocupado={enCurso} alCerrar={() => setBorrarM(null)} alAceptar={() => borrarM && conResultado(() => eliminarMateria(slug, borrarM.id), 'Materia eliminada', () => { setBorrarM(null); ir(grado?.id ?? null, null); })} />
+      <Confirmar abierto={!!borrarG} titulo="Eliminar el grado" mensaje={`Se eliminará «${borrarG?.nombre}» con sus ${borrarG?.materias.length ?? 0} materia(s), sus asignaciones y sus horas en los horarios. Las planificaciones ya creadas se conservan.`} ocupado={enCurso} alCerrar={() => setBorrarG(null)} alAceptar={() => borrarG && conResultado(() => eliminarGrado(slug, borrarG.id), 'Eliminado.', () => { setBorrarG(null); ir(null, null); })} />
+      <Confirmar abierto={!!borrarM} titulo="Eliminar la materia" mensaje={`Se eliminará «${borrarM?.nombre}» de ${grado?.nombre}, con sus asignaciones y sus horas en los horarios. Las planificaciones ya creadas se conservan.`} ocupado={enCurso} alCerrar={() => setBorrarM(null)} alAceptar={() => borrarM && conResultado(() => eliminarMateria(slug, borrarM.id), 'Eliminada.', () => { setBorrarM(null); ir(grado?.id ?? null, null); })} />
     </>
   );
 }

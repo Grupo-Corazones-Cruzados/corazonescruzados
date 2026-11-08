@@ -3,8 +3,6 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import {
   Building2,
   Plus,
@@ -17,8 +15,8 @@ import {
   KeyRound,
   ExternalLink,
   LogOut,
-  AlertCircle,
   Copy,
+  Save,
 } from 'lucide-react';
 import {
   Boton,
@@ -32,6 +30,7 @@ import {
   PanelLateral,
   RailFiltro,
   EstadoVacio,
+  PieAcciones,
   type Tono,
 } from '@/componentes/ui';
 import { salirOperador } from '@/acciones/acceso';
@@ -45,7 +44,7 @@ import {
   guardarPlan,
   restablecerClaveAdmin,
 } from '@/acciones/gcc';
-import { dinero } from '@/lib/formato';
+import { dinero, fechaLarga } from '@/lib/formato';
 import type { EstadoAcceso } from '@/lib/inquilino';
 import { conBase } from '@/lib/base';
 
@@ -117,26 +116,21 @@ export default function PanelGcc({
   const [detalle, setDetalle] = useState<InquilinoGcc | null>(null);
   const [planEdit, setPlanEdit] = useState<PlanGcc | null | 'nuevo'>(null);
   const [credencial, setCredencial] = useState<{ texto: string; clave: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [enCurso, arranca] = useTransition();
 
   const cerrar = () => {
     setAlta(false);
     setDetalle(null);
     setPlanEdit(null);
-    setError(null);
   };
 
   const conResultado = (
     fn: () => Promise<{ ok: boolean; error?: string; mensaje?: string; clave?: string; slug?: string }>,
   ) =>
     arranca(async () => {
-      setError(null);
       const r = await fn();
-      if (!r.ok) {
-        setError(r.error ?? 'No se pudo completar la acción');
-        return;
-      }
+      // Avisos de una línea, en un toast; el panel sigue abierto para corregir.
+      if (!r.ok) return void toast.error(r.error ?? 'No se pudo completar la acción.');
       if (r.clave) setCredencial({ texto: r.mensaje ?? 'Contraseña generada', clave: r.clave });
       toast.success(r.mensaje ?? 'Hecho');
       cerrar();
@@ -150,11 +144,12 @@ export default function PanelGcc({
     .reduce((a, i) => a + i.precioMensual, 0);
 
   return (
-    <div className="min-h-screen bg-fondo">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-3.5 sm:px-6">
-        <div>
-          <h1 className="text-[17px] font-semibold">Planificación de Clases · Equipo GCC</h1>
-          <p className="text-[12px] text-tenue">{operador}</p>
+    // Alto de la ventana: la cabecera de 68 px, y el contenido llega hasta el pie (2026-11-08).
+    <div className="flex h-[calc(100dvh-env(safe-area-inset-top))] flex-col bg-fondo">
+      <header className="flex min-h-[68px] shrink-0 flex-wrap items-center justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-2 sm:px-6">
+        <div className="min-w-0">
+          <h1 className="truncate text-[17px] font-semibold leading-6">Planificación de Clases · Equipo GCC</h1>
+          <p className="mt-0.5 text-[12px] leading-4 text-tenue">{operador}</p>
         </div>
         <form action={salirOperador}>
           <Boton variante="fantasma" icono={LogOut} type="submit">
@@ -163,7 +158,7 @@ export default function PanelGcc({
         </form>
       </header>
 
-      <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
+      <div className="desplaza flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-6 lg:flex-row">
         <RailFiltro
           opciones={[
             { valor: 'instituciones', etiqueta: 'Instituciones', icono: Building2, conteo: inquilinos.length },
@@ -173,12 +168,12 @@ export default function PanelGcc({
           alElegir={(v) => setSeccion(v as 'instituciones' | 'planes')}
         />
 
-        <div className="min-w-0 flex-1 space-y-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
           {credencial && (
-            <Tarjeta className="flex flex-wrap items-center gap-3 border-acento bg-acento-suave p-4">
+            <Tarjeta className="flex flex-wrap items-center gap-3 border-acento p-4">
               <KeyRound className="h-5 w-5 shrink-0 text-acento" />
               <p className="min-w-0 flex-1 text-[13px] font-semibold">{credencial.texto}</p>
-              <code className="rounded border border-borde bg-tarjeta px-3 py-1.5 font-mono text-[14px] font-semibold">
+              <code className="rounded border border-borde bg-realce px-3 py-1.5 font-mono text-[14px] font-semibold">
                 {credencial.clave}
               </code>
               <Boton
@@ -186,7 +181,7 @@ export default function PanelGcc({
                 icono={Copy}
                 onClick={() => {
                   navigator.clipboard.writeText(credencial.clave);
-                  toast.success('Copiada');
+                  toast.success('Copiada.');
                 }}
               >
                 Copiar
@@ -202,39 +197,33 @@ export default function PanelGcc({
               <div className="grid gap-3 sm:grid-cols-3">
                 {[
                   { et: 'Instituciones', v: String(inquilinos.length) },
-                  { et: 'Con la mensualidad al día', v: String(inquilinos.length - vencidos) },
+                  { et: 'Al día', v: String(inquilinos.length - vencidos) },
                   { et: 'Mensualidad activa', v: dinero(ingresoMensual) },
                 ].map((c) => (
-                  <Tarjeta key={c.et} className="p-4">
-                    <p className="text-[11px] uppercase tracking-wide text-tenue">{c.et}</p>
-                    <p className="mt-1 text-[20px] font-semibold">{c.v}</p>
+                  <Tarjeta key={c.et} className="p-3 sm:p-4">
+                    <p className="text-[10.5px] uppercase tracking-wide text-tenue sm:text-[11px]">{c.et}</p>
+                    <p className="mt-0.5 text-[19px] font-semibold tabular-nums leading-tight sm:text-[21px]">{c.v}</p>
                   </Tarjeta>
                 ))}
               </div>
 
-              <div className="flex items-center justify-between">
-                <h2 className="text-[14px] font-semibold">Instituciones</h2>
-                <Boton icono={Plus} onClick={() => setAlta(true)} disabled={!planes.length}>
-                  Nueva institución
-                </Boton>
-              </div>
-
-              <Tarjeta className="overflow-hidden">
+              <Tarjeta className="flex flex-1 flex-col overflow-hidden">
+                <div className="flex items-center justify-end border-b border-borde px-4 py-3">
+                  <Boton icono={Plus} onClick={() => setAlta(true)} disabled={!planes.length}>
+                    Nueva institución
+                  </Boton>
+                </div>
                 <Tabla
                   filas={inquilinos}
                   claveFila={(i) => i.id}
                   alPulsarFila={(i) => setDetalle(i)}
-                  vacio={
-                    <EstadoVacio
-                      icono={Building2}
-                      titulo="Todavía no hay instituciones"
-                      detalle="Da de alta el primero y entrégale su dirección y su contraseña."
-                    />
-                  }
+                  recuento={`${inquilinos.length} ${inquilinos.length === 1 ? 'institución' : 'instituciones'}`}
+                  vacio={<div className="flex flex-1 flex-col justify-center"><EstadoVacio icono={Building2} titulo="Sin instituciones" /></div>}
                   columnas={[
                     {
                       clave: 'nombre',
                       titulo: 'Institución',
+                      ancho: '24%',
                       render: (i) => (
                         <div className="min-w-0">
                           <p className="truncate font-semibold">{i.nombre}</p>
@@ -245,8 +234,9 @@ export default function PanelGcc({
                     {
                       clave: 'plan',
                       titulo: 'Plan',
+                      ancho: '20%',
                       render: (i) => (
-                        <span className="flex items-center gap-2">
+                        <span className="flex flex-wrap items-center gap-x-2">
                           {i.plan?.nombre ?? '—'}
                           {i.soloLectura && <Insignia tono="info">Escaparate</Insignia>}
                           {i.cortesia && <Insignia tono="exito">Del grupo</Insignia>}
@@ -256,6 +246,7 @@ export default function PanelGcc({
                     {
                       clave: 'acceso',
                       titulo: 'Acceso',
+                      ancho: '11%',
                       render: (i) => (
                         <Insignia tono={ACCESO[i.acceso].tono}>{ACCESO[i.acceso].texto}</Insignia>
                       ),
@@ -263,9 +254,10 @@ export default function PanelGcc({
                     {
                       clave: 'pagado',
                       titulo: 'Pagado hasta',
+                      ancho: '17%',
                       render: (i) =>
                         i.pagadoHasta ? (
-                          format(new Date(i.pagadoHasta), 'd MMM yyyy', { locale: es })
+                          fechaLarga(i.pagadoHasta, 'UTC')
                         ) : (
                           <span className="text-tenue">—</span>
                         ),
@@ -273,25 +265,30 @@ export default function PanelGcc({
                     {
                       clave: 'uso',
                       titulo: 'Uso',
+                      ancho: '22%',
                       render: (i) => (
-                        <span className="text-tenue">
-                          {i.planificaciones} planificaciones · {i.semanas} semanas · {i.cuentas} cuentas
+                        <span className="block truncate text-tenue" title={`${i.planificaciones} planificaciones · ${i.semanas} semanas · ${i.cuentas} cuentas`}>
+                          {i.planificaciones} planif. · {i.semanas} sem. · {i.cuentas} cuentas
                         </span>
                       ),
                     },
                     {
                       clave: 'abrir',
                       titulo: '',
+                      ancho: '56px',
                       alinear: 'der',
+                      // Un icono, no un botón con texto en la fila: abre la institución en otra pestaña.
                       render: (i) => (
                         <a
                           href={conBase(`/${i.slug}/acceso`)}
                           target="_blank"
                           rel="noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 text-[12px] font-semibold text-acento hover:underline"
+                          title="Abrir"
+                          aria-label={`Abrir ${i.nombre}`}
+                          className="foco-visible ml-auto flex h-8 w-8 items-center justify-center rounded-md border border-borde text-tenue transition-colors hover:bg-realce hover:text-texto"
                         >
-                          Abrir <ExternalLink className="h-3.5 w-3.5" />
+                          <ExternalLink className="h-4 w-4" />
                         </a>
                       ),
                     },
@@ -303,13 +300,7 @@ export default function PanelGcc({
 
           {seccion === 'planes' && (
             <>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-[14px] font-semibold">Planes</h2>
-                  <p className="text-[12px] text-tenue">
-                    Los niveles de acceso por mensualidad. Un tope vacío significa «sin límite».
-                  </p>
-                </div>
+              <div className="flex items-center justify-end">
                 <Boton icono={Plus} onClick={() => setPlanEdit('nuevo')}>
                   Nuevo plan
                 </Boton>
@@ -344,8 +335,8 @@ export default function PanelGcc({
                         </li>
                       ))}
                     </ul>
-                    <div className="mt-auto pt-4">
-                      <Boton variante="secundario" className="w-full" onClick={() => setPlanEdit(p)}>
+                    <div className="mt-auto flex justify-end pt-4">
+                      <Boton variante="secundario" onClick={() => setPlanEdit(p)}>
                         Editar
                       </Boton>
                     </div>
@@ -362,14 +353,19 @@ export default function PanelGcc({
         abierto={alta}
         alCerrar={cerrar}
         titulo="Nueva institución"
-        descripcion="Se crea la institución, su suscripción y la cuenta de administrador."
+        pie={
+          <PieAcciones>
+            <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>Cancelar</Boton>
+            <Boton form="form-alta" type="submit" icono={Save} disabled={enCurso}>{enCurso ? 'Creando…' : 'Crear institución'}</Boton>
+          </PieAcciones>
+        }
       >
-        <form action={(d) => conResultado(() => crearInquilino(d))} className="space-y-4">
-          <Campo etiqueta="Nombre de la institución" requerido>
+        <form id="form-alta" action={(d) => conResultado(() => crearInquilino(d))} className="space-y-4">
+          <Campo etiqueta="Nombre" requerido>
             <Entrada name="nombre" required autoFocus />
           </Campo>
-          <Campo etiqueta="Código (primer tramo de su dirección)" requerido>
-            <Entrada name="slug" required placeholder="mi-colegio" className="font-mono" />
+          <Campo etiqueta="Código" requerido>
+            <Entrada name="slug" required placeholder="mi-colegio" className="font-mono" title="El primer tramo de su dirección" />
           </Campo>
           <Campo etiqueta="Plan" requerido>
             <Selector name="planId" required>
@@ -392,12 +388,9 @@ export default function PanelGcc({
           <Campo etiqueta="Persona de contacto">
             <Entrada name="contactoNombre" />
           </Campo>
-          <label className="flex items-start gap-2 text-[13px]">
-            <input type="checkbox" name="cortesia" className="mt-0.5 h-4 w-4 accent-[var(--color-acento)]" />
-            <span>
-              Acceso del grupo
-              <span className="block text-[11px] text-tenue">Para la administración del Grupo Corazones Cruzados: no paga mensualidad ni tiene topes. Todos los demás pasan por la suscripción.</span>
-            </span>
+          <label className="flex items-center gap-2 text-[13px]" title="Para la administración del Grupo Corazones Cruzados: no paga mensualidad ni tiene topes. Todos los demás pasan por la suscripción.">
+            <input type="checkbox" name="cortesia" className="h-4 w-4 accent-[var(--color-acento)]" />
+            Acceso del grupo
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo etiqueta="Correo">
@@ -406,15 +399,6 @@ export default function PanelGcc({
             <Campo etiqueta="Teléfono">
               <Entrada name="contactoTelefono" />
             </Campo>
-          </div>
-          {error && <Aviso texto={error} />}
-          <div className="flex justify-end gap-2 border-t border-borde pt-4">
-            <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>
-              Cancelar
-            </Boton>
-            <Boton type="submit" disabled={enCurso}>
-              {enCurso ? 'Creando…' : 'Crear institución'}
-            </Boton>
           </div>
         </form>
       </PanelLateral>
@@ -432,14 +416,14 @@ export default function PanelGcc({
             <dl className="grid grid-cols-2 gap-3 text-[13px]">
               <Dato et="Acceso" v={ACCESO[detalle.acceso].texto} />
               <Dato et="Estado" v={detalle.estado} />
-              <Dato et="Escritura" v={detalle.soloLectura ? 'Escaparate (solo lectura)' : 'Normal'} />
-              <Dato et="Mensualidad" v={detalle.cortesia ? 'Acceso del grupo: no paga, sin topes' : 'Por suscripción'} />
+              <Dato et="Escritura" v={detalle.soloLectura ? 'Escaparate' : 'Normal'} />
+              <Dato et="Mensualidad" v={detalle.cortesia ? 'Del grupo' : 'Suscripción'} />
               <Dato et="Plan" v={detalle.plan?.nombre ?? '—'} />
               <Dato
                 et="Pagado hasta"
                 v={
                   detalle.pagadoHasta
-                    ? format(new Date(detalle.pagadoHasta), 'd MMM yyyy', { locale: es })
+                    ? fechaLarga(detalle.pagadoHasta, 'UTC')
                     : '—'
                 }
               />
@@ -449,7 +433,7 @@ export default function PanelGcc({
 
             <section>
               <h3 className="mb-2 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wide text-tenue">
-                <CreditCard className="h-4 w-4" /> Registrar el cobro de un mes
+                <CreditCard className="h-4 w-4" /> Registrar un cobro
               </h3>
               <form action={(d) => conResultado(() => registrarPago(d))} className="space-y-3">
                 <input type="hidden" name="inquilinoId" value={detalle.id} />
@@ -477,9 +461,11 @@ export default function PanelGcc({
                 <Campo etiqueta="Referencia">
                   <Entrada name="referencia" placeholder="Nº de transferencia, comprobante…" />
                 </Campo>
-                <Boton type="submit" disabled={enCurso}>
-                  {enCurso ? 'Registrando…' : 'Registrar pago'}
-                </Boton>
+                <div className="flex justify-end">
+                  <Boton type="submit" icono={Save} disabled={enCurso}>
+                    {enCurso ? 'Registrando…' : 'Registrar pago'}
+                  </Boton>
+                </div>
               </form>
             </section>
 
@@ -488,7 +474,7 @@ export default function PanelGcc({
                 <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-tenue">
                   Últimos cobros
                 </h3>
-                <ul className="divide-y divide-[var(--color-borde)] rounded border border-borde">
+                <ul className="divide-y divide-borde rounded border border-borde">
                   {detalle.pagos.map((p) => (
                     <li key={p.periodo} className="flex items-center gap-3 px-3 py-2 text-[13px]">
                       <span className="font-mono">{p.periodo}</span>
@@ -525,7 +511,7 @@ export default function PanelGcc({
                   disabled={enCurso}
                   onClick={() => conResultado(() => restablecerClaveAdmin(detalle.id))}
                 >
-                  Contraseña del administrador
+                  Nueva contraseña
                 </Boton>
                 <Boton
                   variante="secundario"
@@ -559,7 +545,7 @@ export default function PanelGcc({
                   <Boton
                     variante="secundario"
                     icono={ShieldOff}
-                    className="text-error"
+                    className="text-error hover:text-error"
                     disabled={enCurso}
                     onClick={() => conResultado(() => cambiarEstadoInquilino(detalle.id, 'SUSPENDIDO'))}
                   >
@@ -567,7 +553,6 @@ export default function PanelGcc({
                   </Boton>
                 )}
               </div>
-              {error && <Aviso texto={error} />}
             </section>
           </div>
         )}
@@ -578,10 +563,16 @@ export default function PanelGcc({
         abierto={planEdit !== null}
         alCerrar={cerrar}
         titulo={planEdit === 'nuevo' ? 'Nuevo plan' : 'Editar plan'}
-        descripcion="Un tope vacío significa «sin límite»."
+        pie={
+          <PieAcciones>
+            <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>Cancelar</Boton>
+            <Boton form="form-plan" type="submit" icono={Save} disabled={enCurso}>{enCurso ? 'Guardando…' : 'Guardar'}</Boton>
+          </PieAcciones>
+        }
       >
         {planEdit !== null && (
           <form
+            id="form-plan"
             action={(d) =>
               conResultado(() => guardarPlan(planEdit === 'nuevo' ? null : planEdit.id, d))
             }
@@ -609,7 +600,7 @@ export default function PanelGcc({
                 defaultValue={planEdit === 'nuevo' ? 0 : planEdit.precioMensual}
               />
             </Campo>
-            <Campo etiqueta="Meses de histórico que conserva (vacío = sin límite)">
+            <Campo etiqueta="Meses de histórico">
               <Entrada
                 name="mesesRetencion"
                 type="number"
@@ -632,7 +623,7 @@ export default function PanelGcc({
                   defaultValue={planEdit === 'nuevo' ? '' : planEdit.maxUsuarios ?? ''}
                 />
               </Campo>
-              <Campo etiqueta="Máx. planificaciones semanales por semana">
+              <Campo etiqueta="Generaciones por semana">
                 <Entrada
                   name="maxGeneracionesSemana"
                   type="number"
@@ -642,10 +633,11 @@ export default function PanelGcc({
                 />
               </Campo>
             </div>
-            <Campo etiqueta="Características (una por línea)">
+            <Campo etiqueta="Características">
               <AreaTexto
                 name="caracteristicas"
                 rows={5}
+                placeholder="Una por línea"
                 defaultValue={planEdit === 'nuevo' ? '' : planEdit.caracteristicas.join('\n')}
               />
             </Campo>
@@ -659,15 +651,6 @@ export default function PanelGcc({
               />
               Plan activo
             </label>
-            {error && <Aviso texto={error} />}
-            <div className="flex justify-end gap-2 border-t border-borde pt-4">
-              <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>
-                Cancelar
-              </Boton>
-              <Boton type="submit" disabled={enCurso}>
-                {enCurso ? 'Guardando…' : 'Guardar plan'}
-              </Boton>
-            </div>
           </form>
         )}
       </PanelLateral>
@@ -675,19 +658,10 @@ export default function PanelGcc({
   );
 }
 
+/** Cajita de dato, la de Automatizaciones. */
 const Dato = ({ et, v }: { et: string; v: string }) => (
-  <div>
-    <dt className="text-[11px] uppercase tracking-wide text-tenue">{et}</dt>
-    <dd className="font-semibold">{v}</dd>
+  <div className="min-w-0 rounded border border-borde bg-realce px-3 py-2">
+    <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-tenue">{et}</dt>
+    <dd className="truncate text-[13px] font-semibold">{v}</dd>
   </div>
-);
-
-const Aviso = ({ texto }: { texto: string }) => (
-  <p
-    role="alert"
-    className="flex items-start gap-2 rounded border border-borde bg-error-suave px-3 py-2 text-[12px] text-error"
-  >
-    <AlertCircle className="mt-px h-4 w-4 shrink-0" />
-    {texto}
-  </p>
 );

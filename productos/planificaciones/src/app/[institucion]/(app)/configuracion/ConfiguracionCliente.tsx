@@ -1,19 +1,33 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Palette, CreditCard, Upload, FileText } from 'lucide-react';
+import { Building2, Users, CreditCard, Upload, Trash2, Save, UserPlus, ImageOff } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, Campo, Entrada, Selector, Tarjeta, RailFiltro, EstadoVacio } from '@/componentes/ui';
-import { Aviso } from '@/componentes/campos';
+import { Boton, BotonIcono, Campo, Confirmar, Entrada, Selector, Tarjeta, EstadoVacio, Secciones, useSeccion, type OpcionRail } from '@/componentes/ui';
 import { LogoNegocio } from '@/componentes/Marca';
-import { ACENTO_GCC, tokensDeMarca } from '@/lib/marca';
-import { dinero } from '@/lib/formato';
-import { guardarMarca, subirLogo } from '@/acciones/configuracion';
-import { cn } from '@/lib/utils';
+import { dinero, fechaLarga } from '@/lib/formato';
+import { subirLogo, quitarLogo } from '@/acciones/configuracion';
+import { guardarNegocio } from '@/acciones/negocio';
+import { COLORES_FORMATO } from '@/plantillas/pud/documento';
+import SeccionUsuarios, { type UsuarioVista, type Cupo } from './SeccionUsuarios';
 
-type Marca = { nombre: string; colorAcento: string; tema: 'CLARO' | 'OSCURO'; logoUrl: string | null; plantillaPorDefecto: string };
+export type NegocioVista = {
+  nombre: string;
+  logoUrl: string | null;
+  plantillaPorDefecto: string;
+  contactoNombre: string | null;
+  contactoEmail: string | null;
+  contactoTelefono: string | null;
+  cabeceraLinea1: string | null;
+  cabeceraLinea2: string | null;
+  cabeceraLinea3: string | null;
+  anioLectivo: string | null;
+  logoInstitucionUrl: string | null;
+  logoOrganizacionUrl: string | null;
+  logoOpcionalUrl: string | null;
+};
 type PlantillaVista = { clave: string; nombre: string; descripcion: string };
 type Plan = {
   nombre: string;
@@ -26,204 +40,297 @@ type Plan = {
   caracteristicas: string[];
 };
 
-type Seccion = 'marca' | 'suscripcion';
+type Seccion = 'negocio' | 'usuarios' | 'suscripcion';
 
-const SUGERIDOS = [ACENTO_GCC, '#C9952C', '#0F6CBD', '#0F7B0F', '#B4009E', '#C4314B', '#1B1A19'];
+const SECCIONES: OpcionRail[] = [
+  { valor: 'negocio', etiqueta: 'Negocio', icono: Building2 },
+  { valor: 'usuarios', etiqueta: 'Usuarios', icono: Users },
+  { valor: 'suscripcion', etiqueta: 'Suscripción', icono: CreditCard },
+];
 
+/**
+ * CONFIGURACIÓN CON SECCIONES, como Automatizaciones (Fernando, 2026-11-08): raíl a la izquierda
+ * y la sección en un panel que llega hasta abajo; en el teléfono, portada de secciones y la
+ * sección en `?seccion=`. Los «Guardar» viven al pie de su sección en escritorio y bajan a la
+ * barra de abajo en el teléfono, unidos a su formulario con `form=`.
+ */
 export default function ConfiguracionCliente({
   slug,
-  marca,
+  negocio,
   plantillas,
+  usuarios,
   plan,
   cortesia,
-  hayCloudinary,
 }: {
   slug: string;
-  marca: Marca;
+  negocio: NegocioVista;
   plantillas: PlantillaVista[];
+  usuarios: { lista: UsuarioVista[]; cupo: Cupo };
   plan: Plan | null;
   cortesia: boolean;
-  hayCloudinary: boolean;
 }) {
-  const [seccion, setSeccion] = useState<Seccion>('marca');
+  const s = useSeccion(SECCIONES);
+  const seccion = s.activo as Seccion;
+  const [crearCuenta, setCrearCuenta] = useState(false);
+  const sinSitio = usuarios.cupo.quedan !== null && usuarios.cupo.quedan <= 0;
+  const guardarTelefono =
+    s.enUrl && seccion === 'negocio' ? <Boton form="form-negocio" type="submit" icono={Save}>Guardar</Boton>
+    : s.enUrl && seccion === 'usuarios' ? <Boton icono={UserPlus} disabled={sinSitio} onClick={() => setCrearCuenta(true)}>Nueva cuenta</Boton>
+    : undefined;
+
   return (
-    <>
-      <CabeceraPagina titulo="Configuración" descripcion="La marca de la institución, la plantilla por defecto y la suscripción" />
-      <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
-        <RailFiltro
-          opciones={[
-            { valor: 'marca', etiqueta: 'Marca y plantilla', icono: Palette },
-            { valor: 'suscripcion', etiqueta: 'Suscripción', icono: CreditCard },
-          ]}
-          activo={seccion}
-          alElegir={(v) => setSeccion(v as Seccion)}
-        />
-        <div className="min-w-0 flex-1">
-          {seccion === 'marca' && <SeccionMarca slug={slug} marca={marca} plantillas={plantillas} hayCloudinary={hayCloudinary} />}
-          {seccion === 'suscripcion' && <SeccionSuscripcion plan={plan} cortesia={cortesia} />}
-        </div>
-      </div>
-    </>
+    <div className="flex h-full min-h-0 flex-col">
+      <CabeceraPagina
+        titulo="Configuración"
+        descripcion="Los datos de la institución, quién entra y la suscripción"
+        tituloTelefono={s.enUrl ? s.etiqueta : undefined}
+        volverTelefono={s.enUrl ? { href: s.hrefPortada, etiqueta: 'Volver a Configuración' } : undefined}
+        accionesTelefono={guardarTelefono}
+      />
+      <Secciones opciones={SECCIONES} seccion={s}>
+        {seccion === 'negocio' && <SeccionNegocio slug={slug} negocio={negocio} plantillas={plantillas} />}
+        {seccion === 'usuarios' && <SeccionUsuarios slug={slug} usuarios={usuarios.lista} cupo={usuarios.cupo} abierto={crearCuenta} setAbierto={setCrearCuenta} />}
+        {seccion === 'suscripcion' && <SeccionSuscripcion plan={plan} cortesia={cortesia} />}
+      </Secciones>
+    </div>
   );
 }
 
-// ── Marca ───────────────────────────────────────────────────────────────────
-function SeccionMarca({ slug, marca, plantillas, hayCloudinary }: { slug: string; marca: Marca; plantillas: PlantillaVista[]; hayCloudinary: boolean }) {
+// ── Negocio ──────────────────────────────────────────────────────────────────
+const LOGOS: { clave: 'logoInstitucionUrl' | 'logoOrganizacionUrl' | 'logoOpcionalUrl'; etiqueta: string; pista: string }[] = [
+  { clave: 'logoInstitucionUrl', etiqueta: 'Institución', pista: 'El primero, a la izquierda de la cabecera' },
+  { clave: 'logoOrganizacionUrl', etiqueta: 'Organización', pista: 'El segundo: la red o el grupo al que pertenece' },
+  { clave: 'logoOpcionalUrl', etiqueta: 'Tercero', pista: 'Opcional: solo se ve si lo agregas' },
+];
+
+/**
+ * NEGOCIO = el antiguo módulo «Negocio» + la antigua sección «Marca» (2026-11-08). Es el mismo
+ * inquilino: nombre, logo de la aplicación (SOLO como archivo), plantilla por defecto, contacto y
+ * lo que lleva impreso el formato (tres líneas de cabecera, año lectivo y tres logos), con la
+ * vista previa de esa cabecera. Sin color ni tema: el producto tiene uno solo.
+ *
+ * ⚠️ La vista previa es el DOCUMENTO, no la interfaz: lleva los colores del formato original
+ * (`COLORES_FORMATO`) sobre papel blanco, también en el tema oscuro.
+ */
+function SeccionNegocio({ slug, negocio, plantillas }: { slug: string; negocio: NegocioVista; plantillas: PlantillaVista[] }) {
   const router = useRouter();
-  const [color, setColor] = useState(marca.colorAcento);
-  const [tema, setTema] = useState<'CLARO' | 'OSCURO'>(marca.tema);
-  const [logoUrl, setLogoUrl] = useState(marca.logoUrl ?? '');
-  const [nombre, setNombre] = useState(marca.nombre);
-  const [error, setError] = useState<string | null>(null);
   const [enCurso, arranca] = useTransition();
+  const [quitarApp, setQuitarApp] = useState(false);
+  const archivoApp = useRef<HTMLInputElement>(null);
+  const archivos = useRef<Record<string, HTMLInputElement | null>>({});
+  const [d, setD] = useState(negocio);
+  const [logos, setLogos] = useState<Record<string, string | null>>({
+    logoInstitucionUrl: negocio.logoInstitucionUrl,
+    logoOrganizacionUrl: negocio.logoOrganizacionUrl,
+    logoOpcionalUrl: negocio.logoOpcionalUrl,
+  });
+  const [quitar, setQuitar] = useState<Record<string, boolean>>({});
+  const C = COLORES_FORMATO;
+  const cambia = (k: keyof NegocioVista) => (e: React.ChangeEvent<HTMLInputElement>) => setD({ ...d, [k]: e.target.value });
+  const plantilla = plantillas.find((t) => t.clave === negocio.plantillaPorDefecto);
+
+  function subir(f: File) {
+    const fd = new FormData();
+    fd.set('archivo', f);
+    arranca(async () => {
+      const r = await subirLogo(slug, fd);
+      if (!r.ok) return void toast.error(r.error);
+      toast.success(r.mensaje ?? 'Logo subido.');
+      router.refresh();
+    });
+  }
 
   return (
-    <Tarjeta className="p-5">
-      <h2 className="text-[14px] font-semibold">Marca de la institución</h2>
-      <p className="mt-0.5 text-[12px] text-tenue">
-        El nombre, el logo, el color y el tema que ven los docentes dentro de la aplicación, y la plantilla con la que nacen las planificaciones.
-      </p>
+    <div className="flex flex-1 flex-col p-4 sm:p-5">
       <form
-        action={(d) =>
+        id="form-negocio"
+        action={(fd) =>
           arranca(async () => {
-            setError(null);
-            const r = await guardarMarca(slug, d);
-            if (!r.ok) return setError(r.error);
-            toast.success('Marca actualizada');
+            for (const k of Object.keys(quitar)) if (quitar[k]) fd.set(`${k}Quitar`, 'true');
+            const r = await guardarNegocio(slug, fd);
+            if (!r.ok) return void toast.error(r.error);
+            toast.success('Guardado.');
+            setQuitar({});
+            for (const i of Object.values(archivos.current)) if (i) i.value = '';
             router.refresh();
           })
         }
-        className="mt-5 space-y-4"
+        className="space-y-5"
       >
-        <Campo etiqueta="Nombre de la institución" requerido>
-          <Entrada name="nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} required />
-        </Campo>
-        <Campo etiqueta="Plantilla por defecto de las planificaciones nuevas" requerido>
-          <Selector name="plantillaPorDefecto" defaultValue={marca.plantillaPorDefecto}>
-            {plantillas.map((t) => (
-              <option key={t.clave} value={t.clave}>{t.nombre}</option>
-            ))}
-          </Selector>
-          <p className="mt-1 flex items-start gap-1.5 text-[11px] text-tenue"><FileText className="mt-px h-3.5 w-3.5 shrink-0" />{plantillas.find((t) => t.clave === marca.plantillaPorDefecto)?.descripcion ?? ''} El diseño del formato y los datos de la institución que lleva impresos los configura el Grupo Corazones Cruzados.</p>
-        </Campo>
-
-        <Campo etiqueta="Logo">
-          <div className="flex flex-wrap items-center gap-3">
-            <LogoNegocio nombre={nombre} logoUrl={logoUrl || null} tamano={48} />
-            <Entrada
-              name="logoUrl"
-              value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="https://…  (o sube una imagen)"
-              className="min-w-0 flex-1"
-            />
-            {hayCloudinary && (
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (!f) return;
-                    arranca(async () => {
-                      const d = new FormData();
-                      d.set('archivo', f);
-                      const r = await subirLogo(slug, d);
-                      if (!r.ok) {
-                        setError(r.error);
-                        return;
-                      }
-                      setLogoUrl(r.url!);
-                      toast.success('Logo subido. No olvides guardar.');
-                    });
-                  }}
-                />
-                <span className="inline-flex h-8 items-center gap-2 rounded border border-borde bg-tarjeta px-3 text-[13px] font-semibold hover:bg-realce">
-                  <Upload className="h-4 w-4" /> Subir
-                </span>
-              </label>
-            )}
-          </div>
-        </Campo>
-
-        <Campo etiqueta="Color de la marca" requerido>
-          <div className="flex flex-wrap items-center gap-2">
-            <input
-              type="color"
-              value={color}
-              onChange={(e) => setColor(e.target.value.toUpperCase())}
-              className="h-9 w-12 cursor-pointer rounded border border-borde bg-tarjeta p-1"
-              aria-label="Elegir color"
-            />
-            <Entrada name="colorAcento" value={color} onChange={(e) => setColor(e.target.value.toUpperCase())} className="w-32 font-mono" />
-            <div className="flex gap-1.5">
-              {SUGERIDOS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  title={c === ACENTO_GCC ? 'Violeta del grupo' : c}
-                  className={cn(
-                    'h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 foco-visible',
-                    color.toUpperCase() === c.toUpperCase() ? 'border-texto' : 'border-borde',
-                  )}
-                  style={{ background: c }}
-                />
-              ))}
-            </div>
-          </div>
-        </Campo>
-
-        <Campo etiqueta="Tema">
-          <div className="flex gap-2">
-            {(['CLARO', 'OSCURO'] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTema(t)}
-                className={cn(
-                  'h-9 flex-1 rounded border text-[13px] font-semibold transition-colors foco-visible',
-                  tema === t ? 'border-acento bg-acento-suave text-acento' : 'border-borde hover:bg-realce',
-                )}
-              >
-                {t === 'CLARO' ? 'Claro' : 'Oscuro'}
-              </button>
-            ))}
-            <input type="hidden" name="tema" value={tema} />
-          </div>
-        </Campo>
-
-        <div>
-          <p className="mb-1 text-[12px] font-semibold">Vista previa</p>
-          <div
-            className={cn('rounded-md border border-borde p-4', tema === 'OSCURO' && 'oscuro')}
-            style={{ ...tokensDeMarca(color, tema === 'OSCURO'), background: 'var(--color-fondo)' } as React.CSSProperties}
-          >
-            <div className="flex items-center gap-3">
-              <LogoNegocio nombre={nombre || 'N'} logoUrl={logoUrl || null} tamano={36} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[13px] font-semibold" style={{ color: 'var(--color-texto)' }}>
-                  {nombre || 'Tu institución'}
-                </p>
-                <p className="text-[11px]" style={{ color: 'var(--color-tenue)' }}>Planificación de Clases</p>
-              </div>
-              <span
-                className="rounded px-3 py-1.5 text-[12px] font-semibold"
-                style={{ background: 'var(--color-acento)', color: 'var(--color-acento-contraste)' }}
-              >
-                Nueva planificación
-              </span>
-            </div>
-          </div>
+        {/* ── El logo de la aplicación: se sube al instante, fuera del «Guardar» ── */}
+        <div className="flex items-center gap-3">
+          <LogoNegocio nombre={d.nombre} logoUrl={negocio.logoUrl} tamano={52} />
+          <input
+            ref={archivoApp}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) subir(f); }}
+          />
+          <Boton variante="secundario" type="button" icono={Upload} onClick={() => archivoApp.current?.click()} disabled={enCurso}>
+            {negocio.logoUrl ? 'Cambiar logo' : 'Subir logo'}
+          </Boton>
+          {negocio.logoUrl && <BotonIcono type="button" icono={Trash2} titulo="Quitar el logo" onClick={() => setQuitarApp(true)} disabled={enCurso} />}
         </div>
 
-        {error && <Aviso texto={error} />}
-        <div className="flex justify-end border-t border-borde pt-4">
-          <Boton type="submit" disabled={enCurso}>{enCurso ? 'Guardando…' : 'Guardar marca'}</Boton>
+        <Grupo titulo="Institución">
+          <Campo etiqueta="Nombre" requerido>
+            <Entrada name="nombre" required value={d.nombre} onChange={cambia('nombre')} />
+          </Campo>
+          <Campo etiqueta="Plantilla por defecto" requerido>
+            <Selector name="plantillaPorDefecto" defaultValue={negocio.plantillaPorDefecto} title={plantilla?.descripcion}>
+              {plantillas.map((t) => (
+                <option key={t.clave} value={t.clave}>{t.nombre}</option>
+              ))}
+            </Selector>
+          </Campo>
+        </Grupo>
+
+        <Grupo titulo="Contacto">
+          <Campo etiqueta="Persona de contacto">
+            <Entrada name="contactoNombre" defaultValue={d.contactoNombre ?? ''} autoComplete="name" />
+          </Campo>
+          <Campo etiqueta="Correo">
+            <Entrada name="contactoEmail" type="email" defaultValue={d.contactoEmail ?? ''} autoComplete="email" />
+          </Campo>
+          <Campo etiqueta="Teléfono">
+            <Entrada name="contactoTelefono" type="tel" defaultValue={d.contactoTelefono ?? ''} autoComplete="tel" />
+          </Campo>
+        </Grupo>
+
+        <Grupo titulo="Cabecera del formato">
+          <Campo etiqueta="Línea 1">
+            <Entrada name="cabeceraLinea1" value={d.cabeceraLinea1 ?? ''} onChange={cambia('cabeceraLinea1')} placeholder="Unidad Educativa Particular" title="Tipo de institución" />
+          </Campo>
+          <Campo etiqueta="Línea 2">
+            <Entrada name="cabeceraLinea2" value={d.cabeceraLinea2 ?? ''} onChange={cambia('cabeceraLinea2')} placeholder="“Nombre de la institución”" title="El nombre: va en grande" />
+          </Campo>
+          <Campo etiqueta="Línea 3">
+            <Entrada name="cabeceraLinea3" value={d.cabeceraLinea3 ?? ''} onChange={cambia('cabeceraLinea3')} placeholder="Red Educativa …" title="Red u organización: va en color" />
+          </Campo>
+          <Campo etiqueta="Año lectivo">
+            <Entrada name="anioLectivo" value={d.anioLectivo ?? ''} onChange={cambia('anioLectivo')} placeholder="2026 - 2027" />
+          </Campo>
+        </Grupo>
+
+        <Grupo titulo="Logos del formato">
+          {LOGOS.map((l) => {
+            const actual = quitar[l.clave] ? null : logos[l.clave];
+            return (
+              <Campo key={l.clave} etiqueta={l.etiqueta}>
+                <div className="flex items-center gap-2" title={`${l.pista}. PNG o JPG, hasta 600 KB.`}>
+                  <div className="flex h-14 w-[120px] shrink-0 items-center justify-center rounded border border-borde bg-realce">
+                    {actual ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={actual} alt="" className="h-12 w-auto max-w-[112px] object-contain" />
+                    ) : (
+                      <ImageOff className="h-4 w-4 text-tenue" />
+                    )}
+                  </div>
+                  {/* El archivo viaja con el formulario (`guardarNegocio`); se ve en el acto. */}
+                  <input
+                    ref={(i) => { archivos.current[l.clave] = i; }}
+                    type="file"
+                    name={`${l.clave}Archivo`}
+                    accept="image/png,image/jpeg"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      setQuitar({ ...quitar, [l.clave]: false });
+                      const lector = new FileReader();
+                      lector.onload = () => setLogos((v) => ({ ...v, [l.clave]: String(lector.result) }));
+                      lector.readAsDataURL(f);
+                    }}
+                  />
+                  <Boton type="button" variante="secundario" tamano="sm" icono={Upload} onClick={() => archivos.current[l.clave]?.click()} disabled={enCurso}>
+                    {actual ? 'Cambiar' : 'Subir'}
+                  </Boton>
+                  {actual && (
+                    <BotonIcono
+                      type="button"
+                      icono={Trash2}
+                      titulo="Quitar"
+                      onClick={() => {
+                        const i = archivos.current[l.clave];
+                        if (i) i.value = '';
+                        setQuitar({ ...quitar, [l.clave]: true });
+                      }}
+                    />
+                  )}
+                </div>
+              </Campo>
+            );
+          })}
+        </Grupo>
+
+        {/* Cómo queda la cabecera del formato, con lo que se está escribiendo. */}
+        <fieldset className="border-t border-borde pt-4">
+          <legend className="pr-2 text-[11px] font-semibold uppercase tracking-wide text-tenue">Vista previa</legend>
+          <div className="max-w-3xl bg-white p-3 text-[10px] text-black shadow" style={{ fontFamily: 'Helvetica, Arial, sans-serif' }}>
+            <div className="flex border" style={{ borderColor: C.borde }}>
+              <div className="flex w-[24%] items-center justify-center gap-1.5 border-r px-1.5 py-1.5" style={{ borderColor: C.borde }}>
+                {LOGOS.map((l) => (quitar[l.clave] ? null : logos[l.clave])).filter(Boolean).map((src, i) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={i} src={src!} alt="" className="h-10 w-auto max-w-[44px] object-contain" />
+                ))}
+              </div>
+              <div className="flex flex-1 flex-col items-center justify-center py-1.5 text-center">
+                {d.cabeceraLinea1 || d.cabeceraLinea2 || d.cabeceraLinea3 ? (
+                  <>
+                    {d.cabeceraLinea1 && <p className="text-[11px]" style={{ color: C.gris }}>{d.cabeceraLinea1}</p>}
+                    {d.cabeceraLinea2 && <p className="text-[15px] font-bold" style={{ color: C.gris }}>{d.cabeceraLinea2}</p>}
+                    {d.cabeceraLinea3 && <p className="text-[12px] font-semibold" style={{ color: C.acentoCabecera }}>{d.cabeceraLinea3}</p>}
+                  </>
+                ) : (
+                  <p className="text-[15px] font-bold" style={{ color: C.gris }}>{d.nombre}</p>
+                )}
+              </div>
+              <div className="w-[16%] border-l text-center" style={{ borderColor: C.borde }}>
+                <p className="py-1 text-[10px] font-bold" style={{ background: C.etiqueta }}>Año Lectivo</p>
+                <p className="py-1.5 text-[10px]">{d.anioLectivo}</p>
+              </div>
+            </div>
+            {/* Blanco sobre la barra roja: es el formato impreso, no la interfaz. */}
+            <div className="mt-1.5 py-1 text-center text-[12px] font-bold" style={{ background: C.barra, color: '#FFFFFF' }}>PLAN UNIDAD DIDÁCTICA</div>
+          </div>
+        </fieldset>
+
+        <div className="hidden justify-end lg:flex">
+          <Boton type="submit" tamano="lg" icono={Save} disabled={enCurso}>
+            {enCurso ? 'Guardando…' : 'Guardar'}
+          </Boton>
         </div>
       </form>
-    </Tarjeta>
+
+      <Confirmar
+        abierto={quitarApp}
+        titulo="¿Quitar el logo?"
+        mensaje="En su lugar se verá la inicial de la institución."
+        textoAceptar="Quitar"
+        ocupado={enCurso}
+        alCerrar={() => setQuitarApp(false)}
+        alAceptar={() =>
+          arranca(async () => {
+            const r = await quitarLogo(slug);
+            if (!r.ok) return void toast.error(r.error);
+            setQuitarApp(false);
+            toast.success(r.mensaje ?? 'Quitado.');
+            router.refresh();
+          })
+        }
+      />
+    </div>
+  );
+}
+
+/** Un grupo de campos con su rótulo, en rejilla: se aprovecha el ancho. */
+function Grupo({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <fieldset className="border-t border-borde pt-4">
+      <legend className="pr-2 text-[11px] font-semibold uppercase tracking-wide text-tenue">{titulo}</legend>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{children}</div>
+    </fieldset>
   );
 }
 
@@ -231,51 +338,52 @@ function SeccionMarca({ slug, marca, plantillas, hayCloudinary }: { slug: string
 function SeccionSuscripcion({ plan, cortesia }: { plan: Plan | null; cortesia: boolean }) {
   if (cortesia)
     return (
-      <Tarjeta className="p-5">
-        <h2 className="text-[14px] font-semibold">Acceso del grupo</h2>
-        <p className="mt-1 text-[13px] text-tenue">Esta institución es la del Grupo Corazones Cruzados: el acceso es completo, sin mensualidad ni topes de cuentas o de planificaciones.</p>
-      </Tarjeta>
+      <div className="flex flex-1 flex-col p-4 sm:p-5">
+        <dl className="grid gap-3 sm:grid-cols-3">
+          <Dato titulo="Plan">Acceso del grupo</Dato>
+          <Dato titulo="Mensualidad">Sin mensualidad</Dato>
+          <Dato titulo="Topes">Sin topes</Dato>
+        </dl>
+      </div>
     );
-  if (!plan) return <Tarjeta><EstadoVacio icono={CreditCard} titulo="Sin suscripción registrada" /></Tarjeta>;
+  if (!plan)
+    return (
+      <div className="flex flex-1 flex-col justify-center">
+        <EstadoVacio icono={CreditCard} titulo="Sin suscripción registrada" />
+      </div>
+    );
   return (
-    <Tarjeta className="p-5">
-      <h2 className="text-[14px] font-semibold">Tu suscripción</h2>
-      <p className="mt-0.5 text-[12px] text-tenue">La gestiona el Grupo Corazones Cruzados. Aquí solo se consulta.</p>
-      <dl className="mt-5 grid gap-4 sm:grid-cols-3">
-        <div>
-          <dt className="text-[11px] uppercase tracking-wide text-tenue">Plan</dt>
-          <dd className="text-[14px] font-semibold">{plan.nombre}</dd>
-        </div>
-        <div>
-          <dt className="text-[11px] uppercase tracking-wide text-tenue">Mensualidad</dt>
-          <dd className="text-[14px] font-semibold">
-            {plan.precioMensual > 0 ? `${dinero(plan.precioMensual, plan.moneda)} / mes` : 'Por definir'}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-[11px] uppercase tracking-wide text-tenue">Pagado hasta</dt>
-          <dd className="text-[14px] font-semibold">
-            {plan.pagadoHasta
-              ? new Date(plan.pagadoHasta).toLocaleDateString('es-EC', { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' })
-              : '—'}
-          </dd>
-        </div>
+    <div className="flex flex-1 flex-col gap-4 p-4 sm:p-5">
+      <dl className="grid gap-3 sm:grid-cols-3">
+        <Dato titulo="Plan">{plan.nombre}</Dato>
+        <Dato titulo="Mensualidad">{plan.precioMensual > 0 ? `${dinero(plan.precioMensual, plan.moneda)} / mes` : 'Por definir'}</Dato>
+        <Dato titulo="Pagado hasta">{plan.pagadoHasta ? fechaLarga(plan.pagadoHasta, 'UTC') : '—'}</Dato>
+        <Dato titulo="Cuentas activas">{plan.maxUsuarios ?? 'Sin límite'}</Dato>
+        <Dato titulo="Generaciones por semana">{plan.maxGeneracionesSemana ?? 'Sin límite'}</Dato>
+        <Dato titulo="Histórico">{plan.mesesRetencion ? (plan.mesesRetencion === 1 ? '1 mes' : `${plan.mesesRetencion} meses`) : 'Sin límite'}</Dato>
       </dl>
-      <p className="mt-4 rounded border border-borde bg-acento-suave px-3 py-2 text-[12px] text-acento">
-        Topes del plan: <strong>{plan.maxUsuarios ?? 'sin límite de'}</strong> cuentas activas y{' '}
-        <strong>{plan.maxGeneracionesSemana ?? 'sin límite de'}</strong> planificaciones semanales generadas por semana natural, para toda la institución.
-        {plan.mesesRetencion ? ` Se conserva ${plan.mesesRetencion === 1 ? 'un mes' : `${plan.mesesRetencion} meses`} de histórico.` : ' Las planificaciones se conservan sin límite de tiempo.'}
-      </p>
       {plan.caracteristicas.length > 0 && (
-        <ul className="mt-4 space-y-1.5 border-t border-borde pt-4 text-[13px]">
-          {plan.caracteristicas.map((c) => (
-            <li key={c} className="flex items-start gap-2">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-acento" />
-              {c}
-            </li>
-          ))}
-        </ul>
+        <Tarjeta className="p-4">
+          <ul className="space-y-1.5 text-[13px]">
+            {plan.caracteristicas.map((c) => (
+              <li key={c} className="flex items-start gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-acento" />
+                {c}
+              </li>
+            ))}
+          </ul>
+        </Tarjeta>
       )}
-    </Tarjeta>
+    </div>
+  );
+}
+
+/** Cajita de dato, la misma de Automatizaciones (Configuración ▸ WhatsApp / Mi cuenta). */
+function Dato({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0 rounded border border-borde bg-realce px-3 py-2">
+      <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-tenue">{titulo}</dt>
+      <dd className="truncate text-[13px] font-semibold text-texto">{children}</dd>
+    </div>
   );
 }

@@ -66,29 +66,35 @@ export function inicioDeSemanaEn(zonaHoraria: string, ahora = new Date()): Date 
   return new Date(utc.getTime() - desfase);
 }
 
-/** «lunes 15 de septiembre de 2026», para las pantallas. */
+/*
+  FECHAS IGUALES EN EL SERVIDOR Y EN EL NAVEGADOR (2026-11-08, como Automatizaciones
+  `lib/formato.ts`). Estas se pintan también en componentes de cliente (la galería de semanas,
+  los campos): `toLocaleDateString` depende del ICU de cada lado y rompía la hidratación (#418).
+  Se arman a mano con las partes numéricas del día, que no varían. El texto es el mismo de antes.
+*/
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const DIAS_SEMANA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+const partesUtc = (d: Date) => ({ a: d.getUTCFullYear(), m: d.getUTCMonth(), d: d.getUTCDate(), s: d.getUTCDay() });
+const dos = (n: number) => String(n).padStart(2, '0');
+
+/** «lunes, 15 de septiembre de 2026», para las pantallas. */
 export function fechaLarga(dia: Dia) {
-  return aFechaSql(dia).toLocaleDateString('es-EC', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+  const p = partesUtc(aFechaSql(dia));
+  return `${DIAS_SEMANA[p.s]}, ${p.d} de ${MESES[p.m]} de ${p.a}`;
 }
 
 /** «26 de mayo», como escribe la docente las fechas del formato. */
 export function diaDeMes(dia: Dia | Date | null | undefined) {
   if (!dia) return '';
-  const d = typeof dia === 'string' ? aFechaSql(dia) : dia;
-  return d.toLocaleDateString('es-EC', { day: 'numeric', month: 'long', timeZone: 'UTC' });
+  const p = partesUtc(typeof dia === 'string' ? aFechaSql(dia) : dia);
+  return `${p.d} de ${MESES[p.m]}`;
 }
 
 /** «15/09/2026». */
 export function fechaCorta(dia: Dia | Date | null | undefined) {
   if (!dia) return '—';
-  const d = typeof dia === 'string' ? aFechaSql(dia) : dia;
-  return d.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+  const p = partesUtc(typeof dia === 'string' ? aFechaSql(dia) : dia);
+  return `${dos(p.d)}/${dos(p.m + 1)}/${p.a}`;
 }
 
 /** Un instante (creado_en) en la zona de la institución: «15/09/2026 14:30». */

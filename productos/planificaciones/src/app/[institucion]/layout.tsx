@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { prisma } from '@/lib/db';
-import { ACENTO_GCC, esHexValido } from '@/lib/marca';
+import { TEMA } from '@/lib/marca';
 import { conBase } from '@/lib/base';
 
 type Params = Promise<{ institucion: string }>;
@@ -8,11 +8,12 @@ type Params = Promise<{ institucion: string }>;
 async function marcaDe(institucion: string) {
   const inq = await prisma.inquilino.findUnique({
     where: { slug: institucion },
-    select: { nombre: true, colorAcento: true },
+    select: { nombre: true },
   });
   return {
     nombre: inq?.nombre ?? 'Planificación de Clases',
-    color: inq && esHexValido(inq.colorAcento) ? inq.colorAcento : ACENTO_GCC,
+    // El fondo del tema: la barra del teléfono se funde con la app (2026-11-08).
+    color: TEMA.fondo,
   };
 }
 
@@ -27,7 +28,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { nombre } = await marcaDe(institucion);
   return {
     manifest: conBase(`/${institucion}/manifest.webmanifest`),
-    appleWebApp: { capable: true, statusBarStyle: 'default', title: nombre },
+    appleWebApp: { capable: true, statusBarStyle: 'black', title: nombre },
     // Next emite `mobile-web-app-capable`; iOS sigue leyendo el suyo.
     other: { 'apple-mobile-web-app-capable': 'yes' },
   };

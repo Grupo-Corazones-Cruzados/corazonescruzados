@@ -102,12 +102,28 @@ export const Aviso = ({ texto, tono = 'error' }: { texto: string; tono?: 'error'
   </p>
 );
 
-/** Ficha de resumen: número grande con su título. */
-export const Cifra = ({ etiqueta, valor, destacado, pista }: { etiqueta: string; valor: React.ReactNode; destacado?: boolean; pista?: string }) => (
-  <div className="tarjeta p-4">
-    <p className="text-[11px] uppercase tracking-wide text-tenue">{etiqueta}</p>
-    <p className={cn('mt-1 text-[22px] font-semibold', destacado ? 'text-acento' : 'text-texto')}>{valor}</p>
-    {pista && <p className="text-[11px] text-tenue">{pista}</p>}
+/** Ficha de resumen: número grande con su título (la misma que el Panel de Automatizaciones). */
+export const Cifra = ({
+  etiqueta,
+  valor,
+  destacado,
+  pista,
+  icono: Icono,
+}: {
+  etiqueta: string;
+  valor: React.ReactNode;
+  destacado?: boolean;
+  /** Una línea pequeña debajo, para el matiz que no cabe en la cifra. */
+  pista?: string;
+  icono?: React.ComponentType<{ className?: string }>;
+}) => (
+  <div className="tarjeta p-3 sm:p-4">
+    <p className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-wide text-tenue sm:text-[11px]">
+      {Icono && <Icono className={cn('h-3.5 w-3.5 shrink-0', destacado ? 'text-aviso' : 'text-acento')} />}
+      <span className="truncate">{etiqueta}</span>
+    </p>
+    <p className={cn('mt-0.5 text-[19px] font-semibold tabular-nums leading-tight sm:text-[21px]', destacado ? 'text-aviso' : 'text-texto')}>{valor}</p>
+    {pista && <p className="mt-0.5 truncate text-[11px] text-tenue">{pista}</p>}
   </div>
 );
 

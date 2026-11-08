@@ -20,13 +20,13 @@ import {
   ChevronRight,
   ChevronLeft,
   ListChecks,
-  Plus as PlusIcon,
-  ImageOff,
   UserRound,
   GraduationCap,
+  Save,
+  Paperclip,
 } from 'lucide-react';
 import { AccionesTarjeta, CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, BotonIcono, BurbujaDetalles, Campo, Entrada, AreaTexto, Selector, Buscador, SelectorEstado, Tarjeta, Insignia, PanelLateral, Confirmar, EstadoVacio, type Tono } from '@/componentes/ui';
+import { Boton, BotonIcono, BurbujaDetalles, Campo, Entrada, AreaTexto, Selector, Buscador, SelectorEstado, Tarjeta, Insignia, PanelLateral, Confirmar, EstadoVacio, PieAcciones, type Tono } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { Dictado } from '@/componentes/Dictado';
 import { Adjuntos, type AdjuntoSubido } from '@/componentes/Adjuntos';
@@ -135,7 +135,6 @@ const TONO_ESTADO: Record<EstadoSemana, Tono> = { PENDIENTE: 'aviso', GENERANDO:
 export default function PlanificacionesCliente(p: Props) {
   const router = useRouter();
   const [enCurso, arranca] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const [panel, setPanel] = useState<'nueva' | 'importar' | 'configurar' | 'semana' | 'editar' | 'destrezas' | null>(p.abrirNueva ? 'nueva' : null);
   const [borrarPl, setBorrarPl] = useState<PlanificacionVista | null>(null);
   const [borrarSem, setBorrarSem] = useState<SemanaVista | null>(null);
@@ -190,18 +189,14 @@ export default function PlanificacionesCliente(p: Props) {
 
   const cerrar = () => {
     setPanel(null);
-    setError(null);
     if (p.abrirNueva) ir({ nueva: null });
   };
 
   const conResultado = (fn: () => Promise<{ ok: boolean; error?: string; id?: number }>, hecho: string, despues?: (id?: number) => void) =>
     arranca(async () => {
-      setError(null);
       const r = await fn();
-      if (!r.ok) {
-        setError(r.error ?? 'No se pudo completar la acción');
-        return;
-      }
+      // Avisos de una línea (regla de Automatizaciones): el fallo, en un toast; el panel sigue abierto.
+      if (!r.ok) return void toast.error(r.error ?? 'No se pudo completar la acción.');
       toast.success(hecho);
       setPanel(null);
       despues?.(r.id);
@@ -253,8 +248,8 @@ export default function PlanificacionesCliente(p: Props) {
         }
       />
 
-      {/* 85 px: la cabecera lleva la línea del cupo bajo el título. */}
-      <div className="flex flex-col gap-4 p-4 sm:p-6 xl:h-[calc(100vh-85px)] xl:flex-row xl:overflow-hidden">
+      {/* Alto completo: las columnas llegan hasta el pie y desplazan por dentro (2026-11-08). */}
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6 xl:min-h-0 xl:flex-row xl:overflow-hidden">
         {/* ── Columna 1: las planificaciones ─────────────────────────────── */}
         <Tarjeta className="flex min-h-0 flex-col xl:w-[300px] xl:shrink-0">
           {/* «Mías / De todos» es UN control selector, en la misma fila que el buscador; si no caben, el buscador baja. */}
@@ -271,15 +266,15 @@ export default function PlanificacionesCliente(p: Props) {
             />
             <Buscador valor={busqueda} alCambiar={setBusqueda} marcador="Materia, unidad o docente…" className="min-w-[10rem] flex-1" />
           </div>
-          <div className="desplaza min-h-0 flex-1 overflow-y-auto p-2">
-            {p.planificaciones.length === 0 && <EstadoVacio icono={BookOpenText} titulo={p.todas ? 'Nadie ha creado planificaciones' : 'Todavía no tienes planificaciones'} detalle="Crea la primera con «Nueva planificación»: materia, unidad y las fechas del PUD." />}
+          <div className="desplaza flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-1">
+            {p.planificaciones.length === 0 && <div className="flex flex-1 flex-col justify-center"><EstadoVacio icono={BookOpenText} titulo={p.todas ? 'Sin planificaciones' : 'Todavía no tienes planificaciones'} /></div>}
             {p.planificaciones.map((pl) => {
               const sel = actual?.id === pl.id;
               return (
                 <button
                   key={pl.id}
                   onClick={() => ir({ p: pl.id, s: null })}
-                  className={cn('mb-1 flex w-full items-start gap-2 rounded px-2.5 py-2 text-left transition-colors foco-visible', sel ? 'bg-acento-suave border-l-2 border-acento' : 'border-l-2 border-transparent hover:bg-realce')}
+                  className={cn('flex w-full items-start gap-2 rounded px-2.5 py-2 text-left transition-colors foco-visible', sel ? 'bg-acento-suave' : 'hover:bg-realce')}
                 >
                   <div className="min-w-0 flex-1">
                     <p className={cn('truncate text-[13px] font-semibold', sel ? 'text-acento' : 'text-texto')}>{pl.materia}</p>
@@ -291,7 +286,7 @@ export default function PlanificacionesCliente(p: Props) {
                       {p.todas && ` · ${pl.docente}`}
                     </p>
                   </div>
-                  {pl.importacionEstado === 'LEYENDO' ? <Loader2 className="mt-1 h-4 w-4 shrink-0 animate-spin text-aviso" /> : pl.importacionEstado === 'ERROR' ? <Insignia tono="error">Error</Insignia> : <ChevronRight className={cn('mt-1 h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-borde')} />}
+                  {pl.importacionEstado === 'LEYENDO' ? <Loader2 className="mt-1 h-4 w-4 shrink-0 animate-spin text-aviso" /> : pl.importacionEstado === 'ERROR' ? <Insignia tono="error">Error</Insignia> : <ChevronRight className={cn('mt-1 h-4 w-4 shrink-0', sel ? 'text-acento' : 'text-tenue')} />}
                 </button>
               );
             })}
@@ -301,7 +296,7 @@ export default function PlanificacionesCliente(p: Props) {
         {/* ── La planificación elegida: semanas en galería arriba, campos/vista previa abajo ── */}
         {!actual ? (
           <Tarjeta className="flex flex-1 items-center justify-center">
-            <EstadoVacio icono={BookOpenText} titulo="Elige una planificación" detalle="A la izquierda están las tuyas; cambia a «De todos» para ver las de tus compañeros." />
+            <EstadoVacio icono={BookOpenText} titulo="Elige una planificación" />
           </Tarjeta>
         ) : (
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4">
@@ -341,12 +336,12 @@ export default function PlanificacionesCliente(p: Props) {
               {actual.importacionEstado === 'LEYENDO' && (
                 <div className="flex items-center gap-2 border-b border-borde bg-aviso-suave px-3 py-2 text-[12px] text-texto">
                   <Loader2 className="h-4 w-4 shrink-0 animate-spin text-aviso" />
-                  El agente está leyendo «{actual.importacionArchivo}» y creando sus semanas. Suele tardar entre uno y dos minutos; esta pantalla se actualiza sola.
+                  Leyendo «{actual.importacionArchivo}». Esta pantalla se actualiza sola.
                 </div>
               )}
               {actual.importacionEstado === 'ERROR' && (
                 <div className="border-b border-borde px-3 py-2">
-                  <Aviso texto={`No se pudo importar «${actual.importacionArchivo}»: ${actual.importacionError ?? 'fallo desconocido'}. Elimina esta planificación y vuelve a intentarlo.`} />
+                  <Aviso texto={`No se pudo importar «${actual.importacionArchivo}»: ${actual.importacionError ?? 'fallo desconocido'}`} />
                 </div>
               )}
               {!actual.importacionEstado && actual.importacionError && (
@@ -358,7 +353,7 @@ export default function PlanificacionesCliente(p: Props) {
               <div ref={galeria} className="desplaza desplaza-siempre flex gap-2 overflow-x-auto p-2 pb-3">
                 {p.semanas.length === 0 && (
                   <div className="w-full">
-                    <EstadoVacio icono={CalendarDays} titulo="Sin semanas todavía" detalle="Cada semana es una línea del formato. Dicta o escribe lo que quieres y el agente la redacta." />
+                    <EstadoVacio icono={CalendarDays} titulo="Sin semanas" />
                   </div>
                 )}
                 {p.semanas.map((s) => {
@@ -370,7 +365,7 @@ export default function PlanificacionesCliente(p: Props) {
                         <p className={cn('text-[13px] font-semibold', sel ? 'text-acento' : 'text-texto')}>Semana {s.orden}</p>
                         {enMarcha ? <Loader2 className="h-4 w-4 shrink-0 animate-spin text-aviso" /> : <Insignia tono={TONO_ESTADO[s.estado]}>{ETIQUETA_ESTADO_SEMANA[s.estado]}</Insignia>}
                       </div>
-                      <p className="line-clamp-2 text-[11px] text-tenue">{s.tema?.split('\n')[0] || (enMarcha ? 'El agente está redactando…' : s.estado === 'ERROR' ? 'La redacción falló' : '—')}</p>
+                      <p className="line-clamp-2 text-[11px] text-tenue">{s.tema?.split('\n')[0] || (enMarcha ? 'Redactando…' : s.estado === 'ERROR' ? 'Falló' : '—')}</p>
                       <p className="text-[11px] text-tenue">{s.fechaInicio ? `${diaDeMes(s.fechaInicio)} – ${diaDeMes(s.fechaFin)}` : '\u00a0'}</p>
                     </button>
                   );
@@ -384,14 +379,14 @@ export default function PlanificacionesCliente(p: Props) {
                 <div className="flex rounded border border-borde p-0.5">
                   {(['campos', 'previa'] as const).map((v) => (
                     <button key={v} onClick={() => ir({ vista: v === 'previa' ? 'previa' : null })} className={cn('rounded px-3 py-1 text-[12px] font-semibold transition-colors foco-visible', p.vista === v ? 'bg-acento text-acento-contraste' : 'text-tenue hover:text-texto')}>
-                      {v === 'campos' ? 'Campos generados' : 'Vista previa'}
+                      {v === 'campos' ? 'Campos' : 'Vista previa'}
                     </button>
                   ))}
                 </div>
                 {p.vista === 'campos' && semana && semana.estado === 'LISTA' && puedo && (
                   <AccionesTarjeta acciones={[
                     { etiqueta: 'Corregir', icono: Pencil, alPulsar: () => setPanel('editar') },
-                    { etiqueta: 'Regenerar', icono: RefreshCw, deshabilitado: enCurso || sinCupo, titulo: sinCupo ? 'Sin cupo esta semana' : 'Volver a pedirla al agente (cuenta contra el tope)', alPulsar: () => conResultado(() => regenerarSemana(p.slug, semana.id), 'El agente vuelve a redactar la semana') },
+                    { etiqueta: 'Regenerar', icono: RefreshCw, deshabilitado: enCurso || sinCupo, titulo: sinCupo ? 'Sin cupo esta semana' : 'Volver a pedirla al agente (cuenta contra el tope)', alPulsar: () => conResultado(() => regenerarSemana(p.slug, semana.id), 'Redactando de nuevo.') },
                   ]} />
                 )}
               </div>
@@ -399,9 +394,9 @@ export default function PlanificacionesCliente(p: Props) {
                 {p.vista === 'previa' ? (
                   p.vistaPrevia
                 ) : !semana ? (
-                  <EstadoVacio icono={CalendarDays} titulo="Elige una semana" detalle="O crea la primera con «Nueva»." />
+                  <EstadoVacio icono={CalendarDays} titulo="Elige una semana" />
                 ) : (
-                  <CamposSemana semana={semana} slug={p.slug} puedo={puedo} sinCupo={sinCupo} enCurso={enCurso} faltanAjustes={semana.estado === 'LISTA' ? Math.max(0, p.estudiantesConCondicion - semana.ajustes.length) : 0} alCompletarAjustes={() => conResultado(async () => { const r = await completarAjustes(p.slug, semana.id); return r.ok ? { ok: true } : r; }, 'Ajustes razonables completados')} alReintentar={() => conResultado(() => regenerarSemana(p.slug, semana.id), 'El agente vuelve a intentarlo')} alBorrar={() => setBorrarSem(semana)} />
+                  <CamposSemana semana={semana} slug={p.slug} puedo={puedo} sinCupo={sinCupo} enCurso={enCurso} faltanAjustes={semana.estado === 'LISTA' ? Math.max(0, p.estudiantesConCondicion - semana.ajustes.length) : 0} alCompletarAjustes={() => conResultado(async () => { const r = await completarAjustes(p.slug, semana.id); return r.ok ? { ok: true } : r; }, 'Ajustes completados.')} alReintentar={() => conResultado(() => regenerarSemana(p.slug, semana.id), 'Redactando de nuevo.')} alBorrar={() => setBorrarSem(semana)} />
                 )}
               </div>
             </Tarjeta>
@@ -410,15 +405,27 @@ export default function PlanificacionesCliente(p: Props) {
       </div>
 
       {/* ── Nueva planificación ───────────────────────────────────────────── */}
-      <PanelLateral abierto={panel === 'nueva'} alCerrar={cerrar} titulo="Nueva planificación" descripcion="La cabecera del plan de unidad. Después, semana a semana, el agente redacta cada línea." ancho="lg">
-        <FormularioPlanificacion materiasDocente={p.materiasDocente} materias={p.materias} error={error} enCurso={enCurso} alCancelar={cerrar} textoEnviar="Continuar" alEnviar={(d) => conResultado(() => crearPlanificacion(p.slug, d), 'Planificación creada', (id) => ir({ p: id ?? null, s: null, nueva: null, quien: null }))} />
+      <PanelLateral
+        abierto={panel === 'nueva'}
+        alCerrar={cerrar}
+        titulo="Nueva planificación"
+        ancho="lg"
+        pie={<PiePanel form="form-planificacion" alCancelar={cerrar} enCurso={enCurso} texto="Continuar" ocupado="Creando…" deshabilitado={p.materiasDocente.length === 0} />}
+      >
+        <FormularioPlanificacion materiasDocente={p.materiasDocente} materias={p.materias} alEnviar={(d) => conResultado(() => crearPlanificacion(p.slug, d), 'Creada.', (id) => ir({ p: id ?? null, s: null, nueva: null, quien: null }))} />
       </PanelLateral>
 
       {/* ── Configurar ────────────────────────────────────────────────────── */}
-      <PanelLateral abierto={panel === 'configurar' && !!actual} alCerrar={cerrar} titulo="Configurar la planificación" descripcion="Plantilla, datos del formato y firmas de responsabilidad." ancho="lg">
+      <PanelLateral
+        abierto={panel === 'configurar' && !!actual}
+        alCerrar={cerrar}
+        titulo="Configurar la planificación"
+        ancho="lg"
+        pie={<PiePanel form="form-configurar" alCancelar={cerrar} enCurso={enCurso} />}
+      >
         {actual && (
-          <form action={(d) => conResultado(() => configurarPlanificacion(p.slug, actual.id, d), 'Planificación actualizada')} className="space-y-4">
-            <Campo etiqueta="Plantilla (formato + forma de redactar)" requerido>
+          <form id="form-configurar" action={(d) => conResultado(() => configurarPlanificacion(p.slug, actual.id, d), 'Guardado.')} className="space-y-4">
+            <Campo etiqueta="Plantilla" requerido>
               <Selector name="plantilla" defaultValue={actual.plantilla || p.plantillaPorDefecto}>
                 {p.plantillas.map((t) => (
                   <option key={t.clave} value={t.clave}>
@@ -446,11 +453,10 @@ export default function PlanificacionesCliente(p: Props) {
             <Campo etiqueta="Criterios de evaluación de la unidad">
               <AreaTexto name="criteriosEvaluacion" rows={3} defaultValue={actual.criteriosEvaluacion ?? ''} />
             </Campo>
-            <Campo etiqueta="Responsable del DECE (nombre)">
+            <Campo etiqueta="Responsable del DECE">
               <Entrada name="deceNombre" defaultValue={actual.deceNombre ?? ''} placeholder="Psic. …" />
             </Campo>
             <h3 className="border-t border-borde pt-3 text-[12px] font-semibold uppercase tracking-wide text-tenue">Firmas de responsabilidad</h3>
-            <p className="text-[12px] text-tenue">Van al final del formato con la fecha del día de la descarga; la firma se pone a mano sobre el papel.</p>
             <Campo etiqueta="Elaborado por (docente)">
               <Entrada name="elaboradoPor" defaultValue={actual.elaboradoPor ?? actual.docente} />
             </Campo>
@@ -471,9 +477,8 @@ export default function PlanificacionesCliente(p: Props) {
               </Campo>
             </div>
             <h3 className="border-t border-borde pt-3 text-[12px] font-semibold uppercase tracking-wide text-tenue">Registro de formato</h3>
-            <p className="text-[12px] text-tenue">El pie del documento: quién elaboró y aprobó el formato y cuándo.</p>
-            <Campo etiqueta="Título (va tras «REGISTRO DE FORMATO:»)">
-              <Entrada name="registroTitulo" defaultValue={actual.registroTitulo ?? ''} placeholder="Planificación Curricular Anual 2026 - 2027" />
+            <Campo etiqueta="Título">
+              <Entrada name="registroTitulo" title="Va tras «REGISTRO DE FORMATO:»" defaultValue={actual.registroTitulo ?? ''} placeholder="Planificación Curricular Anual 2026 - 2027" />
             </Campo>
             <div className="grid gap-4 sm:grid-cols-3">
               <Campo etiqueta="Elaborado por · cargo">
@@ -497,24 +502,20 @@ export default function PlanificacionesCliente(p: Props) {
                 <Entrada name="registroAprobadoFecha" defaultValue={actual.registroAprobadoFecha ?? ''} />
               </Campo>
             </div>
-            {error && <Aviso texto={error} />}
-            <div className="flex justify-end gap-2 border-t border-borde pt-4">
-              <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>
-                Cancelar
-              </Boton>
-              <Boton type="submit" disabled={enCurso}>
-                {enCurso ? 'Guardando…' : 'Guardar'}
-              </Boton>
-            </div>
           </form>
         )}
       </PanelLateral>
 
       {/* ── Importar un formato ya hecho (Fernando, 2026-09-17) ───────────── */}
-      <PanelLateral abierto={panel === 'importar'} alCerrar={cerrar} titulo="Importar un formato ya hecho" descripcion="Sube el PDF o el Word de un PUD que ya redactaste: el agente lee la cabecera y crea una planificación semanal por cada semana que encuentre.">
-        <form action={(d) => conResultado(() => importarFormato(p.slug, d), 'Formato recibido: el agente está leyéndolo', (id) => ir({ p: id ?? null, s: null, quien: null }))} className="space-y-4">
-          {p.materiasDocente.length === 0 && <Aviso tono="info" texto="Todavía no tienes materias asignadas. Pide al administrador que te asigne tus materias en Unidades." />}
-          <Campo etiqueta="Materia (grado) a la que pertenece" requerido>
+      <PanelLateral
+        abierto={panel === 'importar'}
+        alCerrar={cerrar}
+        titulo="Importar un formato"
+        pie={<PiePanel form="form-importar" alCancelar={cerrar} enCurso={enCurso} texto="Importar" ocupado="Leyendo el archivo…" icono={FileUp} deshabilitado={p.materiasDocente.length === 0} />}
+      >
+        <form id="form-importar" action={(d) => conResultado(() => importarFormato(p.slug, d), 'Formato recibido.', (id) => ir({ p: id ?? null, s: null, quien: null }))} className="space-y-4">
+          {p.materiasDocente.length === 0 && <Aviso tono="info" texto="Sin materias asignadas: te las asigna el administrador en Unidades." />}
+          <Campo etiqueta="Materia" requerido>
             <Selector name="materiaGradoId" required defaultValue="">
               <option value="" disabled>
                 Elige una materia…
@@ -526,39 +527,46 @@ export default function PlanificacionesCliente(p: Props) {
               ))}
             </Selector>
           </Campo>
-          <Campo etiqueta="El formato (PDF o Word, hasta 10 MB)" requerido>
-            <input name="archivo" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required className="block w-full text-[13px] text-texto file:mr-3 file:rounded-md file:border file:border-borde file:bg-tarjeta file:px-3 file:py-1.5 file:text-[13px] file:font-semibold file:text-texto hover:file:bg-realce" />
+          <Campo etiqueta="Formato" requerido>
+            <ElegirArchivo
+              name="archivo"
+              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              titulo={`PDF o Word, hasta 10 MB. Se transcribe tal cual y cada semana cuenta en el tope semanal${p.cupo.quedan !== null ? ` (te quedan ${p.cupo.quedan})` : ''}.`}
+            />
           </Campo>
-          <p className="text-[12px] text-tenue">Se transcribe tal cual está: unidad, fechas, temas, objetivos, destrezas, estrategias, recursos, técnicas e instrumentos. Las semanas importadas cuentan en el tope semanal como las demás{p.cupo.quedan !== null ? ` (te quedan ${p.cupo.quedan})` : ''}.</p>
-          {error && <Aviso texto={error} />}
-          <div className="flex justify-end gap-2 border-t border-borde pt-4">
-            <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>
-              Cancelar
-            </Boton>
-            <Boton type="submit" icono={FileUp} disabled={enCurso || p.materiasDocente.length === 0}>
-              {enCurso ? 'Leyendo el archivo…' : 'Importar'}
-            </Boton>
-          </div>
         </form>
       </PanelLateral>
 
       {/* ── Nueva planificación semanal ───────────────────────────────────── */}
-      <PanelLateral abierto={panel === 'semana' && !!actual} alCerrar={cerrar} titulo={`Semana ${p.semanas.length + 1} · nueva planificación semanal`} descripcion="Cuéntale al agente qué quieres: el tema, lo que tienes, lo que te importa. Él redacta la línea del formato." ancho="lg">
-        {actual && <FormularioSemana slug={p.slug} actual={actual} semanas={p.semanas} cupo={p.cupo} error={error} enCurso={enCurso} alCancelar={cerrar} alEnviar={(d) => conResultado(() => crearSemana(p.slug, actual.id, d), 'Solicitud enviada: el agente está redactando', (id) => ir({ s: id ?? null, vista: null }))} />}
+      <PanelLateral
+        abierto={panel === 'semana' && !!actual}
+        alCerrar={cerrar}
+        titulo={`Semana ${p.semanas.length + 1}`}
+        ancho="lg"
+        lleno
+        pie={<PiePanel form="form-semana" alCancelar={cerrar} enCurso={enCurso} texto="Redactar" ocupado="Enviando…" icono={Sparkles} />}
+      >
+        {actual && <FormularioSemana slug={p.slug} actual={actual} semanas={p.semanas} cupo={p.cupo} enCurso={enCurso} alEnviar={(d) => conResultado(() => crearSemana(p.slug, actual.id, d), 'Redactando.', (id) => ir({ s: id ?? null, vista: null }))} />}
       </PanelLateral>
 
       {/* ── Corregir la semana ────────────────────────────────────────────── */}
-      <PanelLateral abierto={panel === 'editar' && !!semana} alCerrar={cerrar} titulo={`Corregir la semana ${semana?.orden ?? ''}`} descripcion="Lo que cambies aquí es lo que sale en el formato." ancho="lg">
-        {semana && actual && <FormularioCampos slug={p.slug} semana={semana} catalogo={p.destrezasCatalogo} materia={actual.materia} error={error} enCurso={enCurso} alCancelar={cerrar} alEnviar={(d) => conResultado(() => editarSemana(p.slug, semana.id, d), 'Semana corregida')} />}
+      <PanelLateral
+        abierto={panel === 'editar' && !!semana}
+        alCerrar={cerrar}
+        titulo={`Corregir la semana ${semana?.orden ?? ''}`}
+        ancho="lg"
+        pie={<PiePanel form="form-campos" alCancelar={cerrar} enCurso={enCurso} />}
+      >
+        {semana && actual && <FormularioCampos slug={p.slug} semana={semana} catalogo={p.destrezasCatalogo} materia={actual.materia} alEnviar={(d) => conResultado(() => editarSemana(p.slug, semana.id, d), 'Guardado.')} />}
       </PanelLateral>
 
       {/* ── Destrezas de la planificación ─────────────────────────────────── */}
-      <PanelLateral abierto={panel === 'destrezas' && !!actual} alCerrar={cerrar} titulo={`Identificadores · ${actual?.materia ?? ''}`} descripcion="Las destrezas con criterio de desempeño seleccionadas para la materia, con su criterio y su indicador de evaluación. El agente elige una por semana según lo que dictes; el administrador las gestiona en Unidades." ancho="lg">
+      <PanelLateral abierto={panel === 'destrezas' && !!actual} alCerrar={cerrar} titulo={`Identificadores · ${actual?.materia ?? ''}`} ancho="lg">
         {actual && <PanelDestrezas slug={p.slug} materiaGradoId={null} destrezas={p.destrezasCatalogo} puedo={false} />}
       </PanelLateral>
 
-      <Confirmar abierto={!!borrarPl} titulo="Eliminar la planificación" mensaje={`Se eliminará «${borrarPl?.materia} · Unidad ${borrarPl?.numeroUnidad}» con sus ${borrarPl?.semanas ?? 0} semana(s). No se puede deshacer.`} ocupado={enCurso} alCerrar={() => setBorrarPl(null)} alAceptar={() => borrarPl && conResultado(() => eliminarPlanificacion(p.slug, borrarPl.id), 'Planificación eliminada', () => { setBorrarPl(null); ir({ p: null, s: null }); })} />
-      <Confirmar abierto={!!borrarSem} titulo="Eliminar la semana" mensaje={`Se eliminará la semana ${borrarSem?.orden ?? ''} y las siguientes se renumerarán. No se puede deshacer.`} ocupado={enCurso} alCerrar={() => setBorrarSem(null)} alAceptar={() => borrarSem && conResultado(() => eliminarSemana(p.slug, borrarSem.id), 'Semana eliminada', () => { setBorrarSem(null); ir({ s: null }); })} />
+      <Confirmar abierto={!!borrarPl} titulo="Eliminar la planificación" mensaje={`Se eliminará «${borrarPl?.materia} · Unidad ${borrarPl?.numeroUnidad}» con sus ${borrarPl?.semanas ?? 0} semana(s). No se puede deshacer.`} ocupado={enCurso} alCerrar={() => setBorrarPl(null)} alAceptar={() => borrarPl && conResultado(() => eliminarPlanificacion(p.slug, borrarPl.id), 'Eliminada.', () => { setBorrarPl(null); ir({ p: null, s: null }); })} />
+      <Confirmar abierto={!!borrarSem} titulo="Eliminar la semana" mensaje={`Se eliminará la semana ${borrarSem?.orden ?? ''} y las siguientes se renumerarán. No se puede deshacer.`} ocupado={enCurso} alCerrar={() => setBorrarSem(null)} alAceptar={() => borrarSem && conResultado(() => eliminarSemana(p.slug, borrarSem.id), 'Eliminada.', () => { setBorrarSem(null); ir({ s: null }); })} />
     </>
   );
 }
@@ -580,7 +588,7 @@ function CamposCabecera({ materias, valores, conAmbito }: { materias: Props['mat
             ))}
           </Selector>
         </Campo>
-        <Campo etiqueta="Materia (área de conocimiento)" requerido>
+        <Campo etiqueta="Materia" requerido>
           <Entrada name="materia" list="materias-del-nivel" required autoFocus defaultValue={valores?.materia ?? ''} placeholder="Elige o escribe" />
           <datalist id="materias-del-nivel">
             {delNivel.map((m) => (
@@ -589,14 +597,14 @@ function CamposCabecera({ materias, valores, conAmbito }: { materias: Props['mat
           </datalist>
         </Campo>
       </div>
-      <Campo etiqueta={conAmbito ? 'Ámbito de desarrollo/aprendizaje' : 'Ámbito de desarrollo/aprendizaje (si no lo escribes, se usa la materia)'} requerido={conAmbito}>
-        <Entrada name="ambito" defaultValue={valores?.ambito ?? ''} required={conAmbito} />
+      <Campo etiqueta="Ámbito de desarrollo / aprendizaje" requerido={conAmbito}>
+        <Entrada name="ambito" defaultValue={valores?.ambito ?? ''} required={conAmbito} placeholder={conAmbito ? undefined : 'Vacío: se usa la materia'} />
       </Campo>
       <div className="grid gap-4 sm:grid-cols-[120px_1fr]">
         <Campo etiqueta="N.º de unidad" requerido>
           <Entrada name="numeroUnidad" type="number" min={1} max={99} required defaultValue={valores?.numeroUnidad ?? 1} />
         </Campo>
-        <Campo etiqueta="Título de la unidad de planificación" requerido>
+        <Campo etiqueta="Título de la unidad" requerido>
           <Entrada name="tituloUnidad" required defaultValue={valores?.tituloUnidad ?? ''} />
         </Campo>
       </div>
@@ -612,16 +620,16 @@ function CamposCabecera({ materias, valores, conAmbito }: { materias: Props['mat
   );
 }
 
-function FormularioPlanificacion({ materiasDocente, error, enCurso, alCancelar, alEnviar, textoEnviar }: { materiasDocente: Props['materiasDocente']; materias: Props['materias']; error: string | null; enCurso: boolean; alCancelar: () => void; alEnviar: (d: FormData) => void; textoEnviar: string }) {
+function FormularioPlanificacion({ materiasDocente, alEnviar }: { materiasDocente: Props['materiasDocente']; materias: Props['materias']; alEnviar: (d: FormData) => void }) {
   const [nivel, setNivel] = useState<Nivel>('PREPARATORIA');
   return (
-    <form action={alEnviar} className="space-y-4">
+    <form id="form-planificacion" action={alEnviar} className="space-y-4">
       {/* La materia sale de las que el administrador asignó al docente en «Unidades» (Fernando, 2026-09-16). */}
-      {materiasDocente.length === 0 && <Aviso tono="info" texto="Todavía no tienes materias asignadas. Pide al administrador que te asigne tus materias en Unidades." />}
+      {materiasDocente.length === 0 && <Aviso tono="info" texto="Sin materias asignadas: te las asigna el administrador en Unidades." />}
       {/* Filas de dos columnas con etiquetas de una línea: la materia sola, luego nivel · ámbito, n.º · título, inicio · fin (Fernando, 2026-09-16: «que se vea ordenado»). */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="sm:col-span-2">
-          <Campo etiqueta="Materia (grado)" requerido>
+          <Campo etiqueta="Materia" requerido>
             {/* Al elegir la materia, el nivel se toma del grado (se puede cambiar). */}
             <Selector name="materiaGradoId" required defaultValue="" autoFocus onChange={(e) => { const m = materiasDocente.find((x) => String(x.id) === e.target.value); if (m && (NIVELES as string[]).includes(m.nivel)) setNivel(m.nivel as Nivel); }}>
               <option value="" disabled>
@@ -650,7 +658,7 @@ function FormularioPlanificacion({ materiasDocente, error, enCurso, alCancelar, 
         <Campo etiqueta="N.º de unidad" requerido>
           <Entrada name="numeroUnidad" type="number" min={1} max={99} required defaultValue={1} />
         </Campo>
-        <Campo etiqueta="Título de la unidad de planificación" requerido>
+        <Campo etiqueta="Título de la unidad" requerido>
           <Entrada name="tituloUnidad" required />
         </Campo>
         <Campo etiqueta="Inicio de PUD" requerido>
@@ -660,22 +668,13 @@ function FormularioPlanificacion({ materiasDocente, error, enCurso, alCancelar, 
           <Entrada name="finPud" type="date" required />
         </Campo>
       </div>
-      {error && <Aviso texto={error} />}
-      <div className="flex justify-end gap-2 border-t border-borde pt-4">
-        <Boton type="button" variante="secundario" onClick={alCancelar} disabled={enCurso}>
-          Cancelar
-        </Boton>
-        <Boton type="submit" disabled={enCurso || materiasDocente.length === 0}>
-          {enCurso ? 'Creando…' : textoEnviar}
-        </Boton>
-      </div>
     </form>
   );
 }
 
 // ── La solicitud de una semana: micrófono + texto + adjuntos ────────────────
 
-function FormularioSemana({ slug, actual, semanas, cupo, error, enCurso, alCancelar, alEnviar }: { slug: string; actual: PlanificacionVista; semanas: SemanaVista[]; cupo: Props['cupo']; error: string | null; enCurso: boolean; alCancelar: () => void; alEnviar: (d: FormData) => void }) {
+function FormularioSemana({ slug, actual, semanas, cupo, enCurso, alEnviar }: { slug: string; actual: PlanificacionVista; semanas: SemanaVista[]; cupo: Props['cupo']; enCurso: boolean; alEnviar: (d: FormData) => void }) {
   const [indicaciones, setIndicaciones] = useState('');
   const [adjuntos, setAdjuntos] = useState<AdjuntoSubido[]>([]);
   const ultima = [...semanas].filter((s) => s.fechaFin).sort((a, b) => (a.fechaFin! < b.fechaFin! ? 1 : -1))[0];
@@ -683,37 +682,30 @@ function FormularioSemana({ slug, actual, semanas, cupo, error, enCurso, alCance
   const finPropuesto = sumarDias(inicioPropuesto, 4);
 
   return (
-    <form action={alEnviar} className="space-y-4">
-      <div className="rounded border border-borde bg-realce px-3 py-2 text-[12px] text-tenue">
-        {cupo.tope === null ? `${cupo.usadas} generadas esta semana.` : `${cupo.usadas} de ${cupo.tope} planificaciones semanales generadas esta semana en la institución.`}
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+    // Lleno: las indicaciones crecen hasta el pie del panel (`PanelLateral lleno`).
+    <form id="form-semana" action={alEnviar} className="flex flex-1 flex-col gap-4">
+      <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
         <Campo etiqueta="Semana del">
           <Entrada name="fechaInicio" type="date" defaultValue={inicioPropuesto} min={actual.inicioPud} max={actual.finPud} />
         </Campo>
         <Campo etiqueta="al">
           <Entrada name="fechaFin" type="date" defaultValue={finPropuesto} min={actual.inicioPud} max={actual.finPud} />
         </Campo>
+        {/* El cupo es información: una línea, sin caja. */}
+        <p className="pb-2 text-right" title="Planificaciones semanales generadas esta semana en la institución">
+          <Insignia tono={cupo.quedan !== null && cupo.quedan <= 5 ? 'aviso' : 'neutro'}>{cupo.tope === null ? `${cupo.usadas} esta semana` : `${cupo.usadas} de ${cupo.tope} esta semana`}</Insignia>
+        </p>
       </div>
-      <Campo etiqueta="Indicaciones del docente">
-        <div className="mb-2 flex flex-wrap items-center gap-2">
+      <div className="flex min-h-[220px] flex-1 flex-col">
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <span className="text-[12px] font-semibold text-texto">Indicaciones</span>
           <Dictado slug={slug} alTranscribir={(t) => setIndicaciones((v) => (v.trim() ? `${v.trim()}\n${t}` : t))} deshabilitado={enCurso} />
-          <span className="text-[11px] text-tenue">Pulsa, cuenta la semana con todo el detalle y vuelve a pulsar. Puedes corregir el texto.</span>
         </div>
-        <AreaTexto name="indicaciones" rows={9} value={indicaciones} onChange={(e) => setIndicaciones(e.target.value)} placeholder="El tema de la semana, lo que quieres lograr, el material que tienes, las páginas del libro, los estudiantes que necesitan algo distinto, cuántas horas…" />
-      </Campo>
-      <Campo etiqueta="Archivos adjuntos (guías, libro, planificaciones anteriores)">
+        <AreaTexto name="indicaciones" aria-label="Indicaciones" value={indicaciones} onChange={(e) => setIndicaciones(e.target.value)} className="flex-1 resize-none" placeholder="El tema de la semana, lo que quieres lograr, el material que tienes, las páginas del libro, los estudiantes que necesitan algo distinto, cuántas horas…" />
+      </div>
+      <Campo etiqueta="Adjuntos">
         <Adjuntos slug={slug} valor={adjuntos} alCambiar={setAdjuntos} deshabilitado={enCurso} />
       </Campo>
-      {error && <Aviso texto={error} />}
-      <div className="flex justify-end gap-2 border-t border-borde pt-4">
-        <Boton type="button" variante="secundario" onClick={alCancelar} disabled={enCurso}>
-          Cancelar
-        </Boton>
-        <Boton type="submit" icono={Sparkles} disabled={enCurso}>
-          {enCurso ? 'Enviando…' : 'Redactar la semana'}
-        </Boton>
-      </div>
     </form>
   );
 }
@@ -730,8 +722,8 @@ function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorr
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
         <Loader2 className="h-8 w-8 animate-spin text-acento" />
-        <p className="text-[13px] font-semibold">El agente está redactando la semana {s.orden}</p>
-        <p className="max-w-md text-[12px] text-tenue">Está leyendo tus indicaciones{s.adjuntos.length ? ' y los adjuntos' : ''}, eligiendo las destrezas y buscando recursos en la web. Suele tardar entre uno y tres minutos; la pantalla se actualiza sola.</p>
+        <p className="text-[13px] font-semibold">Redactando la semana {s.orden}</p>
+        <p className="max-w-md text-[12px] text-tenue">Esta pantalla se actualiza sola.</p>
         <details className="mt-2 max-w-lg text-left text-[12px] text-tenue">
           <summary className="cursor-pointer font-semibold">Lo que le contaste</summary>
           <p className="mt-1 whitespace-pre-line">{s.indicaciones || '(sin indicaciones)'}</p>
@@ -749,7 +741,7 @@ function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorr
         </details>
         {puedo && (
           <div className="flex gap-2">
-            <Boton icono={RefreshCw} onClick={alReintentar} disabled={enCurso}>
+            <Boton icono={RefreshCw} onClick={alReintentar} disabled={enCurso} title={sinCupo ? 'Un reintento tras un fallo no cuenta contra el tope' : undefined}>
               Volver a intentar
             </Boton>
             <Boton variante="secundario" icono={Trash2} onClick={alBorrar} disabled={enCurso}>
@@ -757,7 +749,6 @@ function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorr
             </Boton>
           </div>
         )}
-        {sinCupo && <p className="text-[11px] text-tenue">Un reintento tras un fallo no cuenta contra el tope.</p>}
       </div>
     );
   }
@@ -786,7 +777,7 @@ function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorr
         <p className="whitespace-pre-line">{s.objetivosTema || '—'}</p>
       </CampoLectura>
       <CampoLectura titulo="Destrezas con criterio de desempeño">
-        {s.destrezas.length === 0 && <p className="text-tenue">Ninguna (no había destrezas cargadas para esta materia, o el agente no eligió). Puedes elegirlas en «Corregir».</p>}
+        {s.destrezas.length === 0 && <p className="text-tenue">Ninguna. Se eligen en «Corregir».</p>}
         <ul className="space-y-2">
           {s.destrezas.map((d) => (
             <li key={d.id} className="flex items-start gap-2.5">
@@ -807,7 +798,8 @@ function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorr
         <div className="space-y-3">
           {fases.map((f, i) => (
             <div key={i}>
-              {f.titulo && <p className="mb-1 inline-block rounded border border-borde bg-realce px-2 py-0.5 text-[11px] font-bold text-acento">{f.titulo}</p>}
+              {/* El nombre de la fase, solo con color de texto (sin cápsula con relleno, regla 2026-11). */}
+              {f.titulo && <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-acento">{f.titulo}</p>}
               <div className="space-y-1.5">
                 {f.actividades.map((a, j) => (
                   <div key={j}>
@@ -852,12 +844,12 @@ function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorr
       {faltanAjustes > 0 && (
         // Estudiantes con condición dados de alta después de redactar la semana (Fernando, 2026-09-18): se completan sin regenerar.
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-borde bg-aviso-suave px-3 py-2 text-[12px] text-texto">
-          <span>
-            Falta{faltanAjustes === 1 ? '' : 'n'} {faltanAjustes} línea{faltanAjustes === 1 ? '' : 's'} de ajustes razonables (estudiante{faltanAjustes === 1 ? '' : 's'} con condición dado{faltanAjustes === 1 ? '' : 's'} de alta después de redactar esta semana).
+          <span title="Estudiantes con condición especial dados de alta después de redactar esta semana">
+            Falta{faltanAjustes === 1 ? '' : 'n'} {faltanAjustes} {faltanAjustes === 1 ? 'ajuste razonable' : 'ajustes razonables'}.
           </span>
           {puedo && (
             <Boton tamano="sm" variante="secundario" icono={Sparkles} onClick={alCompletarAjustes} disabled={enCurso}>
-              {enCurso ? 'Redactando…' : 'Completar ajustes'}
+              {enCurso ? 'Redactando…' : 'Completar'}
             </Boton>
           )}
         </div>
@@ -877,7 +869,7 @@ function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorr
         </CampoLectura>
       )}
       {s.referencias.length > 0 && (
-        <CampoLectura titulo="Referencias que usó el agente">
+        <CampoLectura titulo="Referencias">
           <ul className="space-y-1">
             {s.referencias.map((r, i) => (
               <li key={i} className="flex items-start gap-2 text-[12px]">
@@ -894,7 +886,7 @@ function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorr
         </CampoLectura>
       )}
       <details className="border-t border-borde pt-3 text-[12px] text-tenue">
-        <summary className="cursor-pointer font-semibold">Lo que le contaste al agente{s.adjuntos.length ? ` · ${s.adjuntos.length} adjunto(s)` : ''}</summary>
+        <summary className="cursor-pointer font-semibold">Indicaciones{s.adjuntos.length ? ` · ${s.adjuntos.length} adjunto(s)` : ''}</summary>
         <p className="mt-1 whitespace-pre-line">{s.indicaciones || '(sin indicaciones)'}</p>
         {s.adjuntos.length > 0 && <p className="mt-1">Adjuntos: {s.adjuntos.map((a) => a.nombre).join(' · ')}</p>}
         {s.uso && (
@@ -909,7 +901,7 @@ function CamposSemana({ semana: s, puedo, sinCupo, enCurso, alReintentar, alBorr
 
 // ── Corregir a mano ─────────────────────────────────────────────────────────
 
-function FormularioCampos({ semana: s, catalogo, materia, error, enCurso, alCancelar, alEnviar }: { slug: string; semana: SemanaVista; catalogo: DestrezaVista[]; materia: string; error: string | null; enCurso: boolean; alCancelar: () => void; alEnviar: (d: FormData) => void }) {
+function FormularioCampos({ semana: s, catalogo, materia, alEnviar }: { slug: string; semana: SemanaVista; catalogo: DestrezaVista[]; materia: string; alEnviar: (d: FormData) => void }) {
   const [elegidas, setElegidas] = useState<number[]>(s.destrezas.map((d) => d.id));
   const [filtro, setFiltro] = useState('');
   const visibles = catalogo.filter((d) => {
@@ -920,7 +912,7 @@ function FormularioCampos({ semana: s, catalogo, materia, error, enCurso, alCanc
   const ordenadas = [...visibles].sort((a, b) => Number((b.materia ?? '').toLowerCase() === materia.toLowerCase()) - Number((a.materia ?? '').toLowerCase() === materia.toLowerCase()));
 
   return (
-    <form action={alEnviar} className="space-y-4">
+    <form id="form-campos" action={alEnviar} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-3">
         <Campo etiqueta="Fecha inicio" requerido>
           <Entrada name="fechaInicio" type="date" required defaultValue={s.fechaInicio ?? ''} />
@@ -932,19 +924,19 @@ function FormularioCampos({ semana: s, catalogo, materia, error, enCurso, alCanc
           <Entrada name="numeroPeriodos" defaultValue={s.numeroPeriodos ?? ''} placeholder="5 horas" />
         </Campo>
       </div>
-      <Campo etiqueta="Tema (si son dos contenidos, uno por línea)">
-        <AreaTexto name="tema" rows={2} defaultValue={s.tema ?? ''} />
+      <Campo etiqueta="Tema">
+        <AreaTexto name="tema" rows={2} defaultValue={s.tema ?? ''} placeholder="Si son dos contenidos, uno por línea" />
       </Campo>
       <Campo etiqueta="Objetivos del tema">
         <AreaTexto name="objetivosTema" rows={4} defaultValue={s.objetivosTema ?? ''} />
       </Campo>
-      <Campo etiqueta={`Destrezas con criterio de desempeño (${elegidas.length} elegidas)`}>
+      <Campo etiqueta={`Destrezas (${elegidas.length})`}>
         {elegidas.map((id) => (
           <input key={id} type="hidden" name="destrezas" value={id} />
         ))}
         <Buscador valor={filtro} alCambiar={setFiltro} marcador="Buscar por código o texto…" className="mb-2" />
         <div className="desplaza max-h-56 space-y-1 overflow-y-auto rounded border border-borde p-2">
-          {ordenadas.length === 0 && <p className="text-[12px] text-tenue">No hay destrezas cargadas para este nivel todavía.</p>}
+          {ordenadas.length === 0 && <p className="text-[12px] text-tenue">Sin destrezas.</p>}
           {ordenadas.map((d) => {
             const marcada = elegidas.includes(d.id);
             return (
@@ -959,35 +951,58 @@ function FormularioCampos({ semana: s, catalogo, materia, error, enCurso, alCanc
           })}
         </div>
       </Campo>
-      <Campo etiqueta="Estrategias metodológicas (las fases empiezan con «## », las preguntas con «• », un enlace en su propia línea)">
-        <AreaTexto name="estrategias" rows={16} defaultValue={s.estrategias ?? ''} className="font-mono text-[12px]" />
+      <Campo etiqueta="Estrategias metodológicas">
+        <AreaTexto name="estrategias" rows={16} defaultValue={s.estrategias ?? ''} className="font-mono text-[12px]" title="Las fases empiezan con «## », las preguntas con «• » y cada enlace va en su propia línea" />
       </Campo>
       <div className="grid gap-4 sm:grid-cols-3">
-        <Campo etiqueta="Recursos (uno por línea)">
-          <AreaTexto name="recursos" rows={6} defaultValue={s.recursos ?? ''} />
+        <Campo etiqueta="Recursos">
+          <AreaTexto name="recursos" rows={6} defaultValue={s.recursos ?? ''} placeholder="Uno por línea" />
         </Campo>
-        <Campo etiqueta="Técnica (una por línea)">
-          <AreaTexto name="tecnica" rows={6} defaultValue={s.tecnica ?? ''} />
+        <Campo etiqueta="Técnica">
+          <AreaTexto name="tecnica" rows={6} defaultValue={s.tecnica ?? ''} placeholder="Una por línea" />
         </Campo>
-        <Campo etiqueta="Instrumento (uno por línea)">
-          <AreaTexto name="instrumento" rows={6} defaultValue={s.instrumento ?? ''} />
+        <Campo etiqueta="Instrumento">
+          <AreaTexto name="instrumento" rows={6} defaultValue={s.instrumento ?? ''} placeholder="Uno por línea" />
         </Campo>
       </div>
       {s.ajustes.map((a) => (
-        <Campo key={a.id} etiqueta={`Ajuste razonable · ${a.iniciales} (${a.condicion}) · estrategia empleada`}>
+        <Campo key={a.id} etiqueta={`Ajuste razonable · ${a.iniciales} (${a.condicion})`}>
           <AreaTexto name={`ajuste-${a.id}`} rows={5} defaultValue={a.estrategia} />
         </Campo>
       ))}
-      {error && <Aviso texto={error} />}
-      <div className="flex justify-end gap-2 border-t border-borde pt-4">
-        <Boton type="button" variante="secundario" onClick={alCancelar} disabled={enCurso}>
-          Cancelar
-        </Boton>
-        <Boton type="submit" disabled={enCurso}>
-          {enCurso ? 'Guardando…' : 'Guardar'}
-        </Boton>
-      </div>
     </form>
+  );
+}
+
+// ── Piezas del panel ────────────────────────────────────────────────────────
+
+/** El pie de los paneles de esta pantalla: una fila, Cancelar y la principal a la derecha (`PieAcciones`). */
+function PiePanel({ form, alCancelar, enCurso, texto = 'Guardar', ocupado = 'Guardando…', icono = Save, deshabilitado }: { form: string; alCancelar: () => void; enCurso: boolean; texto?: string; ocupado?: string; icono?: React.ComponentType<{ className?: string }>; deshabilitado?: boolean }) {
+  return (
+    <PieAcciones>
+      <Boton type="button" variante="secundario" onClick={alCancelar} disabled={enCurso}>
+        Cancelar
+      </Boton>
+      <Boton form={form} type="submit" icono={icono} disabled={enCurso || deshabilitado}>
+        {enCurso ? ocupado : texto}
+      </Boton>
+    </PieAcciones>
+  );
+}
+
+/** Elegir un archivo con un botón secundario (sin el control nativo): el nombre elegido, a su lado. */
+function ElegirArchivo({ name, accept, titulo }: { name: string; accept: string; titulo?: string }) {
+  const entrada = useRef<HTMLInputElement>(null);
+  const [nombre, setNombre] = useState<string | null>(null);
+  return (
+    <div className="flex min-w-0 items-center gap-2" title={titulo}>
+      {/* `sr-only` y no `hidden`: así el navegador sigue exigiendo el archivo (`required`). */}
+      <input ref={entrada} name={name} type="file" accept={accept} required className="sr-only" onChange={(e) => setNombre(e.target.files?.[0]?.name ?? null)} />
+      <Boton type="button" variante="secundario" icono={Paperclip} onClick={() => entrada.current?.click()}>
+        {nombre ? 'Cambiar' : 'Elegir archivo'}
+      </Boton>
+      <span className="min-w-0 truncate text-[12px] text-tenue">{nombre ?? 'PDF o Word'}</span>
+    </div>
   );
 }
 

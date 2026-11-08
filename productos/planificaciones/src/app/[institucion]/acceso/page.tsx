@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { leerSesionUsuario } from '@/lib/sesion';
 import { INICIO_DE_ROL } from '@/lib/permisos';
 import { AplicaMarca, LogoNegocio } from '@/componentes/Marca';
+import { urlLogo } from '@/lib/marca';
 import { config as configGcc } from '@/lib/identidadGcc';
 import FormularioAcceso, { EntrarConGcc } from './FormularioAcceso';
 
@@ -31,19 +32,17 @@ export default async function PaginaAcceso({ params }: { params: Promise<{ insti
   if (sesion?.slug === institucion && sesion.inquilinoId === inquilino.id) redirect(`/${institucion}/${INICIO_DE_ROL[sesion.rol]}`);
 
   return (
-    <AplicaMarca colorAcento={inquilino.colorAcento} tema={inquilino.tema} className="flex items-center justify-center px-4 py-10">
+    <AplicaMarca className="flex items-center justify-center px-4 py-10">
       <div className="tarjeta w-full max-w-sm p-8">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <LogoNegocio nombre={inquilino.nombre} logoUrl={inquilino.logoUrl} tamano={52} />
+          <LogoNegocio nombre={inquilino.nombre} logoUrl={urlLogo(inquilino)} tamano={52} />
           <div>
             <h1 className="text-[17px] font-semibold text-texto">{inquilino.nombre}</h1>
             <p className="text-[12px] text-tenue">Planificación de Clases</p>
           </div>
         </div>
         {inquilino.soloLectura && (
-          <p className="mb-4 rounded border border-borde bg-acento-suave px-3 py-2 text-center text-[12px] leading-relaxed text-acento">
-            Institución de demostración. Se puede recorrer entera; los cambios no se guardan.
-          </p>
+          <p className="mb-4 text-center text-[12px] font-semibold text-acento">Demostración: los cambios no se guardan.</p>
         )}
         {/*
           Solo el escaparate conserva usuario y contraseña propios; en los demás se entra con la

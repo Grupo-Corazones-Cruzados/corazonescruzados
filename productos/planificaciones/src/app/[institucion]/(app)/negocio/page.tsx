@@ -1,28 +1,10 @@
-import { exigirContexto } from '@/lib/inquilino';
-import NegocioCliente from './NegocioCliente';
+import { redirect } from 'next/navigation';
 
-export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Negocio' };
-
+/**
+ * El módulo «Negocio» vive ahora en Configuración ▸ Negocio (Fernando, 2026-11-08, como en
+ * Automatizaciones), junto con el logo y la plantilla por defecto. Esta ruta lleva allí.
+ */
 export default async function PaginaNegocio({ params }: { params: Promise<{ institucion: string }> }) {
   const { institucion } = await params;
-  const { inquilino: i } = await exigirContexto(institucion, 'administrar');
-  return (
-    <NegocioCliente
-      slug={institucion}
-      datos={{
-        nombre: i.nombre,
-        contactoNombre: i.contactoNombre,
-        contactoEmail: i.contactoEmail,
-        contactoTelefono: i.contactoTelefono,
-        cabeceraLinea1: i.cabeceraLinea1,
-        cabeceraLinea2: i.cabeceraLinea2,
-        cabeceraLinea3: i.cabeceraLinea3,
-        anioLectivo: i.anioLectivo,
-        logoInstitucionUrl: i.logoInstitucionUrl,
-        logoOrganizacionUrl: i.logoOrganizacionUrl,
-        logoOpcionalUrl: i.logoOpcionalUrl,
-      }}
-    />
-  );
+  redirect(`/${institucion}/configuracion?seccion=negocio`);
 }

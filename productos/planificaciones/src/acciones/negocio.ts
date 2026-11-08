@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura } from '@/lib/inquilino';
+import { PLANTILLAS } from '@/plantillas';
 
 export type Resultado = { ok: true } | { ok: false; error: string };
 
@@ -16,6 +17,8 @@ const Negocio = z.object({
   cabeceraLinea2: z.string().trim().max(160).optional().or(z.literal('')),
   cabeceraLinea3: z.string().trim().max(160).optional().or(z.literal('')),
   anioLectivo: z.string().trim().max(40).optional().or(z.literal('')),
+  // La plantilla con la que nacen las planificaciones nuevas (antes en «Marca», 2026-11-08).
+  plantillaPorDefecto: z.string().trim().optional(),
 });
 
 const MAX_LOGO = 600 * 1024;
@@ -42,7 +45,8 @@ async function leerLogo(datos: FormData, clave: string, actual: string | null): 
 /**
  * EL MÓDULO «NEGOCIO» (Fernando, 2026-09-16): lo que la institución lleva impreso
  * en el formato —las tres líneas de la cabecera, el año lectivo y los tres logos—
- * además de su nombre y su contacto. Solo el administrador.
+ * además de su nombre, su contacto y la plantilla por defecto. Solo el administrador.
+ * Desde 2026-11-08 es la sección Negocio de Configuración.
  */
 export async function guardarNegocio(slug: string, datos: FormData): Promise<Resultado> {
   const permiso = await contextoEscritura(slug, 'administrar');
@@ -52,6 +56,7 @@ export async function guardarNegocio(slug: string, datos: FormData): Promise<Res
   const leido = Negocio.safeParse(Object.fromEntries(datos));
   if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
   const d = leido.data;
+  if (d.plantillaPorDefecto && !PLANTILLAS[d.plantillaPorDefecto]) return { ok: false, error: 'Esa plantilla no existe.' };
 
   const logos: Record<string, string | null> = {};
   for (const clave of LOGOS) {
@@ -71,6 +76,7 @@ export async function guardarNegocio(slug: string, datos: FormData): Promise<Res
       cabeceraLinea2: d.cabeceraLinea2 || null,
       cabeceraLinea3: d.cabeceraLinea3 || null,
       anioLectivo: d.anioLectivo || null,
+      ...(d.plantillaPorDefecto ? { plantillaPorDefecto: d.plantillaPorDefecto } : {}),
       ...logos,
     },
   });

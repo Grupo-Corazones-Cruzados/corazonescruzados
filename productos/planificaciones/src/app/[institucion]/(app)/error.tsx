@@ -17,7 +17,7 @@ export default function ErrorApp({ error, reset }: { error: Error & { digest?: s
     console.error('[app]', error);
   }, [error]);
   return (
-    <div className="flex min-h-[60vh] items-center justify-center p-6">
+    <div className="flex flex-1 items-center justify-center p-6">
       <Tarjeta className="max-w-md p-6 text-center">
         <p className="text-[15px] font-semibold text-texto">La pantalla no se pudo actualizar</p>
         <p className="mt-2 text-[13px] text-tenue">

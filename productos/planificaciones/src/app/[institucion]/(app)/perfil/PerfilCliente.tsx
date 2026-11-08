@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { FileDown, FileUp, X, AtSign, ShieldCheck } from 'lucide-react';
+import { FileDown, FileUp, X, AtSign, ShieldCheck, Save } from 'lucide-react';
 import { AccionesTarjeta, CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, Campo, Entrada, Tarjeta, EtiquetaGrado } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
@@ -24,7 +24,6 @@ import type { RolUsuario } from '@/generated/prisma/enums';
  */
 export default function PerfilCliente({ slug, perfil, materias, horario, soloLectura }: { slug: string; perfil: { usuario: string; nombre: string; profesion: string | null; email: string | null; rol: RolUsuario }; materias: OpcionMateria[]; horario: CeldaHorario[]; soloLectura: boolean }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
   const [enCurso, arranca] = useTransition();
   const [celdas, setCeldas] = useState<CeldaHorario[]>(horario);
   // Tras importar un Excel el servidor manda el horario nuevo: la rejilla se pone al día
@@ -71,28 +70,27 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
           { icono: ShieldCheck, etiqueta: 'Rol', valor: ETIQUETA_ROL[perfil.rol] },
         ]}
       />
-      <div className="flex flex-col gap-4 p-4 sm:p-6 xl:h-[calc(100vh-61px)] xl:flex-row xl:overflow-hidden">
+      {/* Alto completo: las dos tarjetas llegan hasta el pie y desplazan por dentro (2026-11-08). */}
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6 xl:min-h-0 xl:flex-row xl:overflow-hidden">
         {/* Mis datos: estrecho y a toda la altura */}
         <Tarjeta className="flex min-h-0 flex-col xl:w-[360px] xl:shrink-0">
-          <div className="border-b border-borde px-4 py-3">
+          <div className="border-b border-borde px-4 py-3" title={`Así sales en el formato: «${[perfil.profesion, perfil.nombre].filter(Boolean).join(' ')}»`}>
             <h2 className="text-[13px] font-semibold">Mis datos</h2>
-            <p className="text-[11px] text-tenue">Así sales en el formato: «{[perfil.profesion, perfil.nombre].filter(Boolean).join(' ')}».</p>
           </div>
           <form
             id="form-perfil"
             action={(d) =>
               arranca(async () => {
-                setError(null);
                 const r = await guardarPerfil(slug, d);
-                if (!r.ok) return setError(r.error);
-                toast.success('Perfil guardado');
+                if (!r.ok) return void toast.error(r.error);
+                toast.success('Guardado.');
                 (document.getElementById('form-perfil') as HTMLFormElement | null)?.querySelectorAll<HTMLInputElement>('input[type=password]').forEach((i) => (i.value = ''));
                 router.refresh();
               })
             }
             className="desplaza min-h-0 flex-1 space-y-4 overflow-y-auto p-4"
           >
-            <Campo etiqueta="Profesión / título">
+            <Campo etiqueta="Título">
               <Entrada name="profesion" defaultValue={perfil.profesion ?? ''} placeholder="Lcda." />
             </Campo>
             <Campo etiqueta="Nombre" requerido>
@@ -102,18 +100,17 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
               <Entrada name="email" type="email" defaultValue={perfil.email ?? ''} />
             </Campo>
             <div className="space-y-4 border-t border-borde pt-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-tenue">Cambiar la contraseña (opcional)</p>
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-tenue">Contraseña</p>
               <Campo etiqueta="Contraseña actual">
                 <Entrada name="actual" type="password" autoComplete="current-password" />
               </Campo>
-              <Campo etiqueta="Contraseña nueva (mínimo 8 caracteres)">
-                <Entrada name="nueva" type="password" autoComplete="new-password" minLength={8} />
+              <Campo etiqueta="Contraseña nueva">
+                <Entrada name="nueva" type="password" autoComplete="new-password" minLength={8} placeholder="Mínimo 8 caracteres" />
               </Campo>
             </div>
-            {error && <Aviso texto={error} />}
           </form>
           <div className="flex justify-end border-t border-borde px-4 py-3">
-            <Boton type="submit" form="form-perfil" disabled={enCurso || soloLectura}>
+            <Boton type="submit" form="form-perfil" icono={Save} disabled={enCurso || soloLectura}>
               {enCurso ? 'Guardando…' : 'Guardar'}
             </Boton>
           </div>
@@ -122,10 +119,7 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
         {/* Horario de clases */}
         <Tarjeta className="flex min-h-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-2 border-b border-borde px-4 py-3 lg:items-center">
-            <div className="min-w-0">
-              <h2 className="text-[13px] font-semibold">Horario de clases</h2>
-              <p className="text-[11px] text-tenue">Pulsa un periodo y elige la materia. De aquí salen los periodos de cada planificación semanal.</p>
-            </div>
+            <h2 className="min-w-0 text-[13px] font-semibold" title="Pulsa un periodo y elige la materia. De aquí salen los periodos de cada planificación semanal.">Horario de clases</h2>
             <div className="flex items-center gap-2">
               <input
                 ref={entradaExcel}
@@ -154,7 +148,7 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
             </div>
           </div>
           <div className="desplaza min-h-0 flex-1 overflow-auto p-4">
-            {materias.length === 0 && <Aviso tono="info" texto="Todavía no tienes materias asignadas. El administrador te las asigna en Unidades; hasta entonces solo puedes marcar «Sin clase»." />}
+            {materias.length === 0 && <Aviso tono="info" texto="Sin materias asignadas: te las asigna el administrador en Unidades." />}
             <table className="mt-3 w-full border-collapse text-[12px]" style={{ tableLayout: 'fixed' }}>
               <thead>
                 <tr>
@@ -196,7 +190,7 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
                             )}
                           </button>
                           {esta && (
-                            <div className="absolute left-0 top-12 z-30 w-64 rounded-md border border-borde bg-tarjeta p-1.5 shadow-xl">
+                            <div className="superficie-flotante absolute left-0 top-12 z-30 w-64 rounded-md border border-borde bg-tarjeta p-1.5 shadow-xl">
                               <div className="mb-1 flex items-center justify-between px-1">
                                 <span className="text-[11px] font-semibold text-tenue">
                                   {ETIQUETA_DIA[d]} · {etiquetaHora(h)}
@@ -231,13 +225,13 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
                   ...(h === RECESO.trasPeriodo
                     ? [
                         <tr key="receso">
-                          <td className="border border-borde px-2 py-1.5 font-mono text-[11px] font-semibold text-texto" style={{ backgroundColor: '#5FC1BE' }}>
+                          <td className="border border-borde px-2 py-1.5 font-mono text-[11px] font-semibold text-acento-contraste" style={{ backgroundColor: '#5FC1BE' }}>
                             {RECESO.desde} – {RECESO.hasta}
                           </td>
-                          <td className="border border-borde px-2 py-1.5 text-center text-[12px] font-semibold text-texto" style={{ backgroundColor: '#5FC1BE' }}>
+                          <td className="border border-borde px-2 py-1.5 text-center text-[12px] font-semibold text-acento-contraste" style={{ backgroundColor: '#5FC1BE' }}>
                             R
                           </td>
-                          <td colSpan={DIAS.length} className="border border-borde px-2 py-1.5 text-center text-[12px] font-bold tracking-[0.6em] text-texto" style={{ backgroundColor: '#5FC1BE' }}>
+                          <td colSpan={DIAS.length} className="border border-borde px-2 py-1.5 text-center text-[12px] font-bold tracking-[0.6em] text-acento-contraste" style={{ backgroundColor: '#5FC1BE' }}>
                             RECESO
                           </td>
                         </tr>,
@@ -248,10 +242,10 @@ export default function PerfilCliente({ slug, perfil, materias, horario, soloLec
             </table>
             {materias.length > 0 && (
               <div className="mt-4">
-                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue">Horas por materia (los periodos de su planificación semanal)</p>
+                <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-tenue" title="Los periodos de su planificación semanal">Horas por materia</p>
                 <ul className="flex flex-wrap gap-1.5">
                   {materias.map((m) => (
-                    <li key={m.id} className={cn('flex items-center gap-1.5 rounded-full border py-0.5 pl-2.5 pr-1 text-[12px]', horasPor.get(m.id) ? 'border-acento bg-acento-suave text-acento' : 'border-borde text-tenue')}>
+                    <li key={m.id} className={cn('flex items-center gap-1.5 py-0.5 pr-2 text-[12px]', horasPor.get(m.id) ? 'font-semibold text-acento' : 'text-tenue')}>
                       {m.materia} · {horasPor.get(m.id) ?? 0} h
                       <EtiquetaGrado nombre={m.grado} color={m.color} pequena />
                     </li>

@@ -3,55 +3,67 @@
 /*
   CONFIGURACIÓN GLOBAL DE COLOR — fuente única.
 
-  El armazón es el del panel de GCC (Fluent: Segoe UI, radios de 4-6 px, superficie
-  blanca sobre fondo hueso) y el acento por defecto es el VIOLETA del grupo. Pero el
-  color y el tema NO son constantes: cada inquilino los configura y el servidor los
-  inyecta como variables sobre el contenedor de la aplicación (ver src/lib/marca.ts).
+  EL TEMA DE LOS PRODUCTOS (Fernando, 2026-11-08: «el mismo tema que estamos usando en el
+  módulo de Conversaciones debemos usar en todos los módulos… tengo pensado usar el mismo tema
+  para todos los demás productos»). Es el de WhatsApp de escritorio en oscuro, y es el ÚNICO:
+  no hay tema claro, ni color por cliente, ni clase que lo active. Está en `@theme`, así que vale
+  en cualquier página (acceso, suscripción, /gcc) y en lo que se monta con un portal en <body>.
+
+  Para llevarlo a otro producto se copia este bloque, `.superficie-flotante` y lo del chat
+  (`.fondo-chat`, `.burbuja-cola-*`) tal cual, y se quitan las clases de tema que tuviera.
 
   Regla: en los componentes se usan SIEMPRE utilidades de estos tokens
-  (bg-acento, text-tenue, border-borde…). Nunca un hex crudo — un hex escrito a mano
-  es exactamente lo que hacía imposible vender dos veces el proyecto de referencia.
+  (bg-acento, text-tenue, border-borde…). Nunca un hex crudo ni `text-white`: encima de un
+  color va `text-acento-contraste` (el verde y el ámbar de este tema piden texto oscuro).
 */
 @theme {
-  --color-acento: #4b2d8e;
-  --color-acento-fuerte: #3a1f7a;
-  --color-acento-suave: #edebfa;
-  --color-acento-contraste: #ffffff;
+  /* Planos, del más hondo al más alto: fondo (el chat, el contenido) → tarjeta (columnas,
+     tarjetas, menú) → wa-panel (el panel de filtros y lo que flota) → realce (hover, activo). */
+  --color-fondo: #0b0b0b;
+  --color-tarjeta: #161717;
+  --color-wa-panel: #1d1f1f;
+  --color-realce: #2a2c2c;
+  --color-borde: #262828;
+  --color-texto: #e9edef;
+  --color-tenue: #8696a0;
 
-  --color-fondo: #faf9f8;
-  --color-tarjeta: #ffffff;
-  --color-texto: #242424;
-  --color-tenue: #616161;
-  --color-borde: #e6e4e2;
-  --color-realce: #f3f2f1;
+  /* El verde de WhatsApp: botón principal, activo, no leídos, enviar. Encima, texto oscuro. */
+  --color-acento: #21c063;
+  --color-acento-fuerte: #1daa57;
+  --color-acento-suave: #103529;
+  --color-acento-contraste: #0b0b0b;
+  --color-wa: #21c063;
+  --color-wa-fuerte: #1daa57;
 
-  --color-exito: #0f7b0f;
-  --color-exito-suave: #e8f5e9;
-  --color-aviso: #9a6700;
-  --color-aviso-suave: #fdf4e3;
-  --color-error: #c42b1c;
-  --color-error-suave: #fdeceb;
-  --color-info: #0f6cbd;
+  --color-exito: #21c063;
+  --color-exito-suave: rgba(33, 192, 99, 0.15);
+  --color-aviso: #e0b34d;
+  --color-aviso-suave: rgba(224, 179, 77, 0.15);
+  --color-error: #f1707b;
+  --color-error-suave: rgba(241, 112, 123, 0.15);
+  --color-info: #53bdeb;
+
+  /* Avatares sin foto, como WhatsApp: un color fijo por contacto (la API no da su foto). */
+  --color-avatar-1: #6b5bb5;
+  --color-avatar-2: #1f8a70;
+  --color-avatar-3: #c2410c;
+  --color-avatar-4: #0f6cbd;
+  --color-avatar-5: #a21caf;
+  --color-avatar-6: #4d7c0f;
+
+  /* El chat: fondo con dibujo, mis burbujas, las del contacto y el azul de los ✓✓ leídos. */
+  --color-leido: #53bdeb;
+  --color-chat-fondo: #0b0b0b;
+  --color-chat-dibujo: #171818;
+  --color-burbuja-mia: #144d37;
+  --color-burbuja-otra: #242626;
 
   --font-cuerpo: "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, Roboto,
     "Helvetica Neue", Arial, sans-serif;
 }
 
-/*
-  Tema oscuro. Redefine SOLO los neutros: el acento es del inquilino y se respeta en
-  los dos temas. Se activa con la clase .oscuro sobre el contenedor de la aplicación.
-*/
-.oscuro {
-  --color-fondo: #1b1a19;
-  --color-tarjeta: #252423;
-  --color-texto: #f3f2f1;
-  --color-tenue: #a19f9d;
-  --color-borde: #3b3a39;
-  --color-realce: #323130;
-
-  --color-exito-suave: #16281a;
-  --color-aviso-suave: #2b2213;
-  --color-error-suave: #2d1a18;
+:root {
+  color-scheme: dark;
 }
 
 html,
@@ -61,7 +73,11 @@ body {
   color: var(--color-texto);
 }
 
-/* En @layer base para que .campo:focus (capa components) pueda cambiar el borde. */
+/*
+  ⚠️ EN UNA CAPA, NO SUELTA. Fuera de capa, esta regla ganaba a TODAS las utilidades de
+  Tailwind v4 (que viven en @layer utilities): un `border-transparent` salía gris. Así nació
+  la «sombra» curva a la izquierda de cada opción del menú (Fernando, 2026-11-08).
+*/
 @layer base {
   * {
     border-color: var(--color-borde);
@@ -69,57 +85,55 @@ body {
 }
 
 /*
-  Campo de formulario — alto 34 px, el del panel de GCC.
-
-  Va en @layer components A PROPÓSITO: una clase fuera de capa gana a cualquier
-  utilidad de Tailwind v4, y entonces `w-44` sobre un campo no hacía nada y el
-  selector de fecha de la barra de filtros salía a ancho completo. Dentro de la
-  capa, las utilidades pueden ajustar el ancho, el padding o lo que haga falta.
+  ⚠️ LAS PIEZAS VAN EN @layer components (2026-11-08). Sueltas, ganaban a TODAS las utilidades
+  de Tailwind v4: `campo pl-8` dejaba el relleno en 10 px y la lupa del buscador pisaba el texto
+  («🔍uscar»). Es el mismo fallo que la «sombra» del menú (ver `@layer base` arriba).
 */
 @layer components {
-  .campo {
-    width: 100%;
-    height: 34px;
-    padding: 0 10px;
-    font-size: 13px;
-    color: var(--color-texto);
-    background: var(--color-tarjeta);
-    border: 1px solid var(--color-borde);
-    border-radius: 4px;
-    outline: none;
-    transition: border-color 0.12s ease, box-shadow 0.12s ease;
-  }
-  textarea.campo {
-    height: auto;
-    padding: 8px 10px;
-    line-height: 1.45;
-  }
-  .campo:focus {
-    border-color: var(--color-acento);
-    box-shadow: 0 0 0 1px var(--color-acento);
-  }
-  .campo:disabled {
-    background: var(--color-realce);
-    color: var(--color-tenue);
-    cursor: not-allowed;
-  }
-  .campo::placeholder {
-    color: var(--color-tenue);
-  }
+/* Campo de formulario — alto 34 px, el del panel de GCC. */
+.campo {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--color-texto);
+  background: var(--color-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+textarea.campo {
+  height: auto;
+  padding: 8px 10px;
+  line-height: 1.45;
+}
+/* Foco = borde gris medio, sin halo ni morado (regla de Fernando, 2026-09-29, igual que GCC World). */
+.campo:focus {
+  border-color: var(--color-tenue);
+  box-shadow: none;
+}
+.campo:disabled {
+  background: var(--color-realce);
+  color: var(--color-tenue);
+  cursor: not-allowed;
+}
+.campo::placeholder {
+  color: var(--color-tenue);
+}
 
-  /*
-    Desplegable. La flecha va aquí y NO como utilidades sueltas en el componente:
-    compuesta con clases, `background-repeat` se perdía al fusionarlas y el icono
-    salía repetido en mosaico por todo el campo.
-  */
-  select.campo {
-    appearance: none;
-    padding-right: 36px;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23616161' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center; /* 2026-10-31: a 10 px quedaba pegada al borde */
-    background-size: 14px 14px;
-  }
+/*
+  Desplegable. La flecha va aquí y NO como utilidades sueltas en el componente:
+  compuesta con clases, `background-repeat` se perdía al fusionarlas y el icono
+  salía repetido en mosaico por todo el campo.
+*/
+select.campo {
+  appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238696a0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center; /* 2026-10-31: a 10 px quedaba pegada al borde */
+  background-size: 14px 14px;
 }
 
 /* El anillo de foco es obligatorio: se navega con teclado. */
@@ -133,6 +147,7 @@ body {
   border: 1px solid var(--color-borde);
   border-radius: 6px;
 }
+} /* fin de @layer components */
 
 /* Barra de desplazamiento discreta, para que las columnas no griten. */
 .desplaza::-webkit-scrollbar {
@@ -148,6 +163,7 @@ body {
 .desplaza::-webkit-scrollbar-track {
   background: transparent;
 }
+
 /* Deslizador SIEMPRE visible (galería de semanas): que se vea que hay más a la derecha. */
 .desplaza-siempre {
   scrollbar-width: thin;
@@ -187,4 +203,48 @@ body {
   padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+}
+
+/*
+  LO QUE FLOTA (panel lateral, ventanitas, menús, el menú «Más»): un plano más alto que la
+  columna de debajo, como los menús de WhatsApp. ⚠️ Una superficie flotante NUEVA lleva la clase
+  `superficie-flotante` o se confundirá con lo que tiene detrás.
+*/
+.superficie-flotante {
+  --color-tarjeta: #1d1f1f;
+  --color-realce: #2e3030;
+  --color-borde: #2e3030;
+}
+
+/* El fondo del chat de WhatsApp, con un dibujo menudo de puntos. */
+.fondo-chat {
+  background-color: var(--color-chat-fondo);
+  background-image:
+    radial-gradient(var(--color-chat-dibujo) 1.2px, transparent 1.4px),
+    radial-gradient(var(--color-chat-dibujo) 1.2px, transparent 1.4px);
+  background-size: 28px 28px, 28px 28px;
+  background-position: 0 0, 14px 14px;
+}
+
+/* El «piquito» de la primera burbuja de cada tanda, como WhatsApp. */
+.burbuja-cola-izq,
+.burbuja-cola-der {
+  position: relative;
+}
+.burbuja-cola-izq::before,
+.burbuja-cola-der::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 13px;
+  background: inherit;
+}
+.burbuja-cola-izq::before {
+  left: -8px;
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+.burbuja-cola-der::before {
+  right: -8px;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
 }
