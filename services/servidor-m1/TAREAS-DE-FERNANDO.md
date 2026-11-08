@@ -16,41 +16,18 @@ Comprobado tras el reinicio: servicios, filtro de red, cortafuegos, SSH, Tailsca
 
 ### ✅ A4. Volver a conectar el M1 (hecho por Fernando, 2026-11-08; comprobado: sale por el cable `192.168.100.15`, carga y el SSD se desbloquea solo)
 
-### ☐ A5. Apagar Spotlight en el M1 (a distancia, 1 minuto, desde la Terminal de la M4 Pro)
-**Por qué:** tras actualizar, Spotlight reindexa todo (un proceso al 99 % de CPU) y también indexa el SSD de
-respaldos, que tiene una base de datos dentro: el respaldo de prueba escribió a 0,9 MB/s cuando el USB da ~35. En
-un servidor no sirve para nada y ralentiza respaldos, publicaciones y la base.
-1. En la Terminal de la M4 Pro pegar:
-   ```
-   ssh -t fernandogonzalez@100.73.251.124 'sudo mdutil -a -i off && sudo mdutil -E /Volumes/GCC-Respaldos'
-   ```
-2. Escribir la contraseña del M1. Debe responder **«Indexing disabled.»** por cada disco.
-3. Avisar a Claude: comprueba que el proceso de Spotlight bajó y mide de nuevo la velocidad del SSD.
+### ✅ A5. Apagar Spotlight en el M1 (hecho por Fernando, 2026-11-08: «Indexing disabled» en los cuatro discos)
+Queda `spotlightknowledged` (el índice de Apple Intelligence de macOS 27) al ~90 % de CPU: no lo controla `mdutil`;
+Claude lo vigila. No era lo que frenaba el SSD (ver A6).
 
-<details><summary>Pasos que se usaron para actualizar</summary>
-
-**Antes del reinicio:** el M1 tiene que estar con el cargador y el adaptador (cable de red + SSD) puestos. Por wifi su IP es otra (`192.168.100.32`): si el cable no está, usar esa en los pasos 4 y 5.
-**Por qué:** trae arreglos de seguridad. Hay que estar **en casa**: tras el reinicio el disco queda cifrado
-hasta desbloquearlo desde la red de casa, y Tailscale no funciona hasta entonces. Los comandos se escriben en
-la Terminal de la M4 Pro, pero lo que se actualiza es el M1. No afecta a nadie: producción sigue en Railway.
-1. **Avisar a Claude antes de empezar**, para vigilar desde aquí.
-2. Con la MacBook M4 Pro **conectada al wifi de casa**, abrir la Terminal y pegar:
-   ```
-   ssh -t fernandogonzalez@192.168.100.15 'sudo softwareupdate -i -a -R'
-   ```
-3. Escribir la **contraseña del usuario del M1** (al teclear no se ve nada; es normal). Descarga, instala y
-   reinicia solo; no cerrar la Terminal hasta que diga que se cierra la conexión.
-4. Esperar unos 20-30 minutos y pegar:
-   ```
-   ssh fernandogonzalez@192.168.100.15
-   ```
-   Si da error de conexión, aún está instalando: probar de nuevo cada 5 minutos.
-5. Cuando conecte, escribir la **contraseña del M1**: eso desbloquea el disco y termina de arrancar.
-   Si sale **«REMOTE HOST IDENTIFICATION HAS CHANGED»**, es normal antes del desbloqueo (el arranque usa otra
-   llave): **no borrar nada** y avisar a Claude.
-6. Avisar a Claude: comprueba la versión, los servicios, el filtro de red y los respaldos.
-
-</details>
+### ☐ A6. Cuando te quede a mano: volver a encajar el cable del SSD (no urgente)
+**Por qué:** el SSD Sabrent quedó conectado a **12 Mb/s** (velocidad de USB 1.1) en vez de 480 Mb/s como el resto
+del adaptador: escribe a 0,9 MB/s (300 MB en 346 s). Los respaldos siguen funcionando, pero tardan ~33 min en vez
+de ~4. Pasa cuando el conector no entró del todo o el puerto del adaptador falla.
+1. Sin apagar nada, desconectar el cable del **SSD** (solo ese) del adaptador y volver a conectarlo **firme**.
+   Si el adaptador tiene otro puerto USB libre, probar en ese.
+2. Avisar a Claude: mide de nuevo la velocidad (debe pasar de 30 MB/s).
+3. Si sigue a 12 Mb/s, probablemente es el cable del SSD: cambiarlo por otro USB-C de datos.
 
 ### ✅ A2. Junto al M1: permitir accesorios siempre (hecho por Fernando, 2026-11-08)
 **Por qué:** sin esto, un adaptador o un disco nuevos se quedan esperando una aceptación en la pantalla del M1.
