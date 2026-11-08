@@ -100,7 +100,7 @@ function Panel({ children }: { children: React.ReactNode }) {
     // `tema-progreso`: el estilo de la sección Plataforma de la portada en todo el panel
     // (Fernando, 2026-10-29). Ver `app/tema-progreso.css`. Encima, el tema elegido
     // (`tema-<id>`, ver `app/temas.css`).
-    <div className={`corp tema-progreso tema-${tema} ${oscuro ? 'dark' : ''} ${enApp && !seccion ? 'dos-capas' : ''} flex min-h-screen max-lg:h-dvh max-lg:overflow-hidden`}>
+    <div className={`corp tema-progreso tema-${tema} ${oscuro ? 'dark' : ''} ${enApp && (!seccion || enProducto || enCentralizado) ? 'dos-capas' : ''} flex min-h-screen max-lg:h-dvh max-lg:overflow-hidden`}>
       <PolicyBanner collapsed />
       {/* En las apps Progreso va en dos capas: Accesos (raíl) y su propio menú al lado. */}
       {enApp && !seccion && <Suspense fallback={null}><MenuAccesos capa activo="progreso" /></Suspense>}
@@ -137,7 +137,7 @@ function Panel({ children }: { children: React.ReactNode }) {
           Por debajo de `lg` la columna mide la pantalla (`h-dvh`), la cabecera se queda fija
           y el único que se desplaza —y solo si su contenido no cabe— es el `main`. En
           escritorio no hay cabecera y todo sigue como siempre. */}
-      <div className={`flex-1 min-w-0 flex flex-col ml-0 ${enCentralizado ? 'lg:ml-[22rem]' : seccion && !enAccesos && !enHerramienta ? '' : enApp && !seccion ? 'lg:ml-32' : 'lg:ml-16'} max-lg:min-h-0`}>
+      <div className={`flex-1 min-w-0 flex flex-col ml-0 ${enCentralizado ? 'lg:ml-32' : seccion && !enAccesos && !enHerramienta ? '' : enApp && !seccion ? 'lg:ml-32' : 'lg:ml-16'} max-lg:min-h-0`}>
         <CabeceraMovil />
         {/* El relleno inferior sale de la MISMA variable que el alto del pie: antes era
             `pb-14` escrito a mano contra un pie de 36 px, y al crecer el pie en teléfono
@@ -149,15 +149,16 @@ function Panel({ children }: { children: React.ReactNode }) {
           <HuecoBarraAcciones />
         </main>
       </div>
-      {!seccion && <div className={sinMuelle ? 'max-lg:hidden' : ''}><DashboardBreadcrumb collapsed /></div>}
+      {/* El pie va en todas las secciones de las apps (Fernando, 2026-11-08: «ese pie de página es super importante»). */}
+      <div className={sinMuelle ? 'max-lg:hidden' : ''}><DashboardBreadcrumb collapsed /></div>
       {/* Muelle inferior derecho, de derecha a izquierda: campanita · Mis chats · Chat
           (y GCC Bot cuando hay cotización). La campanita es el ancla: los demás se miden
           contra ella. Dentro de `.corp` para heredar el tema. */}
-      {!sinMuelle && !seccion && <NotificationsDock />}
+      {!sinMuelle && <NotificationsDock />}
       <AvisoReuniones />
-      {!sinMuelle && !seccion && <ChatDock />}
+      {!sinMuelle && <ChatDock />}
       {/* El agente de GCC. A miembros y candidatos además les lee los datos de su cuenta. */}
-      {!sinMuelle && !seccion && <AgentePresupuestos />}
+      {!sinMuelle && <AgentePresupuestos enPie />}
       {velo && <div aria-hidden className="cambio-tema" style={{ background: velo }} />}
     </div>
   );

@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Network } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 import Mapa4P, { type SistemaMapa } from '@/components/centralized/Mapa4P';
+import { ICONO_PISO } from '@/components/centralized/iconos4P';
+import { PISOS } from '@/lib/centralized/systems';
 import { useConsultaMedia } from '@/lib/hooks/useConsultaMedia';
 import { TINTE_CENTRALIZADO } from '@/components/accesos/tintes';
 
@@ -17,6 +19,12 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
  * el tinte orquídea de `.capa-dos`: el MAPA 4P, los sistemas de la cuenta en su celda piso × paso. Es
  * una tabla, así que no se encoge a iconos: en escritorio se ve fija; en el teléfono la abre la
  * hamburguesa junto con la primera capa. Antes era un cajón propio con la marca de GCC World.
+ *
+ * ⇒ PLEGADA EN ESCRITORIO MIENTRAS NO SE SEÑALA (Fernando, 2026-11-08), como la segunda capa de los
+ * productos (`MenuProducto`): 4 rem con los cuatro PISOS del 4P en iconos, cada uno con cuántos
+ * sistemas tiene la cuenta en él y marcado el del sistema abierto. Al pasar el puntero se despliega el
+ * mapa entero ENCIMA del contenido, sin moverlo (el layout reserva solo el ancho plegado). En el
+ * teléfono no cambia nada: oculta hasta tocar la hamburguesa.
  */
 export default function MenuCentralizado() {
   const pathname = usePathname();
@@ -25,6 +33,14 @@ export default function MenuCentralizado() {
 
   // En escritorio se ve siempre; en el teléfono, se piden al abrirla por primera vez.
   const telefono = useConsultaMedia('(max-width: 63.99rem)');
+  const [sobreElMenu, setSobreElMenu] = useState(false);
+  const estrecho = !telefono && !sobreElMenu && !abierto;
+  const porPiso = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const s of sistemas ?? []) m[s.piso] = (m[s.piso] ?? 0) + 1;
+    return m;
+  }, [sistemas]);
+  const pisoAbierto = pathname.split('/')[3];
   useEffect(() => {
     if ((telefono && !abierto) || sistemas !== null) return;
     fetch('/api/centralized/systems')
@@ -40,18 +56,40 @@ export default function MenuCentralizado() {
       <div aria-hidden onClick={cerrar}
         className={`fixed inset-0 z-40 bg-black/40 lg:hidden transition-opacity duration-200 ease-out ${abierto ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} />
       <aside aria-label="Centralizado" style={{ '--tinte': TINTE_CENTRALIZADO } as React.CSSProperties}
-        className={`rail capa-dos fixed top-0 left-16 z-40 h-full w-[18rem] max-w-[calc(100vw-4rem)] pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] bg-digi-card border-r border-digi-border flex flex-col transition-[translate] duration-200 ease-out ${
+        onMouseEnter={() => setSobreElMenu(true)} onMouseLeave={() => setSobreElMenu(false)}
+        className={`rail capa-dos fixed top-0 left-16 z-40 h-full ${estrecho ? 'w-16' : telefono ? 'w-[18rem]' : 'w-[18rem] shadow-2xl'} max-w-[calc(100vw-4rem)] pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] bg-digi-card border-r border-digi-border flex flex-col overflow-hidden transition-[width,translate] duration-200 ease-out motion-reduce:transition-none ${
           abierto ? 'translate-x-0 shadow-xl z-50' : '-translate-x-[calc(100%+4rem)] lg:translate-x-0'}`}>
-        <Link href="/dashboard/centralized" className="flex items-center gap-2.5 h-14 px-4 border-b border-digi-border shrink-0">
+        <Link href="/dashboard/centralized" title={estrecho ? 'Centralizado' : undefined}
+          className={`flex items-center gap-2.5 h-14 border-b border-digi-border shrink-0 ${estrecho ? 'justify-center px-0' : 'px-4'}`}>
           <span className="w-[30px] h-[30px] shrink-0 rounded-lg grid place-items-center border border-white/15" style={{ background: TINTE_CENTRALIZADO }}>
             <Network className="w-4 h-4 text-white" strokeWidth={2} />
           </span>
-          <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>CENTRALIZADO</span>
+          {!estrecho && <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>CENTRALIZADO</span>}
         </Link>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-2.5 py-3">
-          <Mapa4P sistemas={sistemas} rutaActual={pathname} />
-        </div>
+        {estrecho ? (
+          // Plegada: los pisos del 4P, como entradas de menú solo con icono.
+          <nav aria-label="Pisos del Modelo 4P" className="flex-1 py-2 px-2 space-y-0.5" style={mf}>
+            {PISOS.map((p) => {
+              const Icono = ICONO_PISO[p.key];
+              const n = porPiso[p.key] ?? 0;
+              const activo = p.key === pisoAbierto;
+              return (
+                <span key={p.key} title={`${p.label}: ${n} sistema${n === 1 ? '' : 's'}`}
+                  className={`relative flex items-center justify-center rounded-md h-11 ${
+                    activo ? 'bg-accent-light text-accent' : n ? 'text-digi-muted' : 'text-digi-muted/40'}`}>
+                  {activo && <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r-full bg-accent" />}
+                  <Icono className="w-[18px] h-[18px]" strokeWidth={2} />
+                  {n > 0 && <span className={`absolute top-1 right-1.5 text-[9.5px] font-bold leading-none tabular-nums ${activo ? 'text-accent' : 'text-digi-muted'}`}>{n}</span>}
+                </span>
+              );
+            })}
+          </nav>
+        ) : (
+          <div className="flex-1 min-h-0 overflow-y-auto px-2.5 py-3 lg:min-w-[18rem]">
+            <Mapa4P sistemas={sistemas} rutaActual={pathname} />
+          </div>
+        )}
 
       </aside>
     </>
