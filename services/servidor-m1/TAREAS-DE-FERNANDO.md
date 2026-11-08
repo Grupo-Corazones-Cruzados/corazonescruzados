@@ -113,7 +113,15 @@ Vence el **2026-11-15**.
 3. En **namecheap.com → Domain List**, al terminar, `grupocc.org` aparece como **Active**.
 4. **Si el 2026-11-13 sigue pendiente, avisar a Claude**: queda poco margen antes del vencimiento.
 
-### ☐ C5. Después, con Claude: pasar el dominio a Cloudflare
+### ✅ C5a. Preparar Cloudflare (hecho por Fernando, 2026-11-08)
+Cuenta con segundo factor, `grupocc.org` añadido en plan Free y **Pending** (sin activar). Bots: Search permitido,
+Training bloqueado, Agents permitido, Bot Preference Sync encendido (Cloudflare antepone al `robots.txt` solo las
+líneas de los bots de entrenamiento). 27 registros, todos **DNS only**: los 14 del escaneo más 13 importados de
+`respaldos-gcc/cloudflare-importar-faltantes.txt` (5 productos, 6 `_railway-verify`, 2 de Google). Comprobado
+preguntando a `dante.ns.cloudflare.com`: responden igual que los de Microsoft.
+**Servidores de nombres asignados:** `dante.ns.cloudflare.com` y `dell.ns.cloudflare.com` (no son secretos).
+
+### ☐ C5. Después, con Claude: poner esos servidores de nombres en Namecheap
 Se hace juntos al terminar C4: crear la cuenta de Cloudflare (o entrar) y cambiar en Namecheap los dos servidores
 de nombres que dé Cloudflare. Claude prepara antes todos los registros (correo, `www`, productos, passkeys) para
 que no se caiga nada. Detrás vienen el túnel al M1, el cortafuegos web y los avisos de caída (fase 3).
