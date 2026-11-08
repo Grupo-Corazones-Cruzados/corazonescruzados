@@ -16,10 +16,11 @@ export default async function PaginaConversaciones({
   searchParams,
 }: {
   params: Promise<{ cliente: string }>;
-  searchParams: Promise<{ c?: string; q?: string; e?: string }>;
+  searchParams: Promise<{ c?: string; q?: string; e?: string; f?: string }>;
 }) {
   const { cliente } = await params;
-  const { c, q, e } = await searchParams;
+  const { c, q, e, f } = await searchParams;
+  const soloNoLeidos = f === 'noleidos';
   const { inquilino, sesion } = await exigirContexto(cliente);
 
   const busca = (q || '').trim();
@@ -94,7 +95,7 @@ export default async function PaginaConversaciones({
     : { rows: [] };
   const resumen = new Map(resumenes.map((r) => [r.id, r]));
 
-  const lista: ConversacionLista[] = conversaciones.map((x) => ({
+  const todas: ConversacionLista[] = conversaciones.map((x) => ({
     id: x.id,
     nombre: x.contacto.nombreAgenda || x.contacto.nombrePerfil || x.contacto.waId,
     numero: x.contacto.waId,
@@ -112,6 +113,8 @@ export default async function PaginaConversaciones({
       : null,
     sinLeer: x.id === abiertaId ? 0 : resumen.get(x.id)?.sin_leer ?? 0,
   }));
+  // «No leídos», como el filtro de WhatsApp. La abierta se queda aunque ya no tenga pendientes.
+  const lista = soloNoLeidos ? todas.filter((x) => x.sinLeer > 0 || x.id === abiertaId) : todas;
 
   // ¿Sigue abierta la ventana de 24 h de WhatsApp? Decide si se puede escribir libremente.
   const ultimoEntrante = abierta
@@ -159,6 +162,7 @@ export default async function PaginaConversaciones({
       busca={busca}
       etiquetas={etiquetas}
       etiquetaId={etiquetaId}
+      soloNoLeidos={soloNoLeidos}
       abierta={
         abierta
           ? {

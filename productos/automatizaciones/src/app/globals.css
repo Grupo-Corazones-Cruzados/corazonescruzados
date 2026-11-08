@@ -40,8 +40,15 @@
   --color-avatar-4: #0f6cbd;
   --color-avatar-5: #a21caf;
   --color-avatar-6: #4d7c0f;
-  /* Los ✓✓ de «leído», como el azul de WhatsApp. */
-  --color-leido: #1d9bf0;
+  /* LA BANDEJA CON LOS COLORES DE WHATSAPP (Fernando, 2026-11-08: «una interfaz igualita a la
+     de WhatsApp»): el beige del fondo del chat, el verde claro de mis burbujas, el verde de los
+     no leídos y del botón de enviar, y el azul de los ✓✓ leídos. */
+  --color-leido: #53bdeb;
+  --color-chat-fondo: #efeae2;
+  --color-chat-dibujo: #e2dacd;
+  --color-burbuja-mia: #d9fdd3;
+  --color-wa: #00a884;
+  --color-wa-fuerte: #008069;
 
   --font-cuerpo: "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, Roboto,
     "Helvetica Neue", Arial, sans-serif;
@@ -210,4 +217,37 @@ body {
   --color-error: #f1707b;
   --color-error-suave: rgba(241, 112, 123, 0.13);
   color: var(--color-texto);
+}
+
+/* El fondo del chat de WhatsApp: beige con un dibujo menudo (aquí, puntos y cruces suaves). */
+.fondo-chat {
+  background-color: var(--color-chat-fondo);
+  background-image:
+    radial-gradient(var(--color-chat-dibujo) 1.2px, transparent 1.4px),
+    radial-gradient(var(--color-chat-dibujo) 1.2px, transparent 1.4px);
+  background-size: 28px 28px, 28px 28px;
+  background-position: 0 0, 14px 14px;
+}
+
+/* El «piquito» de la primera burbuja de cada tanda, como WhatsApp. */
+.burbuja-cola-izq,
+.burbuja-cola-der {
+  position: relative;
+}
+.burbuja-cola-izq::before,
+.burbuja-cola-der::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 13px;
+  background: inherit;
+}
+.burbuja-cola-izq::before {
+  left: -8px;
+  clip-path: polygon(100% 0, 0 0, 100% 100%);
+}
+.burbuja-cola-der::before {
+  right: -8px;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
 }

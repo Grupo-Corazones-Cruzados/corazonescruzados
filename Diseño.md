@@ -6408,3 +6408,9 @@ En los cinco productos el título del navegador es `GCC · <página> · <product
 - **Caja de mensaje** en píldora (radio 20) y botón de enviar redondo.
 - **Avatar sin foto**: la Cloud API NO da la foto del contacto; inicial blanca sobre un color fijo por número (`--color-avatar-1..6`, en `@theme`).
 - ⚠️ Un componente que puede ir dentro de un `<p>` no devuelve un `<p>` (las etiquetas iban dentro de la línea del número: error de hidratación).
+
+### Bandeja como WhatsApp, segunda pasada (Fernando, 2026-11-08: «no has aplicado todas las referencias»)
+- **Columna de chats**: título «Conversaciones» (68 px), buscador en píldora gris sin borde, **filtros en botones redondos** («Todos», «No leídos» `?f=noleidos`, y uno por etiqueta; se envuelven, nunca se deslizan), filas con resalte redondeado.
+- **Cabecera del chat**: solo avatar, nombre y «Lo atiende el agente / Lo atiende X»; los iconos (tomar, «⋯» con Datos del contacto y Etiquetas) agrupados en una píldora. Tocar la cabecera abre **«Datos del contacto»** (avatar grande, número, quién lo atiende, etiquetas, consumo de IA).
+- **Colores de WhatsApp** como tokens (`globals.css`): fondo `--color-chat-fondo` con dibujo de puntos (`.fondo-chat`), mis burbujas `--color-burbuja-mia`, verde `--color-wa` en no leídos y enviar, azul `--color-leido` en ✓✓. **Piquito** (`.burbuja-cola-izq/der`) en la primera burbuja de cada tanda; separador de día con sombra.
+- **Barra de abajo siempre**: si lo atiende el agente, «Lo atiende el agente · Tomar»; si lo atiende una persona, la caja en píldora con el botón verde redondo de enviar.
