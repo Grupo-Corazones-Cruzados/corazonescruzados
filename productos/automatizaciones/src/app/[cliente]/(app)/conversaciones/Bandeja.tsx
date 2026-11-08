@@ -6,7 +6,7 @@ import { Fragment, useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 import {
   ChevronLeft, Hand, Search, AlertCircle, Bot, Tag, SendHorizontal, Plus, Check, CheckCheck,
-  Camera, Mic, Video, FileText, MapPin, Sticker, Info, Phone, Coins,
+  Camera, Mic, Video, FileText, MapPin, Sticker, Info, Phone, Coins, MessagesSquare, MessageCircleMore,
 } from 'lucide-react';
 import { Boton, BotonIcono, Insignia, Ventanita, Entrada, PanelLateral } from '@/componentes/ui';
 import { MenuFila } from '@/componentes/Navegacion';
@@ -145,13 +145,34 @@ function Filtro({ href, activo, children }: { href: string; activo: boolean; chi
   );
 }
 
+/** Una fila del panel de filtros: icono, nombre y su cuenta a la derecha (como «Chats 10»). */
+function FiltroPanel({ nombre, icono: Icono, n, href, activo }: {
+  nombre: string; icono: React.ComponentType<{ className?: string }>; n: number; href: string; activo: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={activo ? 'page' : undefined}
+      className={cn(
+        'foco-visible flex h-9 items-center gap-3 rounded-lg px-3 text-[14px] transition-colors',
+        activo ? 'bg-realce font-semibold text-texto' : 'text-texto hover:bg-realce/60',
+      )}
+    >
+      <Icono className="h-[18px] w-[18px] shrink-0 text-tenue" />
+      <span className="min-w-0 flex-1 truncate">{nombre}</span>
+      {n > 0 && <span className="text-[12px] tabular-nums text-tenue">{n}</span>}
+    </Link>
+  );
+}
+
 export default function Bandeja({
   slug,
   lista,
   busca,
   etiquetas,
   etiquetaId,
-  soloNoLeidos,
+  filtro,
+  cuentas,
   abierta,
   mensajes,
   gasto,
@@ -161,9 +182,11 @@ export default function Bandeja({
   slug: string;
   lista: ConversacionLista[];
   busca: string;
-  etiquetas: { id: number; nombre: string }[];
+  etiquetas: { id: number; nombre: string; n: number }[];
   etiquetaId: number | null;
-  soloNoLeidos: boolean;
+  /** Filtro de la lista: «No leídos», «Tomadas» o ninguno (Todos). */
+  filtro: 'noleidos' | 'tomadas' | null;
+  cuentas: { todas: number; noLeidas: number; tomadas: number };
   abierta: Abierta | null;
   mensajes: MensajeVista[];
   gasto: Gasto | null;
@@ -188,13 +211,13 @@ export default function Bandeja({
   }, [abierta?.id, mensajes.length]);
 
   // La dirección lleva el filtro: buscar, «No leídos», etiqueta y conversación abierta.
-  const url = (o: { q?: string; e?: number | null; f?: boolean; c?: number | null }) => {
+  const url = (o: { q?: string; e?: number | null; f?: 'noleidos' | 'tomadas' | null; c?: number | null }) => {
     const p = new URLSearchParams();
     const q = o.q ?? busca;
     const e = o.e === undefined ? etiquetaId : o.e;
-    const f = o.f === undefined ? soloNoLeidos : o.f;
+    const f = o.f === undefined ? filtro : o.f;
     if (q) p.set('q', q);
-    if (f) p.set('f', 'noleidos');
+    if (f) p.set('f', f);
     if (e) p.set('e', String(e));
     if (o.c) p.set('c', String(o.c));
     const t = p.toString();
@@ -220,22 +243,44 @@ export default function Bandeja({
     });
   }
 
+  // Los filtros, una sola lista: la pinta el panel de la izquierda (escritorio) y los botones (teléfono).
+  const filtros = [
+    { clave: 'todos', nombre: 'Todos', icono: MessagesSquare, n: cuentas.todas, href: url({ f: null, e: null, c: null }), activo: !filtro && !etiquetaId },
+    { clave: 'noleidos', nombre: 'No leídos', icono: MessageCircleMore, n: cuentas.noLeidas, href: url({ f: 'noleidos', e: null, c: null }), activo: filtro === 'noleidos' },
+    { clave: 'tomadas', nombre: 'Tomadas', icono: Hand, n: cuentas.tomadas, href: url({ f: 'tomadas', e: null, c: null }), activo: filtro === 'tomadas' },
+  ];
+  const filtrosEtiqueta = etiquetas.map((t) => ({
+    clave: `e${t.id}`, nombre: t.nombre, icono: Tag, n: t.n, href: url({ f: null, e: t.id, c: null }), activo: etiquetaId === t.id,
+  }));
+  const titulo = [...filtros, ...filtrosEtiqueta].find((x) => x.activo)?.nombre ?? 'Todos';
+
   const quienAtiende = abierta ? (abierta.botActivo ? 'Lo atiende el agente' : `Lo atiende ${abierta.tomadaPor ?? 'el equipo'}`) : '';
   const costo = gasto && gasto.corridas > 0
     ? costoLegible(costoEnDolares({ tokensEntrada: gasto.entrada, tokensSalida: gasto.salida, tokensCacheLectura: gasto.cache_lectura }))
     : null;
 
   return (
-    <div className="flex h-full min-h-0 bg-tarjeta">
+    <div className="tema-wa flex h-full min-h-0 bg-tarjeta">
+      {/* ── EL PANEL DE FILTROS, como el de la izquierda de WhatsApp (solo escritorio). */}
+      <nav aria-label="Filtros" className="hidden w-[230px] shrink-0 flex-col gap-0.5 border-r border-borde bg-wa-panel px-2 py-3 lg:flex">
+        {filtros.map((x) => <FiltroPanel key={x.clave} {...x} />)}
+        {filtrosEtiqueta.length > 0 && (
+          <>
+            <p className="mt-4 mb-1 px-3 text-[12px] font-medium text-tenue">Etiquetas</p>
+            {filtrosEtiqueta.map((x) => <FiltroPanel key={x.clave} {...x} />)}
+          </>
+        )}
+      </nav>
+
       {/* ── LOS CHATS. En el teléfono desaparecen cuando hay uno abierto. */}
       <section
         className={cn(
-          'flex w-full shrink-0 flex-col border-r border-borde lg:flex lg:w-[360px]',
+          'flex w-full shrink-0 flex-col border-r border-borde lg:flex lg:w-[380px]',
           abierta && 'hidden lg:flex',
         )}
       >
         <div className="flex min-h-[68px] items-center px-4">
-          <h1 className="text-[17px] font-semibold text-texto">Conversaciones</h1>
+          <h1 className="truncate text-[17px] font-semibold text-texto">{titulo}</h1>
         </div>
         <form
           onSubmit={(e) => { e.preventDefault(); router.push(url({ q: texto.trim(), c: null })); }}
@@ -253,18 +298,15 @@ export default function Bandeja({
           </div>
         </form>
         {/* Los filtros, como los de WhatsApp: se envuelven si no caben (nada se desliza de lado). */}
-        <div className="flex flex-wrap gap-1.5 px-3 pb-2">
-          <Filtro href={url({ f: false, e: null, c: null })} activo={!soloNoLeidos && !etiquetaId}>Todos</Filtro>
-          <Filtro href={url({ f: true, e: null, c: null })} activo={soloNoLeidos}>No leídos</Filtro>
-          {etiquetas.map((t) => (
-            <Filtro key={t.id} href={url({ f: false, e: t.id, c: null })} activo={etiquetaId === t.id}>{t.nombre}</Filtro>
-          ))}
+        {/* En el teléfono, los filtros en botones, como WhatsApp en el móvil (se envuelven). */}
+        <div className="flex flex-wrap gap-1.5 px-3 pb-2 lg:hidden">
+          {[...filtros, ...filtrosEtiqueta].map((x) => <Filtro key={x.clave} href={x.href} activo={x.activo}>{x.nombre}</Filtro>)}
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 pb-2">
           {lista.length === 0 && (
             <p className="px-4 py-8 text-center text-[13px] text-tenue">
-              {busca || etiquetaId || soloNoLeidos ? 'Sin resultados' : 'Sin conversaciones'}
+              {busca || etiquetaId || filtro ? 'Sin resultados' : 'Sin conversaciones'}
             </p>
           )}
           {lista.map((c) => (
@@ -311,7 +353,7 @@ export default function Bandeja({
       <section className={cn('flex min-w-0 flex-1 flex-col', !abierta && 'hidden lg:flex')}>
         {!abierta ? (
           <div className="fondo-chat flex flex-1 items-center justify-center px-6">
-            <p className="rounded-md bg-tarjeta px-3 py-1.5 text-center text-[13px] text-tenue shadow-sm">Elige una conversación.</p>
+            <p className="rounded-md bg-burbuja-otra px-3 py-1.5 text-center text-[13px] text-tenue shadow-sm">Elige una conversación.</p>
           </div>
         ) : (
           <>
@@ -364,7 +406,7 @@ export default function Bandeja({
                   <Fragment key={m.id}>
                     {nuevoDia && (
                       <div className="my-3 flex justify-center">
-                        <span className="rounded-lg bg-tarjeta px-3 py-1 text-[12px] text-tenue shadow-sm">
+                        <span className="rounded-lg bg-burbuja-otra px-3 py-1 text-[12px] text-tenue shadow-sm">
                           {separadorDia(m.creado, zona)}
                         </span>
                       </div>
@@ -373,7 +415,7 @@ export default function Bandeja({
                       <div
                         className={cn(
                           'max-w-[85%] rounded-lg px-2.5 pb-1 pt-1.5 text-[14px] leading-snug text-texto shadow-sm sm:max-w-[65%]',
-                          nuestro ? 'bg-burbuja-mia' : 'bg-tarjeta',
+                          nuestro ? 'bg-burbuja-mia' : 'bg-burbuja-otra',
                           primeraDeTanda && (nuestro ? 'burbuja-cola-der rounded-tr-none' : 'burbuja-cola-izq rounded-tl-none'),
                         )}
                       >

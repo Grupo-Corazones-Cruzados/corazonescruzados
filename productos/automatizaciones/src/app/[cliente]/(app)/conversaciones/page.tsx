@@ -21,6 +21,7 @@ export default async function PaginaConversaciones({
   const { cliente } = await params;
   const { c, q, e, f } = await searchParams;
   const soloNoLeidos = f === 'noleidos';
+  const soloTomadas = f === 'tomadas';
   const { inquilino, sesion } = await exigirContexto(cliente);
 
   const busca = (q || '').trim();
@@ -32,9 +33,31 @@ export default async function PaginaConversaciones({
   });
   const etiquetaId = e && etiquetas.some((x) => String(x.id) === e) ? Number(e) : null;
 
+  /**
+   * LAS CUENTAS DEL PANEL DE FILTROS, como «Chats 10» de WhatsApp (2026-11-08): todas, no leídas,
+   * tomadas y por etiqueta. Una consulta, sobre TODAS las conversaciones del negocio.
+   */
+  const { rows: [cuentas] } = await pool.query<{ todas: number; no_leidas: number; tomadas: number }>(
+    `SELECT COUNT(*)::int AS todas,
+            COUNT(*) FILTER (WHERE EXISTS (
+              SELECT 1 FROM mensajes e WHERE e.conversacion_id = c.id AND e.direccion = 'ENTRANTE'
+                AND e.creado_en > COALESCE(c.visto_en, '-infinity')))::int AS no_leidas,
+            COUNT(*) FILTER (WHERE NOT c.bot_activo)::int AS tomadas
+       FROM conversaciones c WHERE c.inquilino_id = $1`,
+    [inquilino.id],
+  );
+  const { rows: porEtiqueta } = await pool.query<{ etiqueta_id: number; n: number }>(
+    `SELECT ce.etiqueta_id, COUNT(DISTINCT c.id)::int AS n
+       FROM contacto_etiquetas ce JOIN conversaciones c ON c.contacto_id = ce.contacto_id
+      WHERE c.inquilino_id = $1 GROUP BY ce.etiqueta_id`,
+    [inquilino.id],
+  );
+  const nEtiqueta = new Map(porEtiqueta.map((x) => [x.etiqueta_id, x.n]));
+
   const conversaciones = await prisma.conversacion.findMany({
     where: {
       inquilinoId: inquilino.id,
+      ...(soloTomadas ? { botActivo: false } : {}),
       contacto: {
         ...(busca
           ? {
@@ -160,9 +183,10 @@ export default async function PaginaConversaciones({
       slug={cliente}
       lista={lista}
       busca={busca}
-      etiquetas={etiquetas}
+      etiquetas={etiquetas.map((x) => ({ ...x, n: nEtiqueta.get(x.id) ?? 0 }))}
       etiquetaId={etiquetaId}
-      soloNoLeidos={soloNoLeidos}
+      filtro={soloNoLeidos ? 'noleidos' : soloTomadas ? 'tomadas' : null}
+      cuentas={{ todas: cuentas.todas, noLeidas: cuentas.no_leidas, tomadas: cuentas.tomadas }}
       abierta={
         abierta
           ? {
