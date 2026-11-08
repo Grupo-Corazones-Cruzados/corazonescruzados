@@ -12,7 +12,8 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
-import { ArrowUp, Calculator, LogIn, MessageCircle, X } from 'lucide-react';
+import { ArrowUp, Bot, Calculator, LogIn, MessageCircle, X } from 'lucide-react';
+import { EnElPie, BotonPie } from '@/components/dashboard/PieAcciones';
 import Captcha from '@/components/landing/Captcha';
 import { fmt2 } from '@/lib/format';
 import type { Mensaje, Presupuesto } from '@/lib/presupuestos/db';
@@ -59,7 +60,11 @@ function TextoAgente({ texto }: { texto: string }) {
   return <>{bloques}</>;
 }
 
-export default function AgentePresupuestos({ solucion = 'tecnologia' }: { solucion?: string }) {
+/**
+ * `enPie`: en el panel, el botón va en el pie junto a las notificaciones y los chats en vez de flotar
+ * abajo a la derecha (Fernando, 2026-11-08). En el sitio público sigue siendo la burbuja.
+ */
+export default function AgentePresupuestos({ solucion = 'tecnologia', enPie = false }: { solucion?: string; enPie?: boolean }) {
   const ruta = usePathname();
   // Se abre sola en la página de Tecnología; en las demás espera a que la pulsen.
   const abrirAlEntrar = ruta === '/clientes/soluciones/tecnologia';
@@ -209,7 +214,12 @@ export default function AgentePresupuestos({ solucion = 'tecnologia' }: { soluci
 
   return createPortal(
     <>
-      {fase !== 'abierto' && fase !== 'abriendo' && (
+      {enPie && (
+        <EnElPie orden={5}>
+          <BotonPie Icon={Bot} label="Asistente" tono="acento" activo={fase === 'abierto' || fase === 'abriendo'} onClick={abrir} />
+        </EnElPie>
+      )}
+      {!enPie && fase !== 'abierto' && fase !== 'abriendo' && (
         <button type="button" className={`presu-burbuja${fase === 'cerrado' ? ' es-visible' : ''}`} onClick={abrir}
           aria-label="Abrir el agente de GCC" title="Consultas y presupuestos">
           <MessageCircle aria-hidden />

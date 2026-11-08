@@ -1,5 +1,6 @@
 import GodotGame from '@/components/game/GodotGame';
 import GameEntryGate from '@/components/game/GameEntryGate';
+import PieJuego from '@/components/game/PieJuego';
 
 /**
  * El juego, a pantalla completa.
@@ -18,10 +19,13 @@ import GameEntryGate from '@/components/game/GameEntryGate';
  */
 export default function JuegoPage() {
   return (
-    <main className="fixed inset-0 overflow-hidden">
-      <GameEntryGate>
-        <GodotGame />
-      </GameEntryGate>
-    </main>
+    <>
+      <main className="juego-marco fixed inset-0 overflow-hidden">
+        <GameEntryGate>
+          <GodotGame />
+        </GameEntryGate>
+      </main>
+      <PieJuego />
+    </>
   );
 }

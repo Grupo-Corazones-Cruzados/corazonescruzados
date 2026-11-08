@@ -35,7 +35,7 @@ function Producto() {
   }, [base, producto, slug, modulo]);
 
   return (
-    <div className="fixed inset-x-0 bottom-0 top-[calc(3.5rem+var(--seguro-arriba))] lg:top-0 lg:left-32 z-10 bg-digi-card pb-[var(--seguro-abajo)]">
+    <div className="fixed inset-x-0 bottom-[var(--pie-panel)] top-[calc(3.5rem+var(--seguro-arriba))] lg:top-0 lg:left-32 z-10 bg-digi-card">
       {src && <iframe src={src} title={producto} onLoad={() => setCargando(false)} allow="clipboard-write; publickey-credentials-get"
         className="w-full h-full border-0" />}
       {cargando && <div className="absolute inset-0 grid place-items-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}

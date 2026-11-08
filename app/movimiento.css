@@ -149,3 +149,8 @@ html[data-gcc-app] *, html[data-gcc-app] *::backdrop { -webkit-backdrop-filter: 
   background: color-mix(in srgb, var(--tinte) 20%, var(--color-digi-card));
   margin-right: -9px; width: calc(100% + 9px); border-radius: 6px 0 0 6px; position: relative; z-index: 1;
 }
+
+/* EL PIE EN EL VIDEOJUEGO (`components/game/PieJuego.tsx`): el juego termina encima del pie, y el
+   pie va de borde a borde porque allí no hay menú lateral. */
+html.juego-con-pie .juego-marco { bottom: var(--pie-panel); }
+.pie-juego [data-app-footer] { left: 0 !important; }

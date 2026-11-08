@@ -9,6 +9,7 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 
 // Etiquetas legibles por segmento de ruta (coinciden con el sidebar y subpáginas).
 const LABELS: Record<string, string> = {
+  juego: 'Aventura',
   dashboard: 'Inicio',
   tickets: 'Tickets', projects: 'Proyectos', subscriptions: 'Suscripciones', clients: 'Clientes',
   invoices: 'Facturas', marketplace: 'Marketplace', plataformas: 'Plataformas', automatizaciones: 'Automatizaciones',
@@ -25,12 +26,14 @@ function labelFor(seg: string): string {
 
 export default function DashboardBreadcrumb({ collapsed = false }: { collapsed?: boolean }) {
   const pathname = usePathname() || '/dashboard';
-  const segments = pathname.replace(/^\/+|\/+$/g, '').split('/'); // ['dashboard', ...]
+  const crudos = pathname.replace(/^\/+|\/+$/g, '').split('/'); // ['dashboard', ...]
+  // También en el videojuego (`components/game/PieJuego.tsx`): «Inicio › Aventura».
+  const segments = crudos[0] === 'juego' ? ['dashboard', 'juego'] : crudos;
   if (segments[0] !== 'dashboard') return null;
 
   const crumbs = segments.map((seg, i) => ({
     label: labelFor(seg),
-    href: '/' + segments.slice(0, i + 1).join('/'),
+    href: seg === 'juego' ? '/juego' : '/' + segments.slice(0, i + 1).join('/'),
   }));
 
   return (
