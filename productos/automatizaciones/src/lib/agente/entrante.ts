@@ -280,3 +280,17 @@ export function extraerCambiosDeNumero(payload: any): CambioDeNumero[] {
   }
   return cambios;
 }
+
+/**
+ * LOS ACUSES DE META (`value.statuses`): enviado, entregado, leído o fallido, de los mensajes
+ * que SALIERON por la API (2026-11-08). Son los ✓, ✓✓ y ✓✓ azules de la bandeja.
+ */
+export interface EstadoMensaje { waMessageId: string; estado: 'sent' | 'delivered' | 'read' | 'failed' }
+
+export function extraerEstados(payload: any): EstadoMensaje[] {
+  const value = payload?.entry?.[0]?.changes?.[0]?.value;
+  const validos = new Set(['sent', 'delivered', 'read', 'failed']);
+  return (value?.statuses ?? [])
+    .filter((s: any) => s?.id && validos.has(s?.status))
+    .map((s: any) => ({ waMessageId: String(s.id), estado: s.status }));
+}

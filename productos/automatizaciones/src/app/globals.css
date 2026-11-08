@@ -33,6 +33,16 @@
   --color-error-suave: #fdeceb;
   --color-info: #0f6cbd;
 
+  /* Avatares sin foto, como WhatsApp: un color fijo por contacto (la API no da su foto). */
+  --color-avatar-1: #6b5bb5;
+  --color-avatar-2: #1f8a70;
+  --color-avatar-3: #c2410c;
+  --color-avatar-4: #0f6cbd;
+  --color-avatar-5: #a21caf;
+  --color-avatar-6: #4d7c0f;
+  /* Los ✓✓ de «leído», como el azul de WhatsApp. */
+  --color-leido: #1d9bf0;
+
   --font-cuerpo: "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, Roboto,
     "Helvetica Neue", Arial, sans-serif;
 }

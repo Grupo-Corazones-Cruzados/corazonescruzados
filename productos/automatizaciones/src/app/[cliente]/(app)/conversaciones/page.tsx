@@ -71,6 +71,29 @@ export default async function PaginaConversaciones({
       })
     : null;
 
+  /**
+   * Lo que WhatsApp enseña en cada fila de la lista (2026-11-08): el ÚLTIMO mensaje (con sus ✓ si
+   * es nuestro) y cuántos ENTRANTES llegaron después de que el equipo la abriera. Una consulta
+   * para todas las conversaciones de la lista, no una por fila.
+   */
+  const ids = conversaciones.map((x) => x.id);
+  const { rows: resumenes } = ids.length
+    ? await pool.query<{ id: number; direccion: 'ENTRANTE' | 'SALIENTE'; texto: string | null; tipo: string; estado: string | null; enviado_ok: boolean | null; sin_leer: number }>(
+        `SELECT c.id, u.direccion, u.texto, u.tipo, u.estado, u.enviado_ok,
+                (SELECT COUNT(*)::int FROM mensajes e
+                  WHERE e.conversacion_id = c.id AND e.direccion = 'ENTRANTE'
+                    AND e.creado_en > COALESCE(c.visto_en, '-infinity')) AS sin_leer
+           FROM conversaciones c
+           LEFT JOIN LATERAL (
+             SELECT direccion, texto, tipo, estado, enviado_ok FROM mensajes m
+              WHERE m.conversacion_id = c.id ORDER BY m.creado_en DESC LIMIT 1
+           ) u ON true
+          WHERE c.id = ANY($1)`,
+        [ids],
+      )
+    : { rows: [] };
+  const resumen = new Map(resumenes.map((r) => [r.id, r]));
+
   const lista: ConversacionLista[] = conversaciones.map((x) => ({
     id: x.id,
     nombre: x.contacto.nombreAgenda || x.contacto.nombrePerfil || x.contacto.waId,
@@ -79,6 +102,15 @@ export default async function PaginaConversaciones({
     botActivo: x.botActivo,
     tomadaPor: x.tomadaPor?.nombre ?? null,
     etiquetas: x.contacto.etiquetas.map((t) => t.etiqueta.nombre).sort(),
+    vistaPrevia: resumen.get(x.id)
+      ? {
+          nuestro: resumen.get(x.id)!.direccion === 'SALIENTE',
+          texto: resumen.get(x.id)!.texto,
+          tipo: resumen.get(x.id)!.tipo,
+          estado: resumen.get(x.id)!.enviado_ok === false ? 'failed' : resumen.get(x.id)!.estado,
+        }
+      : null,
+    sinLeer: x.id === abiertaId ? 0 : resumen.get(x.id)?.sin_leer ?? 0,
   }));
 
   // ¿Sigue abierta la ventana de 24 h de WhatsApp? Decide si se puede escribir libremente.
@@ -116,6 +148,7 @@ export default async function PaginaConversaciones({
       herramienta: m.herramienta,
       enviadoOk: m.enviadoOk,
       errorEnvio: m.errorEnvio,
+      estado: m.estado,
       creado: m.creado.toISOString(),
     })) ?? [];
 
@@ -142,6 +175,7 @@ export default async function PaginaConversaciones({
           : null
       }
       mensajes={mensajes}
+      zona={inquilino.zonaHoraria}
       gasto={gasto}
       puedeOperar={sesion.rol !== 'CONSULTA'}
     />

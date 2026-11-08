@@ -403,6 +403,8 @@ model Conversacion {
   resumenHastaId Int?      @map("resumen_hasta_id")
 
   ultimoMensajeEn DateTime? @map("ultimo_mensaje_en") @db.Timestamptz(3)
+  /// Cuándo la abrió el equipo por última vez: lo ENTRANTE posterior está «sin leer».
+  vistoEn         DateTime? @map("visto_en") @db.Timestamptz(3)
   creado          DateTime  @default(now()) @map("creado_en") @db.Timestamptz(3)
   actualizado     DateTime  @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
@@ -438,6 +440,10 @@ model Mensaje {
   /// Cuando el mensaje lo produjo una herramienta del agente, cuál fue y por qué.
   herramienta String? @db.VarChar(60)
   motivo      String?
+
+  /// Acuse de Meta: sent / delivered / read / failed (✓, ✓✓, ✓✓ azul).
+
+  estado      String?   @db.VarChar(12)
 
   enviadoOk  Boolean? @map("enviado_ok")
   errorEnvio String?  @map("error_envio")

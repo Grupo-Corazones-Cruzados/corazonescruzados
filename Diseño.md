@@ -6400,3 +6400,11 @@ En los cinco productos el título del navegador es `GCC · <página> · <product
 - **Contestar desde la app**: con la conversación tomada aparece la caja de mensaje abajo (Enter envía, Mayús+Enter salto de línea, botón de enviar de icono). Fuera de las 24 h de WhatsApp, una línea lo dice en vez de la caja.
 - **Consumo de IA** junto al número: solo texto de color, sin relleno.
 - Números en atributos (`title`) con `miles()` de `lib/formato.ts`: `toLocaleString` agrupa distinto en Node y Chrome y rompe la hidratación.
+
+## Automatizaciones · la bandeja como WhatsApp (Fernando, 2026-11-08)
+*«quiero una interfaz igualita a la de WhatsApp»*:
+- **Lista**: avatar redondo de 48 px; nombre y, a la derecha, `cuandoEnLista` (hora si es de hoy, «Ayer», día de la semana, o d/m/aa); debajo, la vista previa del último mensaje con sus ✓ si es nuestro (o icono + «Foto/Audio/Video…»), la mano si está tomada y el **círculo verde** con los no leídos (la hora también en verde). Separadores solo bajo el texto, no bajo el avatar.
+- **Hilo**: se abre en el último mensaje; **separadores de día** («Hoy», «Ayer», el día, o la fecha larga) en una pastilla neutra centrada; burbujas que se agrupan (2 px entre las del mismo lado, 8 px al cambiar), la entrante blanca con borde y la nuestra en `acento-suave`; **hora y acuse dentro de la burbuja**, abajo a la derecha (✓ enviado, ✓✓ entregado, ✓✓ en `--color-leido` leído, ⚠ no salió); un robot pequeño marca lo que escribió el agente.
+- **Caja de mensaje** en píldora (radio 20) y botón de enviar redondo.
+- **Avatar sin foto**: la Cloud API NO da la foto del contacto; inicial blanca sobre un color fijo por número (`--color-avatar-1..6`, en `@theme`).
+- ⚠️ Un componente que puede ir dentro de un `<p>` no devuelve un `<p>` (las etiquetas iban dentro de la línea del número: error de hidratación).

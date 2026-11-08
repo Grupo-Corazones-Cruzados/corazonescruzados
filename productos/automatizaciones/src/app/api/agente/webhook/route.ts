@@ -22,7 +22,7 @@ import { pool } from '@/lib/db';
 import { firmaValida } from '@/lib/agente/firma';
 import { canalPorNumero } from '@/lib/agente/canales';
 import {
-  extraerMensajes, ingerir, campoDelWebhook,
+  extraerMensajes, ingerir, campoDelWebhook, extraerEstados,
   extraerEcos, ingerirEco,
   extraerContactosDeAgenda, guardarContactosDeAgenda,
   extraerCambiosDeNumero, migrarNumeroDeContacto,
@@ -156,8 +156,25 @@ export async function POST(req: Request) {
      */
     if (campo === 'history') return NextResponse.json({ ok: true });
 
-    // Acuses de entrega, cambios de estado del número… nada que hacer. Se responde 200
-    // igual: para Meta está entregado.
+    /**
+     * ── LOS ACUSES (`statuses`): ✓ enviado, ✓✓ entregado, ✓✓ azul leído (2026-11-08) ──
+     * Nunca se BAJA un estado: Meta puede mandar «delivered» después de «read» si los avisos
+     * llegan desordenados. Solo se tocan mensajes de ESTE canal.
+     */
+    if (campo === 'messages') {
+      for (const e of extraerEstados(payload)) {
+        await pool.query(
+          `UPDATE mensajes m SET estado = $2
+             FROM conversaciones c
+            WHERE m.wa_message_id = $1 AND c.id = m.conversacion_id AND c.canal_id = $3
+              AND COALESCE(array_position(ARRAY['sent','delivered','read'], m.estado), 0)
+                  < COALESCE(array_position(ARRAY['sent','delivered','read'], $2::text), 99)`,
+          [e.waMessageId, e.estado, canal.id],
+        );
+      }
+    }
+
+    // Cambios de estado del número… nada más que hacer. Se responde 200 igual.
     if (mensajes.length === 0) {
       return NextResponse.json({ ok: true });
     }

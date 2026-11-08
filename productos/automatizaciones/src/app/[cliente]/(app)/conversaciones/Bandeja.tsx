@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { Fragment, useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
-import { ChevronLeft, Hand, Search, Wrench, AlertCircle, Bot, Tag, SendHorizontal, Plus, Check } from 'lucide-react';
+import { ChevronLeft, Hand, Search, AlertCircle, Bot, Tag, SendHorizontal, Plus, Check, CheckCheck, Camera, Mic, Video, FileText, MapPin, Sticker } from 'lucide-react';
 import { Boton, BotonIcono, Insignia, Selector, Ventanita, Entrada } from '@/componentes/ui';
-import { cambiarBot, etiquetarContacto, responder } from '@/acciones/conversaciones';
+import { cambiarBot, etiquetarContacto, responder, marcarVista } from '@/acciones/conversaciones';
 import { costoEnDolares, costoLegible } from '@/lib/ia/precios';
 import { cn } from '@/lib/utils';
-import { fechaHora, miles } from '@/lib/formato';
+import { miles, horaCorta, cuandoEnLista, separadorDia, claveDia } from '@/lib/formato';
 
 export type ConversacionLista = {
   id: number;
@@ -19,6 +19,10 @@ export type ConversacionLista = {
   botActivo: boolean;
   tomadaPor: string | null;
   etiquetas: string[];
+  /** El último mensaje, para la vista previa de la fila (como WhatsApp). */
+  vistaPrevia: { nuestro: boolean; texto: string | null; tipo: string; estado: string | null } | null;
+  /** Mensajes del contacto que el equipo aún no ha visto. */
+  sinLeer: number;
 };
 
 export type MensajeVista = {
@@ -30,6 +34,8 @@ export type MensajeVista = {
   enviadoOk: boolean | null;
   errorEnvio: string | null;
   creado: string;
+  /** Acuse de Meta: sent / delivered / read / failed. */
+  estado: string | null;
 };
 
 export type Gasto = { corridas: number; entrada: number; salida: number; cache_lectura: number };
@@ -50,10 +56,11 @@ type Abierta = {
 function Etiquetas({ nombres, className }: { nombres: string[]; className?: string }) {
   if (!nombres.length) return null;
   return (
-    <p className={cn('flex min-w-0 items-center gap-1 text-[11px] font-medium text-acento', className)}>
+    // <span> y no <p>: va también dentro de la línea del número, que ya es un <p>.
+    <span className={cn('flex min-w-0 items-center gap-1 text-[11px] font-medium text-acento', className)}>
       <Tag className="h-3 w-3 shrink-0" />
       <span className="truncate">{nombres.join(' · ')}</span>
-    </p>
+    </span>
   );
 }
 
@@ -67,6 +74,53 @@ function Etiquetas({ nombres, className }: { nombres: string[]; className?: stri
  *
  * Desde `lg` vuelven a convivir, porque ahí sí hay sitio para las dos.
  */
+/** El avatar: la API de WhatsApp no da la foto del contacto, así que va su inicial con un color fijo. */
+const COLORES = ['bg-avatar-1', 'bg-avatar-2', 'bg-avatar-3', 'bg-avatar-4', 'bg-avatar-5', 'bg-avatar-6'];
+function Avatar({ nombre, semilla, tamano = 48 }: { nombre: string; semilla: string; tamano?: number }) {
+  let h = 0;
+  for (const c of semilla) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const letra = (nombre.replace(/^[^\p{L}\p{N}]+/u, '').charAt(0) || '#').toUpperCase();
+  return (
+    <span
+      aria-hidden
+      className={cn('flex shrink-0 items-center justify-center rounded-full font-semibold text-white', COLORES[h % COLORES.length])}
+      style={{ width: tamano, height: tamano, fontSize: tamano * 0.4 }}
+    >
+      {letra}
+    </span>
+  );
+}
+
+/** ✓ enviado · ✓✓ entregado · ✓✓ azul leído · ⚠ no salió. */
+function Acuse({ estado, className }: { estado: string | null; className?: string }) {
+  if (estado === 'failed') return <AlertCircle className={cn('h-3.5 w-3.5 text-error', className)} aria-label="No salió" />;
+  if (estado === 'read') return <CheckCheck className={cn('h-3.5 w-3.5 text-leido', className)} aria-label="Leído" />;
+  if (estado === 'delivered') return <CheckCheck className={cn('h-3.5 w-3.5', className)} aria-label="Entregado" />;
+  return <Check className={cn('h-3.5 w-3.5', className)} aria-label="Enviado" />;
+}
+
+/** Lo que no es texto, como lo resume WhatsApp: icono + palabra. */
+const TIPOS: Record<string, { icono: React.ComponentType<{ className?: string }>; nombre: string }> = {
+  image: { icono: Camera, nombre: 'Foto' },
+  audio: { icono: Mic, nombre: 'Audio' },
+  voice: { icono: Mic, nombre: 'Audio' },
+  video: { icono: Video, nombre: 'Video' },
+  document: { icono: FileText, nombre: 'Documento' },
+  location: { icono: MapPin, nombre: 'Ubicación' },
+  sticker: { icono: Sticker, nombre: 'Sticker' },
+};
+function Contenido({ texto, tipo }: { texto: string | null; tipo: string }) {
+  const t = TIPOS[tipo];
+  if (!t) return <>{texto || `[${tipo}]`}</>;
+  const Icono = t.icono;
+  return (
+    <span className="inline-flex min-w-0 items-center gap-1">
+      <Icono className="h-3.5 w-3.5 shrink-0" />
+      <span className="truncate">{texto || t.nombre}</span>
+    </span>
+  );
+}
+
 export default function Bandeja({
   slug,
   lista,
@@ -76,6 +130,7 @@ export default function Bandeja({
   abierta,
   mensajes,
   gasto,
+  zona,
   puedeOperar,
 }: {
   slug: string;
@@ -86,9 +141,18 @@ export default function Bandeja({
   abierta: Abierta | null;
   mensajes: MensajeVista[];
   gasto: Gasto | null;
+  zona: string;
   puedeOperar: boolean;
 }) {
   const router = useRouter();
+  // Abrirla la marca como vista: deja de contar como «sin leer».
+  useEffect(() => { if (abierta) void marcarVista(slug, abierta.id); }, [slug, abierta?.id]);
+  // Como WhatsApp, el hilo se abre en el ÚLTIMO mensaje (y baja cuando llega o sale uno nuevo).
+  const hilo = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const h = hilo.current;
+    if (h) h.scrollTop = h.scrollHeight;
+  }, [abierta?.id, mensajes.length]);
   const [texto, setTexto] = useState(busca);
   const [cambiando, arranca] = useTransition();
   const [mensaje, setMensaje] = useState('');
@@ -174,19 +238,32 @@ export default function Bandeja({
             <Link
               key={c.id}
               href={url({ c: c.id })}
-              className={cn(
-                'flex min-h-[60px] flex-col justify-center gap-0.5 border-b border-borde px-3 py-2',
-                abierta?.id === c.id ? 'bg-acento-suave' : 'hover:bg-realce',
-              )}
+              className={cn('flex items-center gap-3 pl-3 transition-colors', abierta?.id === c.id ? 'bg-acento-suave' : 'hover:bg-realce')}
             >
-              <div className="flex items-center justify-between gap-2">
-                <p className="truncate text-[13.5px] font-medium text-texto">{c.nombre}</p>
-                {!c.botActivo && <Hand className="h-3.5 w-3.5 shrink-0 text-aviso" aria-label="Tomada" />}
+              <Avatar nombre={c.nombre} semilla={c.numero} />
+              <div className="min-w-0 flex-1 border-b border-borde py-2.5 pr-3">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="truncate text-[14px] font-medium text-texto">{c.nombre}</p>
+                  <span className={cn('shrink-0 text-[11px]', c.sinLeer > 0 ? 'font-semibold text-exito' : 'text-tenue')}>
+                    {c.ultimo ? cuandoEnLista(c.ultimo, zona) : ''}
+                  </span>
+                </div>
+                <div className="mt-0.5 flex items-center justify-between gap-2">
+                  <p className="flex min-w-0 items-center gap-1 text-[12.5px] text-tenue">
+                    {c.vistaPrevia?.nuestro && <Acuse estado={c.vistaPrevia.estado} className="shrink-0" />}
+                    {c.vistaPrevia ? <span className="min-w-0 truncate"><Contenido texto={c.vistaPrevia.texto} tipo={c.vistaPrevia.tipo} /></span> : 'Sin mensajes'}
+                  </p>
+                  <span className="flex shrink-0 items-center gap-1.5">
+                    {!c.botActivo && <Hand className="h-3.5 w-3.5 text-aviso" aria-label="Tomada" />}
+                    {c.sinLeer > 0 && (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-exito px-1.5 text-[11px] font-semibold text-white" aria-label={`${c.sinLeer} sin leer`}>
+                        {c.sinLeer}
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <Etiquetas nombres={c.etiquetas} className="mt-0.5" />
               </div>
-              <Etiquetas nombres={c.etiquetas} />
-              <p className="truncate text-[11.5px] text-tenue">
-                {c.ultimo ? fechaHora(c.ultimo) : 'Sin mensajes'}
-              </p>
             </Link>
           ))}
         </div>
@@ -208,6 +285,7 @@ export default function Bandeja({
               >
                 <ChevronLeft className="h-6 w-6" />
               </Link>
+              <Avatar nombre={abierta.nombre} semilla={abierta.numero} tamano={40} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[14px] font-semibold text-texto">{abierta.nombre}</p>
                 <p className="flex min-w-0 flex-wrap items-center gap-x-2 text-[11.5px] text-tenue">
@@ -245,38 +323,50 @@ export default function Bandeja({
               )}
             </header>
 
-            <div className="flex-1 space-y-2 overflow-y-auto bg-fondo p-3">
+            <div ref={hilo} className="flex-1 overflow-y-auto bg-fondo px-3 py-2 sm:px-6">
               {mensajes.length === 0 && (
                 <p className="py-8 text-center text-[13px] text-tenue">Sin mensajes.</p>
               )}
-              {mensajes.map((m) => (
-                <div key={m.id} className={cn('flex', m.direccion === 'SALIENTE' ? 'justify-end' : 'justify-start')}>
-                  <div
-                    className={cn(
-                      'max-w-[85%] rounded-lg px-3 py-2 text-[13px] leading-relaxed sm:max-w-[70%]',
-                      m.direccion === 'SALIENTE' ? 'bg-acento text-acento-contraste' : 'border border-borde bg-tarjeta text-texto',
-                    )}
-                  >
-                    {m.herramienta && (
-                      <p className="mb-1 flex items-center gap-1 text-[10.5px] opacity-80">
-                        <Wrench className="h-3 w-3" />
-                        {m.herramienta}
-                      </p>
-                    )}
-                    <p className="whitespace-pre-wrap break-words">
-                      {m.texto || <span className="opacity-70">[{m.tipo}]</span>}
-                    </p>
-                    <p className="mt-1 text-[10px] opacity-70">
-                      {fechaHora(m.creado)}
-                      {m.enviadoOk === false && (
-                        <span className="ml-1 inline-flex items-center gap-0.5" title={m.errorEnvio ?? undefined}>
-                          <AlertCircle className="h-3 w-3" /> no salió
+              {mensajes.map((m, n) => {
+                const nuevoDia = n === 0 || claveDia(mensajes[n - 1].creado, zona) !== claveDia(m.creado, zona);
+                const nuestro = m.direccion === 'SALIENTE';
+                const delAgente = nuestro && !!m.herramienta && m.herramienta !== 'equipo';
+                const sigueIgual = n > 0 && !nuevoDia && mensajes[n - 1].direccion === m.direccion;
+                return (
+                  <Fragment key={m.id}>
+                    {/* El separador de día, como WhatsApp: «Hoy», «Ayer», el día o la fecha. */}
+                    {nuevoDia && (
+                      <div className="my-3 flex justify-center">
+                        <span className="rounded-md border border-borde bg-tarjeta px-2.5 py-1 text-[11.5px] font-medium text-tenue">
+                          {separadorDia(m.creado, zona)}
                         </span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                      </div>
+                    )}
+                    <div className={cn('flex', nuestro ? 'justify-end' : 'justify-start', sigueIgual ? 'mt-0.5' : 'mt-2')}>
+                      <div
+                        className={cn(
+                          'max-w-[85%] rounded-lg px-2.5 py-1.5 text-[13.5px] leading-relaxed shadow-sm sm:max-w-[65%]',
+                          nuestro ? 'bg-acento-suave text-texto' : 'border border-borde bg-tarjeta text-texto',
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap break-words">
+                          <Contenido texto={m.texto} tipo={m.tipo} />
+                          {/* La hora y los ✓ dentro de la burbuja, abajo a la derecha. */}
+                          <span className="float-right ml-3 mt-1.5 flex items-center gap-1 text-[10.5px] text-tenue">
+                            {delAgente && <Bot className="h-3 w-3" aria-label="Agente" />}
+                            <span title={m.herramienta ?? undefined}>{horaCorta(m.creado, zona)}</span>
+                            {nuestro && (
+                              <span title={m.enviadoOk === false ? m.errorEnvio ?? 'No salió' : undefined}>
+                                <Acuse estado={m.enviadoOk === false ? 'failed' : m.estado} />
+                              </span>
+                            )}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  </Fragment>
+                );
+              })}
             </div>
 
             {/* CONTESTAR DESDE LA APP: solo con la conversación tomada y dentro de las 24 h. */}
@@ -285,13 +375,14 @@ export default function Bandeja({
                 {abierta.ventanaAbierta ? (
                   <form onSubmit={(e) => { e.preventDefault(); enviar(); }} className="flex items-end gap-2">
                     <textarea
+                      style={{ borderRadius: 20 }}
                       value={mensaje}
                       onChange={(e) => setMensaje(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar(); } }}
                       placeholder="Escribe un mensaje"
                       aria-label="Mensaje"
                       rows={Math.min(5, Math.max(1, mensaje.split('\n').length))}
-                      className="campo flex-1 resize-none"
+                      className="campo flex-1 resize-none px-4"
                       disabled={enviando}
                     />
                     <button
@@ -299,7 +390,7 @@ export default function Bandeja({
                       disabled={enviando || !mensaje.trim()}
                       title="Enviar"
                       aria-label="Enviar"
-                      className="foco-visible flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded bg-acento text-acento-contraste transition-colors hover:bg-acento-fuerte disabled:opacity-45"
+                      className="foco-visible flex h-[36px] w-[36px] shrink-0 items-center justify-center rounded-full bg-acento text-acento-contraste transition-colors hover:bg-acento-fuerte disabled:opacity-45"
                     >
                       <SendHorizontal className="h-4 w-4" />
                     </button>

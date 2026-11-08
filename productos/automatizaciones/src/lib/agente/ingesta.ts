@@ -13,7 +13,7 @@ import { pool } from '@/lib/db';
 import type { MensajeEntrante } from './entrante';
 
 export {
-  extraerMensajes, extraerEcos, extraerContactosDeAgenda, extraerCambiosDeNumero, campoDelWebhook,
+  extraerMensajes, extraerEcos, extraerContactosDeAgenda, extraerCambiosDeNumero, campoDelWebhook, extraerEstados,
   type MensajeEntrante, type EcoDelEquipo, type ContactoDeAgenda, type CambioDeNumero,
 } from './entrante';
 import type { EcoDelEquipo, ContactoDeAgenda } from './entrante';

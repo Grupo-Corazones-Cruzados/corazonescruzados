@@ -47,3 +47,43 @@ export function fechaLarga(fecha: string | Date, zona = 'America/Guayaquil') {
 
 /** Miles con «.» armados a mano: igual en Node y en Chrome (los ICU agrupan distinto «1234»). */
 export const miles = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+/**
+ * FECHAS DE LA BANDEJA, COMO WHATSAPP (2026-11-08): en la lista, la hora si es de hoy, «Ayer», el
+ * día de la semana si es de esta semana, o la fecha; en el hilo, separadores «Hoy», «Ayer»…
+ * Armadas a mano con las partes numéricas (ver `partes`), iguales en Node y en Chrome.
+ */
+const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+function diaNumero(fecha: string | Date, zona: string) {
+  const { d, m, a } = partes(fecha, zona);
+  return Date.UTC(Number(a), m - 1, d) / 86400000;
+}
+
+/** «07:49» */
+export function horaCorta(fecha: string | Date, zona = 'America/Guayaquil') {
+  const { h, min } = partes(fecha, zona);
+  return `${h}:${min}`;
+}
+
+/** Lo que va a la derecha de cada conversación en la lista. */
+export function cuandoEnLista(fecha: string | Date, zona = 'America/Guayaquil') {
+  const dif = diaNumero(new Date(), zona) - diaNumero(fecha, zona);
+  if (dif <= 0) return horaCorta(fecha, zona);
+  if (dif === 1) return 'Ayer';
+  if (dif < 7) return DIAS[new Date(diaNumero(fecha, zona) * 86400000).getUTCDay()];
+  const { d, m, a } = partes(fecha, zona);
+  return `${d}/${m}/${String(a).slice(-2)}`;
+}
+
+/** El separador de día dentro del hilo. */
+export function separadorDia(fecha: string | Date, zona = 'America/Guayaquil') {
+  const dif = diaNumero(new Date(), zona) - diaNumero(fecha, zona);
+  if (dif <= 0) return 'Hoy';
+  if (dif === 1) return 'Ayer';
+  if (dif < 7) return DIAS[new Date(diaNumero(fecha, zona) * 86400000).getUTCDay()];
+  return fechaLarga(fecha, zona);
+}
+
+/** Clave de día para agrupar mensajes. */
+export const claveDia = (fecha: string | Date, zona = 'America/Guayaquil') => diaNumero(fecha, zona);

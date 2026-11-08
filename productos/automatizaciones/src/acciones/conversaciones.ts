@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
-import { contextoEscritura } from '@/lib/inquilino';
+import { contextoEscritura, contextoApi } from '@/lib/inquilino';
 import { canalPorId, secretoDelCanal } from '@/lib/agente/canales';
 import { enviarTexto } from '@/lib/agente/whatsapp';
 import { registrarSaliente } from '@/lib/agente/ingesta';
@@ -128,4 +128,18 @@ export async function responder(slug: string, conversacionId: number, texto: str
   });
   revalidatePath(`/${slug}/conversaciones`);
   return envio.ok ? { ok: true } : { ok: false, error: envio.error ?? 'No salió.' };
+}
+
+/**
+ * Abrir una conversación la marca como VISTA: lo entrante hasta ahora deja de contar como «sin
+ * leer» (el círculo verde de la lista). No se marca en el modo demostración ni durante «ver
+ * como», que no escriben nada.
+ */
+export async function marcarVista(slug: string, conversacionId: number): Promise<void> {
+  const ctx = await contextoApi(slug);
+  if (!ctx || ctx.sesion.suplantadoPor || ctx.inquilino.soloLectura) return;
+  await prisma.conversacion.updateMany({
+    where: { id: conversacionId, inquilinoId: ctx.inquilino.id },
+    data: { vistoEn: new Date() },
+  });
 }
