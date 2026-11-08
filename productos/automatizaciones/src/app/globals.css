@@ -72,6 +72,12 @@ body {
   }
 }
 
+/*
+  ⚠️ LAS PIEZAS VAN EN @layer components (2026-11-08). Sueltas, ganaban a TODAS las utilidades
+  de Tailwind v4: `campo pl-8` dejaba el relleno en 10 px y la lupa del buscador pisaba el texto
+  («🔍uscar»). Es el mismo fallo que la «sombra» del menú (ver `@layer base` arriba).
+*/
+@layer components {
 /* Campo de formulario — alto 34 px, el del panel de GCC. */
 .campo {
   width: 100%;
@@ -129,6 +135,7 @@ select.campo {
   border: 1px solid var(--color-borde);
   border-radius: 6px;
 }
+} /* fin de @layer components */
 
 /* Barra de desplazamiento discreta, para que las columnas no griten. */
 .desplaza::-webkit-scrollbar {

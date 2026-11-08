@@ -108,3 +108,38 @@ export async function existeCuentaGcc(email: string): Promise<boolean> {
   );
   return rows.length > 0;
 }
+
+/**
+ * EL PERFIL DE GCC WORLD de quien entra con esa cuenta (Fernando, 2026-11-08: «mi cuenta no está
+ * tomando mi foto de perfil»). Amplía la excepción de arriba, con las mismas reglas: SOLO
+ * LECTURA, de `gcc_world.users`, y solo para cuentas de origen GCC. No se copia nada: el día que
+ * cambie su foto o su nombre en la plataforma, aquí se ve el nuevo.
+ *
+ * La foto NO viene aquí (en la plataforma es un `data:` de decenas de KB): solo si existe. La
+ * sirve `/<cliente>/foto`, con su propia caché.
+ */
+export type PerfilGcc = { nombre: string; email: string; telefono: string | null; tieneFoto: boolean };
+
+export async function perfilGcc(email: string | null | undefined): Promise<PerfilGcc | null> {
+  if (!email) return null;
+  const { rows: [u] } = await pool.query<{ first_name: string | null; last_name: string | null; email: string; phone: string | null; foto: boolean }>(
+    `SELECT first_name, last_name, email, phone, (avatar_url IS NOT NULL AND avatar_url <> '') AS foto
+       FROM gcc_world.users WHERE lower(email) = lower($1)`,
+    [email],
+  );
+  if (!u) return null;
+  return {
+    nombre: [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email,
+    email: u.email,
+    telefono: u.phone,
+    tieneFoto: u.foto,
+  };
+}
+
+/** La foto tal como la guarda la plataforma: un `data:` o una dirección. */
+export async function fotoGcc(email: string): Promise<string | null> {
+  const { rows: [u] } = await pool.query<{ avatar_url: string | null }>(
+    `SELECT avatar_url FROM gcc_world.users WHERE lower(email) = lower($1)`, [email],
+  );
+  return u?.avatar_url || null;
+}

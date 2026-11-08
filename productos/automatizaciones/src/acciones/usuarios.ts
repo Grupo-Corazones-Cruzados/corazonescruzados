@@ -94,7 +94,7 @@ export async function crearUsuario(slug: string, datos: FormData): Promise<Resul
     },
   });
 
-  revalidatePath(`/${slug}/usuarios`);
+  revalidatePath(`/${slug}/configuracion`);
   return { ok: true, mensaje: `Cuenta creada para ${d.nombre}.`, clave };
 }
 
@@ -123,7 +123,7 @@ export async function cambiarActivo(slug: string, id: number, activo: boolean): 
   }
 
   await prisma.usuario.update({ where: { id: cuenta.id }, data: { activo } });
-  revalidatePath(`/${slug}/usuarios`);
+  revalidatePath(`/${slug}/configuracion`);
   return { ok: true, mensaje: activo ? 'Cuenta activada.' : 'Cuenta desactivada.' };
 }
 
@@ -149,6 +149,42 @@ export async function regenerarClave(slug: string, id: number): Promise<Resultad
     where: { id: cuenta.id },
     data: { claveHash: await bcrypt.hash(clave, 10) },
   });
-  revalidatePath(`/${slug}/usuarios`);
+  revalidatePath(`/${slug}/configuracion`);
   return { ok: true, mensaje: `Contraseña nueva de ${cuenta.nombre}.`, clave };
+}
+
+const Edicion = z.object({
+  nombre: z.string().trim().min(2, 'Escribe el nombre.').max(120),
+  rol: z.enum(['ADMIN', 'OPERADOR', 'CONSULTA']),
+});
+
+/**
+ * EDITAR UN USUARIO: nombre y rol (Fernando, 2026-11-08). Dos guardas, las mismas que al
+ * desactivar: nadie se quita a sí mismo el rol de administrador (se quedaría fuera de
+ * Configuración) y el negocio nunca se queda sin un administrador activo.
+ */
+export async function editarUsuario(slug: string, id: number, datos: FormData): Promise<ResultadoUsuario> {
+  const permiso = await contextoEscritura(slug, 'ADMIN');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const { ctx } = permiso;
+
+  const leido = Edicion.safeParse(Object.fromEntries(datos));
+  if (!leido.success) return { ok: false, error: leido.error.issues[0].message };
+  const d = leido.data;
+
+  const cuenta = await prisma.usuario.findFirst({
+    where: { id, inquilinoId: ctx.inquilino.id },
+    select: { id: true, rol: true, activo: true },
+  });
+  if (!cuenta) return { ok: false, error: 'Ese usuario no existe.' };
+
+  if (cuenta.rol === 'ADMIN' && d.rol !== 'ADMIN') {
+    if (id === ctx.sesion.uid) return { ok: false, error: 'No puedes quitarte el rol de administrador.' };
+    const admins = await prisma.usuario.count({ where: { inquilinoId: ctx.inquilino.id, rol: 'ADMIN', activo: true } });
+    if (cuenta.activo && admins <= 1) return { ok: false, error: 'Es el único administrador activo.' };
+  }
+
+  await prisma.usuario.update({ where: { id: cuenta.id }, data: { nombre: d.nombre, rol: d.rol } });
+  revalidatePath(`/${slug}`, 'layout');
+  return { ok: true, mensaje: 'Guardado.' };
 }

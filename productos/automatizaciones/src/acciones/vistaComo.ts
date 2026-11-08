@@ -7,6 +7,20 @@ import { abrirSesionUsuario, cerrarSesion, leerSesionUsuario, COOKIE_SESION } fr
 
 export type Resultado = { ok: false; error: string };
 
+export type Candidato = { id: number; nombre: string; usuario: string; rol: 'ADMIN' | 'OPERADOR' | 'CONSULTA' };
+
+/** A quién se puede ver: las cuentas ACTIVAS del propio negocio, menos la tuya. */
+export async function candidatosVerComo(slug: string): Promise<{ ok: true; lista: Candidato[] } | Resultado> {
+  const ctx = await contextoApi(slug, 'ADMIN');
+  if (!ctx || ctx.sesion.suplantadoPor) return { ok: false, error: 'Solo un administrador puede ver la app como otro usuario.' };
+  const lista = await prisma.usuario.findMany({
+    where: { inquilinoId: ctx.inquilino.id, activo: true, id: { not: ctx.sesion.uid } },
+    select: { id: true, nombre: true, usuario: true, rol: true },
+    orderBy: { nombre: 'asc' },
+  });
+  return { ok: true, lista };
+}
+
 /**
  * «VER COMO ESTE USUARIO» (Fernando, 2026-11-08: «como tenemos en administrador de gcc world
  * para ver como cliente… el administrador del negocio pueda ver la app como un usuario de su

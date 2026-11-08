@@ -240,6 +240,7 @@ export default function Estudio({
         alCerrar={cerrarPanel}
         titulo={editando ? editando.titulo : 'Nuevo bloque'}
         ancho="lg"
+        lleno
         pie={
           <PieAcciones
             eliminar={editando ? (
@@ -265,7 +266,7 @@ export default function Estudio({
               router.refresh();
             })
           }
-          className="space-y-3"
+          className="flex min-h-0 flex-1 flex-col gap-3"
         >
           <div className="grid gap-3 sm:grid-cols-2">
             <Campo etiqueta="Título">
@@ -282,9 +283,11 @@ export default function Estudio({
               />
             </Campo>
           </div>
-          <Campo etiqueta="Contenido">
-            <AreaTexto name="contenido" rows={16} defaultValue={editando?.contenido ?? ''} className="font-mono text-[12px]" />
-          </Campo>
+          {/* El contenido se queda con todo el alto que sobra. */}
+          <label className="flex min-h-0 flex-1 flex-col">
+            <span className="mb-1 block text-[12px] font-semibold text-texto">Contenido</span>
+            <AreaTexto name="contenido" defaultValue={editando?.contenido ?? ''} className="min-h-[240px] flex-1 resize-none font-mono text-[12px]" />
+          </label>
           <label className="flex items-center gap-2 text-[13px] text-texto">
             <input type="checkbox" name="activo" defaultChecked={editando ? editando.activo : true} className="h-4 w-4" />
             Activo
@@ -296,6 +299,7 @@ export default function Estudio({
       <PanelLateral
         abierto={instruccion !== null}
         alCerrar={() => setInstruccion(null)}
+        lleno
         titulo={metaInstruccion ? `${metaInstruccion.nombre}${actualInstruccion ? ` · versión ${actualInstruccion.version}` : ''}` : ''}
         ancho="lg"
         pie={
@@ -321,7 +325,7 @@ export default function Estudio({
           value={instruccion?.texto ?? ''}
           placeholder={metaInstruccion?.pista}
           onChange={(e) => setInstruccion((x) => (x ? { ...x, texto: e.target.value } : x))}
-          className="h-full min-h-[320px] resize-none font-mono text-[12px]"
+          className="min-h-[320px] flex-1 resize-none font-mono text-[12px]"
         />
       </PanelLateral>
 

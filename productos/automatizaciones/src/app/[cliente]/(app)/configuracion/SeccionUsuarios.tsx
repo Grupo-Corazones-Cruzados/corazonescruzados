@@ -3,11 +3,10 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { UserPlus, KeyRound, Copy, ShieldCheck, Link2, UserX, UserCheck, Save, Eye } from 'lucide-react';
+import { UserPlus, KeyRound, Copy, ShieldCheck, Link2, UserX, UserCheck, Save, Pencil } from 'lucide-react';
 import { Boton, Campo, Entrada, Selector, Insignia, Tarjeta, PanelLateral, Tabla, PieAcciones } from '@/componentes/ui';
-import { AccionesTarjeta } from '@/componentes/Navegacion';
-import { crearUsuario, cambiarActivo, regenerarClave } from '@/acciones/usuarios';
-import { verComo } from '@/acciones/vistaComo';
+import { MenuFila } from '@/componentes/Navegacion';
+import { crearUsuario, cambiarActivo, regenerarClave, editarUsuario } from '@/acciones/usuarios';
 
 export type UsuarioVista = {
   id: number;
@@ -56,6 +55,7 @@ export default function SeccionUsuarios({
   setAbierto: (v: boolean) => void;
 }) {
   const router = useRouter();
+  const [editando, setEditando] = useState<UsuarioVista | null>(null);
   const [enCurso, arranca] = useTransition();
   const [claveNueva, setClaveNueva] = useState<{ texto: string; de: string } | null>(null);
 
@@ -108,16 +108,10 @@ export default function SeccionUsuarios({
 
       {/* Registros en TABLA (galería en el teléfono) con el recuento al pie (reglas 2026-10-29/30). */}
       <Tarjeta className="overflow-hidden">
-        <div className="flex items-center justify-between gap-3 px-4 py-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <h2 className="hidden text-[14px] font-semibold text-texto lg:block">Usuarios</h2>
-            <Insignia tono={lleno ? 'error' : 'neutro'}>
-              {tope === null ? `${activas} activos` : `${activas} de ${tope} activos`}
-            </Insignia>
-          </div>
+        {/* Sin título: la sección ya se llama «Usuarios». El tope va en el recuento del pie. */}
+        <div className="hidden justify-end px-4 py-3 lg:flex">
           <Boton
             icono={UserPlus}
-            className="hidden lg:inline-flex"
             onClick={() => setAbierto(true)}
             disabled={lleno}
             title={lleno ? `Tu plan permite ${tope} usuarios activos y ya tienes ${activas}.` : undefined}
@@ -128,7 +122,7 @@ export default function SeccionUsuarios({
         <Tabla
           filas={usuarios}
           claveFila={(u) => u.id}
-          recuento={`${usuarios.length} ${usuarios.length === 1 ? 'usuario' : 'usuarios'} · ${activas} ${activas === 1 ? 'activo' : 'activos'}`}
+          recuento={`${usuarios.length} ${usuarios.length === 1 ? 'usuario' : 'usuarios'} · ${tope === null ? activas : `${activas} de ${tope}`} ${activas === 1 ? 'activo' : 'activos'}`}
           columnas={[
             { clave: 'nombre', titulo: 'Persona', ancho: '30%', render: (u) => (
               <div className="min-w-0">
@@ -145,29 +139,16 @@ export default function SeccionUsuarios({
               ? <Insignia tono="info" icono={Link2}>De GCC World</Insignia>
               : <Insignia tono="neutro" icono={ShieldCheck}>De este producto</Insignia> },
             { clave: 'estado', titulo: 'Estado', ancho: '13%', render: (u) => (
-              <Insignia tono={u.activo ? 'exito' : 'error'}>{u.activo ? 'Activa' : 'Desactivada'}</Insignia>
+              <Insignia tono={u.activo ? 'exito' : 'neutro'}>{u.activo ? 'Activo' : 'Inactivo'}</Insignia>
             ) },
             /* Las acciones de cada cuenta son SECUNDARIAS: botones desde `lg` y «⋯» en el
                teléfono. La que quita el acceso va en rojo y al final. Tu propia cuenta de GCC
                World no tiene ninguna. */
-            { clave: 'acciones', titulo: '', alinear: 'der', render: (u) => (u.origen === 'PRODUCTO' || !u.esYo) ? (
+            { clave: 'acciones', titulo: '', ancho: '56px', alinear: 'der', render: (u) => (
               <div className="flex justify-end">
-                <AccionesTarjeta
+                <MenuFila
                   acciones={[
-                    // Ver la app con sus ojos (solo lectura). La primera: es la que más se usa
-                    // para responder «¿qué ve fulano?» sin pedirle la contraseña.
-                    ...(u.activo && !u.esYo
-                      ? [{
-                          etiqueta: 'Ver como este usuario',
-                          icono: Eye,
-                          deshabilitado: enCurso,
-                          alPulsar: () =>
-                            arranca(async () => {
-                              const r = await verComo(slug, u.id);
-                              if (r && !r.ok) toast.error(r.error);
-                            }),
-                        }]
-                      : []),
+                    { etiqueta: 'Editar', icono: Pencil, deshabilitado: enCurso, alPulsar: () => setEditando(u) },
                     ...(u.origen === 'PRODUCTO'
                       ? [{
                           etiqueta: 'Nueva contraseña',
@@ -182,6 +163,7 @@ export default function SeccionUsuarios({
                             }),
                         }]
                       : []),
+                    // La que quita el acceso, en rojo y al final.
                     ...(!u.esYo
                       ? [{
                           etiqueta: u.activo ? 'Desactivar' : 'Activar',
@@ -200,7 +182,7 @@ export default function SeccionUsuarios({
                   ]}
                 />
               </div>
-            ) : null },
+            ) },
           ]}
         />
       </Tarjeta>
@@ -228,6 +210,49 @@ export default function SeccionUsuarios({
               <option value="CONSULTA">Consulta — mira, no escribe</option>
               <option value="OPERADOR">Operador — atiende conversaciones y campañas</option>
               <option value="ADMIN">Administrador — además gobierna cuentas y suscripción</option>
+            </Selector>
+          </Campo>
+        </form>
+      </PanelLateral>
+
+      <PanelLateral
+        abierto={editando !== null}
+        alCerrar={() => setEditando(null)}
+        titulo={editando?.nombre ?? ''}
+        pie={
+          <PieAcciones>
+            <Boton variante="secundario" type="button" onClick={() => setEditando(null)} disabled={enCurso}>Cancelar</Boton>
+            <Boton form="form-editar-usuario" type="submit" icono={Save} disabled={enCurso}>{enCurso ? 'Guardando…' : 'Guardar'}</Boton>
+          </PieAcciones>
+        }
+      >
+        <form
+          id="form-editar-usuario"
+          key={editando?.id ?? 0}
+          action={(d) =>
+            arranca(async () => {
+              if (!editando) return;
+              const r = await editarUsuario(slug, editando.id, d);
+              if (!r.ok) { toast.error(r.error); return; }
+              toast.success(r.mensaje ?? 'Guardado.');
+              setEditando(null);
+              router.refresh();
+            })
+          }
+          className="space-y-3"
+        >
+          <Campo etiqueta="Nombre">
+            <Entrada name="nombre" defaultValue={editando?.nombre ?? ''} required autoFocus />
+          </Campo>
+          <Campo etiqueta="Usuario">
+            <Entrada value={editando?.usuario ?? ''} readOnly disabled />
+          </Campo>
+          <Campo etiqueta="Rol">
+            {/* Tu propio rol de administrador no se puede quitar: te quedarías fuera. */}
+            <Selector name="rol" defaultValue={editando?.rol ?? 'OPERADOR'}>
+              <option value="CONSULTA" disabled={editando?.esYo && editando.rol === 'ADMIN'}>Consulta</option>
+              <option value="OPERADOR" disabled={editando?.esYo && editando.rol === 'ADMIN'}>Operador</option>
+              <option value="ADMIN">Administrador</option>
             </Selector>
           </Campo>
         </form>

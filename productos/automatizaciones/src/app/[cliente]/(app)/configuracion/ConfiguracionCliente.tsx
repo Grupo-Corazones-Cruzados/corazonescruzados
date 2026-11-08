@@ -38,6 +38,8 @@ export type PagoVista = {
   id: number; periodo: string; monto: number; moneda: string; estado: string; metodo: string; pagadoEn: string | null;
 };
 
+export type PerfilVista = { nombre: string; email: string; telefono: string | null; foto: string | null };
+
 export type Seccion = 'negocio' | 'usuarios' | 'whatsapp' | 'suscripcion' | 'cuenta';
 
 /**
@@ -56,6 +58,7 @@ export default function ConfiguracionCliente({
   suscripcion,
   pagos,
   miOrigen,
+  perfil,
   conexion,
   meta,
   esCortesia,
@@ -66,6 +69,8 @@ export default function ConfiguracionCliente({
   suscripcion: SuscripcionVista;
   pagos: PagoVista[];
   miOrigen: 'GCC' | 'PRODUCTO' | null;
+  /** Los datos de su cuenta de GCC World, si entra con ella. */
+  perfil: PerfilVista | null;
   conexion: ConexionVista | null;
   /** Identificadores PÚBLICOS de la app de Meta (el secreto no sale del servidor). */
   meta: { appId: string | null; configId: string | null };
@@ -107,7 +112,7 @@ export default function ConfiguracionCliente({
           <SeccionWhatsApp slug={slug} conexion={conexion} appId={meta.appId} configId={meta.configId} esCortesia={esCortesia} />
         )}
         {seccion === 'suscripcion' && <SeccionSuscripcion slug={slug} s={suscripcion} pagos={pagos} />}
-        {seccion === 'cuenta' && <SeccionCuenta slug={slug} miOrigen={miOrigen} />}
+        {seccion === 'cuenta' && <SeccionCuenta slug={slug} miOrigen={miOrigen} perfil={perfil} />}
       </Secciones>
     </div>
   );
@@ -301,23 +306,39 @@ function SeccionSuscripcion({ slug, s, pagos }: { slug: string; s: SuscripcionVi
 }
 
 // ── Mi cuenta ────────────────────────────────────────────────────────────────
-function SeccionCuenta({ slug, miOrigen }: { slug: string; miOrigen: 'GCC' | 'PRODUCTO' | null }) {
+function SeccionCuenta({ slug, miOrigen, perfil }: { slug: string; miOrigen: 'GCC' | 'PRODUCTO' | null; perfil: PerfilVista | null }) {
   const [enCurso, arranca] = useTransition();
   const esDeGcc = miOrigen === 'GCC';
 
   return (
     <Tarjeta className="p-4 sm:p-5">
-      <h2 className="hidden text-[14px] font-semibold text-texto lg:block">Tu contraseña</h2>
-
       {esDeGcc ? (
-        /* Se le dice ANTES de que lo intente. Un formulario que siempre falla es peor
-           que no tener formulario. */
-        <p className="rounded border lg:mt-3 border-borde bg-realce px-3 py-2.5 text-[12.5px] leading-relaxed text-tenue">
-          Entras con tu <strong>cuenta de cliente de GCC World</strong>, así que aquí no hay ninguna
-          contraseña que cambiar: la tuya vive en la plataforma y se cambia allí. El día que la
-          cambies, cambia también tu entrada aquí.
-        </p>
+        /* Su cuenta de GCC World, tal como está en la plataforma: aquí solo se ve. */
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            {perfil?.foto
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={perfil.foto} alt="" className="h-14 w-14 rounded-full object-cover" />
+              : <div className="flex h-14 w-14 items-center justify-center rounded-full bg-acento-suave text-[18px] font-bold text-acento">{(perfil?.nombre ?? '?').charAt(0).toUpperCase()}</div>}
+            <div className="min-w-0">
+              <p className="truncate text-[15px] font-semibold text-texto">{perfil?.nombre ?? '—'}</p>
+              <p className="text-[12px] text-tenue">Cuenta de GCC World</p>
+            </div>
+          </div>
+          <dl className="grid gap-3 sm:grid-cols-2">
+            <DatoCuenta titulo="Correo">{perfil?.email ?? '—'}</DatoCuenta>
+            <DatoCuenta titulo="Teléfono">{perfil?.telefono ?? '—'}</DatoCuenta>
+          </dl>
+          <div className="flex justify-end">
+            <a href="https://app.grupocc.org/dashboard/settings" target="_blank" rel="noreferrer"
+              className="inline-flex h-9 items-center gap-2 rounded border border-borde bg-tarjeta px-4 text-[13px] font-semibold text-texto hover:bg-realce">
+              Editar en GCC World
+            </a>
+          </div>
+        </div>
       ) : (
+        <>
+        <h2 className="hidden text-[14px] font-semibold text-texto lg:block">Tu contraseña</h2>
         <form
           id="form-clave"
           action={(d) =>
@@ -342,8 +363,18 @@ function SeccionCuenta({ slug, miOrigen }: { slug: string; miOrigen: 'GCC' | 'PR
             <Boton type="submit" tamano="lg" icono={Save} disabled={enCurso}>{enCurso ? 'Cambiando…' : 'Cambiar contraseña'}</Boton>
           </div>
         </form>
+        </>
       )}
     </Tarjeta>
+  );
+}
+
+function DatoCuenta({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0 rounded border border-borde bg-realce px-3 py-2">
+      <dt className="text-[10.5px] font-semibold uppercase tracking-wide text-tenue">{titulo}</dt>
+      <dd className="truncate text-[13px] text-texto">{children}</dd>
+    </div>
   );
 }
 

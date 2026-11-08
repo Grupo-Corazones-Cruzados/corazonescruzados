@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import {
   LayoutDashboard,
@@ -13,10 +13,12 @@ import {
   LogOut,
   Ellipsis,
   ArrowLeft,
+  Eye,
 } from 'lucide-react';
 import { salir } from '@/acciones/acceso';
 import { Boton, BotonIcono, BurbujaDetalles, useAparicion, type Detalle } from '@/componentes/ui';
 import { LogoHotel } from '@/componentes/Marca';
+import { DialogoVerComo } from '@/componentes/DialogoVerComo';
 import { cn } from '@/lib/utils';
 import { EXIGE_ROL, esRutaDeModulo, alMenos } from '@/lib/modulos';
 import type { Rol, TipoAutomatizacion } from '@/generated/prisma/enums';
@@ -120,7 +122,23 @@ type Props = {
   rol: Rol;
   /** Los tipos de automatización que el cliente tiene montados. */
   montados: TipoAutomatizacion[];
+  /** La foto de la persona (la de su cuenta de GCC World, si entra con ella). */
+  foto?: string | null;
+  /** ¿Es una vista «ver como»? Entonces no se ofrece otra. */
+  enVista?: boolean;
 };
+
+/** La foto de la persona, o su inicial. */
+function Avatar({ nombre, foto }: { nombre: string; foto?: string | null }) {
+  if (foto)
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={foto} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" referrerPolicy="no-referrer" />;
+  return (
+    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-acento-suave text-[12px] font-bold text-acento">
+      {nombre.charAt(0).toUpperCase()}
+    </div>
+  );
+}
 
 /**
  * LO DE DENTRO DEL MENÚ — cabecera con la marca, los grupos y el pie con la persona y
@@ -128,9 +146,11 @@ type Props = {
  * escritorio (que se contrae a iconos) y el panel que sale por la izquierda en el
  * teléfono al pulsar «Más» (siempre desplegado).
  */
-function ContenidoMenu({ slug, cliente, logoUrl, usuario, rol, montados, colapsado = false }: Props & { colapsado?: boolean }) {
+function ContenidoMenu({ slug, cliente, logoUrl, usuario, foto, rol, montados, enVista, colapsado = false }: Props & { colapsado?: boolean }) {
   const ruta = usePathname();
   const [saliendo, arranca] = useTransition();
+  const [verComo, setVerComo] = useState(false);
+  const cerrarVerComo = useCallback(() => setVerComo(false), []);
   const grupos = gruposDe(rol, montados);
 
   const Enlace = ({ item }: { item: Item }) => {
@@ -189,17 +209,36 @@ function ContenidoMenu({ slug, cliente, logoUrl, usuario, rol, montados, colapsa
       </nav>
 
       <div className="shrink-0 border-t border-borde p-3">
-        <div className={cn('mb-2 flex h-8 items-center gap-2.5', colapsado ? 'justify-center' : 'px-1')}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-acento-suave text-[12px] font-bold text-acento">
-            {usuario.charAt(0).toUpperCase()}
-          </div>
-          {!colapsado && (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-[12px] font-semibold text-texto">{usuario}</p>
-              <p className="text-[10px] text-tenue">{ROL_ETIQUETA[rol]}</p>
-            </div>
-          )}
-        </div>
+        {/*
+          «VER COMO», COMO EN GCC WORLD (Fernando, 2026-11-08): para un administrador, su propio
+          nombre en el pie del menú es un botón con un ojo que abre la lista de usuarios del
+          negocio. Durante una vista no se ofrece (no se encadenan vistas).
+        */}
+        {(() => {
+          const puedeVer = rol === 'ADMIN' && !enVista;
+          const contenido = (
+            <>
+              <Avatar nombre={usuario} foto={foto} />
+              {!colapsado && (
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="truncate text-[12px] font-semibold text-texto">{usuario}</p>
+                  <p className="text-[10px] text-tenue">{ROL_ETIQUETA[rol]}</p>
+                </div>
+              )}
+              {puedeVer && !colapsado && <Eye className="h-3.5 w-3.5 shrink-0 text-tenue" />}
+            </>
+          );
+          const clases = cn('mb-2 flex h-8 w-full items-center gap-2.5', colapsado ? 'justify-center' : 'px-1');
+          return puedeVer ? (
+            <button type="button" onClick={() => setVerComo(true)} title="Ver la app como otro usuario"
+              className={cn(clases, 'foco-visible rounded-md transition-colors hover:bg-realce')}>
+              {contenido}
+            </button>
+          ) : (
+            <div className={clases}>{contenido}</div>
+          );
+        })()}
+        <DialogoVerComo slug={slug} abierto={verComo} alCerrar={cerrarVerComo} />
         <button
           onClick={() => arranca(() => salir(slug) as unknown as void)}
           disabled={saliendo}
@@ -496,9 +535,41 @@ function BotonAccion({ accion: a, tamano }: { accion: AccionMenu; tamano?: 'sm' 
 }
 
 /** El «⋯» del teléfono con las acciones secundarias; entra y sale con movimiento. */
-function MenuMas({ acciones }: { acciones: AccionMenu[] }) {
+/**
+ * Las acciones de una FILA de tabla: SIEMPRE un «⋯» que abre la lista, en todos los anchos
+ * (Fernando, 2026-11-08: «los botones tienen que ser un botón de más que al hacer clic abra una
+ * lista de opciones»). Nunca una columna de botones con texto.
+ */
+export function MenuFila({ acciones }: { acciones: AccionMenu[] }) {
+  return <MenuMas acciones={acciones} siempre />;
+}
+
+function MenuMas({ acciones, siempre = false }: { acciones: AccionMenu[]; siempre?: boolean }) {
   const [abierto, setAbierto] = useState(false);
   const { montado, visible } = useAparicion(abierto);
+  /*
+    SE MIDE Y SE ENCAJA (regla /diseno §4-quater): `fixed`, pegado al botón por la derecha y,
+    si no cabe debajo, hacia arriba. Con `absolute` lo recortaba la tarjeta de la tabla en la
+    última fila (Fernando, 2026-11-08).
+  */
+  const boton = useRef<HTMLButtonElement>(null);
+  const [sitio, setSitio] = useState<{ top?: number; bottom?: number; right: number }>({ right: 16 });
+  const abrir = () => {
+    const r = boton.current?.getBoundingClientRect();
+    if (r) {
+      const alto = acciones.length * 41 + 10;
+      const right = Math.max(8, window.innerWidth - r.right);
+      setSitio(window.innerHeight - r.bottom < alto + 12 ? { bottom: window.innerHeight - r.top + 6, right } : { top: r.bottom + 6, right });
+    }
+    setAbierto((v) => !v);
+  };
+  useEffect(() => {
+    if (!abierto) return;
+    const cerrar = () => setAbierto(false);
+    window.addEventListener('scroll', cerrar, true);
+    window.addEventListener('resize', cerrar);
+    return () => { window.removeEventListener('scroll', cerrar, true); window.removeEventListener('resize', cerrar); };
+  }, [abierto]);
   useEffect(() => {
     if (!abierto) return;
     const tecla = (e: KeyboardEvent) => e.key === 'Escape' && setAbierto(false);
@@ -508,15 +579,17 @@ function MenuMas({ acciones }: { acciones: AccionMenu[] }) {
 
   const opcion = 'flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-[13px] font-medium transition-colors hover:bg-realce disabled:opacity-50';
   return (
-    <div className="relative shrink-0 lg:hidden">
-      <BotonIcono icono={Ellipsis} titulo="Más acciones" aria-expanded={abierto} aria-haspopup="menu" onClick={() => setAbierto((v) => !v)}
+    <div className={cn('relative shrink-0', !siempre && 'lg:hidden')}>
+      <BotonIcono ref={boton} icono={Ellipsis} titulo="Más acciones" aria-expanded={abierto} aria-haspopup="menu" onClick={abrir}
         className={cn('border border-borde', abierto && 'bg-realce text-texto')} />
       {montado && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setAbierto(false)} />
           <div role="menu"
+            style={sitio}
             className={cn(
-              'superficie-flotante absolute right-0 top-full z-50 mt-1.5 w-60 origin-top-right overflow-hidden rounded-md border border-borde bg-tarjeta py-1 shadow-lg',
+              'superficie-flotante fixed z-50 w-60 overflow-hidden rounded-md border border-borde bg-tarjeta py-1 shadow-lg',
+              sitio.bottom !== undefined ? 'origin-bottom-right' : 'origin-top-right',
               'transition duration-200 ease-out',
               visible ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0',
             )}>

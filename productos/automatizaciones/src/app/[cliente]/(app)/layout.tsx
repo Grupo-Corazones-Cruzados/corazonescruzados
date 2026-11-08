@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'react';
 import { exigirContexto } from '@/lib/inquilino';
+import { prisma } from '@/lib/db';
+import { perfilGcc } from '@/lib/cuentaGcc';
 import { AplicaMarca } from '@/componentes/Marca';
 import { urlLogo } from '@/lib/marca';
 import { BarraLateral, BarraInferior, HuecoBarraAcciones } from '@/componentes/Navegacion';
@@ -23,6 +25,12 @@ export default async function LayoutApp({
   const { cliente } = await params;
   const { inquilino, sesion, montados } = await exigirContexto(cliente);
 
+  // La foto de quien entra con su cuenta de GCC World (2026-11-08), servida por `/<cliente>/foto`
+  // (en la plataforma es un `data:` grande: no se mete en cada página).
+  const yo = await prisma.usuario.findUnique({ where: { id: sesion.uid }, select: { origen: true, email: true, usuario: true } });
+  const perfil = yo?.origen === 'GCC' ? await perfilGcc(yo.email ?? yo.usuario) : null;
+  const foto = perfil?.tieneFoto ? `/${cliente}/foto?u=${sesion.uid}` : null;
+
   // La franja de aviso: demostración o «ver como». En escritorio va a TODO el ancho, por encima
   // del menú y del contenido, para que las dos cabeceras sigan alineadas (Fernando, 2026-11-08);
   // en el teléfono, dentro de la columna, como siempre.
@@ -40,9 +48,11 @@ export default async function LayoutApp({
         slug={cliente}
         cliente={inquilino.nombre}
         logoUrl={urlLogo(inquilino)}
-        usuario={sesion.nombre}
+        usuario={perfil?.nombre ?? sesion.nombre}
         rol={sesion.rol}
         montados={montados}
+        foto={foto}
+        enVista={!!sesion.suplantadoPor}
       />
       {/*
         ⭐⭐ EL ALTO SE HEREDA; NO SE CALCULA RESTANDO PÍXELES A MANO.
@@ -80,9 +90,11 @@ export default async function LayoutApp({
         slug={cliente}
         cliente={inquilino.nombre}
         logoUrl={urlLogo(inquilino)}
-        usuario={sesion.nombre}
+        usuario={perfil?.nombre ?? sesion.nombre}
         rol={sesion.rol}
         montados={montados}
+        foto={foto}
+        enVista={!!sesion.suplantadoPor}
       />
       </div>
     </AplicaMarca>

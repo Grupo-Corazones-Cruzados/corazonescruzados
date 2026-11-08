@@ -1,5 +1,6 @@
 import { exigirContexto, topeUsuarios } from '@/lib/inquilino';
 import { urlLogo } from '@/lib/marca';
+import { perfilGcc } from '@/lib/cuentaGcc';
 import { EXIGE_ROL } from '@/lib/modulos';
 import { prisma } from '@/lib/db';
 import { miOrigen } from '@/acciones/configuracion';
@@ -22,6 +23,10 @@ export default async function PaginaConfiguracion({ params }: { params: Promise<
     orderBy: { periodo: 'desc' },
     take: 12,
   });
+
+  // Los datos de la cuenta de GCC World de quien mira, si entra con ella (solo lectura).
+  const yo = await prisma.usuario.findUnique({ where: { id: ctx.sesion.uid }, select: { origen: true, email: true, usuario: true } });
+  const perfil = yo?.origen === 'GCC' ? await perfilGcc(yo.email ?? yo.usuario) : null;
 
   const negocio: NegocioVista = {
     nombre: inquilino.nombre,
@@ -97,6 +102,7 @@ export default async function PaginaConfiguracion({ params }: { params: Promise<
       suscripcion={suscripcion}
       pagos={historial}
       miOrigen={await miOrigen(cliente)}
+      perfil={perfil ? { ...perfil, foto: perfil.tieneFoto ? `/${cliente}/foto?u=${ctx.sesion.uid}` : null } : null}
       conexion={conexion}
       meta={{ appId: process.env.WHATSAPP_APP_ID || null, configId: process.env.WHATSAPP_ES_CONFIG_ID || null }}
       esCortesia={inquilino.cortesia}

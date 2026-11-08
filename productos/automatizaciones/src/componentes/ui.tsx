@@ -68,6 +68,8 @@ export function BotonIcono({
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & {
   icono: React.ComponentType<{ className?: string }>;
   titulo: string;
+  /** React 19: la referencia llega como prop (la usa el «⋯» para medirse). */
+  ref?: React.Ref<HTMLButtonElement>;
 }) {
   return (
     <button
@@ -233,6 +235,7 @@ export function PanelLateral({
   descripcion,
   ancho = 'md',
   pie,
+  lleno = false,
   children,
 }: {
   abierto: boolean;
@@ -241,6 +244,12 @@ export function PanelLateral({
   descripcion?: string;
   ancho?: 'sm' | 'md' | 'lg';
   pie?: ReactNode;
+  /**
+   * El cuerpo es una columna que llena el alto del panel: el último hijo con `flex-1` (p. ej.
+   * un texto largo) ocupa todo lo que queda hasta el pie (Fernando, 2026-11-08: «debería
+   * aprovechar todo el espacio disponible de altura»).
+   */
+  lleno?: boolean;
   children: ReactNode;
 }) {
   const anchos = { sm: 'max-w-sm', md: 'max-w-md', lg: 'max-w-2xl' }[ancho];
@@ -276,7 +285,7 @@ export function PanelLateral({
           </div>
           <BotonIcono icono={X} titulo="Cerrar" onClick={alCerrar} />
         </div>
-        <div className="desplaza min-h-0 flex-1 overflow-y-auto px-5 py-4">{cuerpo}</div>
+        <div className={cn('desplaza min-h-0 flex-1 overflow-y-auto px-5 py-4', lleno && 'flex flex-col')}>{cuerpo}</div>
         {pieVisto && (
           <div className="flex items-center justify-end gap-2 border-t border-borde px-5 py-3 shrink-0">
             {pieVisto}
