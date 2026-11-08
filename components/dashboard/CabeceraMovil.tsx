@@ -47,10 +47,9 @@ export default function CabeceraMovil({ siempre = false }: { siempre?: boolean }
   const [recargando, setRecargando] = useState(false);
   const ruta = usePathname();
   const enEspacio = ruta.startsWith('/dashboard/admin/espacio');
-  // En Centralizado (apps) el botón abre el mapa 4P (`MenuCentralizado`); en su portada el mapa ya
-  // está en la página y el botón sobra.
+  // En Centralizado (apps) el botón es el icono de tabla y abre el mapa 4P (`MenuCentralizado`), también
+  // en su portada, que desde el 2026-11-08 es el dashboard y no el mapa.
   const enCentralizado = ruta.startsWith('/dashboard/centralized');
-  const sinBoton = ruta === '/dashboard/centralized';
   useEffect(() => {
     setEnApp(esAppInstalada() || !!appDeTelefono());
   }, []);
@@ -65,7 +64,6 @@ export default function CabeceraMovil({ siempre = false }: { siempre?: boolean }
     /* `--seguro-arriba`: en la app nativa la cabecera baja lo que mide la zona de la hora y
        la batería, y su fondo la cubre; los 56 px de controles quedan debajo, intactos. */
     <header className={`rail ${siempre ? '' : 'lg:hidden'} shrink-0 h-[calc(3.5rem+var(--seguro-arriba))] pt-[var(--seguro-arriba)] flex items-center gap-2 px-2 bg-digi-card border-b border-digi-border`}>
-      {!(enApp && sinBoton) && (
       <button
         onClick={abrir}
         className="w-11 h-11 flex items-center justify-center rounded-lg text-digi-text transition-[filter] duration-150 hover:brightness-125 active:brightness-150"
@@ -73,7 +71,6 @@ export default function CabeceraMovil({ siempre = false }: { siempre?: boolean }
       >
         {enCentralizado ? <Grid3x3 className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
-      )}
 
       {/* En la app, la marca vuelve a Accesos; en el navegador, a la portada. */}
       <Link href={enApp ? '/dashboard/accesos' : '/'} className="flex items-center gap-2 min-w-0 h-11 px-1 rounded-lg">

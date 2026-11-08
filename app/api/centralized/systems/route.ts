@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { slugify, pisosAtOrBelow } from '@/lib/centralized/systems';
-import { SLUG_CONTROL_PSICOSOCIAL } from '@/lib/centralized/control-psicosocial';
+import { slugify } from '@/lib/centralized/systems';
+import { condicionesDeAcceso } from '@/lib/centralized/acceso';
 import { NextRequest, NextResponse } from 'next/server';
 
 /** Genera un slug único para un sistema (dentro de centralized_systems). */
@@ -28,7 +28,7 @@ const CELL_MAP: Record<string, Record<string, string>> = {
   colaborador: { fundamentacion: 'Investigador',  creacion: 'Desarrollador',       implementacion: 'Planificador', gestion: 'Líder' },
 };
 
-async function ensureTable() {
+async function prepararTablas() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.centralized_systems (
       id SERIAL PRIMARY KEY,
@@ -155,6 +155,16 @@ async function ensureTable() {
   `);
 }
 
+/**
+ * Las tablas y los sistemas de serie se preparan UNA vez por proceso: eran ~14 consultas seguidas en
+ * cada petición (2,6-4,3 s por abrir el mapa 4P). Si falla, la siguiente petición lo reintenta.
+ */
+let preparadas: Promise<void> | null = null;
+function ensureTable(): Promise<void> {
+  preparadas ??= prepararTablas().catch((e) => { preparadas = null; throw e; });
+  return preparadas;
+}
+
 export async function GET(req: NextRequest) {
   try {
     const user = await getCurrentUser();
@@ -175,41 +185,17 @@ export async function GET(req: NextRequest) {
         FROM gcc_world.centralized_member_access
         GROUP BY system_id
       ) ac ON ac.system_id = s.id`;
-    const params: string[] = [];
+    const params: unknown[] = [];
     const conditions: string[] = [];
 
     if (piso) { conditions.push(`s.piso = $${params.length + 1}`); params.push(piso); }
     if (paso) { conditions.push(`s.paso = $${params.length + 1}`); params.push(paso); }
     if (slug) { conditions.push(`s.slug = $${params.length + 1}`); params.push(slug); }
 
-    // Control de acceso: el admin global ve todos los sistemas. Cualquier otro
-    // miembro accede a los sistemas de SU paso (exacto) en SU piso y en todos los
-    // pisos por DEBAJO (jerárquico), o a los que se le compartieron explícitamente.
-    if (user.role !== 'admin') {
-      let alcance = '';
-      conditions.push('s.is_active = true');
-      const { rows: [me] } = await pool.query(
-        `SELECT m.id AS member_id, m.piso, m.paso
-         FROM gcc_world.users u JOIN gcc_world.members m ON m.id = u.member_id
-         WHERE u.id = $1`,
-        [user.userId]
-      );
-      if (!me?.member_id) {
-        // Sin miembro asociado → sin acceso a ningún sistema.
-        return NextResponse.json({ data: [] });
-      }
-      // Control Psicosocial es de TODOS los miembros, sea cual sea su piso y paso (la seguridad no
-      // depende de la celda). Un candidato también tiene `member_id`, pero su rol es `client`.
-      if (user.role === 'member') alcance = ` OR s.slug = '${SLUG_CONTROL_PSICOSOCIAL}'`;
-      const allowedPisos = pisosAtOrBelow(me.piso); // su piso + los de abajo
-      const pp = `$${params.length + 1}`; params.push(allowedPisos as any);
-      const ms = `$${params.length + 1}`; params.push(me.paso ?? '');
-      const mid = `$${params.length + 1}`; params.push(String(me.member_id));
-      conditions.push(
-        `((s.piso = ANY(${pp}::text[]) AND s.paso = ${ms})` +
-        ` OR EXISTS (SELECT 1 FROM gcc_world.centralized_member_access a WHERE a.system_id = s.id AND a.member_id = ${mid}::int)${alcance})`
-      );
-    }
+    // Control de acceso: la regla vive en `condicionesDeAcceso` (la usa también el dashboard).
+    const acceso = await condicionesDeAcceso(user, params);
+    if (acceso === null) return NextResponse.json({ data: [] }); // sin miembro asociado → ningún sistema
+    conditions.push(...acceso);
 
     if (conditions.length > 0) query += ' WHERE ' + conditions.join(' AND ');
     query += ' ORDER BY s.created_at DESC';

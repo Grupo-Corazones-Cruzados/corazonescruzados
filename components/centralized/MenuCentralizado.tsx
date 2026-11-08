@@ -7,17 +7,16 @@ import Mapa4P, { type SistemaMapa } from '@/components/centralized/Mapa4P';
 
 /**
  * LA NAVEGACIÓN DE CENTRALIZADO EN LAS APPS (Fernando, 2026-11-08). Dentro de un sistema, el botón de
- * la cabecera (`CabeceraMovil`) abre el MAPA 4P en vez de una lista: los sistemas de la cuenta en su
- * celda piso × paso. A Accesos solo se vuelve tocando el logo. En la portada de Centralizado el mapa
- * ya está en la página, así que el botón no aparece.
+ * la cabecera (`CabeceraMovil`, icono de tabla) abre el MAPA 4P en vez de una lista: los sistemas de la
+ * cuenta en su celda piso × paso. A Accesos solo se vuelve tocando el logo. También se abre desde el
+ * dashboard de la portada (`DashboardCentralizado`).
  */
 export default function MenuCentralizado() {
   const pathname = usePathname();
   const { abierto, cerrar } = useMenuMovil();
   const [sistemas, setSistemas] = useState<SistemaMapa[] | null>(null);
 
-  // Se piden al abrirlo por primera vez, no al cargar: en la portada la página ya los pide, y dos
-  // peticiones a la vez a esa ruta se estorban.
+  // Se piden al abrirlo por primera vez, no al cargar: casi siempre se navega sin abrirlo.
   useEffect(() => {
     if (!abierto || sistemas !== null) return;
     fetch('/api/centralized/systems')

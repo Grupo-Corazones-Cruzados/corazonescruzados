@@ -18,7 +18,7 @@ import PieAcciones from '@/components/ui/PieAcciones';
 import MenuMas from '@/components/ui/MenuMas';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import ShareAccessModal from '@/components/centralized/ShareAccessModal';
-import Mapa4P from '@/components/centralized/Mapa4P';
+import DashboardCentralizado from '@/components/centralized/DashboardCentralizado';
 import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
 import {
   Layers, Globe, Landmark, ClipboardList, Wrench, Boxes, Users,
@@ -40,12 +40,12 @@ export default function CentralizedPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const router = useRouter();
-  // En las apps la portada de Centralizado es el mapa 4P (`Mapa4P`), no la tabla (2026-11-08).
+  // En las apps la portada de Centralizado es su dashboard; el mapa 4P se abre con el icono de tabla de
+  // la cabecera (Fernando, 2026-11-08). En la web sigue la tabla de sistemas.
   const [enApp, setEnApp] = useState(false);
   useEffect(() => { setEnApp(!!appDeTelefono()); }, []);
 
   const [allSystems, setAllSystems] = useState<any[]>([]);
-  const [sistemasCargados, setSistemasCargados] = useState(false);
 
   const [scopePiso, setScopePiso] = useState<string>('all');
   const [pasoFilter, setPasoFilter] = useState<string>('');
@@ -74,7 +74,6 @@ export default function CentralizedPage() {
       const data = await res.json();
       setAllSystems(data.data || []);
     } catch { setAllSystems([]); }
-    setSistemasCargados(true);
   }, []);
 
   useEffect(() => { fetchSystems(); }, [fetchSystems]);
@@ -227,7 +226,7 @@ export default function CentralizedPage() {
   </div>
   );
 
-  if (enApp) return <Mapa4P sistemas={sistemasCargados ? allSystems : null} />;
+  if (enApp) return <DashboardCentralizado />;
 
   return (
     <div>
