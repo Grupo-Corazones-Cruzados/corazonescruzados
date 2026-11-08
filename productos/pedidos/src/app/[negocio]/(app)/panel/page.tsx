@@ -2,6 +2,7 @@ import { exigirContexto } from '@/lib/inquilino';
 import { prisma } from '@/lib/db';
 import { PEDIDOS_ABIERTOS } from '@/lib/pedidos';
 import { puede } from '@/lib/permisos';
+import { limitesDelDia } from '@/lib/formato';
 import PanelCliente, { type ZonaVista } from './PanelCliente';
 
 export const dynamic = 'force-dynamic';
@@ -11,10 +12,8 @@ export default async function PaginaPanel({ params }: { params: Promise<{ negoci
   const { negocio } = await params;
   const { inquilino, sesion } = await exigirContexto(negocio);
 
-  const inicioHoy = new Date();
-  inicioHoy.setHours(0, 0, 0, 0);
-  const finHoy = new Date();
-  finHoy.setHours(23, 59, 59, 999);
+  // El «hoy» de las reservas es el del negocio, no el del servidor (que corre en UTC).
+  const { desde: inicioHoy, hasta: finHoy } = limitesDelDia(inquilino.zonaHoraria);
 
   // Una sola consulta por el árbol del local. Los pedidos se acotan a los ABIERTOS:
   // el panel es la foto de ahora mismo, y traer el histórico lo haría crecer sin
@@ -76,6 +75,7 @@ export default async function PaginaPanel({ params }: { params: Promise<{ negoci
       slug={negocio}
       negocio={inquilino.nombre}
       moneda={inquilino.moneda}
+      zona={inquilino.zonaHoraria}
       zonas={datos}
       puedeOperar={puede(sesion.rol, 'operar-mesas')}
       puedeTomarPedidos={puede(sesion.rol, 'tomar-pedidos')}

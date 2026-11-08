@@ -3,12 +3,12 @@
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import { ChefHat, Check, RefreshCw, Clock } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, EstadoVacio, Insignia, Tarjeta } from '@/componentes/ui';
 import { marcarPedidoListo, marcarPlatoListo } from '@/acciones/pedidos';
 import { minutosDesde, textoEspera } from '@/lib/pedidos';
+import { horaCorta } from '@/lib/formato';
 import { cn } from '@/lib/utils';
 import type { EstadoItem, EstadoPedido } from '@/generated/prisma/enums';
 
@@ -27,7 +27,7 @@ export type ComandaVista = {
  * el número de mesa manda, los platos son grandes y cada comanda dice cuánto lleva
  * esperando. Nada de tablas ni de menús.
  */
-export default function CocinaCliente({ slug, comandas }: { slug: string; comandas: ComandaVista[] }) {
+export default function CocinaCliente({ slug, zona, comandas }: { slug: string; zona: string; comandas: ComandaVista[] }) {
   const router = useRouter();
   const [enCurso, arranca] = useTransition();
 
@@ -46,29 +46,28 @@ export default function CocinaCliente({ slug, comandas }: { slug: string; comand
   const servidas = comandas.filter((c) => !c.items.some((i) => i.estado === 'PENDIENTE'));
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       <CabeceraPagina
         titulo="Cocina"
         descripcion="Las comandas por orden de llegada; las que ya salieron, al final"
         extra={
           pendientes.length ? (
             <Insignia tono="aviso">
-              {pendientes.length} {pendientes.length === 1 ? 'comanda pendiente' : 'comandas pendientes'}
+              {pendientes.length} {pendientes.length === 1 ? 'pendiente' : 'pendientes'}
             </Insignia>
           ) : (
-            <Insignia tono="exito">Todo al día</Insignia>
+            <Insignia tono="exito">Al día</Insignia>
           )
         }
         menu={[{ etiqueta: 'Actualizar', icono: RefreshCw, alPulsar: () => router.refresh(), deshabilitado: enCurso }]}
       />
 
-      <div className="p-4 sm:p-6">
+      {/* Alto completo: el vacío centra su contenido en una tarjeta que llega al pie. */}
+      <div className="flex flex-1 flex-col p-4 sm:p-6">
         {!pendientes.length && !servidas.length ? (
-          <EstadoVacio
-            icono={ChefHat}
-            titulo="No hay nada en cocina"
-            detalle="Cuando un mesero tome un pedido, aparecerá aquí."
-          />
+          <Tarjeta className="flex flex-1 flex-col justify-center">
+            <EstadoVacio icono={ChefHat} titulo="No hay nada en cocina" />
+          </Tarjeta>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {[...pendientes, ...servidas].map((c) => {
@@ -98,11 +97,11 @@ export default function CocinaCliente({ slug, comandas }: { slug: string; comand
                         <Clock className="h-3.5 w-3.5" />
                         {textoEspera(espera)}
                       </p>
-                      <p className="text-[11px] opacity-80">{format(new Date(c.creado), 'HH:mm')}</p>
+                      <p className="text-[11px] opacity-80">{horaCorta(c.creado, zona)}</p>
                     </div>
                   </div>
 
-                  <ul className="flex-1 divide-y divide-[var(--color-borde)]">
+                  <ul className="flex-1 divide-y divide-borde">
                     {c.items.map((i) => (
                       <li key={i.id} className="flex items-center gap-3 px-4 py-3">
                         <span className="text-[18px] font-bold text-acento">{i.cantidad}×</span>
@@ -123,7 +122,7 @@ export default function CocinaCliente({ slug, comandas }: { slug: string; comand
                             variante="secundario"
                             icono={Check}
                             disabled={enCurso}
-                            onClick={() => accion(() => marcarPlatoListo(slug, i.id), 'Plato listo')}
+                            onClick={() => accion(() => marcarPlatoListo(slug, i.id), 'Plato listo.')}
                           >
                             Listo
                           </Boton>
@@ -140,13 +139,13 @@ export default function CocinaCliente({ slug, comandas }: { slug: string; comand
                         icono={ChefHat}
                         className="w-full"
                         disabled={enCurso}
-                        onClick={() => accion(() => marcarPedidoListo(slug, c.id), `Mesa ${c.mesa}: todo listo`)}
+                        onClick={() => accion(() => marcarPedidoListo(slug, c.id), `Mesa ${c.mesa} lista.`)}
                       >
                         Todo listo ({quedan})
                       </Boton>
                     ) : (
                       <p className="py-1 text-center text-[12px] font-semibold text-exito">
-                        Servido a la sala
+                        Servido
                       </p>
                     )}
                   </div>
@@ -156,6 +155,6 @@ export default function CocinaCliente({ slug, comandas }: { slug: string; comand
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

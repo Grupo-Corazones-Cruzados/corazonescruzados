@@ -3,11 +3,11 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Plus, Pencil, CalendarClock, Check, X, UserX, AlertCircle } from 'lucide-react';
-import { CabeceraPagina, AccionesTarjeta, type AccionMenu } from '@/componentes/Navegacion';
-import { Boton, Campo, Entrada, AreaTexto, Selector, Tarjeta, Insignia, PanelLateral, EstadoVacio, PasoDia } from '@/componentes/ui';
+import { Plus, Pencil, CalendarClock, Check, X, UserX, Save } from 'lucide-react';
+import { CabeceraPagina, MenuFila, type AccionMenu } from '@/componentes/Navegacion';
+import { Boton, Campo, Entrada, AreaTexto, Selector, Tarjeta, Insignia, PanelLateral, EstadoVacio, PasoDia, PieAcciones, Tabla, BOTON_PRIMARIO } from '@/componentes/ui';
+import Link from 'next/link';
+import { diaConNombre, horaCorta } from '@/lib/formato';
 import { guardarReservaMesa, cambiarEstadoReserva } from '@/acciones/mesas';
 import { ETIQUETA_RESERVA, TONO_RESERVA } from '@/lib/pedidos';
 import { aCampoFecha, aCampoFechaHora } from '@/lib/fechas';
@@ -32,11 +32,14 @@ const DURACIONES = [45, 60, 90, 120, 180];
 
 export default function ReservasCliente({
   slug,
+  zona,
   dia,
   reservas,
   mesas,
 }: {
   slug: string;
+  /** Zona horaria del negocio (horas iguales en servidor y navegador). */
+  zona: string;
   dia: string;
   reservas: ReservaVista[];
   mesas: MesaOpcion[];
@@ -48,7 +51,6 @@ export default function ReservasCliente({
   const elDia = new Date(`${diaTexto}T12:00:00`);
   const hoy = aCampoFecha(new Date());
   const [panel, setPanel] = useState<ReservaVista | null | 'nueva'>(null);
-  const [error, setError] = useState<string | null>(null);
   const [enCurso, arranca] = useTransition();
 
   const irA = (d: string) => router.push(`/${slug}/reservas?dia=${d}`);
@@ -68,14 +70,14 @@ export default function ReservasCliente({
   // es su estado no se ofrece (no hace nada); cancelar es la destructiva y va al final.
   const accionesDe = (r: ReservaVista): AccionMenu[] => [
     ...(r.estado !== 'CUMPLIDA'
-      ? [{ etiqueta: 'Llegó', icono: Check, deshabilitado: enCurso, alPulsar: () => cambiar(r.id, 'CUMPLIDA', 'Reserva cumplida') }]
+      ? [{ etiqueta: 'Llegó', icono: Check, deshabilitado: enCurso, alPulsar: () => cambiar(r.id, 'CUMPLIDA', 'Cumplida.') }]
       : []),
     ...(r.estado !== 'NO_PRESENTADO'
-      ? [{ etiqueta: 'No vino', icono: UserX, deshabilitado: enCurso, alPulsar: () => cambiar(r.id, 'NO_PRESENTADO', 'Marcada como no presentada') }]
+      ? [{ etiqueta: 'No vino', icono: UserX, deshabilitado: enCurso, alPulsar: () => cambiar(r.id, 'NO_PRESENTADO', 'No vino.') }]
       : []),
     { etiqueta: 'Editar', icono: Pencil, alPulsar: () => setPanel(r) },
     ...(r.estado !== 'CANCELADA'
-      ? [{ etiqueta: 'Cancelar', icono: X, peligro: true, deshabilitado: enCurso, alPulsar: () => cambiar(r.id, 'CANCELADA', 'Reserva cancelada') }]
+      ? [{ etiqueta: 'Cancelar', icono: X, peligro: true, deshabilitado: enCurso, alPulsar: () => cambiar(r.id, 'CANCELADA', 'Cancelada.') }]
       : []),
   ];
 
@@ -87,7 +89,7 @@ export default function ReservasCliente({
   };
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       <CabeceraPagina
         titulo="Reservas"
         descripcion="Las reservas de mesa del día"
@@ -98,85 +100,93 @@ export default function ReservasCliente({
         }
       />
 
-      <div className="space-y-4 p-4 sm:p-6">
+      {/* Alto completo: la tarjeta de la lista llega al pie (regla del panel, 2026-11-08). */}
+      <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
         {/*
           El día es UN control [‹ | fecha | ›] (antes: flechas en la cabecera y una tira de
           siete días que en el teléfono se deslizaba de lado; las dos decían lo mismo).
         */}
-        <Tarjeta className="flex flex-col gap-2 p-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
           <PasoDia dia={diaTexto} alCambiar={irA} />
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 px-1">
-            <p className="text-[13px] font-semibold first-letter:uppercase">
-              {format(elDia, "EEEE d 'de' MMMM", { locale: es })}
-            </p>
-            {reservas.length > 0 && (
-              <span className="text-[12px] text-tenue">
-                · {reservas.length} reserva{reservas.length === 1 ? '' : 's'}
-              </span>
-            )}
-            {diaTexto !== hoy && (
-              <Boton variante="fantasma" tamano="sm" className="ml-auto" onClick={() => irA(hoy)}>
-                Hoy
-              </Boton>
-            )}
-          </div>
-        </Tarjeta>
+          <p className="px-1 text-[13px] font-semibold first-letter:uppercase">
+            {diaConNombre(elDia, 'UTC')}
+          </p>
+          {diaTexto !== hoy && (
+            <Boton variante="secundario" className="sm:ml-auto" onClick={() => irA(hoy)}>
+              Hoy
+            </Boton>
+          )}
+        </div>
 
-        {!mesas.length ? (
-          <EstadoVacio titulo="No hay mesas" detalle="Crea las mesas en Configuración antes de reservar." />
-        ) : !reservas.length ? (
-          <EstadoVacio icono={CalendarClock} titulo="Sin reservas este día" />
-        ) : (
-          // Los botones de cada reserva van en su cabecera, en una fila: tarjetas anchas desde lg.
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            {reservas.map((r) => (
-              <Tarjeta key={r.id} className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-semibold">{r.cliente}</p>
-                    <p className="text-[12px] text-tenue">
-                      Mesa {r.mesa} · {r.zona}
-                      {r.personas ? ` · ${r.personas} personas` : ''}
-                    </p>
+        {/* Registros en TABLA (galería en el teléfono) con el recuento al pie; acciones en «⋯». */}
+        <Tarjeta className="flex flex-1 flex-col overflow-hidden">
+          {!mesas.length ? (
+            <div className="flex flex-1 flex-col justify-center">
+              <EstadoVacio
+                titulo="No hay mesas"
+                accion={<Link href={`/${slug}/configuracion?seccion=mesas`} className={`${BOTON_PRIMARIO} h-9 px-4 text-[13px]`}>Crear mesas</Link>}
+              />
+            </div>
+          ) : !reservas.length ? (
+            <div className="flex flex-1 flex-col justify-center">
+              <EstadoVacio icono={CalendarClock} titulo="Sin reservas este día" />
+            </div>
+          ) : (
+            <Tabla
+              filas={reservas}
+              claveFila={(r) => r.id}
+              alPulsarFila={(r) => setPanel(r)}
+              recuento={`${reservas.length} ${reservas.length === 1 ? 'reserva' : 'reservas'}`}
+              columnas={[
+                { clave: 'cliente', titulo: 'A nombre de', ancho: '30%', render: (r) => (
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold text-texto">{r.cliente}</p>
+                    {(r.telefono || r.notas) && (
+                      <p className="truncate text-[11.5px] text-tenue">{[r.telefono, r.notas].filter(Boolean).join(' · ')}</p>
+                    )}
                   </div>
-                  <div className="shrink-0">
-                    <AccionesTarjeta acciones={accionesDe(r)} />
-                  </div>
-                </div>
-                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <p className="text-[15px] font-semibold text-acento">
-                    {format(new Date(r.desde), 'HH:mm')} – {format(new Date(r.hasta), 'HH:mm')}
-                  </p>
+                ) },
+                { clave: 'hora', titulo: 'Hora', ancho: '16%', render: (r) => (
+                  <span className="font-semibold tabular-nums text-acento">{horaCorta(r.desde, zona)} – {horaCorta(r.hasta, zona)}</span>
+                ) },
+                { clave: 'mesa', titulo: 'Mesa', ancho: '22%', render: (r) => <span className="truncate">{r.mesa} · {r.zona}</span> },
+                { clave: 'personas', titulo: 'Personas', ancho: '12%', alinear: 'der', render: (r) => r.personas ?? '—' },
+                { clave: 'estado', titulo: 'Estado', ancho: '14%', render: (r) => (
                   <Insignia tono={TONO_RESERVA[r.estado]}>{ETIQUETA_RESERVA[r.estado]}</Insignia>
-                </div>
-                {r.telefono && (
-                  <a href={`tel:${r.telefono}`} className="text-[12px] text-tenue hover:text-acento">
-                    {r.telefono}
-                  </a>
-                )}
-                {r.notas && <p className="mt-1 text-[12px] text-tenue">{r.notas}</p>}
-              </Tarjeta>
-            ))}
-          </div>
-        )}
+                ) },
+                { clave: 'acciones', titulo: '', ancho: '56px', alinear: 'der', render: (r) => (
+                  <div className="flex justify-end"><MenuFila acciones={accionesDe(r)} /></div>
+                ) },
+              ]}
+            />
+          )}
+        </Tarjeta>
       </div>
 
       <PanelLateral
         abierto={panel !== null}
-        alCerrar={() => {
-          setPanel(null);
-          setError(null);
-        }}
+        alCerrar={() => setPanel(null)}
         titulo={panel === 'nueva' ? 'Nueva reserva' : 'Editar reserva'}
+        pie={
+          <PieAcciones>
+            <Boton type="button" variante="secundario" onClick={() => setPanel(null)} disabled={enCurso}>
+              Cancelar
+            </Boton>
+            <Boton form="form-reserva" type="submit" icono={Save} disabled={enCurso}>
+              {enCurso ? 'Guardando…' : 'Guardar'}
+            </Boton>
+          </PieAcciones>
+        }
       >
         <form
+          id="form-reserva"
+          key={panel && panel !== 'nueva' ? panel.id : 'nueva'}
           action={(d) =>
             arranca(async () => {
-              setError(null);
               const id = panel && panel !== 'nueva' ? panel.id : null;
               const r = await guardarReservaMesa(slug, id, d);
-              if (!r.ok) return setError(r.error);
-              toast.success('Reserva guardada');
+              if (!r.ok) { toast.error(r.error); return; }
+              toast.success('Guardado.');
               setPanel(null);
               router.refresh();
             })
@@ -214,7 +224,7 @@ export default function ReservasCliente({
               />
             </Campo>
           </div>
-          <Campo etiqueta="Duración prevista">
+          <Campo etiqueta="Duración">
             <Selector
               name="minutos"
               defaultValue={
@@ -233,22 +243,8 @@ export default function ReservasCliente({
           <Campo etiqueta="Notas">
             <AreaTexto name="notas" rows={2} defaultValue={panel && panel !== 'nueva' ? panel.notas ?? '' : ''} />
           </Campo>
-          {error && (
-            <p role="alert" className="flex items-start gap-2 rounded border border-borde bg-error-suave px-3 py-2 text-[12px] text-error">
-              <AlertCircle className="mt-px h-4 w-4 shrink-0" />
-              {error}
-            </p>
-          )}
-          <div className="flex justify-end gap-2 border-t border-borde pt-4">
-            <Boton type="button" variante="secundario" onClick={() => setPanel(null)} disabled={enCurso}>
-              Cancelar
-            </Boton>
-            <Boton type="submit" disabled={enCurso}>
-              {enCurso ? 'Guardando…' : 'Guardar'}
-            </Boton>
-          </div>
         </form>
       </PanelLateral>
-    </>
+    </div>
   );
 }

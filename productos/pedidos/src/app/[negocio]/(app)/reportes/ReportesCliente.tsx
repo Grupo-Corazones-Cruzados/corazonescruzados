@@ -3,13 +3,11 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { Download, Filter, Search, AlertTriangle } from 'lucide-react';
+import { Download, Search, AlertTriangle, ListFilter, Receipt, Ban, ChefHat, BellRing, CheckCircle2 } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, Campo, Entrada, Selector, Tabla, Insignia, Tarjeta, EstadoVacio } from '@/componentes/ui';
+import { Boton, Campo, Entrada, Selector, Tabla, Insignia, Tarjeta, EstadoVacio, RailFiltro, type OpcionRail } from '@/componentes/ui';
 import { ETIQUETA_PEDIDO, TONO_PEDIDO, ETIQUETA_PAGO } from '@/lib/pedidos';
-import { dinero, numEntero } from '@/lib/formato';
+import { dinero, numEntero, fechaCorta, horaCorta } from '@/lib/formato';
 import type { EstadoPedido, MetodoPagoPedido } from '@/generated/prisma/enums';
 
 export type FilaReporte = {
@@ -28,14 +26,26 @@ export type FilaReporte = {
   total: number;
 };
 
+/** Iconos del raíl de estados; uno por estado del pedido. */
+const ICONO_ESTADO: Partial<Record<EstadoPedido, OpcionRail['icono']>> = {
+  EN_PREPARACION: ChefHat,
+  LISTO: BellRing,
+  SERVIDO: CheckCircle2,
+  COBRADO: Receipt,
+  ANULADO: Ban,
+};
+
 export default function ReportesCliente({
   slug,
+  zona,
   filas,
   filtro,
   moneda,
   mesesRetencion,
 }: {
   slug: string;
+  /** Zona horaria del negocio (horas iguales en servidor y navegador). */
+  zona: string;
   filas: FilaReporte[];
   filtro: { desde: string; hasta: string; estado: string; metodo: string };
   moneda: string;
@@ -44,9 +54,11 @@ export default function ReportesCliente({
   const router = useRouter();
   const [f, setF] = useState(filtro);
 
-  const consultar = () => {
+  const consultar = (cambio: Partial<typeof f> = {}) => {
+    const nuevo = { ...f, ...cambio };
+    setF(nuevo);
     const p = new URLSearchParams();
-    Object.entries(f).forEach(([k, v]) => v && p.set(k, v));
+    Object.entries(nuevo).forEach(([k, v]) => v && p.set(k, v));
     router.push(`/${slug}/reportes?${p}`);
   };
 
@@ -68,7 +80,7 @@ export default function ReportesCliente({
   )}`;
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       <CabeceraPagina
         titulo="Reportes"
         descripcion="Pedidos del periodo y lo que se cobró"
@@ -77,42 +89,38 @@ export default function ReportesCliente({
         ]}
       />
 
-      <div className="space-y-4 p-4 sm:p-6">
+      {/* El estado se elige en el raíl (como el resto de filtros de lista del producto); las
+          fechas y el método van en la barra de encima de la tabla. Alto completo: la tabla llega al pie. */}
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6 lg:flex-row">
+        <RailFiltro
+          titulo="Estado"
+          opciones={[
+            { valor: '', etiqueta: 'Todos', icono: ListFilter },
+            ...(Object.keys(ETIQUETA_PEDIDO) as EstadoPedido[]).map((e) => ({ valor: e, etiqueta: ETIQUETA_PEDIDO[e], icono: ICONO_ESTADO[e] })),
+          ]}
+          activo={f.estado}
+          alElegir={(v) => consultar({ estado: v })}
+        />
+
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
         {mesesRetencion && (
-          <p className="flex items-start gap-2 rounded border border-borde bg-aviso-suave px-3 py-2 text-[12px] text-aviso">
-            <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
+          <p className="flex items-center gap-2 rounded border border-borde bg-aviso-suave px-3 py-2 text-[12px] text-aviso">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
             <span>
-            Tu plan conserva {mesesRetencion === 1 ? 'un mes' : `${mesesRetencion} meses`} de histórico.
-            En la última hora del último día de cada mes se borra lo anterior.{' '}
-            <strong>Exporta a Excel lo que quieras guardar.</strong>
+              Se conserva {mesesRetencion === 1 ? 'un mes' : `${mesesRetencion} meses`} de histórico: exporta a Excel lo que quieras guardar.
             </span>
           </p>
         )}
 
-        <Tarjeta className="p-4">
-          <div className="mb-3 flex items-center gap-2">
-            <Filter className="h-4 w-4 text-tenue" />
-            <h2 className="text-[12px] font-semibold uppercase tracking-wide text-tenue">Filtros</h2>
-          </div>
-          {/* Teléfono: las fechas en dos columnas, los dos selectores en dos más y el botón debajo. */}
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-            <Campo etiqueta="Desde">
+          {/* Teléfono: las fechas en dos columnas, el método y el botón debajo. */}
+          <div className="grid grid-cols-2 items-end gap-3 lg:flex lg:flex-wrap">
+            <Campo etiqueta="Desde" className="lg:w-40">
               <Entrada type="date" value={f.desde} onChange={(e) => setF({ ...f, desde: e.target.value })} />
             </Campo>
-            <Campo etiqueta="Hasta">
+            <Campo etiqueta="Hasta" className="lg:w-40">
               <Entrada type="date" value={f.hasta} onChange={(e) => setF({ ...f, hasta: e.target.value })} />
             </Campo>
-            <Campo etiqueta="Estado">
-              <Selector value={f.estado} onChange={(e) => setF({ ...f, estado: e.target.value })}>
-                <option value="">Todos</option>
-                {(Object.keys(ETIQUETA_PEDIDO) as EstadoPedido[]).map((e) => (
-                  <option key={e} value={e}>
-                    {ETIQUETA_PEDIDO[e]}
-                  </option>
-                ))}
-              </Selector>
-            </Campo>
-            <Campo etiqueta="Método de pago">
+            <Campo etiqueta="Pago" className="lg:w-44">
               <Selector value={f.metodo} onChange={(e) => setF({ ...f, metodo: e.target.value })}>
                 <option value="">Todos</option>
                 {(Object.keys(ETIQUETA_PAGO) as MetodoPagoPedido[]).map((m) => (
@@ -122,22 +130,21 @@ export default function ReportesCliente({
                 ))}
               </Selector>
             </Campo>
-            <div className="col-span-2 flex items-end lg:col-span-1">
-              <Boton icono={Search} tamano="lg" className="w-full" onClick={consultar}>
+            <div className="flex items-end">
+              <Boton variante="secundario" icono={Search} tamano="lg" className="w-full lg:w-auto" onClick={() => consultar()}>
                 Consultar
               </Boton>
             </div>
           </div>
-        </Tarjeta>
 
         {/* Cifras de dos en dos en el teléfono; el total, que es lo que se busca, ocupa la fila. */}
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
           {[
-            { et: 'Pedidos cobrados', v: numEntero(totales.pedidos) },
-            { et: 'Platos servidos', v: numEntero(totales.platos) },
+            { et: 'Cobrados', v: numEntero(totales.pedidos) },
+            { et: 'Platos', v: numEntero(totales.platos) },
             { et: 'Base imponible', v: dinero(totales.base, moneda) },
             { et: 'IVA', v: dinero(totales.iva, moneda) },
-            { et: 'Total cobrado', v: dinero(totales.total, moneda), destacado: true },
+            { et: 'Total', v: dinero(totales.total, moneda), destacado: true },
           ].map((c) => (
             <Tarjeta key={c.et} className={c.destacado ? 'col-span-2 p-4 xl:col-span-1' : 'p-4'}>
               <p className="text-[11px] uppercase tracking-wide text-tenue">{c.et}</p>
@@ -148,13 +155,16 @@ export default function ReportesCliente({
           ))}
         </div>
 
-        <Tarjeta className="overflow-hidden">
+        <Tarjeta className="flex flex-1 flex-col overflow-hidden">
           <Tabla
             filas={filas}
             claveFila={(r) => r.id}
             alPulsarFila={(r) => router.push(`/${slug}/pedido/${r.id}`)}
+            recuento={`${numEntero(filas.length)} ${filas.length === 1 ? 'pedido' : 'pedidos'}`}
             vacio={
-              <EstadoVacio titulo="Sin pedidos en este periodo" detalle="Cambia las fechas o quita algún filtro." />
+              <div className="flex flex-1 flex-col justify-center">
+                <EstadoVacio titulo="Sin pedidos en este periodo" />
+              </div>
             }
             columnas={[
               {
@@ -166,8 +176,8 @@ export default function ReportesCliente({
                   </Link>
                 ),
               },
-              { clave: 'dia', titulo: 'Día', render: (r) => format(new Date(r.dia), 'dd/MM/yyyy', { locale: es }) },
-              { clave: 'hora', titulo: 'Hora', render: (r) => format(new Date(r.creado), 'HH:mm') },
+              { clave: 'dia', titulo: 'Día', render: (r) => fechaCorta(r.dia, 'UTC') },
+              { clave: 'hora', titulo: 'Hora', render: (r) => horaCorta(r.creado, zona) },
               {
                 clave: 'mesa',
                 titulo: 'Mesa',
@@ -189,7 +199,8 @@ export default function ReportesCliente({
             ]}
           />
         </Tarjeta>
+        </div>
       </div>
-    </>
+    </div>
   );
 }

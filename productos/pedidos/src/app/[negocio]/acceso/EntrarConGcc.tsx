@@ -16,9 +16,6 @@ export default function EntrarConGcc({ href }: { href: string }) {
   return (
     <div className="space-y-3 text-center">
       <h2 className="text-[15px] font-semibold text-texto">Entra con tu cuenta de GCC World</h2>
-      <p className="text-[12.5px] leading-relaxed text-tenue">
-        Este negocio se usa con la cuenta de GCC World de cada persona.
-      </p>
       <a href={href} className={cn(BOTON_PRIMARIO, 'h-9 w-full px-4 text-[13px]')}>
         Entrar con GCC World
       </a>

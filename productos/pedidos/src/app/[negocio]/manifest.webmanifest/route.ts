@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { ACENTO_GCC, esHexValido } from '@/lib/marca';
+import { TEMA } from '@/lib/marca';
 import { conBase } from '@/lib/base';
 
 export const dynamic = 'force-dynamic';
@@ -19,12 +19,13 @@ export async function GET(_: Request, { params }: { params: Promise<{ negocio: s
   const { negocio } = await params;
   const inquilino = await prisma.inquilino.findUnique({
     where: { slug: negocio },
-    select: { nombre: true, colorAcento: true, tema: true },
+    select: { nombre: true },
   });
   if (!inquilino) return NextResponse.json({ error: 'No existe' }, { status: 404 });
 
-  const color = esHexValido(inquilino.colorAcento) ? inquilino.colorAcento : ACENTO_GCC;
-  const fondo = inquilino.tema === 'OSCURO' ? '#1b1a19' : '#faf9f8';
+  // Un solo tema en el producto (2026-11-08): el oscuro de WhatsApp (ver lib/marca.ts).
+  const color = TEMA.fondo;
+  const fondo = TEMA.fondo;
 
   return NextResponse.json(
     {

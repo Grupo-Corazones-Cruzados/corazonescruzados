@@ -79,6 +79,7 @@ export default async function PaginaPedido({
     <PedidoCliente
       slug={negocio}
       moneda={inquilino.moneda}
+      zona={inquilino.zonaHoraria}
       pedido={vista}
       carta={carta}
       puedeTomar={puede(sesion.rol, 'tomar-pedidos')}

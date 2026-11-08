@@ -57,6 +57,7 @@ export default async function PaginaReportes({
   return (
     <ReportesCliente
       slug={negocio}
+      zona={inquilino.zonaHoraria}
       moneda={inquilino.moneda}
       filas={filas}
       filtro={{ desde, hasta, estado: f.estado ?? '', metodo: f.metodo ?? '' }}

@@ -37,5 +37,5 @@ export default async function PaginaCocina({ params }: { params: Promise<{ negoc
     })),
   }));
 
-  return <CocinaCliente slug={negocio} comandas={comandas} />;
+  return <CocinaCliente slug={negocio} zona={inquilino.zonaHoraria} comandas={comandas} />;
 }

@@ -3,7 +3,6 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import { Plus, Trash2, ChefHat, BellRing, Receipt, Ban, Minus, MapPin, Hash, Clock, UserRound, Users } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import { Boton, BotonIcono, Campo, Selector, Tarjeta, Insignia, Confirmar, Ventanita, EstadoVacio, RailFiltro, type Detalle } from '@/componentes/ui';
@@ -17,7 +16,7 @@ import {
   anularPedido,
 } from '@/acciones/pedidos';
 import { ETIQUETA_PEDIDO, TONO_PEDIDO, ETIQUETA_PAGO } from '@/lib/pedidos';
-import { dinero } from '@/lib/formato';
+import { dinero, horaCorta } from '@/lib/formato';
 import { cn } from '@/lib/utils';
 import type { EstadoPedido, EstadoItem, MetodoPagoPedido } from '@/generated/prisma/enums';
 
@@ -54,6 +53,7 @@ export type CategoriaVista = {
 export default function PedidoCliente({
   slug,
   moneda,
+  zona,
   pedido,
   carta,
   puedeTomar,
@@ -64,6 +64,8 @@ export default function PedidoCliente({
 }: {
   slug: string;
   moneda: string;
+  /** Zona horaria del negocio (horas iguales en servidor y navegador). */
+  zona: string;
   pedido: PedidoVista;
   carta: CategoriaVista[];
   puedeTomar: boolean;
@@ -108,13 +110,13 @@ export default function PedidoCliente({
   const detalles: Detalle[] = [
     { icono: Hash, etiqueta: 'Pedido', valor: `#${pedido.numero}` },
     { icono: MapPin, etiqueta: 'Zona', valor: pedido.zona },
-    { icono: Clock, etiqueta: 'Abierto a las', valor: format(new Date(pedido.creado), 'HH:mm') },
+    { icono: Clock, etiqueta: 'Abierto a las', valor: horaCorta(pedido.creado, zona) },
     ...(pedido.mesero ? [{ icono: UserRound, etiqueta: 'Atiende', valor: pedido.mesero }] : []),
     ...(pedido.comensales ? [{ icono: Users, etiqueta: 'Comensales', valor: String(pedido.comensales) }] : []),
   ];
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       {/*
         Las acciones del pedido viven en la cabecera: en el teléfono las principales
         (marcar listo, servido, cobrar) van a la barra de abajo, sin tener que bajar por
@@ -139,7 +141,7 @@ export default function PedidoCliente({
                   variante="secundario"
                   icono={ChefHat}
                   disabled={enCurso}
-                  onClick={() => accion(() => marcarPedidoListo(slug, pedido.id), 'Pedido listo para servir')}
+                  onClick={() => accion(() => marcarPedidoListo(slug, pedido.id), 'Pedido listo.')}
                 >
                   Todo listo ({enCocina})
                 </Boton>
@@ -149,7 +151,7 @@ export default function PedidoCliente({
                   variante="secundario"
                   icono={BellRing}
                   disabled={enCurso}
-                  onClick={() => accion(() => marcarServido(slug, pedido.id), 'Pedido servido')}
+                  onClick={() => accion(() => marcarServido(slug, pedido.id), 'Pedido servido.')}
                 >
                   Servido
                 </Boton>
@@ -169,33 +171,26 @@ export default function PedidoCliente({
         }
       />
 
-      <div className="grid gap-4 p-4 sm:p-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+      {/* Alto completo: la carta y la cuenta llegan al pie (regla del panel, 2026-11-08). */}
+      <div className="grid flex-1 gap-4 p-4 sm:p-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         {/* Carta */}
-        <div className="space-y-3">
+        <div className="flex min-w-0 flex-col gap-3">
           {cerrado ? (
-            <Tarjeta className="p-5">
-              <p className="text-[13px] text-tenue">
-                Este pedido está {ETIQUETA_PEDIDO[pedido.estado].toLowerCase()}. No admite cambios.
-              </p>
+            <Tarjeta className="flex flex-1 flex-col justify-center">
+              <EstadoVacio icono={Receipt} titulo={`Pedido ${ETIQUETA_PEDIDO[pedido.estado].toLowerCase()}`} />
             </Tarjeta>
           ) : !puedeTomar ? (
-            <Tarjeta className="p-5">
-              <p className="text-[13px] text-tenue">
-                Tu cuenta no toma pedidos. Puedes ver la cuenta y, si eres de cocina, marcar los
-                platos que van saliendo.
-              </p>
+            <Tarjeta className="flex flex-1 flex-col justify-center">
+              <EstadoVacio icono={ChefHat} titulo="Tu cuenta no toma pedidos" />
             </Tarjeta>
           ) : !carta.length ? (
-            <Tarjeta>
-              <EstadoVacio
-                titulo="La carta está vacía"
-                detalle="Un administrador tiene que crear las categorías y los productos en «Carta»."
-              />
+            <Tarjeta className="flex flex-1 flex-col justify-center">
+              <EstadoVacio titulo="La carta está vacía" />
             </Tarjeta>
           ) : (
             <>
               {/* Las categorías son SECCIONES de la carta: el raíl, que en el teléfono no se desliza. */}
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start">
+              <div className="flex flex-1 flex-col gap-3 lg:flex-row">
                 <RailFiltro
                   titulo="Carta"
                   opciones={carta.map((c) => ({ valor: String(c.id), etiqueta: c.nombre, conteo: c.productos.length }))}
@@ -203,7 +198,7 @@ export default function PedidoCliente({
                   alElegir={(v) => setCategoria(Number(v))}
                 />
 
-                <div className="grid min-w-0 flex-1 gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                <div className="grid min-w-0 flex-1 content-start gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                   {productosVisibles.map((p) => (
                     <Tarjeta key={p.id} className="flex items-center gap-3 p-3">
                       <div className="min-w-0 flex-1">
@@ -225,7 +220,7 @@ export default function PedidoCliente({
                             d.set('pedidoId', String(pedido.id));
                             d.set('productoId', String(p.id));
                             d.set('cantidad', String(cantidadDe(p.id)));
-                            accion(() => agregarPlato(slug, d), `${p.nombre} añadido`);
+                            accion(() => agregarPlato(slug, d), 'Añadido.');
                             setCantidades((c) => ({ ...c, [p.id]: 1 }));
                           }}
                         >
@@ -240,21 +235,21 @@ export default function PedidoCliente({
           )}
         </div>
 
-        {/* La cuenta */}
-        <div className="space-y-3">
-          <Tarjeta className="overflow-hidden">
-            <div className="border-b border-borde px-4 py-2.5">
+        {/* La cuenta: la lista crece hasta el pie y los totales quedan abajo. */}
+        <div className="flex min-w-0 flex-col">
+          <Tarjeta className="flex flex-1 flex-col overflow-hidden">
+            <div className="shrink-0 border-b border-borde px-4 py-2.5">
               <h2 className="text-[12px] font-semibold uppercase tracking-wide text-tenue">
                 La cuenta {enCocina > 0 && <span className="text-aviso">· {enCocina} en cocina</span>}
               </h2>
             </div>
 
             {pedido.items.length === 0 ? (
-              <p className="px-4 py-6 text-center text-[12px] text-tenue">
-                Todavía no se ha añadido nada.
+              <p className="flex flex-1 items-center justify-center px-4 py-6 text-center text-[12px] text-tenue">
+                Sin platos
               </p>
             ) : (
-              <ul className="divide-y divide-[var(--color-borde)]">
+              <ul className="desplaza min-h-0 flex-1 divide-y divide-borde overflow-y-auto">
                 {pedido.items.map((i) => (
                   <li key={i.id} className="flex items-center gap-2 px-4 py-2.5">
                     <span
@@ -278,7 +273,7 @@ export default function PedidoCliente({
                         icono={ChefHat}
                         titulo="Marcar este plato como listo"
                         disabled={enCurso}
-                        onClick={() => accion(() => marcarPlatoListo(slug, i.id), 'Plato listo')}
+                        onClick={() => accion(() => marcarPlatoListo(slug, i.id), 'Plato listo.')}
                       />
                     )}
                     {puedeTomar && !cerrado && (
@@ -287,7 +282,7 @@ export default function PedidoCliente({
                         titulo="Quitar del pedido"
                         className="hover:bg-error-suave hover:text-error"
                         disabled={enCurso}
-                        onClick={() => accion(() => quitarPlato(slug, i.id), 'Plato quitado')}
+                        onClick={() => accion(() => quitarPlato(slug, i.id), 'Quitado.')}
                       />
                     )}
                   </li>
@@ -295,7 +290,7 @@ export default function PedidoCliente({
               </ul>
             )}
 
-            <dl className="space-y-1.5 border-t border-borde px-4 py-3 text-[13px]">
+            <dl className="shrink-0 space-y-1.5 border-t border-borde px-4 py-3 text-[13px]">
               {aplicaIva && (
                 <>
                   <div className="flex justify-between">
@@ -305,7 +300,7 @@ export default function PedidoCliente({
                   <div className="flex justify-between">
                     <dt className="text-tenue">
                       IVA {pedido.ivaPorcentaje > 0 ? `${pedido.ivaPorcentaje}%` : ''}
-                      {precioConIva && <span className="text-[11px]"> (incluido en los precios)</span>}
+                      {precioConIva && <span className="text-[11px]"> incluido</span>}
                     </dt>
                     <dd>{dinero(pedido.iva, moneda)}</dd>
                   </div>
@@ -326,8 +321,23 @@ export default function PedidoCliente({
         </div>
       </div>
 
-      <Ventanita abierto={cobrando} alCerrar={() => setCobrando(false)} titulo="Cobrar el pedido">
+      <Ventanita
+        abierto={cobrando}
+        alCerrar={() => setCobrando(false)}
+        titulo="Cobrar el pedido"
+        pie={
+          <>
+            <Boton type="button" variante="secundario" onClick={() => setCobrando(false)} disabled={enCurso}>
+              Cancelar
+            </Boton>
+            <Boton form="form-cobro" type="submit" icono={Receipt} disabled={enCurso}>
+              {enCurso ? 'Cobrando…' : 'Cobrar'}
+            </Boton>
+          </>
+        }
+      >
         <form
+          id="form-cobro"
           action={(d) => {
             d.set('pedidoId', String(pedido.id));
             arranca(async () => {
@@ -336,7 +346,7 @@ export default function PedidoCliente({
                 toast.error(r.error);
                 return;
               }
-              toast.success('Pedido cobrado y mesa liberada');
+              toast.success('Cobrado.');
               setCobrando(false);
               router.push(`/${slug}/panel`);
             });
@@ -353,32 +363,21 @@ export default function PedidoCliente({
               ))}
             </Selector>
           </Campo>
-          <p className="text-[12px] leading-relaxed text-tenue">
-            Al cobrar, el pedido se cierra y la mesa queda libre.
-          </p>
-          <div className="flex justify-end gap-2 border-t border-borde pt-3">
-            <Boton type="button" variante="secundario" onClick={() => setCobrando(false)} disabled={enCurso}>
-              Cancelar
-            </Boton>
-            <Boton type="submit" disabled={enCurso}>
-              {enCurso ? 'Cobrando…' : 'Confirmar cobro'}
-            </Boton>
-          </div>
         </form>
       </Ventanita>
 
       <Confirmar
         abierto={anulando}
         titulo="Anular el pedido"
-        mensaje="El pedido deja de contar y la mesa queda libre. Se guarda como anulado: no desaparece del histórico, para que el turno se pueda cuadrar."
+        mensaje="La mesa queda libre y el pedido se guarda como anulado."
         textoAceptar="Anular"
         ocupado={enCurso}
         alCerrar={() => setAnulando(false)}
         alAceptar={() => {
           setAnulando(false);
-          accion(() => anularPedido(slug, pedido.id), 'Pedido anulado', true);
+          accion(() => anularPedido(slug, pedido.id), 'Anulado.', true);
         }}
       />
-    </>
+    </div>
   );
 }

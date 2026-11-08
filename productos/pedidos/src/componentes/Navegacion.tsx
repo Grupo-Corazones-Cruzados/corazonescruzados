@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useEffect, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { createPortal } from 'react-dom';
 import {
   LayoutDashboard,
@@ -10,11 +10,11 @@ import {
   CalendarClock,
   BookOpen,
   BarChart3,
-  Users,
   Settings,
   LogOut,
   Ellipsis,
   ArrowLeft,
+  ChevronDown,
 } from 'lucide-react';
 import { salir } from '@/acciones/acceso';
 import { Boton, BotonIcono, BurbujaDetalles, useAparicion, type Detalle } from '@/componentes/ui';
@@ -45,8 +45,9 @@ const DESTINOS: Destino[] = [
   { ruta: 'reservas', etiqueta: 'Reservas', icono: CalendarClock, necesita: 'reservar-mesas', grupo: 'Servicio' },
   { ruta: 'reportes', etiqueta: 'Reportes', icono: BarChart3, necesita: 'cobrar', grupo: 'Servicio' },
   { ruta: 'catalogo', etiqueta: 'Carta', icono: BookOpen, necesita: 'administrar', grupo: 'Administración' },
-  { ruta: 'usuarios', etiqueta: 'Usuarios', icono: Users, necesita: 'administrar', grupo: 'Administración' },
-  { ruta: 'configuracion', etiqueta: 'Configuración', icono: Settings, necesita: 'administrar', grupo: 'Administración' },
+  // «Usuarios» ya no es un destino (Fernando, 2026-11-08, como en Automatizaciones): se
+  // administran en Configuración ▸ Usuarios y `/usuarios` redirige allí.
+  { ruta: 'configuracion', etiqueta: 'Configuración', icono: Settings, necesita: 'administrar', grupo: 'Administración', tambien: ['usuarios', 'suscripcion'] },
 ];
 
 const paraRol = (rol: RolUsuario) => DESTINOS.filter((d) => puede(rol, d.necesita));
@@ -97,9 +98,9 @@ function ContenidoMenu({ slug, negocio, logoUrl, usuario, rol, colapsado = false
         className={cn(
           'relative flex items-center gap-3 rounded-md h-9 text-[13px] transition-colors foco-visible',
           colapsado ? 'justify-center px-0' : 'px-3',
-          activo
-            ? 'bg-acento-suave font-semibold text-acento border-l-2 border-acento'
-            : 'border-l-2 border-transparent text-texto hover:bg-realce',
+          // Sin borde a la izquierda (Fernando, 2026-11-08: «quitar esa sombra que tiene cada
+          // opción»). Lo elegido se marca solo con el fondo y el color, como en GCC World.
+          activo ? 'bg-acento-suave font-semibold text-acento' : 'text-texto hover:bg-realce',
         )}
       >
         <d.icono className={cn('h-[18px] w-[18px] shrink-0', activo ? 'text-acento' : 'text-tenue')} />
@@ -177,7 +178,8 @@ export function BarraLateral(props: Props) {
         onMouseEnter={() => setSobreElMenu(true)}
         onMouseLeave={() => setSobreElMenu(false)}
         className={cn(
-          'fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-borde bg-tarjeta lg:flex transition-[width] duration-200 print:hidden',
+          // Empieza bajo la franja de demostración si la hay: `--alto-aviso`.
+          'fixed bottom-0 left-0 top-[var(--alto-aviso,0px)] z-40 hidden flex-col border-r border-borde bg-tarjeta lg:flex transition-[width] duration-200 print:hidden',
           colapsado ? 'w-16' : 'w-60 shadow-2xl',
         )}
       >
@@ -226,12 +228,12 @@ export function BarraInferior(props: Props) {
                 key={d.ruta}
                 href={href}
                 className={cn(
-                  'flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] transition-colors',
+                  'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] transition-colors',
                   activo ? 'text-acento' : 'text-tenue',
                 )}
               >
                 <d.icono className="h-5 w-5" />
-                <span className="truncate">{d.etiqueta}</span>
+                <span className="max-w-full truncate">{d.etiqueta}</span>
               </Link>
             );
           })}
@@ -239,7 +241,7 @@ export function BarraInferior(props: Props) {
             onClick={() => setAbierto(true)}
             aria-expanded={abierto}
             className={cn(
-              'flex flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] transition-colors',
+              'flex min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-[10px] transition-colors',
               enOtro || abierto ? 'text-acento' : 'text-tenue',
             )}
           >
@@ -265,7 +267,7 @@ export function BarraInferior(props: Props) {
             // Pulsar la pantalla en la que ya se está no cambia la ruta: se cierra igual.
             onClick={(e) => (e.target as HTMLElement).closest('a') && setAbierto(false)}
             className={cn(
-              'absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-borde bg-tarjeta pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-2xl',
+              'superficie-flotante absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col border-r border-borde bg-tarjeta pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] shadow-2xl',
               'transition-transform duration-200 ease-out',
               visible ? 'translate-x-0' : '-translate-x-full',
             )}>
@@ -290,16 +292,24 @@ export type AccionMenu = {
   titulo?: string;
 };
 
-/** Donde la barra de acciones del teléfono se monta: al final del contenido, encima de la barra inferior. */
+/** Donde la barra de acciones del teléfono se monta: al final del `main` que se desplaza, encima de la barra inferior. */
 export const ID_BARRA_ACCIONES = 'barra-acciones-movil';
 
 /**
- * El hueco de la barra de acciones en el teléfono. Va como ÚLTIMO hijo del contenido y es
- * `sticky`: ocupa su propio sitio en el flujo, así que al final de la página nada queda debajo
- * de ella, y mientras se baja se queda pegada encima de la barra inferior. Vacío, no ocupa nada.
+ * El hueco de la barra de acciones en el teléfono. Va como ÚLTIMO hijo del `main` que se
+ * desplaza y es `sticky`: ocupa su propio sitio en el flujo, así que al final de la página nada
+ * queda debajo de ella, y mientras se baja se queda pegada encima de la barra inferior. Vacío,
+ * no ocupa nada.
+ *
+ * ⚠️ AQUÍ ES `bottom-0`, no `bottom-[4rem+…]` como en Catering. En Catering el contenido se
+ * desplaza con la ventana; aquí se desplaza el `main`, y lo `sticky` se pega al borde de SU
+ * caja descontado su relleno —medido: con `bottom-16` quedaban 64 px de hueco sobre la barra
+ * inferior—. Ese relleno (`pb-[calc(4rem+…)]`) ya es el sitio de la barra inferior, así que
+ * con `bottom-0` queda apoyada justo encima. Y `mt-auto` la baja al fondo en una página corta
+ * (`main` es `flex-col`).
  */
 export function HuecoBarraAcciones() {
-  return <div id={ID_BARRA_ACCIONES} className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-30 mt-auto empty:hidden lg:hidden print:hidden" />;
+  return <div id={ID_BARRA_ACCIONES} className="sticky bottom-0 z-30 mt-auto empty:hidden lg:hidden print:hidden" />;
 }
 
 /*
@@ -321,6 +331,9 @@ export function CabeceraPagina({
   extra,
   volver,
   detalles,
+  tituloTelefono,
+  volverTelefono,
+  accionesTelefono,
 }: {
   titulo: string;
   descripcion?: string;
@@ -329,13 +342,23 @@ export function CabeceraPagina({
   extra?: React.ReactNode;
   volver?: { href: string; etiqueta: string };
   detalles?: Detalle[];
+  /**
+   * Una sección abierta en el teléfono (ver `Secciones`): su nombre sustituye al título y
+   * una flecha vuelve a la portada. En escritorio no cambia nada.
+   */
+  tituloTelefono?: string;
+  volverTelefono?: { href: string; etiqueta: string };
+  /** Principales que SOLO van a la barra de abajo del teléfono (en escritorio viven en su tarjeta). */
+  accionesTelefono?: React.ReactNode;
 }) {
   const [hueco, setHueco] = useState<HTMLElement | null>(null);
   useEffect(() => setHueco(document.getElementById(ID_BARRA_ACCIONES)), []);
   const hayMenu = !!menu?.length;
 
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-3.5 sm:px-6 lg:flex-wrap print:hidden">
+    <div className="flex min-h-[68px] items-center justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-2 sm:px-6 lg:flex-wrap print:hidden">
+      {/* ALTO MÍNIMO = el de la cabecera del menú (68 px), para que sus bordes inferiores queden en
+        la misma línea (Fernando, 2026-11-08). Con la línea de estado (`extra`) también cabe en 68. */}
       <div className="flex min-w-0 items-start gap-2">
         {volver && (
           <Link href={volver.href} aria-label={volver.etiqueta} title={volver.etiqueta}
@@ -343,14 +366,27 @@ export function CabeceraPagina({
             <ArrowLeft className="h-4 w-4" />
           </Link>
         )}
+        {volverTelefono && (
+          <Link href={volverTelefono.href} aria-label={volverTelefono.etiqueta} title={volverTelefono.etiqueta}
+            className="foco-visible -ml-1 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-tenue transition-colors hover:bg-realce hover:text-texto lg:hidden">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        )}
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-1">
-            <h1 className="truncate text-[17px] font-semibold text-texto">{titulo}</h1>
+            {tituloTelefono ? (
+              <h1 className="truncate text-[17px] font-semibold leading-6 text-texto">
+                <span className="lg:hidden">{tituloTelefono}</span>
+                <span className="hidden lg:inline">{titulo}</span>
+              </h1>
+            ) : (
+              <h1 className="truncate text-[17px] font-semibold leading-6 text-texto">{titulo}</h1>
+            )}
             {(descripcion || !!detalles?.length) && (
               <BurbujaDetalles texto={descripcion} detalles={detalles} titulo={detalles?.length ? `Datos de ${titulo}` : 'Ayuda'} className="shrink-0" />
             )}
           </div>
-          {extra && <div className="mt-1.5">{extra}</div>}
+          {extra && <div className="mt-0.5 leading-4">{extra}</div>}
         </div>
       </div>
       {hayMenu && <MenuMas acciones={menu!} />}
@@ -360,10 +396,11 @@ export function CabeceraPagina({
           {acciones}
         </div>
       )}
-      {acciones && hueco && createPortal(
+      {(acciones || accionesTelefono) && hueco && createPortal(
         <div className="border-t border-borde bg-tarjeta px-4 py-2.5 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
           <div className="mx-auto flex max-w-md items-center justify-center gap-2 [&>*]:min-w-0 [&>*]:flex-1 [&_button]:w-full [&_button]:justify-center">
             {acciones}
+            {accionesTelefono}
           </div>
         </div>,
         hueco,
@@ -373,7 +410,7 @@ export function CabeceraPagina({
 }
 
 /**
- * Las acciones de una TARJETA (p. ej. una categoría de la carta o una zona): botones en escritorio y «⋯» en el
+ * Las acciones de una TARJETA (p. ej. el servicio vigente): botones en escritorio y «⋯» en el
  * teléfono, por la misma regla que la cabecera; va a la derecha del título de la tarjeta.
  */
 export function AccionesTarjeta({ acciones }: { acciones: AccionMenu[] }) {
@@ -399,13 +436,60 @@ function BotonAccion({ accion: a, tamano }: { accion: AccionMenu; tamano?: 'sm' 
   return a.descargar ? <a href={conBase(a.href)} download>{boton}</a> : <Link href={a.href}>{boton}</Link>;
 }
 
+/** El «⋯» del teléfono con las acciones secundarias; entra y sale con movimiento. */
 /**
- * El «⋯» del teléfono con las acciones secundarias; entra y sale con movimiento. Se
- * exporta para las filas que en escritorio llevan botones de icono (la carta).
+ * Las acciones de una FILA de tabla: SIEMPRE un «⋯» que abre la lista, en todos los anchos
+ * (Fernando, 2026-11-08: «los botones tienen que ser un botón de más que al hacer clic abra una
+ * lista de opciones»). Nunca una columna de botones con texto.
  */
-export function MenuMas({ acciones }: { acciones: AccionMenu[] }) {
+export function MenuFila({ acciones }: { acciones: AccionMenu[] }) {
+  // El clic en el «⋯» (y en sus opciones) no llega a la fila: en las tablas que abren su panel
+  // al pulsar la fila, abriría las dos cosas a la vez.
+  return (
+    <div className="contents" onClick={(e) => e.stopPropagation()}>
+      <MenuMas acciones={acciones} siempre />
+    </div>
+  );
+}
+
+/**
+ * UN BOTÓN CON TEXTO QUE DESPLIEGA OPCIONES (regla «Botón que despliega variantes», 2026-10-30):
+ * el mismo menú del «⋯», con su animación y su cierre, pero con texto, icono y flecha.
+ */
+export function MenuBoton({ texto, icono, acciones }: { texto: string; icono?: React.ComponentType<{ className?: string }>; acciones: AccionMenu[] }) {
+  return <MenuMas acciones={acciones} siempre boton={{ texto, icono }} />;
+}
+
+function MenuMas({ acciones, siempre = false, boton: conTexto }: {
+  acciones: AccionMenu[];
+  siempre?: boolean;
+  boton?: { texto: string; icono?: React.ComponentType<{ className?: string }> };
+}) {
   const [abierto, setAbierto] = useState(false);
   const { montado, visible } = useAparicion(abierto);
+  /*
+    SE MIDE Y SE ENCAJA (regla /diseno §4-quater): `fixed`, pegado al botón por la derecha y,
+    si no cabe debajo, hacia arriba. Con `absolute` lo recortaba la tarjeta de la tabla en la
+    última fila (Fernando, 2026-11-08).
+  */
+  const boton = useRef<HTMLButtonElement>(null);
+  const [sitio, setSitio] = useState<{ top?: number; bottom?: number; right: number }>({ right: 16 });
+  const abrir = () => {
+    const r = boton.current?.getBoundingClientRect();
+    if (r) {
+      const alto = acciones.length * 41 + 10;
+      const right = Math.max(8, window.innerWidth - r.right);
+      setSitio(window.innerHeight - r.bottom < alto + 12 ? { bottom: window.innerHeight - r.top + 6, right } : { top: r.bottom + 6, right });
+    }
+    setAbierto((v) => !v);
+  };
+  useEffect(() => {
+    if (!abierto) return;
+    const cerrar = () => setAbierto(false);
+    window.addEventListener('scroll', cerrar, true);
+    window.addEventListener('resize', cerrar);
+    return () => { window.removeEventListener('scroll', cerrar, true); window.removeEventListener('resize', cerrar); };
+  }, [abierto]);
   useEffect(() => {
     if (!abierto) return;
     const tecla = (e: KeyboardEvent) => e.key === 'Escape' && setAbierto(false);
@@ -415,15 +499,25 @@ export function MenuMas({ acciones }: { acciones: AccionMenu[] }) {
 
   const opcion = 'flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-[13px] font-medium transition-colors hover:bg-realce disabled:opacity-50';
   return (
-    <div className="relative shrink-0 lg:hidden">
-      <BotonIcono icono={Ellipsis} titulo="Más acciones" aria-expanded={abierto} aria-haspopup="menu" onClick={() => setAbierto((v) => !v)}
+    <div className={cn('relative shrink-0', !siempre && 'lg:hidden')}>
+{conTexto ? (
+        <Boton ref={boton} variante="secundario" icono={conTexto.icono} aria-expanded={abierto} aria-haspopup="menu" onClick={abrir}
+          className={cn(abierto && 'bg-realce')}>
+          {conTexto.texto}
+          <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+        </Boton>
+      ) : (
+            <BotonIcono ref={boton} icono={Ellipsis} titulo="Más acciones" aria-expanded={abierto} aria-haspopup="menu" onClick={abrir}
         className={cn('border border-borde', abierto && 'bg-realce text-texto')} />
+      )}
       {montado && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setAbierto(false)} />
           <div role="menu"
+            style={sitio}
             className={cn(
-              'absolute right-0 top-full z-50 mt-1.5 w-60 origin-top-right overflow-hidden rounded-md border border-borde bg-tarjeta py-1 shadow-lg',
+              'superficie-flotante fixed z-50 w-60 overflow-hidden rounded-md border border-borde bg-tarjeta py-1 shadow-lg',
+              sitio.bottom !== undefined ? 'origin-bottom-right' : 'origin-top-right',
               'transition duration-200 ease-out',
               visible ? 'scale-100 opacity-100' : 'pointer-events-none scale-95 opacity-0',
             )}>

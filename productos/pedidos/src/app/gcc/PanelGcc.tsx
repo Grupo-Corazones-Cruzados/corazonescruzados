@@ -3,8 +3,6 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import {
   Building2,
   Plus,
@@ -17,8 +15,9 @@ import {
   KeyRound,
   ExternalLink,
   LogOut,
-  AlertCircle,
   Copy,
+  Pencil,
+  Save,
 } from 'lucide-react';
 import {
   Boton,
@@ -30,10 +29,14 @@ import {
   Tabla,
   Insignia,
   PanelLateral,
-  RailFiltro,
   EstadoVacio,
+  Secciones,
+  useSeccion,
+  PieAcciones,
+  type OpcionRail,
   type Tono,
 } from '@/componentes/ui';
+import { MenuFila } from '@/componentes/Navegacion';
 import { salirOperador } from '@/acciones/acceso';
 import {
   crearInquilino,
@@ -45,7 +48,7 @@ import {
   guardarPlan,
   restablecerClaveAdmin,
 } from '@/acciones/gcc';
-import { dinero } from '@/lib/formato';
+import { dinero, fechaCorta } from '@/lib/formato';
 import type { EstadoAcceso } from '@/lib/inquilino';
 import { conBase } from '@/lib/base';
 
@@ -103,6 +106,11 @@ const ACCESO: Record<EstadoAcceso, { texto: string; tono: Tono }> = {
 
 const periodoActual = () => new Date().toISOString().slice(0, 7);
 
+const SECCIONES: OpcionRail[] = [
+  { valor: 'negocios', etiqueta: 'Negocios', icono: Building2 },
+  { valor: 'planes', etiqueta: 'Planes', icono: Layers },
+];
+
 export default function PanelGcc({
   operador,
   inquilinos,
@@ -113,33 +121,31 @@ export default function PanelGcc({
   planes: PlanGcc[];
 }) {
   const router = useRouter();
-  const [seccion, setSeccion] = useState<'alojamientos' | 'planes'>('alojamientos');
+  const s = useSeccion(SECCIONES.map((o) => ({ ...o, conteo: o.valor === 'negocios' ? inquilinos.length : planes.length })));
+  const seccion = s.activo;
   const [alta, setAlta] = useState(false);
   const [detalle, setDetalle] = useState<InquilinoGcc | null>(null);
   const [planEdit, setPlanEdit] = useState<PlanGcc | null | 'nuevo'>(null);
   const [credencial, setCredencial] = useState<{ texto: string; clave: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [enCurso, arranca] = useTransition();
 
   const cerrar = () => {
     setAlta(false);
     setDetalle(null);
     setPlanEdit(null);
-    setError(null);
   };
 
   const conResultado = (
     fn: () => Promise<{ ok: boolean; error?: string; mensaje?: string; clave?: string; slug?: string }>,
   ) =>
     arranca(async () => {
-      setError(null);
       const r = await fn();
       if (!r.ok) {
-        setError(r.error ?? 'No se pudo completar la acción');
+        toast.error(r.error ?? 'No se pudo completar la acción.');
         return;
       }
       if (r.clave) setCredencial({ texto: r.mensaje ?? 'Contraseña generada', clave: r.clave });
-      toast.success(r.mensaje ?? 'Hecho');
+      toast.success(r.mensaje ?? 'Hecho.');
       cerrar();
       router.refresh();
     });
@@ -151,11 +157,15 @@ export default function PanelGcc({
     .reduce((a, i) => a + i.precioMensual, 0);
 
   return (
-    <div className="min-h-screen bg-fondo">
-      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-3.5 sm:px-6">
-        <div>
-          <h1 className="text-[17px] font-semibold">Gestión de Pedidos · Equipo GCC</h1>
-          <p className="text-[12px] text-tenue">{operador}</p>
+    // Alto completo, como el armazón de los negocios: la cabecera mide 68 px y el panel de la
+    // derecha (la tarjeta de `Secciones`) llega al pie.
+    <div className="flex h-dvh flex-col bg-fondo">
+      <header className="flex min-h-[68px] shrink-0 items-center justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-2 sm:px-6">
+        <div className="min-w-0">
+          <h1 className="truncate text-[17px] font-semibold leading-6 text-texto">
+            {s.enUrl ? <><span className="lg:hidden">{s.etiqueta}</span><span className="hidden lg:inline">Equipo GCC</span></> : 'Equipo GCC'}
+          </h1>
+          <p className="mt-0.5 truncate text-[12px] leading-4 text-tenue">Gestión de Pedidos · {operador}</p>
         </div>
         <form action={salirOperador}>
           <Boton variante="fantasma" icono={LogOut} type="submit">
@@ -164,19 +174,9 @@ export default function PanelGcc({
         </form>
       </header>
 
-      <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
-        <RailFiltro
-          opciones={[
-            { valor: 'alojamientos', etiqueta: 'Negocios', icono: Building2, conteo: inquilinos.length },
-            { valor: 'planes', etiqueta: 'Planes', icono: Layers, conteo: planes.length },
-          ]}
-          activo={seccion}
-          alElegir={(v) => setSeccion(v as 'alojamientos' | 'planes')}
-        />
-
-        <div className="min-w-0 flex-1 space-y-4">
+      <Secciones opciones={SECCIONES} seccion={s}>
           {credencial && (
-            <Tarjeta className="flex flex-wrap items-center gap-3 border-acento bg-acento-suave p-4">
+            <Tarjeta className="m-4 mb-0 flex flex-wrap items-center gap-3 border-acento p-4">
               <KeyRound className="h-5 w-5 shrink-0 text-acento" />
               <p className="min-w-0 flex-1 text-[13px] font-semibold">{credencial.texto}</p>
               <code className="rounded border border-borde bg-tarjeta px-3 py-1.5 font-mono text-[14px] font-semibold">
@@ -187,7 +187,7 @@ export default function PanelGcc({
                 icono={Copy}
                 onClick={() => {
                   navigator.clipboard.writeText(credencial.clave);
-                  toast.success('Copiada');
+                  toast.success('Copiada.');
                 }}
               >
                 Copiar
@@ -198,39 +198,33 @@ export default function PanelGcc({
             </Tarjeta>
           )}
 
-          {seccion === 'alojamientos' && (
-            <>
-              <div className="grid gap-3 sm:grid-cols-3">
+          {seccion === 'negocios' && (
+            <div className="flex flex-1 flex-col">
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
                 {[
                   { et: 'Negocios', v: String(inquilinos.length) },
-                  { et: 'Con la mensualidad al día', v: String(inquilinos.length - vencidos) },
+                  { et: 'Al día', v: String(inquilinos.length - vencidos) },
                   { et: 'Mensualidad activa', v: dinero(ingresoMensual) },
                 ].map((c) => (
-                  <Tarjeta key={c.et} className="p-4">
-                    <p className="text-[11px] uppercase tracking-wide text-tenue">{c.et}</p>
-                    <p className="mt-1 text-[20px] font-semibold">{c.v}</p>
-                  </Tarjeta>
+                  <div key={c.et}>
+                    <p className="text-[10.5px] font-semibold uppercase tracking-wide text-tenue">{c.et}</p>
+                    <p className="text-[17px] font-semibold tabular-nums text-texto">{c.v}</p>
+                  </div>
                 ))}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <h2 className="text-[14px] font-semibold">Negocios</h2>
-                <Boton icono={Plus} onClick={() => setAlta(true)} disabled={!planes.length}>
+                <Boton icono={Plus} className="ml-auto" onClick={() => setAlta(true)} disabled={!planes.length}>
                   Nuevo negocio
                 </Boton>
               </div>
 
-              <Tarjeta className="overflow-hidden">
                 <Tabla
                   filas={inquilinos}
                   claveFila={(i) => i.id}
                   alPulsarFila={(i) => setDetalle(i)}
+                  recuento={`${inquilinos.length} ${inquilinos.length === 1 ? 'negocio' : 'negocios'}`}
                   vacio={
-                    <EstadoVacio
-                      icono={Building2}
-                      titulo="Todavía no hay negocios"
-                      detalle="Da de alta el primero y entrégale su dirección y su contraseña."
-                    />
+                    <div className="flex flex-1 flex-col justify-center">
+                      <EstadoVacio icono={Building2} titulo="Todavía no hay negocios" />
+                    </div>
                   }
                   columnas={[
                     {
@@ -266,7 +260,7 @@ export default function PanelGcc({
                       titulo: 'Pagado hasta',
                       render: (i) =>
                         i.pagadoHasta ? (
-                          format(new Date(i.pagadoHasta), 'd MMM yyyy', { locale: es })
+                          fechaCorta(i.pagadoHasta, 'UTC')
                         ) : (
                           <span className="text-tenue">—</span>
                         ),
@@ -281,98 +275,86 @@ export default function PanelGcc({
                       ),
                     },
                     {
-                      clave: 'abrir',
+                      clave: 'acciones',
                       titulo: '',
+                      ancho: '56px',
                       alinear: 'der',
                       render: (i) => (
-                        <a
-                          href={conBase(`/${i.slug}/acceso`)}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 text-[12px] font-semibold text-acento hover:underline"
-                        >
-                          Abrir <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
+                        <div className="flex justify-end">
+                          <MenuFila
+                            acciones={[
+                              { etiqueta: 'Detalles', icono: Pencil, alPulsar: () => setDetalle(i) },
+                              { etiqueta: 'Abrir', icono: ExternalLink, alPulsar: () => window.open(conBase(`/${i.slug}/acceso`), '_blank', 'noreferrer') },
+                            ]}
+                          />
+                        </div>
                       ),
                     },
                   ]}
                 />
-              </Tarjeta>
-            </>
+            </div>
           )}
 
           {seccion === 'planes' && (
-            <>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-[14px] font-semibold">Planes</h2>
-                  <p className="text-[12px] text-tenue">
-                    Los niveles de acceso por mensualidad. Un tope vacío significa «sin límite».
-                  </p>
-                </div>
+            <div className="flex flex-1 flex-col">
+              <div className="flex justify-end px-4 py-3">
                 <Boton icono={Plus} onClick={() => setPlanEdit('nuevo')}>
                   Nuevo plan
                 </Boton>
               </div>
-
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {planes.map((p) => (
-                  <Tarjeta key={p.id} className="flex flex-col p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-[14px] font-semibold">{p.nombre}</p>
-                        <p className="font-mono text-[11px] text-tenue">{p.slug}</p>
-                      </div>
-                      {!p.activo && <Insignia tono="neutro">Inactivo</Insignia>}
+              <Tabla
+                filas={planes}
+                claveFila={(p) => p.id}
+                alPulsarFila={(p) => setPlanEdit(p)}
+                recuento={`${planes.length} ${planes.length === 1 ? 'plan' : 'planes'}`}
+                columnas={[
+                  { clave: 'nombre', titulo: 'Plan', ancho: '28%', render: (p) => (
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-texto">{p.nombre}</p>
+                      <p className="truncate font-mono text-[11px] text-tenue">{p.slug}</p>
                     </div>
-                    <p className="mt-3 text-[20px] font-semibold text-acento">
-                      {p.precioMensual > 0 ? `${dinero(p.precioMensual, p.moneda)}` : 'Por definir'}
-                      {p.precioMensual > 0 && (
-                        <span className="text-[12px] font-normal text-tenue"> / mes</span>
-                      )}
-                    </p>
-                    {p.descripcion && <p className="mt-2 text-[12px] text-tenue">{p.descripcion}</p>}
-                    <ul className="mt-3 space-y-1 text-[12px]">
-                      <li className="text-tenue">
-                        Histórico: {p.mesesRetencion ? `${p.mesesRetencion} mes(es)` : 'sin límite'} ·{' '}
-                      </li>
-                      <li className="text-tenue">
-                        Mesas: {p.maxMesas ?? 'sin límite'} · Productos: {p.maxProductos ?? 'sin límite'} ·
-                        Cuentas: {p.maxUsuarios ?? 'sin límite'}
-                      </li>
-                      {p.caracteristicas.map((c) => (
-                        <li key={c} className="flex items-start gap-2">
-                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-acento" />
-                          {c}
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="mt-auto pt-4">
-                      <Boton variante="secundario" className="w-full" onClick={() => setPlanEdit(p)}>
-                        Editar
-                      </Boton>
+                  ) },
+                  { clave: 'precio', titulo: 'Mensualidad', ancho: '16%', alinear: 'der', render: (p) => (
+                    <span className="font-semibold tabular-nums text-acento">{p.precioMensual > 0 ? dinero(p.precioMensual, p.moneda) : 'Por definir'}</span>
+                  ) },
+                  { clave: 'historico', titulo: 'Histórico', ancho: '14%', render: (p) => (p.mesesRetencion ? `${p.mesesRetencion} ${p.mesesRetencion === 1 ? 'mes' : 'meses'}` : 'Sin límite') },
+                  { clave: 'topes', titulo: 'Mesas · productos · cuentas', ancho: '26%', render: (p) => (
+                    <span className="text-tenue">{p.maxMesas ?? '∞'} · {p.maxProductos ?? '∞'} · {p.maxUsuarios ?? '∞'}</span>
+                  ) },
+                  { clave: 'estado', titulo: 'Estado', ancho: '10%', render: (p) => (
+                    <Insignia tono={p.activo ? 'exito' : 'neutro'}>{p.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                  ) },
+                  { clave: 'acciones', titulo: '', ancho: '56px', alinear: 'der', render: (p) => (
+                    <div className="flex justify-end">
+                      <MenuFila acciones={[{ etiqueta: 'Editar', icono: Pencil, alPulsar: () => setPlanEdit(p) }]} />
                     </div>
-                  </Tarjeta>
-                ))}
-              </div>
-            </>
+                  ) },
+                ]}
+              />
+            </div>
           )}
-        </div>
-      </div>
-
+      </Secciones>
       {/* Alta de alojamiento */}
       <PanelLateral
         abierto={alta}
         alCerrar={cerrar}
         titulo="Nuevo negocio"
-        descripcion="Se crea el negocio, su suscripción y la cuenta de administrador."
+        pie={
+          <PieAcciones>
+            <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>
+              Cancelar
+            </Boton>
+            <Boton form="form-alta" type="submit" icono={Save} disabled={enCurso}>
+              {enCurso ? 'Creando…' : 'Crear negocio'}
+            </Boton>
+          </PieAcciones>
+        }
       >
-        <form action={(d) => conResultado(() => crearInquilino(d))} className="space-y-4">
+        <form id="form-alta" action={(d) => conResultado(() => crearInquilino(d))} className="space-y-4">
           <Campo etiqueta="Nombre del negocio" requerido>
             <Entrada name="nombre" required autoFocus />
           </Campo>
-          <Campo etiqueta="Código (primer tramo de su dirección)" requerido>
+          <Campo etiqueta="Código" requerido>
             <Entrada name="slug" required placeholder="mi-restaurante" className="font-mono" />
           </Campo>
           <Campo etiqueta="Plan" requerido>
@@ -396,12 +378,9 @@ export default function PanelGcc({
           <Campo etiqueta="Persona de contacto">
             <Entrada name="contactoNombre" />
           </Campo>
-          <label className="flex items-start gap-2 text-[13px]">
-            <input type="checkbox" name="cortesia" className="mt-0.5 h-4 w-4 accent-[var(--color-acento)]" />
-            <span>
-              Acceso del grupo
-              <span className="block text-[11px] text-tenue">Para la administración del Grupo Corazones Cruzados: no paga mensualidad ni tiene topes. Todos los demás pasan por la suscripción.</span>
-            </span>
+          <label className="flex items-center gap-2 text-[13px]" title="Para la administración del Grupo Corazones Cruzados: no paga mensualidad ni tiene topes">
+            <input type="checkbox" name="cortesia" className="h-4 w-4 accent-[var(--color-acento)]" />
+            Acceso del grupo
           </label>
           <div className="grid gap-4 sm:grid-cols-2">
             <Campo etiqueta="Correo">
@@ -410,15 +389,6 @@ export default function PanelGcc({
             <Campo etiqueta="Teléfono">
               <Entrada name="contactoTelefono" />
             </Campo>
-          </div>
-          {error && <Aviso texto={error} />}
-          <div className="flex justify-end gap-2 border-t border-borde pt-4">
-            <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>
-              Cancelar
-            </Boton>
-            <Boton type="submit" disabled={enCurso}>
-              {enCurso ? 'Creando…' : 'Crear alojamiento'}
-            </Boton>
           </div>
         </form>
       </PanelLateral>
@@ -436,14 +406,14 @@ export default function PanelGcc({
             <dl className="grid grid-cols-2 gap-3 text-[13px]">
               <Dato et="Acceso" v={ACCESO[detalle.acceso].texto} />
               <Dato et="Estado" v={detalle.estado} />
-              <Dato et="Escritura" v={detalle.soloLectura ? 'Escaparate (solo lectura)' : 'Normal'} />
-              <Dato et="Mensualidad" v={detalle.cortesia ? 'Acceso del grupo: no paga, sin topes' : 'Por suscripción'} />
+              <Dato et="Escritura" v={detalle.soloLectura ? 'Escaparate' : 'Normal'} />
+              <Dato et="Mensualidad" v={detalle.cortesia ? 'Del grupo' : 'Suscripción'} />
               <Dato et="Plan" v={detalle.plan?.nombre ?? '—'} />
               <Dato
                 et="Pagado hasta"
                 v={
                   detalle.pagadoHasta
-                    ? format(new Date(detalle.pagadoHasta), 'd MMM yyyy', { locale: es })
+                    ? fechaCorta(detalle.pagadoHasta, 'UTC')
                     : '—'
                 }
               />
@@ -453,7 +423,7 @@ export default function PanelGcc({
 
             <section>
               <h3 className="mb-2 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wide text-tenue">
-                <CreditCard className="h-4 w-4" /> Registrar el cobro de un mes
+                <CreditCard className="h-4 w-4" /> Registrar un cobro
               </h3>
               <form action={(d) => conResultado(() => registrarPago(d))} className="space-y-3">
                 <input type="hidden" name="inquilinoId" value={detalle.id} />
@@ -481,9 +451,11 @@ export default function PanelGcc({
                 <Campo etiqueta="Referencia">
                   <Entrada name="referencia" placeholder="Nº de transferencia, comprobante…" />
                 </Campo>
-                <Boton type="submit" disabled={enCurso}>
-                  {enCurso ? 'Registrando…' : 'Registrar pago'}
-                </Boton>
+                <div className="flex justify-end">
+                  <Boton type="submit" disabled={enCurso}>
+                    {enCurso ? 'Registrando…' : 'Registrar pago'}
+                  </Boton>
+                </div>
               </form>
             </section>
 
@@ -492,7 +464,7 @@ export default function PanelGcc({
                 <h3 className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-tenue">
                   Últimos cobros
                 </h3>
-                <ul className="divide-y divide-[var(--color-borde)] rounded border border-borde">
+                <ul className="divide-y divide-borde rounded border border-borde">
                   {detalle.pagos.map((p) => (
                     <li key={p.periodo} className="flex items-center gap-3 px-3 py-2 text-[13px]">
                       <span className="font-mono">{p.periodo}</span>
@@ -529,7 +501,7 @@ export default function PanelGcc({
                   disabled={enCurso}
                   onClick={() => conResultado(() => restablecerClaveAdmin(detalle.id))}
                 >
-                  Contraseña del administrador
+                  Contraseña del admin
                 </Boton>
                 <Boton
                   variante="secundario"
@@ -571,7 +543,6 @@ export default function PanelGcc({
                   </Boton>
                 )}
               </div>
-              {error && <Aviso texto={error} />}
             </section>
           </div>
         )}
@@ -582,10 +553,21 @@ export default function PanelGcc({
         abierto={planEdit !== null}
         alCerrar={cerrar}
         titulo={planEdit === 'nuevo' ? 'Nuevo plan' : 'Editar plan'}
-        descripcion="Un tope vacío significa «sin límite»."
+        pie={
+          <PieAcciones>
+            <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>
+              Cancelar
+            </Boton>
+            <Boton form="form-plan" type="submit" icono={Save} disabled={enCurso}>
+              {enCurso ? 'Guardando…' : 'Guardar'}
+            </Boton>
+          </PieAcciones>
+        }
       >
         {planEdit !== null && (
           <form
+            id="form-plan"
+            key={planEdit === 'nuevo' ? 'nuevo' : planEdit.id}
             action={(d) =>
               conResultado(() => guardarPlan(planEdit === 'nuevo' ? null : planEdit.id, d))
             }
@@ -613,7 +595,7 @@ export default function PanelGcc({
                 defaultValue={planEdit === 'nuevo' ? 0 : planEdit.precioMensual}
               />
             </Campo>
-            <Campo etiqueta="Meses de histórico que conserva (vacío = sin límite)">
+            <Campo etiqueta="Meses de histórico">
               <Entrada
                 name="mesesRetencion"
                 type="number"
@@ -655,10 +637,11 @@ export default function PanelGcc({
                 />
               </Campo>
             </div>
-            <Campo etiqueta="Características (una por línea)">
+            <Campo etiqueta="Características">
               <AreaTexto
                 name="caracteristicas"
                 rows={5}
+                placeholder="Una por línea"
                 defaultValue={planEdit === 'nuevo' ? '' : planEdit.caracteristicas.join('\n')}
               />
             </Campo>
@@ -672,15 +655,6 @@ export default function PanelGcc({
               />
               Plan activo
             </label>
-            {error && <Aviso texto={error} />}
-            <div className="flex justify-end gap-2 border-t border-borde pt-4">
-              <Boton type="button" variante="secundario" onClick={cerrar} disabled={enCurso}>
-                Cancelar
-              </Boton>
-              <Boton type="submit" disabled={enCurso}>
-                {enCurso ? 'Guardando…' : 'Guardar plan'}
-              </Boton>
-            </div>
           </form>
         )}
       </PanelLateral>
@@ -691,16 +665,7 @@ export default function PanelGcc({
 const Dato = ({ et, v }: { et: string; v: string }) => (
   <div>
     <dt className="text-[11px] uppercase tracking-wide text-tenue">{et}</dt>
-    <dd className="font-semibold">{v}</dd>
+    <dd className="font-semibold text-texto">{v}</dd>
   </div>
 );
 
-const Aviso = ({ texto }: { texto: string }) => (
-  <p
-    role="alert"
-    className="flex items-start gap-2 rounded border border-borde bg-error-suave px-3 py-2 text-[12px] text-error"
-  >
-    <AlertCircle className="mt-px h-4 w-4 shrink-0" />
-    {texto}
-  </p>
-);

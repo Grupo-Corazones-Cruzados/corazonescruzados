@@ -5,6 +5,7 @@ import { AplicaMarca, LogoHotel } from '@/componentes/Marca';
 import FormularioAcceso from './FormularioAcceso';
 import EntrarConGcc from './EntrarConGcc';
 import { config } from '@/lib/identidadGcc';
+import { urlLogo } from '@/lib/marca';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,13 +38,11 @@ export default async function PaginaAcceso({ params }: { params: Promise<{ negoc
 
   return (
     <AplicaMarca
-      colorAcento={inquilino.colorAcento}
-      tema={inquilino.tema}
       className="flex items-center justify-center px-4 py-10"
     >
       <div className="tarjeta w-full max-w-sm p-8">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <LogoHotel nombre={inquilino.nombre} logoUrl={inquilino.logoUrl} tamano={52} />
+          <LogoHotel nombre={inquilino.nombre} logoUrl={urlLogo(inquilino)} tamano={52} />
           <div>
             <h1 className="text-[17px] font-semibold text-texto">{inquilino.nombre}</h1>
             <p className="text-[12px] text-tenue">Gestión de Pedidos</p>

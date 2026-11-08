@@ -59,6 +59,7 @@ export default async function PaginaReservas({
   return (
     <ReservasCliente
       slug={negocio}
+      zona={inquilino.zonaHoraria}
       dia={desde.toISOString()}
       reservas={vista}
       mesas={opciones}

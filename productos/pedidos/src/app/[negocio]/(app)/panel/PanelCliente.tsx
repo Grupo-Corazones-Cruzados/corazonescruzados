@@ -4,15 +4,13 @@ import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
 import { Building2, Hand, CalendarClock, Users } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, EstadoVacio, Insignia, RailFiltro, SelectorEstado, Tarjeta } from '@/componentes/ui';
+import { Boton, BOTON_PRIMARIO, EstadoVacio, Insignia, RailFiltro, SelectorEstado, Tarjeta } from '@/componentes/ui';
 import { cambiarEstadoMesa } from '@/acciones/mesas';
 import { abrirPedido } from '@/acciones/pedidos';
 import { ETIQUETA_MESA, TONO_MESA, ETIQUETA_PEDIDO, TONO_PEDIDO, minutosDesde, textoEspera } from '@/lib/pedidos';
-import { dinero } from '@/lib/formato';
+import { dinero, horaCorta } from '@/lib/formato';
 import type { EstadoMesa, EstadoPedido } from '@/generated/prisma/enums';
 
 type PedidoVista = {
@@ -70,7 +68,17 @@ const TONO_SITUACION: Record<Filtro, 'exito' | 'aviso' | 'info' | 'neutro' | 'er
   cobrar: 'exito',
 };
 
+// Estados de una palabra (regla de Automatizaciones, 2026-11-08); el matiz va en `title`.
 const ETIQUETA_SITUACION: Record<Filtro, string> = {
+  todas: '',
+  libre: 'Libre',
+  esperando: 'Espera',
+  preparacion: 'Cocina',
+  listo: 'Lista',
+  cobrar: 'Cobrar',
+};
+
+const PISTA_SITUACION: Record<Filtro, string> = {
   todas: '',
   libre: 'Libre',
   esperando: 'Esperando atención',
@@ -83,6 +91,7 @@ export default function PanelCliente({
   slug,
   negocio,
   moneda,
+  zona,
   zonas,
   puedeOperar,
   puedeTomarPedidos,
@@ -90,6 +99,8 @@ export default function PanelCliente({
   slug: string;
   negocio: string;
   moneda: string;
+  /** Zona horaria del negocio: las horas se pintan igual en el servidor y en el navegador. */
+  zona: string;
   zonas: ZonaVista[];
   puedeOperar: boolean;
   puedeTomarPedidos: boolean;
@@ -132,31 +143,36 @@ export default function PanelCliente({
 
   if (!zonas.length) {
     return (
-      <>
+      <div className="flex flex-1 flex-col">
         <CabeceraPagina titulo={negocio} descripcion="Tablero de mesas" />
-        <EstadoVacio
-          icono={Building2}
-          titulo="Todavía no hay mesas"
-          detalle="Crea una zona (Salón, Terraza…) y sus mesas en Configuración; el tablero se llena solo."
-          accion={
-            <Link href={`/${slug}/configuracion`}>
-              <Boton>Ir a Configuración</Boton>
-            </Link>
-          }
-        />
-      </>
+        {/* Un estado vacío a página completa centra su contenido en una tarjeta que llega al pie. */}
+        <div className="flex flex-1 flex-col p-4 sm:p-6">
+          <Tarjeta className="flex flex-1 flex-col justify-center">
+            <EstadoVacio
+              icono={Building2}
+              titulo="Todavía no hay mesas"
+              accion={
+                <Link href={`/${slug}/configuracion?seccion=mesas`} className={`${BOTON_PRIMARIO} h-9 px-4 text-[13px]`}>
+                  Crear mesas
+                </Link>
+              }
+            />
+          </Tarjeta>
+        </div>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       {/*
         Sin el resumen de cuentas en la cabecera: repetía las mismas cifras que el filtro
         de situación lleva en cada opción (un dato no se dice dos veces).
       */}
       <CabeceraPagina titulo={negocio} descripcion="Tablero de mesas" />
 
-      <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row lg:items-start">
+      {/* Alto completo: el raíl y la columna llegan al pie (regla del panel, 2026-11-08). */}
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6 lg:flex-row">
         <RailFiltro
           titulo="Zonas"
           opciones={[
@@ -172,7 +188,7 @@ export default function PanelCliente({
           alElegir={setZonaSel}
         />
 
-        <div className="min-w-0 flex-1 space-y-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-3">
           <SelectorEstado
             etiqueta="Ver"
             className="w-full lg:w-auto"
@@ -180,8 +196,8 @@ export default function PanelCliente({
             alElegir={(v) => setFiltro(v as Filtro)}
             opciones={FILTROS.map((f) => ({ valor: f.clave, etiqueta: f.etiqueta, pista: f.pista, conteo: cuenta(f.clave, mesasZona) }))}
           />
-          <div className="flex flex-col gap-4 xl:flex-row">
-            <div className="min-w-0 flex-1">
+          <div className="flex flex-1 flex-col gap-4 xl:flex-row">
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-4">
                 {visibles.map((m) => {
                   const s = situacion(m);
@@ -198,7 +214,7 @@ export default function PanelCliente({
                             </p>
                           )}
                         </div>
-                        <Insignia tono={TONO_SITUACION[s]}>{ETIQUETA_SITUACION[s]}</Insignia>
+                        <span title={PISTA_SITUACION[s]}><Insignia tono={TONO_SITUACION[s]}>{ETIQUETA_SITUACION[s]}</Insignia></span>
                       </div>
 
                       <div className="min-h-[52px] px-3 text-[12px]">
@@ -217,7 +233,7 @@ export default function PanelCliente({
                           <p className="font-semibold text-aviso">Lleva {textoEspera(espera)} esperando</p>
                         ) : proxima ? (
                           <p className="text-tenue">
-                            Reservada {format(new Date(proxima.desde), 'HH:mm')} · {proxima.cliente}
+                            Reservada {horaCorta(proxima.desde, zona)} · {proxima.cliente}
                           </p>
                         ) : (
                           <p className="text-tenue">Libre desde hace {textoEspera(espera)}</p>
@@ -241,7 +257,7 @@ export default function PanelCliente({
                                 onClick={() => {
                                   const d = new FormData();
                                   d.set('mesaId', String(m.id));
-                                  accion(() => abrirPedido(slug, d), 'Pedido abierto', true);
+                                  accion(() => abrirPedido(slug, d), 'Pedido abierto.', true);
                                 }}
                               >
                                 Tomar pedido
@@ -265,7 +281,7 @@ export default function PanelCliente({
                                         m.id,
                                         s === 'esperando' ? 'LIBRE' : 'ESPERANDO_ATENCION',
                                       ),
-                                    s === 'esperando' ? 'Marca retirada' : 'Mesa marcada: espera atención',
+                                    s === 'esperando' ? 'Marca quitada.' : 'Mesa en espera.',
                                   )
                                 }
                               >
@@ -279,27 +295,30 @@ export default function PanelCliente({
                   );
                 })}
               </div>
-              {!visibles.length && <EstadoVacio titulo="Ninguna mesa en esta situación" icono={Building2} />}
+              {!visibles.length && (
+                <Tarjeta className="flex flex-1 flex-col justify-center">
+                  <EstadoVacio titulo="Ninguna mesa así" icono={Building2} />
+                </Tarjeta>
+              )}
             </div>
 
-            <div className="xl:w-72 xl:shrink-0">
-              <div className="mb-2 flex items-center gap-2 px-1">
+            {/* Las reservas de hoy: una tarjeta que llega al pie, con su propio deslizador. */}
+            <Tarjeta className="flex min-h-[180px] flex-col overflow-hidden xl:w-72 xl:shrink-0">
+              <div className="flex h-10 shrink-0 items-center gap-2 border-b border-borde px-3">
                 <CalendarClock className="h-4 w-4 text-acento" />
-                <h2 className="text-[10px] font-semibold uppercase tracking-wider text-tenue">
-                  Reservas de hoy {reservasHoy.length > 0 && `(${reservasHoy.length})`}
-                </h2>
+                <h2 className="text-[11px] font-semibold uppercase tracking-wider text-tenue">Reservas de hoy</h2>
               </div>
               {reservasHoy.length === 0 ? (
-                <Tarjeta className="p-6 text-center">
-                  <CalendarClock className="mx-auto mb-2 h-8 w-8 text-borde" />
-                  <p className="text-[12px] text-tenue">Sin reservas para hoy</p>
-                </Tarjeta>
+                <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
+                  <CalendarClock className="mb-2 h-8 w-8 text-borde" />
+                  <p className="text-[12px] text-tenue">Sin reservas</p>
+                </div>
               ) : (
-                <div className="desplaza max-h-[calc(100vh-220px)] space-y-2 overflow-y-auto">
+                <div className="desplaza min-h-0 flex-1 divide-y divide-borde overflow-y-auto">
                   {reservasHoy.map((r) => (
-                    <Tarjeta key={r.id} className="flex items-center gap-3 p-3">
+                    <div key={r.id} className="flex items-center gap-3 px-3 py-2.5">
                       <div className="flex h-9 w-12 shrink-0 items-center justify-center rounded bg-acento-suave text-[12px] font-bold text-acento">
-                        {format(new Date(r.desde), 'HH:mm')}
+                        {horaCorta(r.desde, zona)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[12px] font-semibold">{r.cliente}</p>
@@ -308,14 +327,17 @@ export default function PanelCliente({
                           {r.personas ? ` · ${r.personas} personas` : ''}
                         </p>
                       </div>
-                    </Tarjeta>
+                    </div>
                   ))}
                 </div>
               )}
-            </div>
+              <div className="shrink-0 border-t border-borde bg-realce px-3 py-2 text-[12px] text-tenue">
+                {reservasHoy.length} {reservasHoy.length === 1 ? 'reserva' : 'reservas'}
+              </div>
+            </Tarjeta>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }

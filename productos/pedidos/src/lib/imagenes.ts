@@ -21,7 +21,7 @@ export async function subirImagen(archivo: File, carpeta: string): Promise<Resul
   if (!hayCloudinary)
     return {
       ok: false,
-      error: 'Todavía no hay almacenamiento de imágenes configurado. Pega la dirección de una imagen.',
+      error: 'Todavía no hay almacenamiento de imágenes configurado.',
     };
   if (!TIPOS.includes(archivo.type))
     return { ok: false, error: 'El archivo tiene que ser JPG, PNG, WEBP o SVG.' };

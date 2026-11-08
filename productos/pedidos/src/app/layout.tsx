@@ -16,7 +16,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es">
       <body className="antialiased">
         {children}
-        <Toaster position="top-right" richColors closeButton />
+        <Toaster position="top-right" theme="dark" richColors closeButton />
       </body>
     </html>
   );

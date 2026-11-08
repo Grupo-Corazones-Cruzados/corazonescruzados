@@ -59,9 +59,10 @@ export function calcularCuenta(
 }
 
 // ── Estados y su presentación ───────────────────────────────────────────────
+// Estados de una o dos palabras (regla de Automatizaciones, 2026-11-08).
 export const ETIQUETA_PEDIDO: Record<EstadoPedido, string> = {
-  EN_PREPARACION: 'En preparación',
-  LISTO: 'Listo para servir',
+  EN_PREPARACION: 'En cocina',
+  LISTO: 'Listo',
   SERVIDO: 'Servido',
   COBRADO: 'Cobrado',
   ANULADO: 'Anulado',
@@ -77,7 +78,7 @@ export const TONO_PEDIDO = {
 
 export const ETIQUETA_MESA: Record<EstadoMesa, string> = {
   LIBRE: 'Libre',
-  ESPERANDO_ATENCION: 'Esperando atención',
+  ESPERANDO_ATENCION: 'Espera',
   OCUPADA: 'Ocupada',
 };
 
@@ -103,7 +104,7 @@ export const ETIQUETA_RESERVA: Record<EstadoReservaMesa, string> = {
   PENDIENTE: 'Pendiente',
   CUMPLIDA: 'Cumplida',
   CANCELADA: 'Cancelada',
-  NO_PRESENTADO: 'No se presentó',
+  NO_PRESENTADO: 'No vino',
 };
 
 export const TONO_RESERVA = {
