@@ -411,7 +411,7 @@ export default function LegalPage() {
         <p className={pp}>
           El Titular puede solicitar la <strong className={b}>eliminación de sus datos personales</strong>{' '}
           en cualquier momento y de forma gratuita. Si tienes cuenta de cliente o de candidato, también
-          en GCC Progreso, puedes hacerlo tú mismo: inicia sesión y ve a{' '}
+          desde la app GCC World, puedes hacerlo tú mismo: inicia sesión y ve a{' '}
           <strong className={b}>Configuración ▸ Perfil ▸ Eliminar mi cuenta</strong> (la papelera). Si
           no puedes entrar, o tu cuenta es de miembro, sigue estos pasos:
         </p>

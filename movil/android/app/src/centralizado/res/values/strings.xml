@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">GCC Centralizado</string>
-    <string name="title_activity_main">GCC Centralizado</string>
+    <string name="app_name">GCC Miembros</string>
+    <string name="title_activity_main">GCC Miembros</string>
     <string name="package_name">org.grupocc.centralizado</string>
     <string name="custom_url_scheme">org.grupocc.centralizado</string>
 </resources>

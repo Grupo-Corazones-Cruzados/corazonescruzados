@@ -25,13 +25,13 @@ export default function PuertaCentralizado({ children }: { children: ReactNode }
   };
   return (
     <div className="flex flex-col items-center justify-center text-center gap-4 min-h-[60vh] px-6" style={{ fontFamily: 'var(--font-body)' }}>
-      <h1 className="text-xl font-semibold text-digi-text">GCC Centralizado</h1>
+      <h1 className="text-xl font-semibold text-digi-text">Centralizado</h1>
       <p className="text-sm text-digi-muted max-w-sm">
-        {falta ? 'Aún no la tienes en este teléfono. Descárgala desde Herramientas, en tu navegador.' : 'Este módulo se abre en la app de los miembros.'}
+        {falta ? 'Aún no la tienes en este teléfono. Descárgala desde Herramientas, en tu navegador.' : 'Este módulo se abre en GCC Miembros, la app de los miembros.'}
       </p>
       <div className="flex gap-2">
         {falta && <button onClick={() => abrirFuera(INSTALAR)} className={BTN_SECONDARY}>Descargar</button>}
-        <button onClick={abrir} className={BTN_PRIMARY}>Abrir GCC Centralizado</button>
+        <button onClick={abrir} className={BTN_PRIMARY}>Abrir GCC Miembros</button>
       </div>
     </div>
   );

@@ -52,7 +52,7 @@ Los miembros atienden proyectos y tickets según sus talentos y publican su port
 - Configuración: perfil, passkeys, datos de facturación y conexiones.
 - Soporte: ayuda y preguntas frecuentes.
 Candidatos y miembros tienen además Inicio, Mi día, Recordatorios, Pensamientos, Experiencias, Clientes, Facturas y Herramientas. Los miembros usan los sistemas internos de Centralizado.
-GCC Aventura es el videojuego del grupo. GCC Centralizado es la app de los miembros.
+GCC Aventura es el videojuego del grupo. GCC World es la app pública, con la plataforma y el videojuego dentro; GCC Miembros es la app de los miembros, con Centralizado.
 
 ### Métodos de pago
 Tarjeta, por la pasarela PayPhone, y transferencia a Banco Pichincha o Banco Guayaquil, en dólares. La transferencia se confirma al verificar el dinero en el banco. Los números de cuenta se muestran en la página de pago del cobro: no los des aquí. En las apps de teléfono pueden no estar disponibles todos los pagos: remite a la web.

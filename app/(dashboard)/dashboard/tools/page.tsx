@@ -61,7 +61,7 @@ const TOOLS: Tool[] = [
   { id: 'qr', name: 'Enlace a código QR', Icon: QrCode, category: 'edicion', description: 'Convierte un enlace en un código QR para descargar en PNG o SVG.' },
   { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', soloEquipo: true, description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
   { id: 'descargador-video', name: 'Descargador de video', Icon: MonitorDown, category: 'app', description: 'App para Android que guarda en el teléfono videos o audio a partir de un enlace.' },
-  { id: 'gcc-centralizado', name: 'GCC Centralizado', Icon: MonitorDown, category: 'app', soloEquipo: true, description: 'App para Android de los miembros, con Centralizado y Control Psicosocial.' },
+  { id: 'gcc-centralizado', name: 'GCC Miembros', Icon: MonitorDown, category: 'app', soloEquipo: true, description: 'App para Android de los miembros, con Centralizado y Control Psicosocial.' },
   { id: 'entrega-unica', name: 'Entrega de un solo uso', Icon: PackageOpen, category: 'gestion', soloEquipo: true, description: 'Envía un mensaje y hasta 10 archivos con un enlace que se cierra cuando lo descargan.' },
 ];
 
@@ -350,7 +350,7 @@ export default function ToolsPage() {
       pasos={[
         'Descarga el archivo desde el teléfono.',
         'Ábrelo y, si Android lo pide, permite instalar apps de este origen.',
-        'Abre «GCC Centralizado» e inicia sesión como miembro.',
+        'Abre «GCC Miembros» e inicia sesión como miembro.',
       ]}
     />
   );
