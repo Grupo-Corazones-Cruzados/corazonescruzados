@@ -3,7 +3,8 @@ import { Toaster } from 'sonner';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: 'Planificación de Clases', template: '%s · Planificación de Clases' },
+  // REGLA DE LOS PRODUCTOS (Fernando, 2026-11-08): el nombre de la ventana empieza por «GCC».
+  title: { default: 'GCC · Planificación de Clases', template: 'GCC · %s · Planificación de Clases' },
   description:
     'Planificaciones de unidad didáctica redactadas por un agente que trabaja como la docente: por semanas, con destrezas del currículo y descarga en PDF. Un producto del Grupo Corazones Cruzados.',
   // El producto es de uso privado de cada negocio: no hay nada que indexar.

@@ -3,7 +3,8 @@ import { Toaster } from 'sonner';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: 'Gestión de Catering', template: '%s · Gestión de Catering' },
+  // REGLA DE LOS PRODUCTOS (Fernando, 2026-11-08): el nombre de la ventana empieza por «GCC».
+  title: { default: 'GCC · Gestión de Catering', template: 'GCC · %s · Gestión de Catering' },
   description:
     'Comida por suscripción a domicilio: clientes, servicios por días, menú del día, etiquetas y rutas de reparto. Un producto del Grupo Corazones Cruzados.',
   // El producto es de uso privado de cada negocio: no hay nada que indexar.

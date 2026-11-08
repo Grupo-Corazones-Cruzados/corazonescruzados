@@ -3,7 +3,8 @@ import { Toaster } from 'sonner';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: 'Gestión de Reservas', template: '%s · Gestión de Reservas' },
+  // REGLA DE LOS PRODUCTOS (Fernando, 2026-11-08): el nombre de la ventana empieza por «GCC».
+  title: { default: 'GCC · Gestión de Reservas', template: 'GCC · %s · Gestión de Reservas' },
   description:
     'Gestión de reservas para alojamientos: ubicaciones, suites, agenda y reportes. Un producto del Grupo Corazones Cruzados.',
   // El producto es de uso privado de cada hotel: no hay nada que indexar.

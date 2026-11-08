@@ -5,7 +5,7 @@ import { evaluarAcceso } from '@/lib/inquilino';
 import PanelGcc, { type InquilinoGcc, type PlanGcc } from './PanelGcc';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Equipo GCC' };
+export const metadata = { title: 'Equipo' };
 
 export default async function PaginaGcc() {
   const op = await leerSesionOperador();

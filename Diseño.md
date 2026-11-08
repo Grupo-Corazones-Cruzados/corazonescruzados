@@ -6377,3 +6377,6 @@ Fernando: *«revises las nuevas reglas de /diseno y las implementes en este prod
 - **La «sombra» de las opciones era un borde.** `* { border-color }` estaba fuera de capa y ganaba a las utilidades de Tailwind v4: `border-transparent` salía gris y curvo. Ahora va en `@layer base`, y el menú y el raíl marcan lo elegido solo con fondo y color (sin `border-l-2`). El raíl es más compacto: `h-8`, 200 px y `gap-0.5`.
 - **Foco de campo gris**, sin halo (antes el acento): la regla de GCC World.
 - **Configuración**: Negocio (antes Marca: logo SOLO como archivo, nombre, zona horaria, facturación y contacto, en grupos con rótulo y rejilla de 2-3 columnas) · Usuarios (antes el módulo «Cuentas», que desaparece del menú; `/usuarios` redirige) · WhatsApp · Suscripción · Mi cuenta.
+
+## Regla de los productos: el nombre de la ventana empieza por «GCC» (Fernando, 2026-11-08)
+En los cinco productos el título del navegador es `GCC · <página> · <producto>` (por defecto `GCC · <producto>`), con la plantilla `title` del layout raíz (`productos/*/src/app/layout.tsx`). Las páginas solo dan su nombre corto. Recogida también en la skill `/producto` para los productos nuevos.

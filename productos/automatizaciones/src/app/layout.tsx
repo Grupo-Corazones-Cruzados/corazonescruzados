@@ -3,7 +3,8 @@ import { Toaster } from 'sonner';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: 'Automatizaciones de WhatsApp', template: '%s · Automatizaciones de WhatsApp' },
+  // REGLA DE LOS PRODUCTOS (Fernando, 2026-11-08): el nombre de la ventana empieza por «GCC».
+  title: { default: 'GCC · Automatizaciones de WhatsApp', template: 'GCC · %s · Automatizaciones de WhatsApp' },
   description:
     'Agente de IA en WhatsApp, campañas de correo y plantillas. Un producto del Grupo Corazones Cruzados.',
   // El producto es de uso privado de cada cliente: no hay nada que indexar.
