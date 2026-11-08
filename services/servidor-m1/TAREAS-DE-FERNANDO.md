@@ -11,7 +11,14 @@ que se hace desde cualquier navegador. Contexto en `Aprendizaje.md` («SEGURIDAD
 
 ## A. En el M1 (MacBook Air)
 
-### 🔄 A1. Actualizar macOS del M1, de 26.2 a 26.7.2 (unos 40 minutos, casi todo de espera) — en curso el 2026-11-08
+### ✅ A1. Actualizar macOS del M1 (hecho por Fernando, 2026-11-08: quedó en **macOS 27.2**)
+Comprobado tras el reinicio: servicios, filtro de red, cortafuegos, SSH, Tailscale y Node, todo en pie. Falta volver a conectar cargador y adaptador (ver A4).
+
+### ☐ A4. Volver a conectar el M1 cuando quede en su sitio
+Cargador en un puerto; adaptador (cable de red + SSD) en el otro. **Antes de las 03:30**, que corre el respaldo al SSD. Avisar a Claude: comprueba el cable (`192.168.100.15`), el SSD y lanza un respaldo de prueba.
+
+<details><summary>Pasos que se usaron para actualizar</summary>
+
 **Antes del reinicio:** el M1 tiene que estar con el cargador y el adaptador (cable de red + SSD) puestos. Por wifi su IP es otra (`192.168.100.32`): si el cable no está, usar esa en los pasos 4 y 5.
 **Por qué:** trae arreglos de seguridad. Hay que estar **en casa**: tras el reinicio el disco queda cifrado
 hasta desbloquearlo desde la red de casa, y Tailscale no funciona hasta entonces. Los comandos se escriben en
@@ -32,6 +39,8 @@ la Terminal de la M4 Pro, pero lo que se actualiza es el M1. No afecta a nadie: 
    Si sale **«REMOTE HOST IDENTIFICATION HAS CHANGED»**, es normal antes del desbloqueo (el arranque usa otra
    llave): **no borrar nada** y avisar a Claude.
 6. Avisar a Claude: comprueba la versión, los servicios, el filtro de red y los respaldos.
+
+</details>
 
 ### ✅ A2. Junto al M1: permitir accesorios siempre (hecho por Fernando, 2026-11-08)
 **Por qué:** sin esto, un adaptador o un disco nuevos se quedan esperando una aceptación en la pantalla del M1.

@@ -11932,7 +11932,7 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 | H2 | `lib/auth/jwt.ts` usa `"your-secret-key-change-in-production"` si falta `JWT_SECRET`: con un entorno mal copiado, cualquiera fabrica sesiones de admin. Los productos sí fallan sin `JWT_SECRETO` | Crítica si falta la variable | App |
 | H3 | Cortafuegos de macOS **apagado** | Alta | M1 |
 | H4 | Abiertos a toda la red: Compartir pantalla y Gestión remota (ARD 3283), Compartir archivos (SMB), receptor AirPlay (5000/7000), Compartir multimedia (3689), SSH con contraseña | Alta | M1 en la red de casa |
-| H5 | macOS 26.2 con **26.7.2 pendiente** (seguridad; requiere reinicio y desbloqueo de FileVault) | Alta | M1 |
+| H5 | macOS 26.2 con **26.7.2 pendiente** (seguridad; requiere reinicio y desbloqueo de FileVault) — ✅ 2026-11-08: Fernando lo actualizó a **27.2** junto al equipo; filtro, cortafuegos, SSH, servicios y Tailscale siguieron en pie tras el reinicio | Alta | M1 |
 | H6 | Llave SSH de la Mac de desarrollo hacia el M1 **sin frase de paso**: quien robe esa Mac entra al servidor | Media-alta | Mac de desarrollo |
 | H7 | Tailnet: nodos viejos (`railway-app`, «Luis's MacBook Pro» antiguo, caducados) y sin saber si hay reglas de acceso: el iPhone o el iPad llegan al SSH del M1 | Media | Tailscale |
 | H8 | Node 22.3.0 (junio de 2024) en el M1; Railway usa 22.23 | Media | M1 |
