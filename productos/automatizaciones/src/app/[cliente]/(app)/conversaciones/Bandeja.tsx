@@ -225,7 +225,7 @@ function PanelFiltros({ bandeja, estados, etiquetas, usuarios, alElegir }: {
 }
 
 type Dialogo =
-  | { tipo: 'etiquetas'; ids: number[] }
+  | { tipo: 'etiquetas'; ids: number[]; actuales: string[] }
   | { tipo: 'asignar'; ids: number[]; actual: number | null }
   | { tipo: 'borrar'; ids: number[] }
   | { tipo: 'eliminar'; ids: number[] };
@@ -367,6 +367,18 @@ export default function Bandeja({
     });
   }
 
+  /**
+   * Las etiquetas que tienen TODAS esas conversaciones: el diálogo parte de ellas marcadas
+   * (Fernando, 2026-11-08: con un contacto elegido, «me aparece sin preseleccionar las etiquetas
+   * que ya tiene»). Desmarcar una de ellas la quita de todas; las que solo tienen algunas no se tocan.
+   */
+  function comunes(ids: number[]): string[] {
+    const de = (id: number) => (abierta?.id === id ? abierta.etiquetas : lista.find((c) => c.id === id)?.etiquetas);
+    const conjuntos = ids.map(de).filter((x): x is string[] => !!x);
+    if (!conjuntos.length) return [];
+    return conjuntos[0].filter((n) => conjuntos.every((c) => c.some((m) => m.toLowerCase() === n.toLowerCase())));
+  }
+
   /** Las opciones para unas conversaciones: las mismas en «Opciones» (varias) y en el «⋯» (una). */
   function opciones(ids: number[], actual?: { estado: Estado; asignada: number | null }): AccionMenu[] {
     if (!puedeOperar || !ids.length) return [];
@@ -379,7 +391,7 @@ export default function Bandeja({
         alPulsar: () => ejecutar(ids, { tipo: 'estado', estado: s }, 'Estado cambiado.'),
       }));
     return [
-      { etiqueta: 'Asignar etiquetas', icono: Tag, alPulsar: () => setDialogo({ tipo: 'etiquetas', ids }) },
+      { etiqueta: 'Asignar etiquetas', icono: Tag, alPulsar: () => setDialogo({ tipo: 'etiquetas', ids, actuales: comunes(ids) }) },
       { etiqueta: 'Asignar usuario', icono: UserRound, alPulsar: () => setDialogo({ tipo: 'asignar', ids, actual: actual?.asignada ?? null }) },
       ...estadosOp,
       ...(esAdmin
@@ -739,14 +751,16 @@ export default function Bandeja({
 
       {/* ── LOS DIÁLOGOS DE LAS OPCIONES ── */}
       <DialogoEtiquetas
-        titulo={dialogo?.tipo === 'etiquetas' && dialogo.ids.length > 1 ? `Añadir etiquetas a ${dialogo.ids.length}` : 'Añadir etiquetas'}
+        titulo={dialogo?.tipo === 'etiquetas' && dialogo.ids.length > 1 ? `Etiquetas de ${dialogo.ids.length} contactos` : 'Etiquetas'}
         abierto={dialogo?.tipo === 'etiquetas'}
         alCerrar={() => setDialogo(null)}
-        actuales={[]}
+        actuales={dialogo?.tipo === 'etiquetas' ? dialogo.actuales : []}
         todas={etiquetas.map((t) => t.nombre)}
         alGuardar={async (nombres) => {
           if (dialogo?.tipo !== 'etiquetas') return { ok: false, error: '' };
-          const r = await accionMasiva(slug, dialogo.ids, { tipo: 'etiquetas', nombres });
+          const marcadas = new Set(nombres.map((n) => n.toLowerCase()));
+          const quitar = dialogo.actuales.filter((n) => !marcadas.has(n.toLowerCase()));
+          const r = await accionMasiva(slug, dialogo.ids, { tipo: 'etiquetas', poner: nombres, quitar });
           if (r.ok) { setSel(new Set()); setSeleccionando(false); }
           return r;
         }}

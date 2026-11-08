@@ -150,7 +150,7 @@ function SeccionNegocio({ slug, negocio }: { slug: string; negocio: NegocioVista
   }
 
   return (
-    <Tarjeta className="p-4 sm:p-5">
+    <div className="flex flex-1 flex-col p-4 sm:p-5">
       <form
         id="form-negocio"
         action={(d) =>
@@ -247,7 +247,7 @@ function SeccionNegocio({ slug, negocio }: { slug: string; negocio: NegocioVista
           })
         }
       />
-    </Tarjeta>
+    </div>
   );
 }
 
@@ -277,7 +277,7 @@ const ETIQUETA_METODO: Record<string, string> = {
  */
 function SeccionSuscripcion({ slug, s, pagos }: { slug: string; s: SuscripcionVista; pagos: PagoVista[] }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 p-4 sm:p-5">
       <PanelSuscripcion slug={slug} s={s} />
 
       {pagos.length > 0 && (
@@ -311,7 +311,7 @@ function SeccionCuenta({ slug, miOrigen, perfil }: { slug: string; miOrigen: 'GC
   const esDeGcc = miOrigen === 'GCC';
 
   return (
-    <Tarjeta className="p-4 sm:p-5">
+    <div className="flex flex-1 flex-col p-4 sm:p-5">
       {esDeGcc ? (
         /* Su cuenta de GCC World, tal como está en la plataforma: aquí solo se ve. */
         <div className="space-y-4">
@@ -365,7 +365,7 @@ function SeccionCuenta({ slug, miOrigen, perfil }: { slug: string; miOrigen: 'GC
         </form>
         </>
       )}
-    </Tarjeta>
+    </div>
   );
 }
 

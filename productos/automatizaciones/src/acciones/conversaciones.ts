@@ -147,7 +147,8 @@ export async function marcarVista(slug: string, conversacionId: number): Promise
 export type AccionMasiva =
   | { tipo: 'estado'; estado: 'ABIERTO' | 'EN_PROCESO' | 'CERRADO' }
   | { tipo: 'asignar'; usuarioId: number | null }
-  | { tipo: 'etiquetas'; nombres: string[] }
+  /** Pone `poner` y quita `quitar` en todas. Con una sola, deja exactamente las marcadas. */
+  | { tipo: 'etiquetas'; poner: string[]; quitar: string[] }
   | { tipo: 'borrarMensajes' }
   | { tipo: 'eliminar' };
 
@@ -193,22 +194,29 @@ export async function accionMasiva(slug: string, ids: number[], accion: AccionMa
       break;
     }
     case 'etiquetas': {
-      const limpios = [...new Map(
-        accion.nombres.map((n) => n.trim().replace(/\s+/g, ' ')).filter((n) => n && n.length <= 40).map((n) => [n.toLowerCase(), n]),
+      const limpiar = (xs: string[]) => [...new Map(
+        xs.map((n) => n.trim().replace(/\s+/g, ' ')).filter((n) => n && n.length <= 40).map((n) => [n.toLowerCase(), n]),
       ).values()].slice(0, 20);
-      if (!limpios.length) return { ok: false, error: 'Elige al menos una etiqueta.' };
+      const poner = limpiar(accion.poner);
+      const ponerMin = new Set(poner.map((n) => n.toLowerCase()));
+      const quitar = limpiar(accion.quitar).filter((n) => !ponerMin.has(n.toLowerCase()));
+      if (!poner.length && !quitar.length) return { ok: false, error: 'No hay cambios.' };
       const existentes = await prisma.etiqueta.findMany({ where: { inquilinoId } });
       const porNombre = new Map(existentes.map((e) => [e.nombre.toLowerCase(), e.id]));
       const etiquetaIds: number[] = [];
-      for (const n of limpios) {
+      for (const n of poner) {
         let id = porNombre.get(n.toLowerCase());
         if (!id) id = (await prisma.etiqueta.create({ data: { inquilinoId, nombre: n } })).id;
         etiquetaIds.push(id);
       }
-      await prisma.contactoEtiqueta.createMany({
-        data: contactoIds.flatMap((contactoId) => etiquetaIds.map((etiquetaId) => ({ contactoId, etiquetaId }))),
-        skipDuplicates: true,
-      });
+      const quitarIds = quitar.map((n) => porNombre.get(n.toLowerCase())).filter((x): x is number => !!x);
+      await prisma.$transaction([
+        prisma.contactoEtiqueta.deleteMany({ where: { contactoId: { in: contactoIds }, etiquetaId: { in: quitarIds } } }),
+        prisma.contactoEtiqueta.createMany({
+          data: contactoIds.flatMap((contactoId) => etiquetaIds.map((etiquetaId) => ({ contactoId, etiquetaId }))),
+          skipDuplicates: true,
+        }),
+      ]);
       break;
     }
     case 'borrarMensajes':

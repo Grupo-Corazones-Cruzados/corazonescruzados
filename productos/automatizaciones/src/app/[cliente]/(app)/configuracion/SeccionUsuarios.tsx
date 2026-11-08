@@ -85,7 +85,7 @@ export default function SeccionUsuarios({
           barra de abajo en el teléfono (la pone Configuración). El tope es información. */}
 
       {claveNueva && (
-        <Tarjeta className="mb-3 border-acento p-4">
+        <Tarjeta className="m-4 mb-0 border-acento p-4">
           <p className="text-[13px] font-medium text-texto">Contraseña de {claveNueva.de}</p>
           <p className="mt-0.5 text-[12px] leading-relaxed text-tenue">
             Se enseña una sola vez: no se guarda en claro, así que no se puede volver a
@@ -107,7 +107,7 @@ export default function SeccionUsuarios({
       )}
 
       {/* Registros en TABLA (galería en el teléfono) con el recuento al pie (reglas 2026-10-29/30). */}
-      <Tarjeta className="overflow-hidden">
+      <div>
         {/* Sin título: la sección ya se llama «Usuarios». El tope va en el recuento del pie. */}
         <div className="hidden justify-end px-4 py-3 lg:flex">
           <Boton
@@ -185,7 +185,7 @@ export default function SeccionUsuarios({
             ) },
           ]}
         />
-      </Tarjeta>
+      </div>
 
       <PanelLateral
         abierto={abierto}

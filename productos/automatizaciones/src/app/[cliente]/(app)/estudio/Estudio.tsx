@@ -8,7 +8,7 @@ import {
   SlidersHorizontal, Plug, CheckCircle2,
 } from 'lucide-react';
 import {
-  Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Insignia, Tarjeta, PanelLateral, Confirmar, Ventanita,
+  Boton, BotonIcono, Campo, Entrada, AreaTexto, Selector, Insignia, PanelLateral, Confirmar, Ventanita,
   Tabla, EstadoVacio, Secciones, useSeccion, PieAcciones, BotonEliminar, type OpcionRail,
 } from '@/componentes/ui';
 import { esFalloDeIA } from '@/lib/fallos';
@@ -128,7 +128,7 @@ export default function Estudio({
 
       <Secciones opciones={SECCIONES} seccion={s}>
         {seccion === 'agente' && (
-          <Tarjeta className="flex h-full flex-col p-4 sm:p-5">
+          <div className="flex flex-1 flex-col p-4 sm:p-5">
             {falloIA && (
               <p className="mb-4 flex items-start gap-2 rounded border border-borde bg-error-suave px-3 py-2 text-[12px] leading-relaxed text-error">
                 <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
@@ -182,11 +182,11 @@ export default function Estudio({
                 </Boton>
               </div>
             </form>
-          </Tarjeta>
+          </div>
         )}
 
         {seccion === 'conocimiento' && (
-          <Tarjeta className="overflow-hidden">
+          <div>
             <Tabla
               filas={bloques}
               claveFila={(b) => b.clave}
@@ -207,11 +207,11 @@ export default function Estudio({
                 ) },
               ]}
             />
-          </Tarjeta>
+          </div>
         )}
 
         {seccion === 'instrucciones' && (
-          <Tarjeta className="overflow-hidden">
+          <div>
             <Tabla
               filas={filasInstrucciones}
               claveFila={(i) => i.tipo}
@@ -230,7 +230,7 @@ export default function Estudio({
                 ) },
               ]}
             />
-          </Tarjeta>
+          </div>
         )}
       </Secciones>
 

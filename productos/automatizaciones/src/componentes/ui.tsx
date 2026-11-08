@@ -936,7 +936,10 @@ export function Secciones({
     <div className="flex min-h-0 flex-1 flex-col gap-4 p-4 sm:p-6 lg:flex-row">
       <RailFiltro soloEscritorio opciones={opciones} activo={seccion.activo} alElegir={seccion.ir} />
       {!seccion.enUrl && <PortadaSecciones opciones={opciones} alElegir={seccion.ir} className="lg:hidden" />}
-      <div className={cn('desplaza min-h-0 min-w-0 flex-1 overflow-y-auto', !seccion.enUrl && 'hidden lg:block')}>
+      {/* EL PANEL DERECHO LLEGA SIEMPRE ABAJO, como el de las secciones (Fernando, 2026-11-08). Es
+          ESTA tarjeta, no la de cada sección: las secciones ponen su contenido sin borde propio y,
+          si lo suyo es corto, el panel sigue hasta el pie con el fondo de la tarjeta. */}
+      <div className={cn('desplaza tarjeta min-h-0 min-w-0 flex-1 flex-col overflow-y-auto', seccion.enUrl ? 'flex' : 'hidden lg:flex')}>
         {children}
       </div>
     </div>

@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import {
   AlertTriangle, BookUser, Bot, CheckCircle2, FlaskConical, Plug, RefreshCw, ShieldAlert, Smartphone, CircleDashed,
 } from 'lucide-react';
-import { Boton, Campo, Confirmar, EstadoVacio, Entrada, Insignia, Tarjeta, Ventanita } from '@/componentes/ui';
+import { Boton, Campo, Confirmar, EstadoVacio, Entrada, Insignia, Ventanita } from '@/componentes/ui';
 import { AccionesTarjeta, type AccionMenu } from '@/componentes/Navegacion';
 import { esFalloDeIA } from '@/lib/fallos';
 import { fechaHora, fechaLarga } from '@/lib/formato';
@@ -204,7 +204,7 @@ export default function SeccionWhatsApp({
 
   if (faltaConfig) {
     return (
-      <Tarjeta className="flex h-full flex-col p-4 sm:p-5">
+      <div className="flex flex-1 flex-col p-4 sm:p-5">
         <EstadoVacio
           icono={AlertTriangle}
           titulo="La conexión con WhatsApp no está disponible"
@@ -212,7 +212,7 @@ export default function SeccionWhatsApp({
             ? 'Faltan WHATSAPP_APP_ID o WHATSAPP_ES_CONFIG_ID en el servicio de Railway.'
             : 'Escríbenos a soporte y lo revisamos contigo.'}
         />
-      </Tarjeta>
+      </div>
     );
   }
 
@@ -238,7 +238,7 @@ export default function SeccionWhatsApp({
 
   return (
     <>
-      <Tarjeta className="flex h-full flex-col p-4 sm:p-5">
+      <div className="flex flex-1 flex-col p-4 sm:p-5">
         {conectado ? (
           <>
             <div className="mb-4 flex items-center justify-end gap-3 lg:justify-between">
@@ -329,7 +329,7 @@ export default function SeccionWhatsApp({
             </div>
           </>
         )}
-      </Tarjeta>
+      </div>
 
       <Confirmar
         abierto={confirmarAlta}

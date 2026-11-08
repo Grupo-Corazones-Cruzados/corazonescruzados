@@ -6452,3 +6452,12 @@ en los cinco el 2026-11-08 (Automatizaciones primero).
 - **Nada de `text-white`** encima de un color: `text-acento-contraste` (el verde, el rojo y el ámbar de este tema piden texto oscuro). Única excepción: la inicial del avatar sobre sus colores saturados.
 - Lo que no lee CSS (`themeColor`, manifiesto, barra de iOS `black`) sale de `lib/marca.ts › TEMA`.
 - **Para llevarlo a otro producto**: copiar el `@theme`, `:root { color-scheme: dark }`, `.superficie-flotante`, `.fondo-chat` y `.burbuja-cola-*`; quitar sus clases de tema (`tema-mixto`, `.oscuro`) y los colores por inquilino; buscar `text-white`/hex en componentes; y revisar todas las pantallas en el navegador.
+
+## REGLA: el panel derecho llega siempre hasta abajo (Fernando, 2026-11-08)
+*«el panel derecho debe cubrir siempre hasta la zona inferior de la pantalla así como lo está haciendo el menú de la izquierda»*.
+- En toda pantalla con secciones (menú de secciones a la izquierda + contenido a la derecha), el **panel derecho ES la tarjeta de `Secciones`** (`componentes/ui.tsx`): `tarjeta flex flex-1 flex-col overflow-y-auto`, alto completo y con su propio deslizador. Si lo de dentro es corto, el panel sigue hasta el pie igual que el menú de la izquierda.
+- Por eso **una sección no pone su propia `Tarjeta` exterior**: su raíz es un `div` sin borde (`flex flex-1 flex-col p-4 sm:p-5` si es un formulario; un `div` sin relleno si es una tabla, que va de borde a borde). Dentro sí pueden ir tarjetas (avisos, el resumen de la suscripción).
+- Vale para los productos nuevos y para portar a los demás.
+
+### Etiquetas desde «Opciones»: parten de las que ya tiene (Fernando, 2026-11-08)
+- Con un contacto, el diálogo «Etiquetas» abre con **sus etiquetas marcadas**: guardar deja exactamente las marcadas (se puede quitar). Con varios, abre marcadas las que **tienen todos**: desmarcar una la quita de todos; marcar otra la añade a todos; las que solo tienen algunos no se tocan. (`accionMasiva` · `{ tipo: 'etiquetas', poner, quitar }`.)
