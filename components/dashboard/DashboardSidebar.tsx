@@ -11,6 +11,7 @@ import { useAuth } from '@/components/providers/AuthProvider';
 import SelectorTema from '@/components/dashboard/SelectorTema';
 import FichaUsuario from '@/components/dashboard/FichaUsuario';
 import { movimientoDelMenu } from '@/components/accesos/nivelMenu';
+import { TINTE_PROGRESO } from '@/components/accesos/tintes';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 import ModuleTutorialsModal from '@/components/dashboard/ModuleTutorialsModal';
 import DialogoVerComoOtro from '@/components/dashboard/DialogoVerComoOtro';
@@ -213,7 +214,8 @@ export default function DashboardSidebar() {
         /* ⚠️ Los niveles, de abajo arriba: pie (z-20) · velo de escritorio (z-30) ·
            menú cerrado (z-40) · velo del teléfono (z-40) · menú abierto en teléfono
            (z-50). El menú siempre por encima de su propio velo. */
-        className={`rail fixed top-0 ${enApp ? 'left-16' : 'left-0'} h-full pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] ${mobileOpen ? 'z-50' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width,translate] duration-200 ease-out
+        style={enApp ? ({ '--tinte': TINTE_PROGRESO } as React.CSSProperties) : undefined}
+        className={`rail fixed top-0 ${enApp ? 'left-16 capa-dos' : 'left-0'} h-full pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] ${mobileOpen ? 'z-50' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width,translate] duration-200 ease-out
           ${collapsed ? 'w-16' : telefono ? 'w-56' : 'w-56 shadow-2xl'}
           ${mobileOpen ? 'translate-x-0 shadow-xl' : enApp ? '-translate-x-[calc(100%+4rem)] lg:translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
@@ -281,7 +283,7 @@ export default function DashboardSidebar() {
                            entera — bastante para que lo que señalabas se te escape. Alto
                            fijo, y el menú solo cambia de ancho. */
                         className={`relative flex items-center gap-2.5 rounded-md h-9 text-[13px] font-medium transition-colors ${collapsed ? 'justify-center px-0' : 'pl-2.5 pr-9'} ${
-                          active ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-white/[0.06]'
+                          active ? `bg-accent-light text-accent ${enApp ? 'item-activo' : ''}` : 'text-digi-muted hover:text-digi-text hover:bg-white/[0.06]'
                         }`}
                         style={mf}
                       >
@@ -337,7 +339,8 @@ export default function DashboardSidebar() {
           )}
 
           {/* La ficha de la cuenta; para el administrador abre «ver como otro usuario». */}
-          <FichaUsuario estrecho={collapsed} alPulsar={esAdmin ? () => setVerComoOtro(true) : undefined} />
+          {/* En las apps la cuenta va en la primera capa (`MenuAccesos`). */}
+          {!enApp && <FichaUsuario estrecho={collapsed} alPulsar={esAdmin ? () => setVerComoOtro(true) : undefined} />}
 
           {/* Dos botones, con el MISMO comportamiento al pasar por encima: no cambian de
               relleno ni de borde, solo suben el brillo. El botón de contraer sigue fuera,

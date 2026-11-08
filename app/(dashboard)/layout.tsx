@@ -105,6 +105,7 @@ function Panel({ children }: { children: React.ReactNode }) {
       {/* En las apps Progreso va en dos capas: Accesos (raíl) y su propio menú al lado. */}
       {enApp && !seccion && <MenuAccesos capa activo="progreso" />}
       {!seccion && <DashboardSidebar />}
+      {enCentralizado && <MenuAccesos capa activo="centralizado" />}
       {enCentralizado && <MenuCentralizado />}
       {enAccesos && <MenuAccesos />}
       {enProducto && <MenuAccesos capa activo={`${productoActivo}/${decodeURIComponent(slugActivo ?? '')}`} />}
@@ -135,8 +136,8 @@ function Panel({ children }: { children: React.ReactNode }) {
           Por debajo de `lg` la columna mide la pantalla (`h-dvh`), la cabecera se queda fija
           y el único que se desplaza —y solo si su contenido no cabe— es el `main`. En
           escritorio no hay cabecera y todo sigue como siempre. */}
-      <div className={`flex-1 min-w-0 flex flex-col ml-0 ${seccion && !enAccesos ? '' : enApp && !seccion ? 'lg:ml-32' : 'lg:ml-16'} max-lg:min-h-0`}>
-        {seccion && !enCentralizado && !enAccesos && !enProducto ? <CabeceraSeccion /> : <CabeceraMovil siempre={enCentralizado} />}
+      <div className={`flex-1 min-w-0 flex flex-col ml-0 ${enCentralizado ? 'lg:ml-[22rem]' : seccion && !enAccesos ? '' : enApp && !seccion ? 'lg:ml-32' : 'lg:ml-16'} max-lg:min-h-0`}>
+        {seccion && !enCentralizado && !enAccesos && !enProducto ? <CabeceraSeccion /> : <CabeceraMovil />}
         {/* El relleno inferior sale de la MISMA variable que el alto del pie: antes era
             `pb-14` escrito a mano contra un pie de 36 px, y al crecer el pie en teléfono
             el contenido se le habría metido debajo. */}

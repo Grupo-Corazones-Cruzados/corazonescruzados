@@ -12,6 +12,7 @@ import { useConsultaMedia } from '@/lib/hooks/useConsultaMedia';
 import { definicionTema } from '@/lib/temas';
 import { iconoDeProducto, useAccesos } from './useAccesos';
 import { movimientoDelMenu } from './nivelMenu';
+import { tinteDe } from './tintes';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -36,13 +37,14 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
   const { apps, productos, herramientas, rutaHerramienta, abrirProducto, entrandoAlJuego } = useAccesos();
   const [sobreElMenu, setSobreElMenu] = useState(false);
   const telefono = useConsultaMedia('(max-width: 63.99rem)');
-  const estrecho = capa ? (telefono || !sobreElMenu) : (!telefono && !sobreElMenu && !abierto);
+  // Con segunda capa, siempre estrecha: desplegada solo en Comunicados (Fernando, 2026-11-08).
+  const estrecho = capa ? true : (!telefono && !sobreElMenu && !abierto);
   // Al volver de Progreso, el contenido entra desde la izquierda (`nivelMenu`).
   const [movimiento] = useState(() => movimientoDelMenu('accesos'));
 
   useEffect(() => { cerrar(); }, [pathname, cerrar]);
 
-  const fila = (id?: string) => `relative flex items-center gap-2.5 rounded-md h-9 w-full text-[13px] font-medium transition-colors ${id && id === activo ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-white/[0.06]'} ${estrecho ? 'justify-center px-0' : 'px-2.5'}`;
+  const fila = (id?: string) => `relative flex items-center gap-2.5 rounded-md h-9 w-full text-[13px] font-medium transition-colors ${id && id === activo ? (capa ? 'item-capa-activo text-digi-text' : 'bg-accent-light text-accent') : 'text-digi-muted hover:text-digi-text hover:bg-white/[0.06]'} ${estrecho ? 'justify-center px-0' : 'px-2.5'}`;
 
   const Grupo = ({ titulo, primero, children }: { titulo: string; primero?: boolean; children: ReactNode }) => (
     <div className={primero ? '' : 'mt-2'}>
@@ -64,8 +66,9 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
       <div aria-hidden
         className={`hidden lg:block fixed inset-0 z-30 bg-black/45 pointer-events-none transition-opacity duration-200 ${sobreElMenu ? 'opacity-100' : 'opacity-0'}`} />
 
-      <aside onMouseEnter={() => setSobreElMenu(true)} onMouseLeave={() => setSobreElMenu(false)}
-        className={`rail fixed top-0 left-0 h-full pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] ${abierto || (capa && sobreElMenu) ? 'z-[55]' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width,translate] duration-200 ease-out
+      <aside onMouseEnter={() => !capa && setSobreElMenu(true)} onMouseLeave={() => setSobreElMenu(false)}
+        style={capa ? ({ '--tinte': tinteDe(activo) } as React.CSSProperties) : undefined}
+        className={`rail ${capa ? 'capa-uno' : ''} fixed top-0 left-0 h-full pt-[var(--seguro-arriba)] pb-[var(--seguro-abajo)] ${abierto || (capa && sobreElMenu) ? 'z-[55]' : 'z-40'} bg-digi-card border-r border-digi-border flex flex-col transition-[width,translate] duration-200 ease-out
           ${estrecho ? 'w-16' : telefono ? 'w-64' : 'w-64 shadow-2xl'}
           ${abierto ? 'translate-x-0 shadow-xl' : '-translate-x-full lg:translate-x-0'}`}>
         <Link href="/dashboard/accesos" className={`flex items-center gap-2.5 h-14 border-b border-digi-border hover:bg-white/[0.05] transition-colors shrink-0 ${estrecho ? 'justify-center px-0' : 'px-4'}`}>
@@ -113,8 +116,8 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
         </nav>
 
         <div className="shrink-0 p-2 border-t border-digi-border">
-          {/* Con dos capas, la cuenta la muestra la segunda (que además abre «ver como»): una sola vez. */}
-          {!capa && <FichaUsuario estrecho={estrecho} />}
+          {/* La cuenta, siempre en la primera capa (Fernando, 2026-11-08); la segunda ya no la repite. */}
+          <FichaUsuario estrecho={estrecho} />
           <button onClick={signOut} aria-label="Cerrar sesión" title="Cerrar sesión"
             className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-md text-[12px] font-medium transition-[filter] duration-150 hover:brightness-125"
             style={{ ...mf, color: '#F0A6AE', background: 'rgba(224, 90, 106, 0.14)' }}>

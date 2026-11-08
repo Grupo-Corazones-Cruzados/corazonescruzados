@@ -132,3 +132,20 @@ html[data-gcc-app] *, html[data-gcc-app] *::backdrop { -webkit-backdrop-filter: 
 @media (min-width: 64rem) {
   .corp.dos-capas [data-app-footer] { left: 8rem !important; }
 }
+
+/* DOS CAPAS, UNA PIEZA (2026-11-08): la segunda capa lleva de fondo el tono suave del color de lo
+   elegido en la primera; esa caja se rellena con el mismo tono y llega hasta el borde, como una
+   pestaña abierta. El módulo activo de la segunda, más fuerte y con el texto en blanco. */
+.capa-dos {
+  background: color-mix(in srgb, var(--tinte) 20%, var(--color-digi-card)) !important;
+  border-right-color: color-mix(in srgb, var(--tinte) 30%, var(--color-digi-border)) !important;
+}
+.capa-dos .border-b, .capa-dos .border-t { border-color: color-mix(in srgb, var(--tinte) 30%, var(--color-digi-border)) !important; }
+.capa-dos .item-activo { background: color-mix(in srgb, var(--tinte) 62%, var(--color-digi-card)) !important; color: #fff !important; }
+.capa-dos .item-activo svg { color: #fff !important; }
+.capa-dos .item-activo > span:first-child { background: #fff !important; }
+.capa-uno { border-right-color: color-mix(in srgb, var(--tinte) 30%, var(--color-digi-border)) !important; }
+.capa-uno .item-capa-activo {
+  background: color-mix(in srgb, var(--tinte) 20%, var(--color-digi-card));
+  margin-right: -9px; width: calc(100% + 9px); border-radius: 6px 0 0 6px; position: relative; z-index: 1;
+}

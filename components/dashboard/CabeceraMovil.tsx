@@ -31,7 +31,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Grid3x3, Menu, RotateCw } from 'lucide-react';
+import { Menu, RotateCw } from 'lucide-react';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 import BotonPantallaActiva from '@/components/espacio/BotonPantallaActiva';
 import { esAppInstalada } from '@/components/espacio/api';
@@ -47,9 +47,6 @@ export default function CabeceraMovil({ siempre = false }: { siempre?: boolean }
   const [recargando, setRecargando] = useState(false);
   const ruta = usePathname();
   const enEspacio = ruta.startsWith('/dashboard/admin/espacio');
-  // En Centralizado (apps) el botón es el icono de tabla y abre el mapa 4P (`MenuCentralizado`), también
-  // en su portada, que desde el 2026-11-08 es el dashboard y no el mapa.
-  const enCentralizado = ruta.startsWith('/dashboard/centralized');
   useEffect(() => {
     setEnApp(esAppInstalada() || !!appDeTelefono());
   }, []);
@@ -67,9 +64,10 @@ export default function CabeceraMovil({ siempre = false }: { siempre?: boolean }
       <button
         onClick={abrir}
         className="w-11 h-11 flex items-center justify-center rounded-lg text-digi-text transition-[filter] duration-150 hover:brightness-125 active:brightness-150"
-        aria-label={enCentralizado ? 'Abrir mapa 4P' : 'Abrir menú'}
+        aria-label="Abrir menú"
       >
-        {enCentralizado ? <Grid3x3 className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        {/* La misma hamburguesa en todas partes, también en Centralizado (Fernando, 2026-11-08). */}
+        <Menu className="w-6 h-6" />
       </button>
 
       {/* En la app, la marca vuelve a Accesos; en el navegador, a la portada. */}
