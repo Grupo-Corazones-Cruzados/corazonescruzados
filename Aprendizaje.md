@@ -12218,8 +12218,10 @@ Fernando pidió solo guardar lo aprendido; no se construye nada todavía. Fuente
   redespliega: el worker hubo que lanzarlo con `serviceInstanceDeployV2`.
 - Hubo ~2 min (21:52-21:54) en que el producto nuevo ya estaba y GCC World aún no tenía `PRODUCTO_AUTOMATIZACIONES_ORIGEN`:
   otra sesión subió mi commit antes de tiempo (comparten el repo). Meta reintenta lo no aceptado.
-- M1: su base copia no tiene la columna `inquilinos.razon_social` (migración 014 de Automatizaciones) → 500 en
-  `/<cliente>/acceso`. Pendiente refrescar la copia.
+- ✅ M1: copia de la base refrescada el 2026-11-08 desde producción (lectura con `gcc_respaldo`) a una base nueva,
+  limpiada como el 2026-11-07 (push, Google, claves de API, cola y tokens de canales y del SRI) con
+  `session_replication_role = replica` (el disparador de los demos de Automatizaciones lo impedía) y cambiada por
+  nombre; la anterior queda como `railway_vieja`. 365 tablas, 0 canales con token, los cinco productos 200.
 - **Siguiente:** Fernando cambia la URL del webhook en Meta; después se borran los dominios.
 
 ## Cierre (2026-11-08)
