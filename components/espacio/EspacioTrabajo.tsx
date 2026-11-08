@@ -15,7 +15,7 @@ import PanelProyecto from './PanelProyecto';
 import PanelServidores from './PanelServidores';
 import PanelFlujo from './flujo/PanelFlujo';
 import PanelRecordatorios from './PanelRecordatorios';
-import { api, type Proyecto, type Viva } from './api';
+import { api, EVENTO_ELIMINADA, type Proyecto, type Viva } from './api';
 
 type Vista = 'sesiones' | 'incidencias' | 'servidores';
 
@@ -82,6 +82,13 @@ function Espacio() {
   const recordatorios = (plegado: boolean) => <PanelRecordatorios plegado={plegado} />;
 
   const espera = vivas.filter((v) => v.estado === 'espera').length;
+  /* La que se está viendo y se elimina: en el teléfono se vuelve a la lista; en la Mac se queda en su proyecto. */
+  useEffect(() => {
+    const alEliminar = (e: Event) => { if ((e as CustomEvent).detail.id === sesionUrl) ir(enTelefono ? {} : { p: proyectoId || undefined, a: desdeActivas }, true); };
+    window.addEventListener(EVENTO_ELIMINADA, alEliminar);
+    return () => window.removeEventListener(EVENTO_ELIMINADA, alEliminar);
+  }, [sesionUrl, proyectoId, desdeActivas, enTelefono, ir]);
+
   useEffect(() => { document.title = espera ? `(${espera}) Espacio de trabajo` : 'Espacio de trabajo'; }, [espera]);
 
   const pestanas = (

@@ -5,7 +5,7 @@ import { AlertCircle, CheckCircle2, ChevronRight, Loader2, MessageCircleQuestion
 import BotonEditar from '@/components/ui/BotonEditar';
 import { BTN_ICONO_FILA } from '@/components/ui/Button';
 import RenombrarSesion, { type SesionARenombrar } from './RenombrarSesion';
-import { api, claveBorrador, estadoVisible, EVENTO_BORRADOR, EVENTO_TITULO, hace, TEXTO_ESTADO, type Proyecto, type Sesion, type Viva } from './api';
+import { api, claveBorrador, estadoVisible, EVENTO_BORRADOR, EVENTO_ELIMINADA, EVENTO_TITULO, hace, TEXTO_ESTADO, type Proyecto, type Sesion, type Viva } from './api';
 
 const SIN_ENVIAR = 'Escrito sin enviar';
 
@@ -141,8 +141,15 @@ export default function RailProyectos({ proyectos, vivas, proyectoId, sesionId, 
       setActivas(cambiar);
       setSesiones((t) => Object.fromEntries(Object.entries(t).map(([k, l]) => [k, cambiar(l)])));
     };
+    const alEliminar = (e: Event) => {
+      const { id } = (e as CustomEvent).detail;
+      const quitar = (l: Sesion[]) => l.filter((s) => s.id !== id);
+      setActivas(quitar);
+      setSesiones((t) => Object.fromEntries(Object.entries(t).map(([k, l]) => [k, quitar(l)])));
+    };
     window.addEventListener(EVENTO_TITULO, alRenombrar);
-    return () => window.removeEventListener(EVENTO_TITULO, alRenombrar);
+    window.addEventListener(EVENTO_ELIMINADA, alEliminar);
+    return () => { window.removeEventListener(EVENTO_TITULO, alRenombrar); window.removeEventListener(EVENTO_ELIMINADA, alEliminar); };
   }, []);
 
   function cerrarActiva(id: string) {

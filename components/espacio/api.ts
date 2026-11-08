@@ -116,6 +116,7 @@ export function hace(ms: number | undefined): string {
 export const claveBorrador = (proyecto: string, sesion: string | null) => sesion || `nueva-${proyecto}`;
 export const EVENTO_BORRADOR = 'espacio-borrador';
 export const EVENTO_TITULO = 'espacio-titulo';
+export const EVENTO_ELIMINADA = 'espacio-sesion-eliminada';
 
 /** Un turno acabado con subagentes o comandos en segundo plano aún no ha terminado de verdad. */
 export const estadoVisible = (estado: EstadoViva, tareas = 0): EstadoViva => (estado === 'libre' && tareas > 0 ? 'trabajando' : estado);

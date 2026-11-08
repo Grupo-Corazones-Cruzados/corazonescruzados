@@ -14,6 +14,7 @@ import { carpetaDe, ErrorVideo, estadoSubida, guardarParte, primerMensaje, raizE
 import { generarJson } from './generar.mjs';
 import { crearServidores } from './servidores.mjs';
 import { carpetaFlujo, guardarMeta, leerFlujo, leerMeta, ordenFlujo } from './flujo.mjs';
+import { moverAPapelera, vaciarPapelera } from './papelera.mjs';
 
 /**
  * SERVICIO LOCAL DEL ESPACIO DE TRABAJO. Es el dueño de las sesiones vivas; va aparte de la web
@@ -795,6 +796,24 @@ ruta('POST', '/sesiones/:id/titulo', async ({ p, cuerpo }) => {
   fijarTitulo(p.id, titulo);
   return { ok: true };
 });
+/** Va a la papelera del Espacio (ver papelera.mjs). Lo que está en marcha no se elimina: primero se detiene o se cierra la terminal. */
+ruta('POST', '/sesiones/:id/eliminar', async ({ p, cuerpo }) => {
+  const proyecto = await proyectoPorId(cuerpo.proyecto);
+  const donde = await ubicar(proyecto, p.id);
+  if (!donde) throw new ErrorApi(404, 'No encuentro esa sesión.');
+  const s = vivas.get(p.id);
+  if (ocupada(s)) throw new ErrorApi(409, 'La sesión está trabajando. Deténla antes de eliminarla.');
+  if (abiertaEnTerminal(p.id)) throw new ErrorApi(409, 'Esta sesión está abierta en una terminal. Ciérrala allí antes de eliminarla.');
+  const archivo = archivoSesion(donde.dir, p.id);
+  if (!fs.existsSync(archivo)) throw new ErrorApi(404, 'No encuentro el archivo de esa sesión.');
+  // Si su proceso escribe algo al cerrarse después de mover el archivo, lo recrea y la sesión reaparece.
+  if (s) { s.cerrar(); await new Promise((r) => setTimeout(r, 2000)); }
+  moverAPapelera(rutaDato('papelera'), archivo, p.id);
+  if (titulos[p.id]) { delete titulos[p.id]; guardarJson('titulos.json', titulos); }
+  const borradores = leerJson('borradores.json', {});
+  if (borradores[p.id]) { delete borradores[p.id]; guardarJson('borradores.json', borradores); }
+  return { ok: true };
+});
 /** Misma sesión en una terminal. Antes se cierra aquí: dos procesos sobre una sesión se pisan. */
 ruta('POST', '/sesiones/:id/terminal', async ({ p, cuerpo }) => {
   const proyecto = await proyectoPorId(cuerpo.proyecto);
@@ -973,8 +992,9 @@ const servidor = http.createServer(async (req, res) => {
 if (process.env.ESPACIO_SIN_ARRANCAR !== '1') {
   servidor.listen(PUERTO, '127.0.0.1', () => console.log(`[espacio] servicio en 127.0.0.1:${PUERTO}`));
   precargarListas();
-  purgarAdjuntos();
-  setInterval(purgarAdjuntos, 86400_000).unref();
+  const purgar = () => { purgarAdjuntos(); vaciarPapelera(rutaDato('papelera')); };
+  purgar();
+  setInterval(purgar, 86400_000).unref();
   // Con corriente, la Mac no se duerme mientras el servicio corre. Con batería, sí.
   spawn('caffeinate', ['-s', '-w', String(process.pid)], { stdio: 'ignore', detached: true }).unref();
   const apagar = () => { for (const s of vivas.values()) s.cerrar(); servidor.close(() => process.exit(0)); setTimeout(() => process.exit(0), 3000).unref(); };
