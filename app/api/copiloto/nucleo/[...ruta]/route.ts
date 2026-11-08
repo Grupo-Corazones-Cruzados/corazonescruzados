@@ -8,6 +8,17 @@ export const dynamic = 'force-dynamic';
 
 const NUCLEO = process.env['COPILOTO_URL'] || 'http://127.0.0.1:3793';
 const RUTAS = new Set(['audio', 'eventos', 'estado', 'activar', 'desactivar', 'terminar', 'detener', 'consulta']);
+const ACCIONES_SESION = new Set(['retomar', 'titulo', 'eliminar']);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** Solo lo que el núcleo sirve: una ruta simple, o las de sesiones (`sesiones`, `sesiones/nueva`, `sesiones/<id>/<acción>`). */
+function rutaPermitida(ruta: string[]): string | null {
+  if (ruta.length === 1 && (RUTAS.has(ruta[0]) || ruta[0] === 'sesiones')) return ruta[0];
+  if (ruta[0] !== 'sesiones') return null;
+  if (ruta.length === 2 && ruta[1] === 'nueva') return 'sesiones/nueva';
+  if (ruta.length === 3 && UUID.test(ruta[1]) && ACCIONES_SESION.has(ruta[2])) return `sesiones/${ruta[1]}/${ruta[2]}`;
+  return null;
+}
 const tokenNucleo = () => fs.readFileSync(process.env['COPILOTO_TOKEN'] || path.join(os.homedir(), '.gcc-copiloto/token'), 'utf8').trim();
 
 /**
@@ -18,9 +29,10 @@ async function pasar(req: Request, { params }: { params: Promise<{ ruta: string[
   const fuera = await rechazo(req);
   if (fuera) return fuera;
   const { ruta } = await params;
-  if (ruta.length !== 1 || !RUTAS.has(ruta[0])) return new NextResponse('Not Found', { status: 404 });
+  const destino = rutaPermitida(ruta);
+  if (!destino) return new NextResponse('Not Found', { status: 404 });
   try {
-    const r = await fetch(`${NUCLEO}/${ruta[0]}${new URL(req.url).search}`, {
+    const r = await fetch(`${NUCLEO}/${destino}${new URL(req.url).search}`, {
       method: req.method, signal: req.signal, cache: 'no-store',
       headers: { Authorization: `Bearer ${tokenNucleo()}` },
       body: req.method === 'GET' ? undefined : await req.arrayBuffer(),
