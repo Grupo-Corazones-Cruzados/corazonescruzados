@@ -3,9 +3,9 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Users, UserPlus, Clock, Copy } from 'lucide-react';
+import { Users, UserPlus, Clock, Copy, Save } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, Buscador, Tabla, Insignia, Tarjeta, SelectorEstado, PanelLateral, Campo, Entrada, EstadoVacio, Ventanita } from '@/componentes/ui';
+import { Boton, Buscador, Tabla, Insignia, Tarjeta, SelectorEstado, PanelLateral, PieAcciones, Campo, Entrada, EstadoVacio, Ventanita } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { CamposCliente, CLIENTE_VACIO } from '@/componentes/FormularioCliente';
 import { ETIQUETA_ESTADO_CLIENTE, TONO_ESTADO_CLIENTE } from '@/lib/catalogo';
@@ -58,13 +58,12 @@ export default function ClientesCliente({
   }, [filas, filtro, busca]);
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       <CabeceraPagina
         titulo="Clientes"
-        descripcion={`${filas.length} registrados`}
         acciones={<Boton icono={UserPlus} onClick={() => { setError(null); setAlta(true); }}>Nuevo cliente</Boton>}
       />
-      <div className="space-y-3 p-4 sm:p-6">
+      <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
           <SelectorEstado
             etiqueta="Ver"
@@ -83,13 +82,14 @@ export default function ClientesCliente({
           />
           <Buscador valor={busca} alCambiar={setBusca} marcador="Nombre, correo, celular o dirección…" className="w-full lg:w-72 lg:shrink-0" />
         </div>
-        <div className="min-w-0 space-y-3">
-          <Tarjeta className="overflow-hidden">
+        {/* La tarjeta de la lista llega hasta el pie (regla 2026-11-08). */}
+        <Tarjeta className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <Tabla
               filas={visibles}
               claveFila={(c) => c.id}
               alPulsarFila={(c) => router.push(`/${slug}/clientes/${c.id}`)}
-              vacio={<EstadoVacio icono={Users} titulo="No hay clientes aquí" detalle={busca ? 'Prueba con otra búsqueda.' : 'Los clientes se registran solos desde /registro, o los das de alta tú.'} />}
+              recuento={`${visibles.length === filas.length ? filas.length : `${visibles.length} de ${filas.length}`} ${filas.length === 1 ? 'cliente' : 'clientes'}`}
+              vacio={<div className="flex flex-1 items-center justify-center"><EstadoVacio icono={Users} titulo="Sin clientes" /></div>}
               columnas={[
                 {
                   clave: 'nombre', titulo: 'Cliente',
@@ -118,21 +118,19 @@ export default function ClientesCliente({
                 { clave: 'creado', titulo: 'Registro', render: (c) => <span className="text-tenue">{fechaCorta(new Date(c.creado))}</span> },
               ]}
             />
-          </Tarjeta>
-        </div>
+        </Tarjeta>
       </div>
 
       <PanelLateral
         abierto={alta}
         alCerrar={() => setAlta(false)}
         titulo="Nuevo cliente"
-        descripcion="Alta a mano: nace activo. Si no escribes contraseña, se genera una y se te enseña una sola vez."
         ancho="lg"
         pie={
-          <>
+          <PieAcciones>
             <Boton variante="secundario" onClick={() => setAlta(false)} disabled={enCurso}>Cancelar</Boton>
-            <Boton type="submit" form="form-alta-cliente" disabled={enCurso}>{enCurso ? 'Guardando…' : 'Crear cliente'}</Boton>
-          </>
+            <Boton type="submit" form="form-alta-cliente" icono={Save} disabled={enCurso}>{enCurso ? 'Creando…' : 'Crear'}</Boton>
+          </PieAcciones>
         }
       >
         <form
@@ -142,7 +140,7 @@ export default function ClientesCliente({
             const r = await crearCliente(slug, d);
             if (!r.ok) return setError(r.error);
             setAlta(false);
-            toast.success('Cliente creado');
+            toast.success('Creado.');
             if (r.clave) setClaveNueva({ email: String(d.get('email')), clave: r.clave });
             else router.push(`/${slug}/clientes/${r.id}`);
             router.refresh();
@@ -153,7 +151,7 @@ export default function ClientesCliente({
             <h3 className="text-[12px] font-semibold uppercase tracking-wide text-tenue">Acceso al portal</h3>
             <div className="grid gap-3 sm:grid-cols-2">
               <Campo etiqueta="Correo" requerido><Entrada name="email" type="email" required autoFocus /></Campo>
-              <Campo etiqueta="Contraseña"><Entrada name="clave" type="text" placeholder="Vacía = se genera una" minLength={8} /></Campo>
+              <Campo etiqueta="Contraseña"><Entrada name="clave" type="text" placeholder="Se genera sola" minLength={8} /></Campo>
             </div>
           </section>
           <CamposCliente datos={CLIENTE_VACIO} comidas={comidas} motorizados={motorizados} />
@@ -163,15 +161,15 @@ export default function ClientesCliente({
 
       <Ventanita abierto={claveNueva !== null} alCerrar={() => setClaveNueva(null)} titulo="Contraseña generada"
         pie={<Boton onClick={() => setClaveNueva(null)}>Entendido</Boton>}>
-        <p className="text-[13px] text-tenue">Se enseña <strong>una sola vez</strong>. Pásasela al cliente para que entre con su correo.</p>
+        <p className="text-[13px] text-tenue">Se enseña una sola vez.</p>
         <div className="mt-3 flex items-center gap-2 rounded border border-borde bg-realce px-3 py-2 font-mono text-[13px]">
           <span className="min-w-0 flex-1 truncate">{claveNueva?.email} · {claveNueva?.clave}</span>
-          <button type="button" className="text-tenue hover:text-texto" title="Copiar" onClick={() => { navigator.clipboard.writeText(claveNueva?.clave ?? ''); toast.success('Copiada'); }}>
+          <button type="button" className="text-tenue hover:text-texto" title="Copiar" onClick={() => { navigator.clipboard.writeText(claveNueva?.clave ?? ''); toast.success('Copiada.'); }}>
             <Copy className="h-4 w-4" />
           </button>
         </div>
       </Ventanita>
-    </>
+    </div>
   );
 }
 

@@ -44,7 +44,6 @@ export default function FormularioRegistro({ slug, comidas }: { slug: string; co
       <Campo etiqueta="Referencias"><AreaTexto name="referencias" rows={2} placeholder="Frente al parque, portón negro…" /></Campo>
       {error && <Aviso texto={error} />}
       <Boton type="submit" tamano="lg" className="w-full" disabled={enCurso}>{enCurso ? 'Enviando…' : 'Enviar registro'}</Boton>
-      <p className="text-center text-[11px] text-tenue">Después de aprobado podrás completar tu perfil: segunda dirección, restricciones y datos nutricionales.</p>
     </form>
   );
 }

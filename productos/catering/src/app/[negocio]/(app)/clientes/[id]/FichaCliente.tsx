@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   UserRound, Package, ShieldAlert, MessageSquare, Check, X, HelpCircle, KeyRound, FileDown, Copy,
-  Plus, Pencil, RefreshCw, Pause, Play, Ban, CalendarX2, Send, Mail, Phone, CalendarDays, Clock,
+  Plus, Pencil, RefreshCw, Pause, Play, Ban, CalendarX2, Send, Mail, Phone, CalendarDays, Clock, Save,
 } from 'lucide-react';
-import { AccionesTarjeta, CabeceraPagina, type AccionMenu } from '@/componentes/Navegacion';
+import { AccionesTarjeta, CabeceraPagina, MenuFila, type AccionMenu } from '@/componentes/Navegacion';
 import {
-  Boton, Tarjeta, RailFiltro, PanelLateral, Ventanita, Confirmar, Insignia, Campo, Entrada, AreaTexto, EstadoVacio, Tabla,
+  Boton, Tarjeta, PanelLateral, PieAcciones, Ventanita, Confirmar, Insignia, Campo, Entrada, AreaTexto, EstadoVacio, Tabla,
+  Secciones, useSeccion, type OpcionRail,
 } from '@/componentes/ui';
 import { Aviso, Punto } from '@/componentes/campos';
 import { CamposCliente, type DatosCliente } from '@/componentes/FormularioCliente';
@@ -67,7 +68,19 @@ export default function FichaCliente({
   motorizados: { id: number; nombre: string }[];
 }) {
   const router = useRouter();
-  const [seccion, setSeccion] = useState<Seccion>(cliente.estado === 'PENDIENTE' ? 'datos' : 'servicio');
+  const noLeidosPrevio = cliente.mensajes.filter((m) => !m.leido).length;
+  const opciones: OpcionRail[] = [
+    { valor: 'datos', etiqueta: 'Datos', icono: UserRound },
+    { valor: 'servicio', etiqueta: 'Servicio', icono: Package, conteo: servicios.length },
+    { valor: 'restricciones', etiqueta: 'Restricciones', icono: ShieldAlert, conteo: cliente.restricciones.length },
+    { valor: 'mensajes', etiqueta: 'Mensajes', icono: MessageSquare, conteo: noLeidosPrevio || undefined },
+  ];
+  // La sección en `?seccion=` (portada en el teléfono). Sin ella, un registro por aprobar abre
+  // sus Datos y un cliente ya activo, su Servicio.
+  const s0 = useSeccion(opciones);
+  const defecto: Seccion = cliente.estado === 'PENDIENTE' ? 'datos' : 'servicio';
+  const s = s0.enUrl ? s0 : { ...s0, activo: defecto, etiqueta: opciones.find((o) => o.valor === defecto)!.etiqueta };
+  const seccion = s.activo as Seccion;
   const [cambio, setCambio] = useState<CambioEstado | null>(null);
   const [texto, setTexto] = useState('');
   const [clave, setClave] = useState<string | null>(null);
@@ -75,7 +88,6 @@ export default function FichaCliente({
   const [enCurso, arranca] = useTransition();
 
   const vigente = servicios.find((s) => s.estado !== 'VENCIDO') ?? null;
-  const noLeidos = cliente.mensajes.filter((m) => !m.leido).length;
 
   const ejecutarCambio = () =>
     arranca(async () => {
@@ -83,7 +95,7 @@ export default function FichaCliente({
       setError(null);
       const r = await cambiarEstadoCliente(slug, cliente.id, cambio, texto);
       if (!r.ok) return setError(r.error);
-      toast.success({ APROBAR: 'Cliente aprobado', RECHAZAR: 'Registro rechazado', SOLICITAR_INFO: 'Solicitud enviada', ACTIVAR: 'Cliente activado', INACTIVAR: 'Cliente inactivado' }[cambio]);
+      toast.success({ APROBAR: 'Aprobado.', RECHAZAR: 'Rechazado.', SOLICITAR_INFO: 'Enviado.', ACTIVAR: 'Activado.', INACTIVAR: 'Inactivado.' }[cambio]);
       setCambio(null);
       setTexto('');
       router.refresh();
@@ -109,7 +121,7 @@ export default function FichaCliente({
   ];
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <CabeceraPagina
         titulo={cliente.datos.nombre}
         detalles={[
@@ -119,6 +131,7 @@ export default function FichaCliente({
           ...(cliente.ultimoAcceso ? [{ icono: Clock, etiqueta: 'Último acceso', valor: instante(cliente.ultimoAcceso, zonaHoraria) }] : []),
         ]}
         volver={{ href: `/${slug}/clientes`, etiqueta: 'Todos los clientes' }}
+        volverTelefono={s.enUrl ? { href: s.hrefPortada, etiqueta: 'Volver a la ficha' } : undefined}
         // El estado, una vez y en una línea: el detalle del servicio vive en su sección.
         extra={
           <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[12px] text-tenue">
@@ -134,29 +147,15 @@ export default function FichaCliente({
         acciones={acciones}
         menu={menu}
       />
-      <div className="flex flex-col gap-4 p-4 sm:p-6 lg:flex-row">
-        <div className="lg:w-[220px] lg:shrink-0">
-          <RailFiltro
-            className="lg:w-full"
-            activo={seccion}
-            alElegir={(v) => setSeccion(v as Seccion)}
-            opciones={[
-              { valor: 'datos', etiqueta: 'Datos', icono: UserRound },
-              { valor: 'servicio', etiqueta: 'Servicio', icono: Package, conteo: servicios.length },
-              { valor: 'restricciones', etiqueta: 'Restricciones', icono: ShieldAlert, conteo: cliente.restricciones.length },
-              { valor: 'mensajes', etiqueta: 'Mensajes', icono: MessageSquare, conteo: noLeidos || undefined },
-            ]}
-          />
-        </div>
-        <div className="min-w-0 flex-1">
+      {/* Raíl + panel derecho que llega hasta abajo (`Secciones`); en el teléfono, portada. */}
+      <Secciones opciones={opciones} seccion={s}>
           {seccion === 'datos' && <SeccionDatos slug={slug} cliente={cliente} comidas={comidas} motorizados={motorizados} />}
           {seccion === 'servicio' && (
             <SeccionServicio slug={slug} hoy={hoy} cliente={cliente} servicios={servicios} comidas={comidas} diasNegocio={diasNegocio} porcentajeDefecto={porcentajeDefecto} />
           )}
           {seccion === 'restricciones' && <SeccionRestricciones slug={slug} cliente={cliente} alimentos={alimentos} comidas={comidas} />}
           {seccion === 'mensajes' && <SeccionMensajes slug={slug} cliente={cliente} zonaHoraria={zonaHoraria} />}
-        </div>
-      </div>
+      </Secciones>
 
       <Ventanita
         abierto={cambio !== null}
@@ -172,26 +171,26 @@ export default function FichaCliente({
         }
       >
         <p className="text-[13px] text-tenue">
-          {cambio === 'APROBAR' && 'El cliente podrá entrar al portal y recibirá un correo de bienvenida si hay correo configurado.'}
-          {cambio === 'RECHAZAR' && 'El cliente no podrá entrar. Puedes decirle por qué.'}
-          {cambio === 'SOLICITAR_INFO' && 'Sigue pendiente. Escribe qué te falta; lo verá en el portal y por correo.'}
-          {cambio === 'ACTIVAR' && 'Vuelve a poder entrar y a recibir comida si tiene servicio.'}
-          {cambio === 'INACTIVAR' && 'Deja de entrar al portal y de aparecer en etiquetas y rutas. Su servicio se conserva.'}
+          {cambio === 'APROBAR' && 'Podrá entrar al portal y recibirá la bienvenida por correo.'}
+          {cambio === 'RECHAZAR' && 'No podrá entrar al portal.'}
+          {cambio === 'SOLICITAR_INFO' && 'Sigue pendiente; lo verá en el portal y por correo.'}
+          {cambio === 'ACTIVAR' && 'Vuelve a entrar y a recibir comida si tiene servicio.'}
+          {cambio === 'INACTIVAR' && 'Sale del portal, de etiquetas y de rutas. El servicio se conserva.'}
         </p>
-        <Campo etiqueta={cambio === 'SOLICITAR_INFO' ? 'Qué necesitas' : 'Mensaje para el cliente (opcional)'} className="mt-3" requerido={cambio === 'SOLICITAR_INFO'}>
+        <Campo etiqueta={cambio === 'SOLICITAR_INFO' ? 'Qué necesitas' : 'Mensaje (opcional)'} className="mt-3" requerido={cambio === 'SOLICITAR_INFO'}>
           <AreaTexto value={texto} onChange={(e) => setTexto(e.target.value)} rows={3} autoFocus />
         </Campo>
         {error && <div className="mt-3"><Aviso texto={error} /></div>}
       </Ventanita>
 
       <Ventanita abierto={clave !== null} alCerrar={() => setClave(null)} titulo="Contraseña nueva" pie={<Boton onClick={() => setClave(null)}>Entendido</Boton>}>
-        <p className="text-[13px] text-tenue">Se enseña <strong>una sola vez</strong>. Pásasela al cliente; entra con su correo <span className="font-mono">{cliente.email}</span>.</p>
+        <p className="text-[13px] text-tenue">Se enseña una sola vez. Entra con <span className="font-mono">{cliente.email}</span>.</p>
         <div className="mt-3 flex items-center gap-2 rounded border border-borde bg-realce px-3 py-2 font-mono text-[14px]">
           <span className="flex-1">{clave}</span>
-          <button type="button" className="text-tenue hover:text-texto" title="Copiar" onClick={() => { navigator.clipboard.writeText(clave ?? ''); toast.success('Copiada'); }}><Copy className="h-4 w-4" /></button>
+          <button type="button" className="text-tenue hover:text-texto" title="Copiar" onClick={() => { navigator.clipboard.writeText(clave ?? ''); toast.success('Copiada.'); }}><Copy className="h-4 w-4" /></button>
         </div>
       </Ventanita>
-    </>
+    </div>
   );
 }
 
@@ -201,13 +200,13 @@ function SeccionDatos({ slug, cliente, comidas, motorizados }: { slug: string; c
   const [error, setError] = useState<string | null>(null);
   const [enCurso, arranca] = useTransition();
   return (
-    <Tarjeta className="p-5">
+    <div className="flex flex-1 flex-col p-4 sm:p-5">
       <form
         action={(d) => arranca(async () => {
           setError(null);
           const r = await editarCliente(slug, cliente.id, d);
           if (!r.ok) return setError(r.error);
-          toast.success('Ficha guardada');
+          toast.success('Guardado.');
           router.refresh();
         })}
         className="space-y-6"
@@ -218,11 +217,11 @@ function SeccionDatos({ slug, cliente, comidas, motorizados }: { slug: string; c
         </section>
         <CamposCliente datos={cliente.datos} comidas={comidas} motorizados={motorizados} />
         {error && <Aviso texto={error} />}
-        <div className="flex justify-end border-t border-borde pt-4">
-          <Boton type="submit" disabled={enCurso}>{enCurso ? 'Guardando…' : 'Guardar ficha'}</Boton>
+        <div className="flex justify-end">
+          <Boton type="submit" tamano="lg" icono={Save} disabled={enCurso}>{enCurso ? 'Guardando…' : 'Guardar'}</Boton>
         </div>
       </form>
-    </Tarjeta>
+    </div>
   );
 }
 
@@ -258,7 +257,7 @@ function SeccionServicio({
         : panel.modo === 'editar' ? await editarServicio(slug, panel.id!, d)
         : await renovarServicio(slug, panel.id!, d);
       if (!r.ok) return setError(r.error);
-      hecho(panel.modo === 'nuevo' ? 'Servicio creado' : panel.modo === 'editar' ? 'Servicio guardado' : 'Servicio renovado');
+      hecho(panel.modo === 'nuevo' ? 'Creado.' : panel.modo === 'editar' ? 'Guardado.' : 'Renovado.');
     });
 
   const accionDia = () =>
@@ -267,11 +266,11 @@ function SeccionServicio({
       setError(null);
       const r = dia.estado === 'CANCELADO' ? await reactivarDia(slug, dia.cancelacionId!) : await cancelarDia(slug, vigente.id, dia.dia, motivo);
       if (!r.ok) return setError(r.error);
-      hecho(dia.estado === 'CANCELADO' ? 'Día reactivado' : 'Día cancelado');
+      hecho(dia.estado === 'CANCELADO' ? 'Reactivado.' : 'Cancelado.');
     });
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-1 flex-col gap-4 p-4 sm:p-5">
       {vigente ? (
         <Tarjeta className="p-4 sm:p-5">
           <div className="flex items-start justify-between gap-3">
@@ -289,8 +288,8 @@ function SeccionServicio({
             <AccionesTarjeta acciones={[
               { etiqueta: 'Editar', icono: Pencil, alPulsar: () => { setError(null); setPanel({ modo: 'editar', base: plantilla(vigente), id: vigente.id }); } },
               vigente.estado === 'ACTIVO'
-                ? { etiqueta: 'Suspender', icono: Pause, alPulsar: () => arranca(async () => { const r = await cambiarEstadoServicio(slug, vigente.id, 'SUSPENDIDO'); r.ok ? hecho('Servicio suspendido') : toast.error(r.error); }) }
-                : { etiqueta: 'Reanudar', icono: Play, alPulsar: () => arranca(async () => { const r = await cambiarEstadoServicio(slug, vigente.id, 'ACTIVO'); r.ok ? hecho('Servicio reanudado') : toast.error(r.error); }) },
+                ? { etiqueta: 'Suspender', icono: Pause, alPulsar: () => arranca(async () => { const r = await cambiarEstadoServicio(slug, vigente.id, 'SUSPENDIDO'); r.ok ? hecho('Suspendido.') : toast.error(r.error); }) }
+                : { etiqueta: 'Reanudar', icono: Play, alPulsar: () => arranca(async () => { const r = await cambiarEstadoServicio(slug, vigente.id, 'ACTIVO'); r.ok ? hecho('Reanudado.') : toast.error(r.error); }) },
               { etiqueta: 'Renovar', icono: RefreshCw, alPulsar: () => { setError(null); setPanel({ modo: 'renovar', base: { ...plantilla(vigente), fechaInicio: vigente.resumen.fechaFin > hoy ? vigente.resumen.fechaFin : hoy }, id: vigente.id }); } },
               { etiqueta: 'Cerrar', icono: Ban, peligro: true, alPulsar: () => setConfirmar('cerrar') },
             ]} />
@@ -308,8 +307,7 @@ function SeccionServicio({
               </div>
             ))}
           </div>
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[12px] text-tenue">Pulsa un día pendiente para cancelarlo, o uno cancelado para reactivarlo. El personal no tiene hora límite.</p>
+          <div className="mt-4 flex flex-wrap items-center justify-end gap-2" title="Un día pendiente se cancela al pulsarlo; uno cancelado, se reactiva">
             <LeyendaCalendario />
           </div>
           <div className="mt-3">
@@ -317,11 +315,11 @@ function SeccionServicio({
           </div>
         </Tarjeta>
       ) : (
-        <Tarjeta>
+        <Tarjeta className="flex flex-1 flex-col items-center justify-center">
           <EstadoVacio
             icono={Package}
             titulo="Sin servicio vigente"
-            detalle={cliente.estado === 'ACTIVO' ? 'Véndele uno: días, comidas y días de la semana.' : 'Solo se vende un servicio a un cliente activo.'}
+            detalle={cliente.estado === 'ACTIVO' ? undefined : 'Solo para clientes activos.'}
             accion={cliente.estado === 'ACTIVO' && (
               <Boton icono={Plus} onClick={() => { setError(null); setPanel({ modo: 'nuevo', base: plantilla(servicios[0]) }); }}>Nuevo servicio</Boton>
             )}
@@ -335,14 +333,17 @@ function SeccionServicio({
           <Tabla
             filas={servicios.filter((s) => s.estado === 'VENCIDO')}
             claveFila={(s) => s.id}
+            recuento={`${servicios.filter((s) => s.estado === 'VENCIDO').length} anteriores`}
             columnas={[
               { clave: 'inicio', titulo: 'Inicio', render: (s) => fechaCorta(s.fechaInicio) },
               { clave: 'fin', titulo: 'Terminó', render: (s) => fechaCorta(s.terminoEn ?? s.resumen.fechaFin) },
               { clave: 'dias', titulo: 'Días', render: (s) => `${s.resumen.diasConsumidos} de ${s.diasTotales}` },
               { clave: 'comidas', titulo: 'Comidas', render: (s) => s.tiposComida.map((t) => ETIQUETA_COMIDA[t]).join(', ') },
               { clave: 'canc', titulo: 'Cancelaciones', alinear: 'der', render: (s) => s.cancelaciones.filter((c) => c.activa).length },
-              { clave: 'acc', titulo: '', alinear: 'der', render: (s) => !vigente && cliente.estado === 'ACTIVO' ? (
-                <Boton tamano="sm" variante="secundario" icono={RefreshCw} onClick={(e) => { e.stopPropagation(); setError(null); setPanel({ modo: 'renovar', base: { ...plantilla(s), fechaInicio: hoy }, id: s.id }); }}>Renovar</Boton>
+              { clave: 'acc', titulo: '', ancho: '56px', alinear: 'der', render: (s) => !vigente && cliente.estado === 'ACTIVO' ? (
+                <div className="flex justify-end">
+                  <MenuFila acciones={[{ etiqueta: 'Renovar', icono: RefreshCw, alPulsar: () => { setError(null); setPanel({ modo: 'renovar', base: { ...plantilla(s), fechaInicio: hoy }, id: s.id }); } }]} />
+                </div>
               ) : null },
             ]}
           />
@@ -351,15 +352,16 @@ function SeccionServicio({
 
       {vigente && vigente.cancelaciones.length > 0 && (
         <Tarjeta className="overflow-hidden">
-          <div className="border-b border-borde px-4 py-3"><h3 className="flex items-center gap-2 text-[13px] font-semibold"><CalendarX2 className="h-4 w-4 text-tenue" /> Cancelaciones de este servicio</h3></div>
+          <div className="border-b border-borde px-4 py-3"><h3 className="flex items-center gap-2 text-[13px] font-semibold"><CalendarX2 className="h-4 w-4 text-tenue" /> Cancelaciones</h3></div>
           <Tabla
             filas={vigente.cancelaciones}
             claveFila={(c) => c.id}
+            recuento={`${vigente.cancelaciones.filter((c) => c.activa).length} de ${vigente.resumen.maxCancelaciones} usadas`}
             columnas={[
               { clave: 'dia', titulo: 'Día', render: (c) => fechaLarga(c.dia) },
               { clave: 'motivo', titulo: 'Motivo', render: (c) => c.motivo ?? <span className="text-tenue">—</span> },
               { clave: 'autor', titulo: 'Quién', render: (c) => (c.autor === 'CLIENTE' ? 'El cliente' : 'El negocio') },
-              { clave: 'estado', titulo: 'Estado', render: (c) => (c.activa ? <Insignia tono="error">Cancelado</Insignia> : <Insignia tono="neutro">Reactivado{c.reactivadaPor ? ` por ${c.reactivadaPor === 'CLIENTE' ? 'el cliente' : 'el negocio'}` : ''}</Insignia>) },
+              { clave: 'estado', titulo: 'Estado', render: (c) => (c.activa ? <Insignia tono="error">Cancelado</Insignia> : <span title={c.reactivadaPor ? `Por ${c.reactivadaPor === 'CLIENTE' ? 'el cliente' : 'el negocio'}` : undefined}><Insignia tono="neutro">Reactivado</Insignia></span>) },
             ]}
           />
         </Tarjeta>
@@ -369,12 +371,11 @@ function SeccionServicio({
         abierto={panel !== null}
         alCerrar={() => setPanel(null)}
         titulo={panel?.modo === 'nuevo' ? 'Nuevo servicio' : panel?.modo === 'editar' ? 'Editar servicio' : 'Renovar servicio'}
-        descripcion={panel?.modo === 'renovar' ? 'Se crea un servicio nuevo; el anterior queda vencido con su histórico.' : undefined}
         pie={
-          <>
+          <PieAcciones>
             <Boton variante="secundario" onClick={() => setPanel(null)} disabled={enCurso}>Cancelar</Boton>
-            <Boton type="submit" form="form-servicio" disabled={enCurso}>{enCurso ? 'Guardando…' : 'Guardar'}</Boton>
-          </>
+            <Boton type="submit" form="form-servicio" icono={Save} disabled={enCurso}>{enCurso ? 'Guardando…' : 'Guardar'}</Boton>
+          </PieAcciones>
         }
       >
         {panel && (
@@ -402,10 +403,10 @@ function SeccionServicio({
           <>
             <p className="text-[13px] font-semibold first-letter:uppercase">{fechaLarga(dia.dia)}</p>
             {dia.estado === 'CANCELADO' ? (
-              <p className="mt-1 text-[13px] text-tenue">Está cancelado{dia.motivo ? ` («${dia.motivo}»)` : ''}. Al reactivarlo vuelve a contar y a salir en etiquetas y rutas.</p>
+              <p className="mt-1 text-[13px] text-tenue">Cancelado{dia.motivo ? ` («${dia.motivo}»)` : ''}. Vuelve a contar y a salir en etiquetas y rutas.</p>
             ) : (
               <>
-                <p className="mt-1 text-[13px] text-tenue">No se le llevará comida ese día y no consumirá del servicio. La fecha de fin se corre.</p>
+                <p className="mt-1 text-[13px] text-tenue">Ese día no se entrega y la fecha de fin se corre.</p>
                 <Campo etiqueta="Motivo (opcional)" className="mt-3"><Entrada value={motivo} onChange={(e) => setMotivo(e.target.value)} autoFocus /></Campo>
               </>
             )}
@@ -416,12 +417,12 @@ function SeccionServicio({
 
       <Confirmar
         abierto={confirmar === 'cerrar'}
-        titulo="Cerrar el servicio"
-        mensaje="Queda vencido desde hoy, con su histórico. Para volver a servirle habrá que renovarlo."
-        textoAceptar="Cerrar servicio"
+        titulo="¿Cerrar el servicio?"
+        mensaje="Queda vencido desde hoy, con su histórico."
+        textoAceptar="Cerrar"
         ocupado={enCurso}
         alCerrar={() => setConfirmar(null)}
-        alAceptar={() => arranca(async () => { if (!vigente) return; const r = await cerrarServicio(slug, vigente.id); r.ok ? hecho('Servicio cerrado') : toast.error(r.error); })}
+        alAceptar={() => arranca(async () => { if (!vigente) return; const r = await cerrarServicio(slug, vigente.id); r.ok ? hecho('Cerrado.') : toast.error(r.error); })}
       />
     </div>
   );
@@ -429,17 +430,17 @@ function SeccionServicio({
 
 function SeccionRestricciones({ slug, cliente, alimentos, comidas }: { slug: string; cliente: Cliente; alimentos: { id: number; nombre: string; categoria: CategoriaAlimento }[]; comidas: TipoComida[] }) {
   return (
-    <div className="space-y-4">
-      <Tarjeta className="p-5">
-        <h2 className="text-[14px] font-semibold">Restricciones de cocina</h2>
+    <div className="flex flex-1 flex-col gap-5 p-4 sm:p-5">
+      <section>
+        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-tenue">Cocina</h2>
         <div className="mt-3">
           <EditorRestricciones alimentos={alimentos} comidas={comidas} inicial={cliente.restricciones.map((r) => ({ alimentoId: r.alimentoId, tiposComida: r.tiposComida }))} guardar={(r) => guardarRestricciones(slug, cliente.id, r)} />
         </div>
-      </Tarjeta>
-      <Tarjeta className="p-5">
-        <h2 className="text-[14px] font-semibold">Restricciones de despacho</h2>
-        <p className="mt-1 text-[12px] text-tenue">Se editan en «Datos». Hoy: {RESTRICCIONES_DESPACHO.filter(([k]) => cliente.datos[k]).map(([, e]) => e).join(', ') || 'ninguna'}.</p>
-      </Tarjeta>
+      </section>
+      <section className="border-t border-borde pt-4" title="Se editan en «Datos»">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wide text-tenue">Despacho</h2>
+        <p className="mt-1 text-[13px] text-texto">{RESTRICCIONES_DESPACHO.filter(([k]) => cliente.datos[k]).map(([, e]) => e).join(', ') || 'Ninguna'}</p>
+      </section>
     </div>
   );
 }
@@ -450,18 +451,16 @@ function SeccionMensajes({ slug, cliente, zonaHoraria }: { slug: string; cliente
   const [texto, setTexto] = useState('');
   const [enCurso, arranca] = useTransition();
   return (
-    <div className="space-y-4">
-      <Tarjeta className="p-5">
-        <h2 className="text-[14px] font-semibold">Enviar un mensaje</h2>
-        <p className="mt-0.5 text-[12px] text-tenue">Lo verá en su portal la próxima vez que entre.</p>
-        <div className="mt-3 flex gap-2">
+    <div className="flex flex-1 flex-col">
+      <div className="border-b border-borde p-4 sm:p-5">
+        <div className="flex gap-2" title="Lo verá en su portal la próxima vez que entre">
           <AreaTexto value={texto} onChange={(e) => setTexto(e.target.value)} rows={2} placeholder="Mañana no hay servicio por el feriado…" />
-          <Boton icono={Send} disabled={enCurso || !texto.trim()} onClick={() => arranca(async () => { const r = await enviarMensaje(slug, cliente.id, texto); if (!r.ok) { toast.error(r.error); return; } setTexto(''); toast.success('Mensaje enviado'); router.refresh(); })}>Enviar</Boton>
+          <Boton icono={Send} disabled={enCurso || !texto.trim()} onClick={() => arranca(async () => { const r = await enviarMensaje(slug, cliente.id, texto); if (!r.ok) { toast.error(r.error); return; } setTexto(''); toast.success('Enviado.'); router.refresh(); })}>Enviar</Boton>
         </div>
-      </Tarjeta>
-      <Tarjeta className="overflow-hidden">
+      </div>
+      <div className="flex flex-1 flex-col">
         {cliente.mensajes.length === 0 ? (
-          <EstadoVacio icono={MessageSquare} titulo="Sin mensajes" />
+          <div className="flex flex-1 items-center justify-center"><EstadoVacio icono={MessageSquare} titulo="Sin mensajes" /></div>
         ) : (
           <ul className="divide-y divide-borde">
             {cliente.mensajes.map((m) => (
@@ -476,7 +475,7 @@ function SeccionMensajes({ slug, cliente, zonaHoraria }: { slug: string; cliente
             ))}
           </ul>
         )}
-      </Tarjeta>
+      </div>
     </div>
   );
 }

@@ -125,10 +125,7 @@ export function CamposCliente({
             <Campo etiqueta="Edificio / conjunto"><Entrada name="edificio" defaultValue={datos.edificio ?? ''} /></Campo>
             <Campo etiqueta="Piso / depto."><Entrada name="piso" defaultValue={datos.piso ?? ''} /></Campo>
             <Campo etiqueta="Color identificador">
-              <div className="flex items-center gap-2">
-                <input type="color" name="colorIdentificador" defaultValue={datos.colorIdentificador ?? '#4B2D8E'} className="h-[34px] w-12 cursor-pointer rounded border border-borde bg-tarjeta p-1" />
-                <span className="text-[11px] text-tenue">Para reconocer el paquete</span>
-              </div>
+              <input type="color" name="colorIdentificador" defaultValue={datos.colorIdentificador ?? '#4B2D8E'} title="Para reconocer el paquete" className="h-[34px] w-12 cursor-pointer rounded border border-borde bg-tarjeta p-1" />
             </Campo>
           </div>
           <Campo etiqueta="Referencias"><AreaTexto name="referencias" rows={2} defaultValue={datos.referencias ?? ''} placeholder="Frente al parque, portón negro, timbre 3…" /></Campo>
@@ -141,10 +138,9 @@ export function CamposCliente({
             </Campo>
           )}
 
-          <div className="rounded-md border border-borde bg-realce/50 p-3 space-y-3">
+          <div className="rounded-md border border-borde bg-realce/50 p-3 space-y-3" title="Para quien come en la oficina unos días y en casa otros">
             <h4 className="text-[12px] font-semibold">Segunda dirección (opcional)</h4>
-            <p className="text-[11px] text-tenue">Para quien come en la oficina unos días y en casa otros. Marca los días en que se usa.</p>
-            <Campo etiqueta="Dirección 2"><Entrada name="direccion2" value={dir2} onChange={(e) => setDir2(e.target.value)} placeholder="Déjala vacía si no aplica" /></Campo>
+            <Campo etiqueta="Dirección 2"><Entrada name="direccion2" value={dir2} onChange={(e) => setDir2(e.target.value)} placeholder="Opcional" /></Campo>
             {dir2 && (
               <>
                 <div className="grid gap-3 sm:grid-cols-3">

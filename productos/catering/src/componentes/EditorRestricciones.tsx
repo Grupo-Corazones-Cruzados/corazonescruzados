@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, Save } from 'lucide-react';
 import { Boton, Entrada, EstadoVacio } from '@/componentes/ui';
 import { Aviso, Chips } from '@/componentes/campos';
 import { ETIQUETA_COMIDA, ETIQUETA_CATEGORIA } from '@/lib/catalogo';
@@ -34,11 +34,10 @@ export function EditorRestricciones({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[12px] text-tenue">Marca lo que NO come. Si una restricción es solo para algunas comidas, elígelas; sin elegir ninguna, aplica a todas.</p>
-        <Entrada value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar alimento…" className="w-56" />
-      </div>
-      {alimentos.length === 0 && <EstadoVacio icono={ShieldAlert} titulo="No hay alimentos en el catálogo" detalle="La cocina los carga en «Alimentos»." />}
+      {/* La regla va en `title`, no en una nota (sin comidas marcadas, aplica a todas). */}
+      <Entrada value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar alimento"
+        title="Marca lo que NO come. Si es solo para algunas comidas, elígelas; sin ninguna, aplica a todas." className="w-full sm:w-64" />
+      {alimentos.length === 0 && <EstadoVacio icono={ShieldAlert} titulo="Sin alimentos" />}
       {[...porCategoria.entries()].map(([cat, lista2]) => (
         <div key={cat}>
           <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-tenue">{ETIQUETA_CATEGORIA[cat]}</p>
@@ -63,9 +62,9 @@ export function EditorRestricciones({
         </div>
       ))}
       {error && <Aviso texto={error} />}
-      <div className="flex justify-end border-t border-borde pt-4">
-        <Boton disabled={enCurso} onClick={() => arranca(async () => { setError(null); const r = await guardar(lista); if (!r.ok) return setError(r.error); toast.success('Restricciones guardadas'); router.refresh(); })}>
-          {enCurso ? 'Guardando…' : 'Guardar restricciones'}
+      <div className="flex justify-end">
+        <Boton tamano="lg" icono={Save} disabled={enCurso} onClick={() => arranca(async () => { setError(null); const r = await guardar(lista); if (!r.ok) return setError(r.error); toast.success('Guardado.'); router.refresh(); })}>
+          {enCurso ? 'Guardando…' : 'Guardar'}
         </Boton>
       </div>
     </div>

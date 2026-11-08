@@ -3,9 +3,9 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Apple, Plus, Pencil, Trash2 } from 'lucide-react';
-import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, BotonIcono, Buscador, Tabla, Insignia, Tarjeta, SelectorEstado, PanelLateral, Confirmar, Campo, Entrada, Selector, EstadoVacio } from '@/componentes/ui';
+import { Apple, Plus, Pencil, Trash2, Save } from 'lucide-react';
+import { CabeceraPagina, MenuFila } from '@/componentes/Navegacion';
+import { Boton, BotonEliminar, Buscador, Tabla, Insignia, Tarjeta, SelectorEstado, PanelLateral, PieAcciones, Confirmar, Campo, Entrada, Selector, EstadoVacio } from '@/componentes/ui';
 import { Aviso, Casilla } from '@/componentes/campos';
 import { CATEGORIAS, ETIQUETA_CATEGORIA } from '@/lib/catalogo';
 import { guardarAlimento, eliminarAlimento } from '@/acciones/cocina';
@@ -31,9 +31,9 @@ export default function AlimentosCliente({ slug, alimentos }: { slug: string; al
   const abrir = (a: Alimento | 'nuevo') => { setError(null); setActivo(a === 'nuevo' ? true : a.activo); setPanel(a); };
 
   return (
-    <>
-      <CabeceraPagina titulo="Alimentos" descripcion="El catálogo con el que se arman los menús y contra el que se declaran las restricciones" acciones={<Boton icono={Plus} onClick={() => abrir('nuevo')}>Nuevo alimento</Boton>} />
-      <div className="space-y-3 p-4 sm:p-6">
+    <div className="flex flex-1 flex-col">
+      <CabeceraPagina titulo="Alimentos" descripcion="El catálogo con el que se arman los menús y se declaran las restricciones" acciones={<Boton icono={Plus} onClick={() => abrir('nuevo')}>Nuevo alimento</Boton>} />
+      <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
           <SelectorEstado
             etiqueta="Categoría"
@@ -44,39 +44,48 @@ export default function AlimentosCliente({ slug, alimentos }: { slug: string; al
           />
           <Buscador valor={busca} alCambiar={setBusca} marcador="Buscar alimento…" className="w-full lg:w-72 lg:shrink-0" />
         </div>
-        <div className="min-w-0 space-y-3">
-          <Tarjeta className="overflow-hidden">
+        {/* La tarjeta de la lista llega hasta el pie (regla 2026-11-08). */}
+        <Tarjeta className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <Tabla
               filas={visibles}
               claveFila={(a) => a.id}
-              vacio={<EstadoVacio icono={Apple} titulo="Sin alimentos" detalle="Carga los ingredientes que usas: pollo, arroz, brócoli…" accion={<Boton icono={Plus} onClick={() => abrir('nuevo')}>Nuevo alimento</Boton>} />}
+              alPulsarFila={abrir}
+              recuento={`${visibles.length === alimentos.length ? alimentos.length : `${visibles.length} de ${alimentos.length}`} ${alimentos.length === 1 ? 'alimento' : 'alimentos'}`}
+              vacio={<div className="flex flex-1 items-center justify-center"><EstadoVacio icono={Apple} titulo="Sin alimentos" accion={<Boton icono={Plus} onClick={() => abrir('nuevo')}>Nuevo alimento</Boton>} /></div>}
               columnas={[
                 { clave: 'nombre', titulo: 'Alimento', render: (a) => <span className={a.activo ? 'font-semibold text-texto' : 'text-tenue line-through'}>{a.nombre}</span> },
                 { clave: 'categoria', titulo: 'Categoría', render: (a) => <Insignia tono="neutro">{ETIQUETA_CATEGORIA[a.categoria]}</Insignia> },
                 { clave: 'uso', titulo: 'En menús', alinear: 'der', render: (a) => a.enMenus },
                 { clave: 'restr', titulo: 'Restricciones', alinear: 'der', render: (a) => (a.restricciones ? <Insignia tono="aviso">{a.restricciones} cliente{a.restricciones === 1 ? '' : 's'}</Insignia> : <span className="text-tenue">0</span>) },
                 { clave: 'estado', titulo: 'Estado', render: (a) => <Insignia tono={a.activo ? 'exito' : 'neutro'}>{a.activo ? 'Activo' : 'Inactivo'}</Insignia> },
-                { clave: 'acc', titulo: '', alinear: 'der', render: (a) => (
-                  <span className="flex justify-end gap-1">
-                    <BotonIcono icono={Pencil} titulo="Editar" onClick={() => abrir(a)} />
-                    <BotonIcono icono={Trash2} titulo="Eliminar" className="hover:bg-error-suave hover:text-error" onClick={() => setBorrar(a)} />
-                  </span>
+                // Acciones de fila = «⋯» siempre (regla 2026-11-08); la que borra, en rojo y al final.
+                { clave: 'acc', titulo: '', ancho: '56px', alinear: 'der', render: (a) => (
+                  <div className="flex justify-end" onClick={(e) => e.stopPropagation()}>
+                    <MenuFila acciones={[
+                      { etiqueta: 'Editar', icono: Pencil, alPulsar: () => abrir(a) },
+                      { etiqueta: 'Eliminar', icono: Trash2, peligro: true, alPulsar: () => setBorrar(a) },
+                    ]} />
+                  </div>
                 ) },
               ]}
             />
-          </Tarjeta>
-        </div>
+        </Tarjeta>
       </div>
 
       <PanelLateral abierto={panel !== null} alCerrar={() => setPanel(null)} titulo={panel === 'nuevo' ? 'Nuevo alimento' : 'Editar alimento'} ancho="sm"
-        pie={<><Boton variante="secundario" onClick={() => setPanel(null)} disabled={enCurso}>Cancelar</Boton><Boton type="submit" form="form-alimento" disabled={enCurso}>{enCurso ? 'Guardando…' : 'Guardar'}</Boton></>}>
+        pie={
+          <PieAcciones eliminar={panel && panel !== 'nuevo' ? <BotonEliminar titulo="Eliminar el alimento" onClick={() => { const a = panel; setPanel(null); setBorrar(a); }} disabled={enCurso} /> : undefined}>
+            <Boton variante="secundario" onClick={() => setPanel(null)} disabled={enCurso}>Cancelar</Boton>
+            <Boton type="submit" form="form-alimento" icono={Save} disabled={enCurso}>{enCurso ? 'Guardando…' : 'Guardar'}</Boton>
+          </PieAcciones>
+        }>
         {panel && (
           <form id="form-alimento" action={(d) => arranca(async () => {
             setError(null);
             d.set('activo', activo ? 'true' : 'false');
             const r = await guardarAlimento(slug, panel === 'nuevo' ? null : panel.id, d);
             if (!r.ok) return setError(r.error);
-            setPanel(null); toast.success('Alimento guardado'); router.refresh();
+            setPanel(null); toast.success('Guardado.'); router.refresh();
           })} className="space-y-4">
             <Campo etiqueta="Nombre" requerido><Entrada name="nombre" defaultValue={panel === 'nuevo' ? '' : panel.nombre} required autoFocus /></Campo>
             <Campo etiqueta="Categoría" requerido>
@@ -84,15 +93,15 @@ export default function AlimentosCliente({ slug, alimentos }: { slug: string; al
                 {CATEGORIAS.map((c) => <option key={c} value={c}>{ETIQUETA_CATEGORIA[c]}</option>)}
               </Selector>
             </Campo>
-            <Casilla etiqueta="Activo" descripcion="Un alimento inactivo no se ofrece al armar menús; lo que ya está en menús y restricciones se conserva." marcado={activo} alCambiar={setActivo} />
+            <Casilla etiqueta="Activo" marcado={activo} alCambiar={setActivo} />
             {error && <Aviso texto={error} />}
           </form>
         )}
       </PanelLateral>
 
-      <Confirmar abierto={borrar !== null} titulo="Eliminar el alimento" mensaje={`«${borrar?.nombre}» dejará de existir. Si está en menús o restricciones, la aplicación se negará y te dirá cuántos.`} ocupado={enCurso}
+      <Confirmar abierto={borrar !== null} titulo="¿Eliminar el alimento?" mensaje={`«${borrar?.nombre}» deja de existir. Si está en menús o restricciones, no se elimina.`} ocupado={enCurso}
         alCerrar={() => setBorrar(null)}
-        alAceptar={() => arranca(async () => { if (!borrar) return; const r = await eliminarAlimento(slug, borrar.id); if (!r.ok) { toast.error(r.error); setBorrar(null); return; } setBorrar(null); toast.success('Alimento eliminado'); router.refresh(); })} />
-    </>
+        alAceptar={() => arranca(async () => { if (!borrar) return; const r = await eliminarAlimento(slug, borrar.id); if (!r.ok) { toast.error(r.error); setBorrar(null); return; } setBorrar(null); toast.success('Eliminado.'); router.refresh(); })} />
+    </div>
   );
 }

@@ -5,11 +5,22 @@
  *
  * ⚠️ NO aplicar a lo que no es una cantidad (identificadores, años) ni a lo que
  * viaja a otro sistema (una hoja de cálculo o un JSON quieren punto decimal).
+ *
+ * Se arman A MANO (2026-11-08, como Automatizaciones): `Intl` agrupa distinto en Node y en
+ * Chrome («1234» frente a «1.234») y un número pintado en los dos lados rompía la hidratación.
  */
-const dosDecimales = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const entero = new Intl.NumberFormat('es-ES', { maximumFractionDigits: 0 });
 
-export const num2 = (v: unknown) => dosDecimales.format(Number(v ?? 0));
-export const numEntero = (v: unknown) => entero.format(Number(v ?? 0));
+/** Miles con «.» armados a mano: igual en Node y en Chrome. */
+export const miles = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+export const num2 = (v: unknown) => {
+  const n = Number(v ?? 0);
+  const [ent, dec] = Math.abs(n).toFixed(2).split('.');
+  return `${n < 0 ? '-' : ''}${miles(Number(ent))},${dec}`;
+};
+export const numEntero = (v: unknown) => {
+  const n = Math.round(Number(v ?? 0));
+  return `${n < 0 ? '-' : ''}${miles(Math.abs(n))}`;
+};
 export const dinero = (v: unknown, moneda = 'USD') =>
   moneda === 'USD' ? `$${num2(v)}` : `${num2(v)} ${moneda}`;

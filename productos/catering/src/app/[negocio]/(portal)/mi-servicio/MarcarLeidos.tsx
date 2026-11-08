@@ -10,7 +10,7 @@ export default function MarcarLeidos({ slug }: { slug: string }) {
   const [enCurso, arranca] = useTransition();
   return (
     <Boton variante="fantasma" tamano="sm" disabled={enCurso} onClick={() => arranca(async () => { await marcarMensajesLeidos(slug); router.refresh(); })}>
-      Marcar como leídos
+      Marcar leídos
     </Boton>
   );
 }

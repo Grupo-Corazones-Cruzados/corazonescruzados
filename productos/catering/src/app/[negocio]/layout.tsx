@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { prisma } from '@/lib/db';
-import { ACENTO_GCC, esHexValido } from '@/lib/marca';
+import { TEMA } from '@/lib/marca';
 import { conBase } from '@/lib/base';
 
 type Params = Promise<{ negocio: string }>;
@@ -8,11 +8,12 @@ type Params = Promise<{ negocio: string }>;
 async function marcaDe(negocio: string) {
   const inq = await prisma.inquilino.findUnique({
     where: { slug: negocio },
-    select: { nombre: true, colorAcento: true },
+    select: { nombre: true },
   });
   return {
     nombre: inq?.nombre ?? 'Gestión de Catering',
-    color: inq && esHexValido(inq.colorAcento) ? inq.colorAcento : ACENTO_GCC,
+    // El fondo del tema único: la barra del teléfono se funde con la app (2026-11-08).
+    color: TEMA.fondo,
   };
 }
 
@@ -27,7 +28,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { nombre } = await marcaDe(negocio);
   return {
     manifest: conBase(`/${negocio}/manifest.webmanifest`),
-    appleWebApp: { capable: true, statusBarStyle: 'default', title: nombre },
+    appleWebApp: { capable: true, statusBarStyle: 'black', title: nombre },
     // Next emite `mobile-web-app-capable`; iOS sigue leyendo el suyo.
     other: { 'apple-mobile-web-app-capable': 'yes' },
   };

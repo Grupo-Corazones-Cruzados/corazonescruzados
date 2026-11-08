@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { urlLogo } from '@/lib/marca';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { AplicaMarca, LogoNegocio } from '@/componentes/Marca';
@@ -19,10 +20,10 @@ export default async function PaginaRegistro({ params }: { params: Promise<{ neg
   if (!inquilino) notFound();
 
   return (
-    <AplicaMarca colorAcento={inquilino.colorAcento} tema={inquilino.tema} className="flex items-center justify-center px-4 py-10">
+    <AplicaMarca className="flex items-center justify-center px-4 py-10">
       <div className="tarjeta w-full max-w-lg p-8">
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <LogoNegocio nombre={inquilino.nombre} logoUrl={inquilino.logoUrl} tamano={52} />
+          <LogoNegocio nombre={inquilino.nombre} logoUrl={urlLogo(inquilino)} tamano={52} />
           <div>
             <h1 className="text-[17px] font-semibold text-texto">Regístrate en {inquilino.nombre}</h1>
             <p className="text-[12px] text-tenue">Tu registro queda pendiente hasta que el negocio lo apruebe.</p>

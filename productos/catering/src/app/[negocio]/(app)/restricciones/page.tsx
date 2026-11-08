@@ -59,19 +59,20 @@ export default async function PaginaRestricciones({
     veClientes ? <Link href={`/${negocio}/clientes/${c.id}`} className="font-semibold hover:text-acento">{c.nombre}</Link> : <span className="font-semibold">{c.nombre}</span>;
 
   return (
-    <>
-      <CabeceraPagina titulo="Restricciones" descripcion={`Quién no come qué, con el menú del ${fechaLarga(dia)}`} acciones={<BotonPdf href={`/${negocio}/api/pdf/restricciones?dia=${dia}`} />} />
-      <div className="space-y-4 p-4 sm:p-6 print:p-0">
+    <div className="flex flex-1 flex-col">
+      <CabeceraPagina titulo="Restricciones" descripcion="Quién no come qué con el menú del día"
+        extra={<span className="block text-[12px] text-tenue first-letter:uppercase">{fechaLarga(dia)}</span>}
+        acciones={<BotonPdf href={`/${negocio}/api/pdf/restricciones?dia=${dia}`} texto="PDF" />} />
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6 print:p-0">
         <div className="print:hidden"><FiltroDia base={`/${negocio}/restricciones`} dia={dia} /></div>
         {!d.menus.length && (
           <p className="rounded border border-borde bg-aviso-suave px-3 py-2 text-[12px] text-aviso print:hidden">
-            Ese día no tiene menú cargado, así que no hay choques que calcular. <Link href={`/${negocio}/menus?dia=${dia}`} className="font-semibold underline underline-offset-2">Cargar el menú</Link>
+            Sin menú ese día: no hay choques que calcular. <Link href={`/${negocio}/menus?dia=${dia}`} className="font-semibold underline underline-offset-2">Cargar el menú</Link>
           </p>
         )}
         <div className="grid gap-4 lg:grid-cols-2">
           <Tarjeta className="p-4">
-            <h2 className="text-[14px] font-semibold">Simples <Insignia tono="aviso">{simples.length}</Insignia></h2>
-            <p className="text-[12px] text-tenue">Una sola sustitución en el plato: se agrupan por alimento para cocinar la variante de una vez.</p>
+            <h2 className="text-[14px] font-semibold" title="Una sola sustitución: se agrupan por alimento para cocinar la variante de una vez">Simples <Insignia tono="aviso">{simples.length}</Insignia></h2>
             {simples.length === 0 ? <EstadoVacio titulo="Ninguna" /> : (
               <div className="mt-3 space-y-3">
                 {[...simplesPorAlimento.entries()].sort((a, b) => b[1].length - a[1].length).map(([alimento, lista]) => (
@@ -86,8 +87,7 @@ export default async function PaginaRestricciones({
             )}
           </Tarjeta>
           <Tarjeta className="p-4">
-            <h2 className="text-[14px] font-semibold">Compuestas <Insignia tono="error">{compuestas.length}</Insignia></h2>
-            <p className="text-[12px] text-tenue">Dos o más sustituciones: cada plato se arma aparte.</p>
+            <h2 className="text-[14px] font-semibold" title="Dos o más sustituciones: cada plato se arma aparte">Compuestas <Insignia tono="error">{compuestas.length}</Insignia></h2>
             {compuestas.length === 0 ? <EstadoVacio titulo="Ninguna" /> : (
               <ul className="mt-3 divide-y divide-borde">
                 {compuestas.map((c) => (
@@ -100,10 +100,10 @@ export default async function PaginaRestricciones({
             )}
           </Tarjeta>
         </div>
-        <Tarjeta className="p-4">
-          <h2 className="text-[14px] font-semibold">Todas las restricciones de los clientes activos</h2>
-          <p className="text-[12px] text-tenue">Por alimento, tenga o no que ver con el menú de hoy. Sirve para planificar la semana.</p>
-          {porAlimento.size === 0 ? <EstadoVacio titulo="Ningún cliente activo tiene restricciones" /> : (
+        {/* El último bloque crece hasta el pie (regla 2026-11-08). */}
+        <Tarjeta className="flex flex-1 flex-col p-4">
+          <h2 className="text-[14px] font-semibold" title="Por alimento, tenga o no que ver con el menú del día">Todas <Insignia tono="neutro">{porAlimento.size}</Insignia></h2>
+          {porAlimento.size === 0 ? <div className="flex flex-1 items-center justify-center"><EstadoVacio titulo="Sin restricciones" /></div> : (
             <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
               {[...porAlimento.values()].sort((a, b) => b.clientes.length - a.clientes.length).map((a) => (
                 <div key={a.nombre} className="rounded border border-borde p-3">
@@ -115,6 +115,6 @@ export default async function PaginaRestricciones({
           )}
         </Tarjeta>
       </div>
-    </>
+    </div>
   );
 }

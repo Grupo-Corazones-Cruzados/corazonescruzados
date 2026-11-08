@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, Filter, Search, AlertTriangle } from 'lucide-react';
+import { Download, Search, AlertTriangle } from 'lucide-react';
 import { CabeceraPagina, type AccionMenu } from '@/componentes/Navegacion';
 import { Boton, Campo, Entrada, Tarjeta, Tabla, Insignia } from '@/componentes/ui';
 import { Cifra } from '@/componentes/campos';
@@ -29,8 +29,7 @@ function Barras({ datos, titulo, pista }: { datos: { etiqueta: string; n: number
   const max = Math.max(1, ...datos.map((d) => d.n));
   return (
     <Tarjeta className="p-4">
-      <h2 className="text-[13px] font-semibold">{titulo}</h2>
-      {pista && <p className="text-[11px] text-tenue">{pista}</p>}
+      <h2 className="text-[13px] font-semibold" title={pista}>{titulo}</h2>
       {datos.length === 0 ? <p className="mt-3 text-[12px] text-tenue">Sin datos.</p> : (
         <ul className="mt-3 space-y-1.5">
           {datos.map((d) => (
@@ -52,36 +51,36 @@ export default function ReportesCliente({ slug, reporte: r, mesesRetencion }: { 
   const cumplimiento = r.kpis.diasContratadosTotal ? Math.round((r.kpis.diasConsumidosTotal / r.kpis.diasContratadosTotal) * 100) : 0;
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       <CabeceraPagina titulo="Reportes" descripcion="Indicadores del periodo y el detalle de los servicios"
-        menu={[{ etiqueta: 'Exportar a Excel', icono: Download, href: `/${slug}/api/reportes/excel?${consulta}`, descargar: true }]} />
-      <div className="space-y-4 p-4 sm:p-6">
+        menu={[{ etiqueta: 'Excel', icono: Download, href: `/${slug}/api/reportes/excel?${consulta}`, descargar: true, titulo: 'Exportar a Excel' }]} />
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
         {mesesRetencion && (
           <p className="flex items-start gap-2 rounded border border-borde bg-aviso-suave px-3 py-2 text-[12px] text-aviso">
             <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
-            Tu plan conserva {mesesRetencion === 1 ? 'un mes' : `${mesesRetencion} meses`} de histórico: en la última hora del último día de cada mes se borran los servicios vencidos, las cancelaciones, los menús y los mensajes anteriores. Los clientes, alimentos, motorizados y feriados se conservan. <strong>Exporta a Excel lo que quieras guardar.</strong>
+            <span title="Se borran los servicios vencidos, las cancelaciones, los menús y los mensajes anteriores; los clientes, alimentos, motorizados y feriados se conservan">
+              Se conserva {mesesRetencion === 1 ? 'un mes' : `${mesesRetencion} meses`} de histórico. <strong>Exporta a Excel lo que quieras guardar.</strong>
+            </span>
           </p>
         )}
-        <Tarjeta className="p-4">
-          <div className="mb-3 flex items-center gap-2"><Filter className="h-4 w-4 text-tenue" /><h2 className="text-[12px] font-semibold uppercase tracking-wide text-tenue">Periodo (hasta 62 días)</h2></div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Campo etiqueta="Desde"><Entrada type="date" value={f.desde} onChange={(e) => setF({ ...f, desde: e.target.value })} /></Campo>
-            <Campo etiqueta="Hasta"><Entrada type="date" value={f.hasta} onChange={(e) => setF({ ...f, hasta: e.target.value })} /></Campo>
-            <div className="col-span-2 flex items-end sm:col-span-1"><Boton icono={Search} tamano="lg" className="w-full" onClick={() => router.push(`/${slug}/reportes?${consulta}`)}>Consultar</Boton></div>
-          </div>
+        {/* El periodo, en una barra (hasta 62 días). */}
+        <Tarjeta className="grid grid-cols-2 gap-2 p-2 sm:flex sm:items-end" >
+          <Campo etiqueta="Desde" className="sm:w-44"><Entrada type="date" value={f.desde} onChange={(e) => setF({ ...f, desde: e.target.value })} /></Campo>
+          <Campo etiqueta="Hasta" className="sm:w-44"><Entrada type="date" value={f.hasta} onChange={(e) => setF({ ...f, hasta: e.target.value })} title="Hasta 62 días" /></Campo>
+          <Boton icono={Search} tamano="lg" className="col-span-2 w-full sm:w-auto" onClick={() => router.push(`/${slug}/reportes?${consulta}`)}>Consultar</Boton>
         </Tarjeta>
 
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Cifra etiqueta="Entregas en el periodo" valor={numEntero(r.kpis.entregas)} destacado pista={`${numEntero(r.kpis.comidas)} comidas`} />
+          <Cifra etiqueta="Entregas" valor={numEntero(r.kpis.entregas)} destacado pista={`${numEntero(r.kpis.comidas)} comidas`} />
           <Cifra etiqueta="Cancelaciones" valor={numEntero(r.kpis.cancelaciones)} pista={`${r.kpis.cancelacionesCliente} por el cliente`} />
           <Cifra etiqueta="Clientes activos" valor={numEntero(r.kpis.clientesActivos)} pista={`${r.kpis.serviciosActivos} con servicio activo`} />
-          <Cifra etiqueta="Servicios por vencer" valor={numEntero(r.kpis.porVencer)} pista={`${cumplimiento} % de los días contratados ya consumidos`} />
+          <Cifra etiqueta="Servicios por vencer" valor={numEntero(r.kpis.porVencer)} pista={`${cumplimiento} % consumido`} />
         </div>
 
         <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
           <Barras titulo="Entregas por día" pista="En el periodo" datos={r.porDia.filter((d) => d.entregas > 0).map((d) => ({ etiqueta: fechaCorta(d.dia), n: d.entregas }))} />
-          <Barras titulo="Cancelaciones por día de la semana" datos={r.cancelacionesPorDiaSemana.map((d) => ({ etiqueta: d.dia, n: d.n }))} />
-          <Barras titulo="Clientes activos por motorizado" datos={r.clientesPorMotorizado.map((d) => ({ etiqueta: d.motorizado, n: d.n }))} />
+          <Barras titulo="Cancelaciones por día" datos={r.cancelacionesPorDiaSemana.map((d) => ({ etiqueta: d.dia, n: d.n }))} />
+          <Barras titulo="Clientes por motorizado" datos={r.clientesPorMotorizado.map((d) => ({ etiqueta: d.motorizado, n: d.n }))} />
           <Barras titulo="Restricciones más frecuentes" pista="Entre los clientes activos" datos={r.topRestricciones.map((d) => ({ etiqueta: d.alimento, n: d.n }))} />
           <Tarjeta className="p-4">
             <h2 className="text-[13px] font-semibold">Clientes por estado</h2>
@@ -97,11 +96,13 @@ export default function ReportesCliente({ slug, reporte: r, mesesRetencion }: { 
           </Tarjeta>
         </div>
 
-        <Tarjeta className="overflow-hidden">
-          <div className="border-b border-borde px-4 py-3"><h2 className="text-[13px] font-semibold">Todos los servicios</h2></div>
+        {/* El último bloque crece hasta el pie (regla 2026-11-08). */}
+        <Tarjeta className="flex flex-1 flex-col overflow-hidden">
+          <div className="border-b border-borde px-4 py-3"><h2 className="text-[13px] font-semibold">Servicios</h2></div>
           <Tabla
             filas={r.servicios}
             claveFila={(s) => `${s.cliente}-${s.inicio}`}
+            recuento={`${r.servicios.length} ${r.servicios.length === 1 ? 'servicio' : 'servicios'}`}
             columnas={[
               { clave: 'cliente', titulo: 'Cliente', render: (s) => <span className="font-semibold">{s.cliente}</span> },
               { clave: 'sit', titulo: 'Estado', render: (s) => <Insignia tono={TONO_SITUACION[s.situacion]}>{ETIQUETA_SITUACION[s.situacion]}</Insignia> },
@@ -113,6 +114,6 @@ export default function ReportesCliente({ slug, reporte: r, mesesRetencion }: { 
           />
         </Tarjeta>
       </div>
-    </>
+    </div>
   );
 }

@@ -36,9 +36,9 @@ export default async function PaginaMiServicio({ params }: { params: Promise<{ n
   const noLeidos = mensajes.filter((m) => !m.leido).length;
 
   return (
-    <>
-      <CabeceraPagina titulo={`Hola, ${cliente.nombre.split(' ')[0]}`} descripcion={fechaLarga(hoy)} />
-      <div className="space-y-4 p-4 sm:p-6">
+    <div className="flex flex-1 flex-col">
+      <CabeceraPagina titulo={`Hola, ${cliente.nombre.split(' ')[0]}`} extra={<span className="block text-[12px] text-tenue first-letter:uppercase">{fechaLarga(hoy)}</span>} />
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
         <div className="grid gap-3 sm:grid-cols-2">
           <Tarjeta className="p-4">
             <p className="text-[11px] uppercase tracking-wide text-tenue">Hoy</p>
@@ -60,7 +60,7 @@ export default async function PaginaMiServicio({ params }: { params: Promise<{ n
             ) : (
               <p className="mt-1 text-[15px] font-semibold text-tenue">Mañana no hay entrega</p>
             )}
-            <Link href={`/${negocio}/cancelaciones`} className="mt-1 inline-flex items-center gap-1 text-[12px] font-semibold text-acento hover:underline"><CalendarX2 className="h-3.5 w-3.5" /> Cancelar o reactivar un día</Link>
+            <Link href={`/${negocio}/cancelaciones`} className="mt-1 inline-flex items-center gap-1 text-[12px] font-semibold text-acento hover:underline"><CalendarX2 className="h-3.5 w-3.5" /> Cancelar un día</Link>
           </Tarjeta>
         </div>
 
@@ -72,9 +72,9 @@ export default async function PaginaMiServicio({ params }: { params: Promise<{ n
             </div>
             <p className="mt-1 text-[12px] text-tenue">{vigente.tiposComida.map((t) => ETIQUETA_COMIDA[t]).join(' + ')} · {vigente.diasSemana.map((d) => ETIQUETA_DIA[d]).join(', ')}</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-4">
-              <Cifra etiqueta="Días restantes" valor={vigente.resumen.diasRestantes} destacado pista={`de ${vigente.diasTotales} contratados`} />
+              <Cifra etiqueta="Restantes" valor={vigente.resumen.diasRestantes} destacado pista={`de ${vigente.diasTotales}`} />
               <Cifra etiqueta="Consumidos" valor={vigente.resumen.diasConsumidos} />
-              <Cifra etiqueta="Termina" valor={fechaCorta(vigente.resumen.fechaFin)} pista="Se corre si cancelas o hay feriado" />
+              <Cifra etiqueta="Termina" valor={fechaCorta(vigente.resumen.fechaFin)} />
               <Cifra etiqueta="Cancelaciones" valor={`${vigente.resumen.cancelacionesUsadas} de ${vigente.resumen.maxCancelaciones}`} />
             </div>
             <div className="mt-4"><LeyendaCalendario /></div>
@@ -82,11 +82,11 @@ export default async function PaginaMiServicio({ params }: { params: Promise<{ n
               <CalendarioServicio compacto dias={calendarioServicio(vigente, hoy, feriados, vigente.cancelaciones.filter((c) => c.activa).map((c) => ({ id: c.id, dia: aDia(c.fecha), motivo: c.motivo })))} hoy={hoy} />
             </div>
             {vigente.resumen.diasRestantes <= 5 && (
-              <p className="mt-4 rounded border border-borde bg-aviso-suave px-3 py-2 text-[12px] text-aviso">Te quedan pocos días. Habla con {inquilino.nombre} para renovar.</p>
+              <p className="mt-4 rounded border border-borde bg-aviso-suave px-3 py-2 text-[12px] text-aviso">Te quedan pocos días: habla con {inquilino.nombre} para renovar.</p>
             )}
           </Tarjeta>
         ) : (
-          <Tarjeta><EstadoVacio icono={Package} titulo="Todavía no tienes un servicio activo" detalle={`Ponte en contacto con ${inquilino.nombre} para contratar tus días.`} /></Tarjeta>
+          <Tarjeta><EstadoVacio icono={Package} titulo="Sin servicio activo" detalle={`Contrata tus días con ${inquilino.nombre}.`} /></Tarjeta>
         )}
 
         {anteriores.length > 0 && (
@@ -98,12 +98,13 @@ export default async function PaginaMiServicio({ params }: { params: Promise<{ n
           </Tarjeta>
         )}
 
-        <Tarjeta className="overflow-hidden">
+        {/* El último bloque crece hasta el pie (regla 2026-11-08). */}
+        <Tarjeta className="flex flex-1 flex-col overflow-hidden">
           <div className="flex items-center justify-between border-b border-borde px-4 py-3">
-            <h2 className="flex items-center gap-2 text-[13px] font-semibold"><MessageSquare className="h-4 w-4 text-tenue" /> Mensajes de {inquilino.nombre}{noLeidos > 0 && <Insignia tono="aviso">{noLeidos} sin leer</Insignia>}</h2>
+            <h2 className="flex items-center gap-2 text-[13px] font-semibold"><MessageSquare className="h-4 w-4 text-tenue" /> Mensajes{noLeidos > 0 && <Insignia tono="aviso">{noLeidos} sin leer</Insignia>}</h2>
             {noLeidos > 0 && <MarcarLeidos slug={negocio} />}
           </div>
-          {mensajes.length === 0 ? <EstadoVacio titulo="Sin mensajes" /> : (
+          {mensajes.length === 0 ? <div className="flex flex-1 items-center justify-center"><EstadoVacio icono={MessageSquare} titulo="Sin mensajes" /></div> : (
             <ul className="divide-y divide-borde">
               {mensajes.map((m) => (
                 <li key={m.id} className={`px-4 py-3 ${m.leido ? '' : 'bg-acento-suave/40'}`}>
@@ -115,6 +116,6 @@ export default async function PaginaMiServicio({ params }: { params: Promise<{ n
           )}
         </Tarjeta>
       </div>
-    </>
+    </div>
   );
 }

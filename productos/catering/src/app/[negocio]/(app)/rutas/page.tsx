@@ -36,19 +36,21 @@ export default async function PaginaRutas({
   const sinAsignar = grupos.find((g) => !g.motorizado);
 
   return (
-    <>
-      <CabeceraPagina titulo="Hojas de ruta" descripcion={`${fechaLarga(dia)} · ${entregas.length} entrega${entregas.length === 1 ? '' : 's'} · ${grupos.filter((g) => g.motorizado).length} motorizado${grupos.filter((g) => g.motorizado).length === 1 ? '' : 's'}`} acciones={<BotonPdf href={`/${negocio}/api/pdf/rutas?${new URLSearchParams({ dia, ...(comida ? { comida } : {}), ...(motorizadoId ? { motorizado: String(motorizadoId) } : {}) })}`} texto="Descargar rutas (PDF)" deshabilitado={!entregas.length} />} />
-      <div className="space-y-4 p-4 sm:p-6 print:p-0">
+    <div className="flex flex-1 flex-col">
+      <CabeceraPagina titulo="Hojas de ruta"
+        extra={<span className="block text-[12px] text-tenue first-letter:uppercase">{fechaLarga(dia)} · {entregas.length} entrega{entregas.length === 1 ? '' : 's'} · {grupos.filter((g) => g.motorizado).length} motorizado{grupos.filter((g) => g.motorizado).length === 1 ? '' : 's'}</span>}
+        acciones={<BotonPdf href={`/${negocio}/api/pdf/rutas?${new URLSearchParams({ dia, ...(comida ? { comida } : {}), ...(motorizadoId ? { motorizado: String(motorizadoId) } : {}) })}`} texto="PDF" deshabilitado={!entregas.length} />} />
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6 print:p-0">
         <div className="print:hidden">
           <FiltroDia base={`/${negocio}/rutas`} dia={dia} comidas={inquilino.tiposComida} comida={comida} motorizados={motorizados} motorizadoId={motorizadoId} />
         </div>
         {sinAsignar && (
           <p className="rounded border border-borde bg-error-suave px-3 py-2 text-[12px] text-error print:hidden">
-            {sinAsignar.entregas.length} entrega{sinAsignar.entregas.length === 1 ? '' : 's'} sin motorizado asignado: {sinAsignar.entregas.map((e) => e.cliente.nombre).join(', ')}. Asígnalos en «Motorizados» o en la ficha del cliente.
+            {sinAsignar.entregas.length} entrega{sinAsignar.entregas.length === 1 ? '' : 's'} sin motorizado asignado: {sinAsignar.entregas.map((e) => e.cliente.nombre).join(', ')}.
           </p>
         )}
         {entregas.length === 0 ? (
-          <Tarjeta><EstadoVacio titulo="No hay entregas ese día" /></Tarjeta>
+          <Tarjeta className="flex flex-1 flex-col items-center justify-center"><EstadoVacio titulo="Sin entregas ese día" /></Tarjeta>
         ) : (
           grupos.map((g, i) => (
             <Tarjeta key={g.motorizado?.id ?? 'sin'} className={`overflow-hidden ${i > 0 ? 'print:break-before-page' : ''}`}>
@@ -86,7 +88,7 @@ export default async function PaginaRutas({
                         {e.cliente.direccion}
                         {(e.cliente.edificio || e.cliente.piso) && <span className="block text-tenue">{[e.cliente.edificio && `Edif. ${e.cliente.edificio}`, e.cliente.piso && `Piso ${e.cliente.piso}`].filter(Boolean).join(' · ')}</span>}
                         {e.cliente.referencias && <span className="block italic text-tenue">Ref.: {e.cliente.referencias}</span>}
-                        {e.cliente.numeroDireccion === 2 && <span className="mt-0.5 inline-block rounded bg-realce px-1.5 text-[10px] font-semibold">Dirección 2</span>}
+                        {e.cliente.numeroDireccion === 2 && <span className="mt-0.5 block text-[11px] font-semibold text-aviso">Dirección 2</span>}
                       </td>
                       <td className="px-3 py-2">{(comida ? [comida] : e.comidas).map((c) => ETIQUETA_COMIDA[c]).join(', ')}</td>
                       <td className="px-3 py-2">{e.restriccionesDespacho.length ? e.restriccionesDespacho.join(', ') : <span className="text-tenue">—</span>}</td>
@@ -99,6 +101,6 @@ export default async function PaginaRutas({
           ))
         )}
       </div>
-    </>
+    </div>
   );
 }

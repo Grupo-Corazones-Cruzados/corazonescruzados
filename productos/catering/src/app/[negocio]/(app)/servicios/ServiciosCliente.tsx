@@ -3,9 +3,9 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { Package, Plus, Clock } from 'lucide-react';
+import { Package, Plus, Clock, Save } from 'lucide-react';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { Boton, Buscador, Tabla, Insignia, Tarjeta, SelectorEstado, PanelLateral, Campo, Selector, EstadoVacio } from '@/componentes/ui';
+import { Boton, Buscador, Tabla, Insignia, Tarjeta, SelectorEstado, PanelLateral, PieAcciones, Campo, Selector, EstadoVacio } from '@/componentes/ui';
 import { Aviso } from '@/componentes/campos';
 import { CamposServicio } from '@/componentes/FormularioServicio';
 import { ETIQUETA_COMIDA, DIA_CORTO } from '@/lib/catalogo';
@@ -69,13 +69,12 @@ export default function ServiciosCliente({
   const elegido = sinServicio.find((c) => c.id === clienteId);
 
   return (
-    <>
+    <div className="flex flex-1 flex-col">
       <CabeceraPagina
         titulo="Servicios"
-        descripcion={`${conteo('vigentes')} vigentes · ${conteo('por-vencer')} por vencer`}
         acciones={<Boton icono={Plus} onClick={() => { setError(null); setAlta(true); }} disabled={!sinServicio.length} title={sinServicio.length ? undefined : 'Todos los clientes activos ya tienen servicio'}>Nuevo servicio</Boton>}
       />
-      <div className="space-y-3 p-4 sm:p-6">
+      <div className="flex flex-1 flex-col gap-3 p-4 sm:p-6">
         <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
           <SelectorEstado
             etiqueta="Ver"
@@ -92,13 +91,14 @@ export default function ServiciosCliente({
           />
           <Buscador valor={busca} alCambiar={setBusca} marcador="Buscar cliente…" className="w-full lg:w-72 lg:shrink-0" />
         </div>
-        <div className="min-w-0 space-y-3">
-          <Tarjeta className="overflow-hidden">
+        {/* La tarjeta de la lista llega hasta el pie (regla 2026-11-08). */}
+        <Tarjeta className="flex min-w-0 flex-1 flex-col overflow-hidden">
             <Tabla
               filas={visibles}
               claveFila={(s) => s.id}
               alPulsarFila={(s) => router.push(`/${slug}/clientes/${s.clienteId}`)}
-              vacio={<EstadoVacio icono={Package} titulo="No hay servicios aquí" />}
+              recuento={`${visibles.length} ${visibles.length === 1 ? 'servicio' : 'servicios'} · ${conteo('vigentes')} vigentes · ${conteo('por-vencer')} por vencer`}
+              vacio={<div className="flex flex-1 items-center justify-center"><EstadoVacio icono={Package} titulo="Sin servicios" /></div>}
               columnas={[
                 { clave: 'cliente', titulo: 'Cliente', render: (s) => <span><span className="block font-semibold text-texto">{s.cliente}</span><span className="block text-[11px] text-tenue">{s.celular}{s.motorizado ? ` · ${s.motorizado}` : ''}</span></span> },
                 { clave: 'estado', titulo: 'Estado', render: (s) => <span className="flex items-center gap-1.5"><Insignia tono={TONO_SITUACION[s.resumen.situacion]}>{ETIQUETA_SITUACION[s.resumen.situacion]}</Insignia>{s.renovaciones > 0 && <span className="text-[11px] text-tenue">×{s.renovaciones}</span>}</span> },
@@ -109,20 +109,18 @@ export default function ServiciosCliente({
                 { clave: 'canc', titulo: 'Cancel.', alinear: 'der', render: (s) => <span className={s.resumen.cancelacionesUsadas >= s.resumen.maxCancelaciones ? 'font-semibold text-error' : ''}>{s.resumen.cancelacionesUsadas}/{s.resumen.maxCancelaciones}</span> },
               ]}
             />
-          </Tarjeta>
-        </div>
+        </Tarjeta>
       </div>
 
       <PanelLateral
         abierto={alta}
         alCerrar={() => setAlta(false)}
         titulo="Nuevo servicio"
-        descripcion="Solo clientes activos sin servicio vigente."
         pie={
-          <>
+          <PieAcciones>
             <Boton variante="secundario" onClick={() => setAlta(false)} disabled={enCurso}>Cancelar</Boton>
-            <Boton type="submit" form="form-nuevo-servicio" disabled={enCurso || !elegido}>{enCurso ? 'Guardando…' : 'Crear servicio'}</Boton>
-          </>
+            <Boton type="submit" form="form-nuevo-servicio" icono={Save} disabled={enCurso || !elegido}>{enCurso ? 'Creando…' : 'Crear'}</Boton>
+          </PieAcciones>
         }
       >
         <form
@@ -132,12 +130,12 @@ export default function ServiciosCliente({
             const r = await crearServicio(slug, d);
             if (!r.ok) return setError(r.error);
             setAlta(false);
-            toast.success('Servicio creado');
+            toast.success('Creado.');
             router.refresh();
           })}
           className="space-y-4"
         >
-          <Campo etiqueta="Cliente" requerido>
+          <Campo etiqueta="Cliente activo sin servicio" requerido>
             <Selector name="clienteId" value={clienteId} onChange={(e) => setClienteId(Number(e.target.value))}>
               {sinServicio.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
             </Selector>
@@ -153,6 +151,6 @@ export default function ServiciosCliente({
           {error && <Aviso texto={error} />}
         </form>
       </PanelLateral>
-    </>
+    </div>
   );
 }

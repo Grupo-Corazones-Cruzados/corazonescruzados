@@ -50,22 +50,23 @@ export default async function PaginaPanel({ params }: { params: Promise<{ negoci
 
   const alertas: { icono: React.ComponentType<{ className?: string }>; texto: string; href?: string; tono: 'aviso' | 'error' | 'info' }[] = [];
   if (pendientes && esAdmin)
-    alertas.push({ icono: UserPlus, texto: `${pendientes} registro(s) pendiente(s) de aprobación`, href: `/${negocio}/clientes?estado=PENDIENTE`, tono: 'aviso' });
+    alertas.push({ icono: UserPlus, texto: `${pendientes} ${pendientes === 1 ? 'registro' : 'registros'} por aprobar`, href: `/${negocio}/clientes?estado=PENDIENTE`, tono: 'aviso' });
   if (porVencer.length && puede(sesion.rol, 'servicios'))
-    alertas.push({ icono: Clock, texto: `${porVencer.length} servicio(s) con 5 días o menos`, href: `/${negocio}/servicios?filtro=por-vencer`, tono: 'aviso' });
+    alertas.push({ icono: Clock, texto: `${porVencer.length} ${porVencer.length === 1 ? 'servicio vence' : 'servicios vencen'} en 5 días`, href: `/${negocio}/servicios?filtro=por-vencer`, tono: 'aviso' });
   if (diaHoy.cancelados.length)
-    alertas.push({ icono: CalendarX2, texto: `${diaHoy.cancelados.length} cancelación(es) para hoy`, tono: 'info' });
+    alertas.push({ icono: CalendarX2, texto: `${diaHoy.cancelados.length} ${diaHoy.cancelados.length === 1 ? 'cancelación' : 'cancelaciones'} hoy`, tono: 'info' });
   if (sinMotorizado && puede(sesion.rol, 'despacho'))
-    alertas.push({ icono: Route, texto: `${sinMotorizado} entrega(s) de hoy sin motorizado asignado`, href: `/${negocio}/rutas`, tono: 'error' });
+    alertas.push({ icono: Route, texto: `${sinMotorizado} ${sinMotorizado === 1 ? 'entrega' : 'entregas'} sin motorizado`, href: `/${negocio}/rutas`, tono: 'error' });
   if (!diaHoy.menus.length && diaHoy.entregas.length && puede(sesion.rol, 'cocina'))
-    alertas.push({ icono: ChefHat, texto: 'Hoy hay entregas pero todavía no hay menú cargado', href: `/${negocio}/menus`, tono: 'aviso' });
+    alertas.push({ icono: ChefHat, texto: 'Hay entregas y no hay menú', href: `/${negocio}/menus`, tono: 'aviso' });
   if (diaHoy.esFeriado)
     alertas.push({ icono: CalendarX2, texto: `Hoy es ${diaHoy.esFeriado.nombre}${diaHoy.esFeriado.esLaborable ? ' (se trabaja)' : ': no hay servicio'}`, tono: 'info' });
 
   return (
-    <>
-      <CabeceraPagina titulo="Panel" descripcion={fechaLarga(hoy)} />
-      <div className="space-y-4 p-4 sm:p-6">
+    <div className="flex flex-1 flex-col">
+      <CabeceraPagina titulo="Panel" extra={<span className="block text-[12px] text-tenue first-letter:uppercase">{fechaLarga(hoy)}</span>} />
+      {/* El cuerpo es columna y el último bloque crece hasta el pie (regla 2026-11-08). */}
+      <div className="flex flex-1 flex-col gap-4 p-4 sm:p-6">
         {alertas.length > 0 && (
           <div className="grid gap-2 sm:grid-cols-2">
             {alertas.map((a) => {
@@ -92,10 +93,9 @@ export default async function PaginaPanel({ params }: { params: Promise<{ negoci
           <Cifra etiqueta="Clientes por aprobar" valor={numEntero(pendientes)} />
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Tarjeta className="p-4">
+        <div className="grid flex-1 gap-4 lg:grid-cols-2">
+          <Tarjeta className="flex flex-col p-4">
             <h2 className="text-[13px] font-semibold">Comidas de hoy</h2>
-            <p className="text-[11px] text-tenue">Lo que la cocina tiene que sacar</p>
             <ul className="mt-3 divide-y divide-borde">
               {porComida(diaHoy).map(({ t, n }) => (
                 <li key={t} className="flex items-center justify-between py-2 text-[13px]">
@@ -112,9 +112,8 @@ export default async function PaginaPanel({ params }: { params: Promise<{ negoci
             )}
           </Tarjeta>
 
-          <Tarjeta className="p-4">
+          <Tarjeta className="flex flex-col p-4">
             <h2 className="text-[13px] font-semibold">Comidas de mañana</h2>
-            <p className="text-[11px] text-tenue">Para comprar y preparar</p>
             <ul className="mt-3 divide-y divide-borde">
               {porComida(diaManana).map(({ t, n }) => (
                 <li key={t} className="flex items-center justify-between py-2 text-[13px]">
@@ -125,8 +124,8 @@ export default async function PaginaPanel({ params }: { params: Promise<{ negoci
             </ul>
           </Tarjeta>
 
-          <Tarjeta className="p-4">
-            <h2 className="flex items-center gap-2 text-[13px] font-semibold"><ShieldAlert className="h-4 w-4 text-tenue" /> Restricciones con el menú de hoy</h2>
+          <Tarjeta className="flex flex-col p-4">
+            <h2 className="flex items-center gap-2 text-[13px] font-semibold"><ShieldAlert className="h-4 w-4 text-tenue" /> Restricciones de hoy</h2>
             {choques.size ? (
               <ul className="mt-3 divide-y divide-borde">
                 {[...choques.entries()].sort((a, b) => b[1] - a[1]).map(([r, n]) => (
@@ -137,11 +136,11 @@ export default async function PaginaPanel({ params }: { params: Promise<{ negoci
                 ))}
               </ul>
             ) : (
-              <p className="mt-3 text-[12px] text-tenue">{diaHoy.menus.length ? 'Ningún cliente de hoy tiene restricciones con este menú.' : 'Sin menú cargado para hoy.'}</p>
+              <p className="mt-3 text-[12px] text-tenue">{diaHoy.menus.length ? 'Sin choques con el menú.' : 'Sin menú.'}</p>
             )}
           </Tarjeta>
 
-          <Tarjeta className="p-4">
+          <Tarjeta className="flex flex-col p-4">
             <h2 className="flex items-center gap-2 text-[13px] font-semibold"><CalendarX2 className="h-4 w-4 text-tenue" /> Cancelaciones de hoy</h2>
             {diaHoy.cancelados.length ? (
               <ul className="mt-3 divide-y divide-borde">
@@ -158,6 +157,6 @@ export default async function PaginaPanel({ params }: { params: Promise<{ negoci
           </Tarjeta>
         </div>
       </div>
-    </>
+    </div>
   );
 }

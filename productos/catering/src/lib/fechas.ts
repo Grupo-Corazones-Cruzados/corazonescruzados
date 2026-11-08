@@ -58,34 +58,42 @@ export function mesDe(dia: Dia): { desde: Dia; hasta: Dia } {
   return { desde: `${a}-${p2(m)}-01`, hasta: aDia(new Date(Date.UTC(a, m, 0))) };
 }
 
-/** «lunes 15 de septiembre de 2026», para las pantallas. */
+/*
+  FECHAS IGUALES EN EL SERVIDOR Y EN EL NAVEGADOR (2026-11-08, como Automatizaciones).
+  `toLocaleDateString('es-EC')` no sirve en un componente que se pinta en los dos lados: Node y
+  Chrome traen ICU distintos (espacios, comas, «a. m.») y React rechaza la hidratación (#418).
+  Estas se arman a mano con las partes numéricas, que no varían.
+*/
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const NOMBRE_DIA = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+/** «lunes, 15 de septiembre de 2026», para las pantallas. */
 export function fechaLarga(dia: Dia) {
-  return aFechaSql(dia).toLocaleDateString('es-EC', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
+  const d = aFechaSql(dia);
+  return `${NOMBRE_DIA[d.getUTCDay()]}, ${d.getUTCDate()} de ${MESES[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
+}
+
+/** «15 de septiembre de 2026» (sin el día de la semana). */
+export function fechaMes(dia: Dia | Date) {
+  const d = typeof dia === 'string' ? aFechaSql(dia) : dia;
+  return `${d.getUTCDate()} de ${MESES[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
 }
 
 /** «15/09/2026». */
 export function fechaCorta(dia: Dia | Date | null | undefined) {
   if (!dia) return '—';
   const d = typeof dia === 'string' ? aFechaSql(dia) : dia;
-  return d.toLocaleDateString('es-EC', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'UTC' });
+  return `${p2(d.getUTCDate())}/${p2(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`;
 }
 
 /** Un instante (creado_en) en la zona del negocio: «15/09/2026 14:30». */
 export function instante(d: Date | string, zonaHoraria: string) {
-  return new Date(d).toLocaleString('es-EC', {
-    timeZone: zonaHoraria,
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', {
+      timeZone: zonaHoraria, year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(new Date(d)).map((x) => [x.type, x.value]),
+  );
+  return `${p2(Number(p.day))}/${p2(Number(p.month))}/${p.year} ${p.hour}:${p.minute}`;
 }
 
 /** Fecha a AAAA-MM-DD en la zona local del navegador (para valores por defecto de <input type="date">). */

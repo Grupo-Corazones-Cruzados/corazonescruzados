@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { urlLogo } from '@/lib/marca';
 import { redirect } from 'next/navigation';
 import { CreditCard, ShieldAlert, CalendarX2 } from 'lucide-react';
 import { exigirSesionDelNegocio } from '@/lib/inquilino';
@@ -42,14 +43,11 @@ export default async function PaginaSuscripcion({ params }: { params: Promise<{ 
   const plan = inquilino.suscripcion?.plan;
 
   return (
-    <AplicaMarca
-      colorAcento={inquilino.colorAcento}
-      tema={inquilino.tema}
-      className="flex items-center justify-center px-4 py-10"
+    <AplicaMarca className="flex items-center justify-center px-4 py-10"
     >
       <div className="tarjeta w-full max-w-lg p-8">
         <div className="mb-6 flex items-center gap-3">
-          <LogoNegocio nombre={inquilino.nombre} logoUrl={inquilino.logoUrl} tamano={40} />
+          <LogoNegocio nombre={inquilino.nombre} logoUrl={urlLogo(inquilino)} tamano={40} />
           <div className="min-w-0">
             <p className="truncate text-[14px] font-semibold text-texto">{inquilino.nombre}</p>
             <p className="text-[11px] text-tenue">Gestión de Catering</p>
