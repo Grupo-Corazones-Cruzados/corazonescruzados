@@ -12229,5 +12229,6 @@ Fernando pidió solo guardar lo aprendido; no se construye nada todavía. Fuente
 - Fichas del marketplace (`member_portfolio_items` 1, 25, 29, 30, 31): `project_url` y `demo_url` a
   `https://app.grupocc.org/p/<p>` (demos 200).
 - **Borrados en Railway** los cinco dominios (`<p>.grupocc.org`); quedan `app` y `www`. Los viejos dan 404.
-- Falta: quitar de la zona de Cloudflare (aún sin activar) los 5 CNAME de productos y sus 5 `_railway-verify`
-  (NO el de `www`).
+- ✅ Cloudflare: borrados por API los 5 CNAME de productos y sus 5 `_railway-verify`; quedan 17 registros, todos
+  DNS only (`www`, `app`, correo, verificaciones de Google y `_railway-verify.www`). Token de Fernando, con permiso
+  solo de DNS de `grupocc.org`, en `~/.cloudflare-token` de la M4 (600); sirve para la fase 3 (túnel, activación).

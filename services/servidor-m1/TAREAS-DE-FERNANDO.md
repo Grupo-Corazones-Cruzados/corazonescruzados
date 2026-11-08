@@ -121,7 +121,7 @@ líneas de los bots de entrenamiento). 27 registros, todos **DNS only**: los 14 
 preguntando a `dante.ns.cloudflare.com`: responden igual que los de Microsoft.
 **Servidores de nombres asignados:** `dante.ns.cloudflare.com` y `dell.ns.cloudflare.com` (no son secretos).
 
-### ☐ C6. Cloudflare: quitar los registros de los productos (los subdominios ya no existen)
+### ✅ C6. Cloudflare: quitar los registros de los productos (hecho por Claude con el token de Fernando, 2026-11-08: quedan 17, sin proxy)
 En dash.cloudflare.com → `grupocc.org` → **DNS → Records**, borrar (**Edit → Delete**) estos 10:
 - CNAME `reservas`, `pedidos`, `catering`, `planificaciones`, `automatizaciones`
 - TXT `_railway-verify.reservas`, `_railway-verify.pedidos`, `_railway-verify.catering`,
