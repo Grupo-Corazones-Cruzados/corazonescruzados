@@ -11921,7 +11921,7 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 
 ---
 
-# SEGURIDAD DEL SERVIDOR PROPIO (M1) Y DE LA PLATAFORMA (2026-11-07) · 72 %
+# SEGURIDAD DEL SERVIDOR PROPIO (M1) Y DE LA PLATAFORMA (2026-11-07) · 80 %
 **Objetivo:** tratar todos los riesgos y tipos de ataque del servidor local antes y después de la mudanza. **Rol:** responsable de seguridad e infraestructura. **Fuente:** auditoría de solo lectura del M1, de la Mac de desarrollo, de la tailnet y `npm audit`. Nada se cambió.
 
 ## Hallazgos (2026-11-07)
@@ -11960,4 +11960,16 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 - **Nuevo, H12:** la llave de Tailscale del M1 caduca el **2027-04-07**: ese día el servidor sale de la tailnet. Se desactiva en login.tailscale.com → Machines → «Fernando’s MacBook Air» → ⋯ → *Disable key expiry*.
 - **Actualizaciones:** el M1 descarga pero no instala macOS solo, y así debe quedar: un reinicio automático lo deja detrás de FileVault hasta desbloquearlo desde la red de casa.
 - **H6, preparado:** `~/.ssh/config` de la M4 tiene una entrada del M1 con `UseKeychain`; falta que Fernando ponga la frase (`ssh-keygen -p`) y la guarde en el llavero (`ssh-add --apple-use-keychain`).
+
+## Las puertas de entrada de la app (2026-11-07, adelantado de la fase 3)
+| # | Hallazgo | Gravedad | Estado |
+|---|---|---|---|
+| H13 | `/api/auth/login` y `/api/character/auth/login` daban sesión **solo con la contraseña**, saltándose el código del correo. Nadie los llamaba, pero estaban publicados | Crítica | ✅ 410 (commits 0c02328e y 2645a8d2) |
+| H14 | El código de 6 dígitos admitía intentos ilimitados en sus 15 minutos, y salía de `Math.random` | Alta | ✅ `lib/auth/codigo-acceso.ts`: el intento se suma antes de comparar y en la misma sentencia; al 5.º fallo se anula; `randomInt`. Seis sitios (web, juego, recuperación, productos). Migración 083 |
+| H15 | Sin tope de fallos de contraseña | Alta | ✅ `lib/auth/intentos.ts`: 10 por cuenta y 30 por IP en 15 min → 429. El correo inexistente va por el mismo camino (no delata cuentas). Migración 084 |
+| H16 | El restablecimiento de contraseña no tiene tope de envíos (llenar un buzón de correos) | Baja | ⏸ Anotado. El enlace en sí está bien: 256 bits, 1 h, un solo uso |
+
+- **Pruebas:** la regla del código, con diez casos dentro de una transacción deshecha con ROLLBACK; el tope de contraseñas, en marcha con correos inventados y IP de documentación (203.0.113.x), borrando después exactamente esas filas por su hash.
+- **La prueba cazó un fallo:** con un correo inexistente la ruta anotaba el fallo pero no miraba el bloqueo, así que el tope por IP nunca saltaba, y el 429 solo de las cuentas reales las delataba. Sin probar en marcha habría salido así.
+- **Límites conocidos:** la IP sale de `x-forwarded-for`, que se puede inventar (lo que protege es el tope por cuenta; Cloudflare dará la IP real con `CF-Connecting-IP`). Quien conoce un correo puede bloquearle la contraseña 15 minutos; la passkey sigue entrando. En los productos el 429 se ve como un «no vale» genérico.
 - **Pendiente de la fase 2:** frase de paso en la llave SSH de la M4 (H6), quitar nodos viejos de Tailscale (H7), macOS 26.7.2 cuando Fernando esté en casa (H5), contraseña del router.
