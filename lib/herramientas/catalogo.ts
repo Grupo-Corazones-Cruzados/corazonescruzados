@@ -38,7 +38,7 @@ export const HERRAMIENTAS: Herramienta[] = [
   { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', soloEquipo: true, description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
   { id: 'descargador-video', name: 'Descargador de video', Icon: MonitorDown, category: 'app', soloMiembrosApp: true, description: 'App para Android que guarda en el teléfono videos o audio a partir de un enlace.' },
   { id: 'entrega-unica', name: 'Entrega de un solo uso', Icon: PackageOpen, category: 'gestion', soloEquipo: true, description: 'Envía un mensaje y hasta 10 archivos con un enlace que se cierra cuando lo descargan.' },
-  { id: 'entorno', name: 'Espacio de trabajo', Icon: SquareTerminal, category: 'gestion', soloEquipo: true, soloAdmin: true, abre: 'espacio', description: 'Las sesiones de Claude Code y de desarrollo del servidor local.' },
+  { id: 'entorno', name: 'Espacio de trabajo', Icon: SquareTerminal, category: 'gestion', soloEquipo: true, soloAdmin: true, soloMiembrosApp: true, abre: 'espacio', description: 'Las sesiones de Claude Code y de desarrollo del servidor local.' },
   { id: 'gumdramon', name: 'Gumdramon', Icon: AudioLines, category: 'gestion', soloEquipo: true, soloAdmin: true, soloMiembrosApp: true, abre: 'gumdramon', description: 'Copiloto de reuniones: escucha la conversación y te sugiere qué responder.' },
 ];
 

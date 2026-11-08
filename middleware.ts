@@ -36,6 +36,13 @@ export async function middleware(request: NextRequest) {
     }
   }
 
+  // En las apps, con sesión, la portada (el inicio de sesión) no se vuelve a ver: se va a Accesos. Solo
+  // cerrando sesión se ve otra vez (Fernando, 2026-11-08).
+  // `?acceso=` sí pasa: Aventura manda por ahí a la intro a quien aún no tiene personaje.
+  if (valid && pathname === "/" && request.cookies.get("gcc_app")?.value && !request.nextUrl.searchParams.has("acceso")) {
+    return NextResponse.redirect(new URL("/dashboard/accesos", request.url));
+  }
+
   // En GCC Progreso no se paga con PayPhone (`usePagosEnApp`), ni llegando por un enlace.
   if (pathname.startsWith("/pagar") && request.cookies.get("gcc_app")?.value === "progreso") {
     return NextResponse.redirect(new URL("/dashboard", request.url));

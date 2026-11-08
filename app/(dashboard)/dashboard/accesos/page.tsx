@@ -96,7 +96,7 @@ export default function AccesosPage() {
   const herramientas = herramientasPara({ esEquipo, esAdmin: rol === 'admin', app, conEspacio: !!rutasEspacio });
 
   return (
-    <div className="flex flex-col gap-4 max-w-5xl" style={mf}>
+    <div className="flex flex-col gap-4" style={mf}>
       {/* Fijas arriba al desplazarse (Fernando, 2026-11-08). El fondo tapa lo que pasa por debajo. */}
       <div className="sticky -top-4 md:-top-6 z-10 -mx-4 md:-mx-6 -mt-4 md:-mt-6 px-4 md:px-6 pt-4 md:pt-6 pb-2 bg-digi-dark">
         <Segmentado opciones={PESTANAS} valor={pestana} onChange={elegir} etiqueta="Accesos" className="w-full max-w-md" />
@@ -124,7 +124,7 @@ export default function AccesosPage() {
         ) : (
           <Rejilla>
             {productos.map((p) => (
-              <Mosaico key={p.url} imagen={p.portada} titulo={p.productoNombre} texto={p.nombre} onClick={() => abrirProducto(p.url)} />
+              <Mosaico key={p.url} icono={iconoDeProducto(p.url)} imagen={p.portada} titulo={p.productoNombre} texto={p.nombre} onClick={() => abrirProducto(p.url)} />
             ))}
           </Rejilla>
         )
@@ -147,18 +147,25 @@ export default function AccesosPage() {
   );
 }
 
+/** Cada producto sirve su icono de app en `/apple-icon.png` (180 px), el mismo del teléfono. */
+function iconoDeProducto(url: string): string | null {
+  try { return `${new URL(url).origin}/apple-icon.png`; } catch { return null; }
+}
+
 function Rejilla({ children }: { children: React.ReactNode }) {
-  return <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">{children}</div>;
+  return <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">{children}</div>;
 }
 
 const MOSAICO = 'flex flex-col items-start gap-3 p-4 min-h-[140px] rounded-xl border border-digi-border bg-digi-card text-left transition-colors hover:border-accent/40';
 
 /** Un acceso: icono (o portada del producto), nombre y una línea. */
-function Mosaico({ Icono, imagen, titulo, texto, onClick, href, tema }: {
+function Mosaico({ Icono, icono, imagen, titulo, texto, onClick, href, tema }: {
   Icono?: ComponentType<{ className?: string }>;
   /** Las apps llevan el color del tema con que se abren (Fernando, 2026-11-08). */
   tema?: TemaId;
   imagen?: string | null;
+  /** El icono de app del producto (Fernando, 2026-11-08: «usa el icono del producto»). */
+  icono?: string | null;
   titulo: string;
   texto: string;
   onClick?: () => void;
@@ -171,6 +178,9 @@ function Mosaico({ Icono, imagen, titulo, texto, onClick, href, tema }: {
           style={{ background: definicionTema(tema)?.muestra.acento === '#fafafa' ? '#000' : definicionTema(tema)?.muestra.acento }}>
           <Icono className="w-6 h-6 text-white" />
         </span>
+      ) : icono ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={icono} alt="" className="w-12 h-12 shrink-0 rounded-xl" />
       ) : Icono ? (
         <span className="w-12 h-12 shrink-0 rounded-lg bg-accent-light border border-accent/15 grid place-items-center">
           <Icono className="w-6 h-6 text-accent" />

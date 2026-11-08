@@ -221,7 +221,7 @@ export default function DashboardSidebar() {
         `}
       >
         {/* Brand */}
-        <Link href="/" className={`flex items-center gap-2.5 h-14 border-b border-digi-border hover:bg-white/[0.05] transition-colors shrink-0 ${collapsed ? 'justify-center px-0' : 'px-4'}`}>
+        <Link href={enApp ? '/dashboard/accesos' : '/'} className={`flex items-center gap-2.5 h-14 border-b border-digi-border hover:bg-white/[0.05] transition-colors shrink-0 ${collapsed ? 'justify-center px-0' : 'px-4'}`}>
           {/* El LOGO, no el indicador de carga. Eran el mismo componente y dejaron de
               serlo (2026-08-28): un anillo girando en la esquina de la marca no dice
               «GCC World», dice «espera». Aquí el logo gira despacio porque es la firma
