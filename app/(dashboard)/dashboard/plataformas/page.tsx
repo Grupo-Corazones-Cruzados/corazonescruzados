@@ -18,7 +18,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import { BTN_SECONDARY } from '@/components/ui/Button';
 import { TONO } from '@/components/ui/tonos';
 import { fmt2 } from '@/lib/format';
-import { esUrlCloudinary, urlRedimensionada } from '@/lib/cloudinary-url';
+import Miniatura from '@/components/productos/Miniatura';
 import type { Plataforma, Solucion, DetallePlataforma } from '@/lib/productos/plataformas';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -167,15 +167,6 @@ export default function PlataformasPage() {
   );
 }
 
-function Miniatura({ src, grande = false }: { src: string | null; grande?: boolean }) {
-  const t = grande ? 'w-12 h-12' : 'w-7 h-7';
-  if (!src) {
-    return <span className={`${t} shrink-0 rounded border border-digi-border flex items-center justify-center`}><Package className="w-3.5 h-3.5 text-digi-muted/50" /></span>;
-  }
-  const url = esUrlCloudinary(src) ? urlRedimensionada(src, grande ? 160 : 96) : src;
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={url} alt="" loading="lazy" className={`${t} shrink-0 rounded border border-digi-border object-cover`} />;
-}
 
 /** El estado del pago, en texto de color (sin píldora ni punto). */
 function Situacion({ a }: { a: Pick<Plataforma, 'cortesia' | 'diasDeRetraso' | 'pagadoHasta'> }) {

@@ -66,7 +66,8 @@ export default function CabeceraMovil() {
         <Menu className="w-6 h-6" />
       </button>
 
-      <Link href="/" className="flex items-center gap-2 min-w-0 h-11 px-1 rounded-lg">
+      {/* En la app, la marca vuelve a Accesos; en el navegador, a la portada. */}
+      <Link href={enApp ? '/dashboard/accesos' : '/'} className="flex items-center gap-2 min-w-0 h-11 px-1 rounded-lg">
         <Image
           src="/logo-gcc.png" alt="" width={30} height={30} priority
           className="rounded-full select-none shrink-0"

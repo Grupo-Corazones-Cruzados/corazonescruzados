@@ -1,6 +1,7 @@
 'use client';
 
 import { useConsultaMedia } from '@/lib/hooks/useConsultaMedia';
+import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -17,7 +18,7 @@ import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench, FilePen,
   Settings, LifeBuoy, ShieldCheck, Workflow,
-  LogOut, Eye, Undo2, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info, LayoutGrid,
+  LogOut, Eye, Undo2, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info, LayoutGrid, AppWindow,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -41,7 +42,7 @@ const ROLE_LABEL_ES: Record<AccessRole, string> = {
 const ICONS: Record<string, LucideIcon> = {
   Home, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Ticket, FolderKanban, FilePen,
   CalendarClock, Users, ReceiptText, Store, Workflow, Wrench, Network, Settings,
-  LifeBuoy, ShieldCheck, LayoutGrid,
+  LifeBuoy, ShieldCheck, LayoutGrid, AppWindow,
 };
 
 // La visibilidad por rol se decide con `canAccessModule` (lib/dashboard/access.ts),
@@ -144,11 +145,16 @@ export default function DashboardSidebar() {
     return () => { vivo = false; };
   }, [user]);
 
+  // «Accesos» solo existe dentro de las apps (`lib/dashboard/modules.ts`).
+  const [enApp, setEnApp] = useState(false);
+  useEffect(() => { setEnApp(!!appDeTelefono()); }, []);
+
   const accessRole = accessRoleOf(user);
   const { blockedModules } = usePolicyEffects();
   const groups = NAV_GROUPS
     .map((g) => ({ ...g, items: g.items.filter((it) => canAccessModule(accessRole, it.href) && (accessRole === 'admin' || !isPathBlocked(it.href, blockedModules))
-      && (it.href !== '/dashboard/plataformas' || tienePlataformas)) }))
+      && (it.href !== '/dashboard/plataformas' || tienePlataformas)
+      && (it.href !== '/dashboard/accesos' || enApp)) }))
     .filter((g) => g.items.length > 0);
 
   const isActive = (href: string) =>

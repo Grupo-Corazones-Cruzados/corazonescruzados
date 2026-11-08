@@ -8,6 +8,8 @@ class VistaPrincipal: CAPBridgeViewController {
         bridge?.registerPluginInstance(RelojTicketPlugin())
         bridge?.registerPluginInstance(ControlPsicosocialPlugin())
         marcarApp()
+        // Los productos se abren dentro (Accesos); deslizar desde el borde vuelve, como en Android con «atrás».
+        webView?.allowsBackForwardNavigationGestures = true
     }
 
     /// Qué app es (`progreso`, `centralizado`…), como la cookie `gcc_app` que Android escribe antes de

@@ -64,8 +64,9 @@ export const MODULE_ACCESS: { path: string; roles: AccessRole[] }[] = [
   // devuelve cada ruta es otra pregunta, y se responde en el servidor, por petición.
   // Automatizaciones se fue a su propio producto el 2026-09-23: la ruta deja de ser
   // navegable aunque sus archivos sigan ahí de momento.
-  // Candidatos sí, clientes no. Las APIs lo comprueban con `lib/herramientas/acceso.ts`.
-  { path: '/dashboard/tools', roles: ['candidate', 'member', 'admin'] },
+  // Para todas las cuentas y sin costo (Fernando, 2026-11-08); las «solo del equipo» siguen siendo
+  // de miembros (`lib/herramientas/catalogo.ts`). Las APIs lo comprueban con `lib/herramientas/acceso.ts`.
+  { path: '/dashboard/tools', roles: ALL },
   { path: '/dashboard/admin', roles: ['admin'] },
 ];
 

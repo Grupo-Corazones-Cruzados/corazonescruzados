@@ -5,8 +5,8 @@ import { accessRoleOf, canAccess, type AccessRole } from '@/lib/dashboard/access
 
 /**
  * ¿Quien tiene sesión puede usar Herramientas? Lo decide la MISMA matriz que el menú y el
- * guard de rutas (`/dashboard/tools` en `lib/dashboard/access.ts`): miembros y candidatos,
- * no clientes.
+ * guard de rutas (`/dashboard/tools` en `lib/dashboard/access.ts`): desde el 2026-11-08, todas
+ * las cuentas. Lo «solo del equipo» lo sigue comprobando cada API con `rol`.
  *
  * El token solo trae `role`, y candidato y cliente comparten `role = 'client'`: lo que los
  * separa es `clients.account_type`, así que para ellos se pregunta a la base.
@@ -26,7 +26,7 @@ export async function usuarioDeHerramientas(): Promise<
   }
   const rol = accessRoleOf({ role: user.role, account_type: accountType });
   if (!canAccess(rol, '/dashboard/tools')) {
-    return { error: NextResponse.json({ error: 'Herramientas es solo para miembros y candidatos' }, { status: 403 }) };
+    return { error: NextResponse.json({ error: 'No tienes acceso a Herramientas' }, { status: 403 }) };
   }
   return { user, rol };
 }

@@ -3346,8 +3346,8 @@ export default function LandingPage() {
             setClientLoginOpen(false);
             if (destinoTrasAcceso) { window.location.href = destinoTrasAcceso; return; }
             if (entryDestination === 'dashboard') {
-              // Colaborar: el cliente va al dashboard (marketplace).
-              window.location.href = '/dashboard/marketplace';
+              // Colaborar: el cliente va al dashboard (marketplace); en una app, a Accesos.
+              window.location.href = appDeTelefono() ? '/dashboard/accesos' : '/dashboard/marketplace';
               return;
             }
             // Entrar: el cliente entra al JUEGO con la sesión que acaba de

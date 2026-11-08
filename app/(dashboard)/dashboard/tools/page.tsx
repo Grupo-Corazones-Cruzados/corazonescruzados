@@ -19,21 +19,19 @@ import { EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { ListaSubidas, useSubidaArchivos } from '@/components/ui/SubidaArchivos';
 import {
-  Repeat2, Captions, UploadCloud, Download, CheckCircle2, LayoutGrid, Wand2, Wrench,
-  Briefcase, Link2, Plus, Table2, PackageOpen, QrCode, Smartphone, MonitorDown, Printer, Share2, ExternalLink,
+  UploadCloud, Download, CheckCircle2, LayoutGrid, Wand2, Wrench,
+  Briefcase, Plus, Table2, Smartphone, Share2, ExternalLink,
 } from 'lucide-react';
 import GeneradorQR from '@/components/herramientas/GeneradorQR';
 import AppMovil from '@/components/herramientas/AppMovil';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { accessRoleOf } from '@/lib/dashboard/access';
+import { HERRAMIENTAS, herramientasPara, type Herramienta } from '@/lib/herramientas/catalogo';
+import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 const df = { fontFamily: 'var(--font-display)' } as const;
 
-/** `compartible`: el equipo puede compartirla por enlace con token (`lib/herramientas/accesos`).
- * `soloEquipo`: miembros y admin. Los candidatos usan las demás (las de «un solo uso» atan
- * clientes de GCC y guardan en el Drive de la empresa; sus APIs exigen `esEquipo`). */
-type Tool = { id: string; name: string; Icon: any; description: string; category: string; soloEquipo?: boolean; compartible?: boolean };
 
 // Categorías (tipos de herramienta).
 const CATEGORIES = [
@@ -54,16 +52,6 @@ const VIGENCIAS_ACCESO = [...VIGENCIAS, { v: 2160, l: '3 meses' }, { v: 8760, l:
 
 type ClienteConCuenta = { id: number; nombre: string; email: string };
 
-const TOOLS: Tool[] = [
-  { id: 'convert', name: 'Convertir Archivos', Icon: Repeat2, category: 'edicion', description: 'Convierte archivos de audio entre formatos (M4A, MP4, WAV, OGG → MP3, etc.).' },
-  { id: 'transcribe', name: 'Transcribir Audio', Icon: Captions, category: 'edicion', description: 'Transcribe archivos de audio a texto usando inteligencia artificial (Whisper).' },
-  { id: 'formatos-excel', name: 'Formatos de impresión para Excel', Icon: Printer, category: 'edicion', compartible: true, description: 'Corrige la impresión de un libro de Excel (papel, márgenes, títulos y número de página) y lo descarga en Excel o PDF.' },
-  { id: 'qr', name: 'Enlace a código QR', Icon: QrCode, category: 'edicion', description: 'Convierte un enlace en un código QR para descargar en PNG o SVG.' },
-  { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', soloEquipo: true, description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
-  { id: 'descargador-video', name: 'Descargador de video', Icon: MonitorDown, category: 'app', description: 'App para Android que guarda en el teléfono videos o audio a partir de un enlace.' },
-  { id: 'gcc-centralizado', name: 'GCC Miembros', Icon: MonitorDown, category: 'app', soloEquipo: true, description: 'App para Android de los miembros, con Centralizado y Control Psicosocial.' },
-  { id: 'entrega-unica', name: 'Entrega de un solo uso', Icon: PackageOpen, category: 'gestion', soloEquipo: true, description: 'Envía un mensaje y hasta 10 archivos con un enlace que se cierra cuando lo descargan.' },
-];
 
 const CONVERSIONS: Record<string, string[]> = {
   m4a: ['mp3'], mp4: ['mp3'], wav: ['mp3'], ogg: ['mp3'], webm: ['mp3'], mp3: ['wav', 'ogg'],
@@ -73,7 +61,10 @@ export default function ToolsPage() {
   const { user } = useAuth();
   const rol = accessRoleOf(user);
   const esEquipo = rol === 'admin' || rol === 'member';
-  const tools = useMemo(() => TOOLS.filter((t) => !t.soloEquipo || esEquipo), [esEquipo]);
+  // En GCC World (la app de la tienda) no se ofrecen las que solo van en GCC Miembros.
+  const [app, setApp] = useState<AppDeTelefono | null>(null);
+  useEffect(() => { setApp(appDeTelefono()); }, []);
+  const tools = useMemo(() => herramientasPara(esEquipo, app), [esEquipo, app]);
   const [search, setSearch] = useState('');
   const [cat, setCat] = useState('all');
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
@@ -389,7 +380,7 @@ export default function ToolsPage() {
     }
     return (
       <div className="space-y-3">
-        <p className="text-[12px] text-digi-muted" style={mf}>{TOOLS[0].description}</p>
+        <p className="text-[12px] text-digi-muted" style={mf}>{HERRAMIENTAS[0].description}</p>
         <div className="grid grid-cols-2 gap-3">
           <PixelSelect label="Formato origen" value={convertFrom}
             onChange={(e) => {
@@ -513,18 +504,18 @@ export default function ToolsPage() {
             unidad={['herramienta', 'herramientas']}
                 singleLine
                 columns={[
-                  { key: 'name', header: 'Herramienta', render: (t: Tool) => (
+                  { key: 'name', header: 'Herramienta', render: (t: Herramienta) => (
                     <span className="flex items-center gap-2 min-w-0">
                       <t.Icon className={`w-4 h-4 shrink-0 ${selectedTool === t.id ? 'text-accent' : 'text-digi-muted'}`} />
                       <span className={`truncate text-[13px] font-medium ${selectedTool === t.id ? 'text-accent' : 'text-digi-text'}`} style={mf}>{t.name}</span>
                     </span>
                   ) },
-                  { key: 'description', header: 'Descripción', hideOnMobile: true, render: (t: Tool) => (
+                  { key: 'description', header: 'Descripción', hideOnMobile: true, render: (t: Herramienta) => (
                     <span className="text-[12px] text-digi-muted line-clamp-2 md:line-clamp-1" style={mf}>{t.description}</span>
                   ) },
                 ]}
                 data={filtered}
-                onRowClick={(t: Tool) => selectTool(t.id)}
+                onRowClick={(t: Herramienta) => selectTool(t.id)}
                 emptyTitle="Sin herramientas"
                 emptyDesc="No se encontraron herramientas en esta categoría."
               />

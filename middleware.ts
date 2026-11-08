@@ -24,15 +24,15 @@ export async function middleware(request: NextRequest) {
   const isProtected = PROTECTED.some((r) => pathname.startsWith(r));
   const isAuth = AUTH_ROUTES.some((r) => pathname.startsWith(r));
 
-  // GCC Centralizado abre su módulo al ARRANCAR o al iniciar sesión, viniendo de la portada. El botón
-  // «Inicio» también pide `/dashboard`, y ese debe llegar al Inicio: es navegación interna (`rsc`) o
-  // viene de otra página del panel.
-  if (valid && pathname === "/dashboard" && request.cookies.get("gcc_app")?.value === "centralizado") {
+  // Las apps (GCC World y GCC Miembros) abren Accesos al ARRANCAR o al iniciar sesión, viniendo de la
+  // portada (Fernando, 2026-11-08). El botón «Inicio» también pide `/dashboard`, y ese debe llegar al
+  // Inicio: es navegación interna (`rsc`) o viene de otra página del panel.
+  if (valid && pathname === "/dashboard" && request.cookies.get("gcc_app")?.value) {
     const interna = request.headers.has("rsc") || request.nextUrl.searchParams.has("_rsc");
     const referer = request.headers.get("referer");
     const desdeElPanel = !!referer && new URL(referer).pathname.startsWith("/dashboard");
     if (!interna && !desdeElPanel) {
-      return NextResponse.redirect(new URL("/dashboard/centralized", request.url));
+      return NextResponse.redirect(new URL("/dashboard/accesos", request.url));
     }
   }
 

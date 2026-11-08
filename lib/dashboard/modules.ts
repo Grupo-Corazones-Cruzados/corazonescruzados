@@ -23,6 +23,9 @@ export interface DashboardModule {
 }
 
 export const DASHBOARD_MODULES: DashboardModule[] = [
+  // Accesos (Fernando, 2026-11-08): la pantalla tipo Power Apps de GCC World y GCC Miembros. El menú
+  // solo la enseña dentro de una app; en el navegador, la portada ya hace ese papel.
+  { href: '/dashboard/accesos',          label: 'Accesos',          group: 'Principal',  icon: 'AppWindow' },
   { href: '/dashboard',                  label: 'Inicio',           group: 'Principal',  icon: 'Home' },
   { href: '/dashboard/mi-dia',           label: 'Mi día',           group: 'Principal',  icon: 'CalendarDays' },
   { href: '/dashboard/experiencias',     label: 'Experiencias',     group: 'Principal',  icon: 'PartyPopper' },

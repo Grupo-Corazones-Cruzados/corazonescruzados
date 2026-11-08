@@ -100,6 +100,11 @@
 	<array>
 		<string>app.grupocc.org</string>
 		<string>grupocc.org</string>
+		<string>reservas.grupocc.org</string>
+		<string>pedidos.grupocc.org</string>
+		<string>catering.grupocc.org</string>
+		<string>planificaciones.grupocc.org</string>
+		<string>automatizaciones.grupocc.org</string>
 		<string>luiss-macbook-pro-1.tail496c78.ts.net</string>
 	</array>
 </dict>
