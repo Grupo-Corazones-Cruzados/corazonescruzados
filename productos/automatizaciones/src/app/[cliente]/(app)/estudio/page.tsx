@@ -9,7 +9,7 @@ import { Bot, Plug } from 'lucide-react';
 import Estudio, { type CanalVista, type Instruccion, type Bloque } from './Estudio';
 
 export const dynamic = 'force-dynamic';
-export const metadata = { title: 'Estudio del agente' };
+export const metadata = { title: 'Estudio' };
 
 /**
  * EL ESTUDIO: lo que el agente sabe, cómo habla y cuándo calla.
@@ -32,11 +32,11 @@ export default async function PaginaEstudio({ params }: { params: Promise<{ clie
   if (!canal) {
     return (
       <>
-        <CabeceraPagina titulo="Estudio del agente" />
+        <CabeceraPagina titulo="Estudio" />
         <EstadoVacio
           icono={Bot}
-          titulo="Todavía no hay un número conectado"
-          detalle="Conecta tu número en Configuración y aquí podrás editar lo que el agente sabe y cómo responde."
+          titulo="Sin número conectado"
+          detalle="Conecta tu número de WhatsApp para configurar el agente."
           accion={
             <Link href={`/${cliente}/configuracion?seccion=whatsapp`} className={`${BOTON_PRIMARIO} h-9 px-4 text-[13px]`}>
               <Plug className="h-4 w-4" /> Conectar WhatsApp

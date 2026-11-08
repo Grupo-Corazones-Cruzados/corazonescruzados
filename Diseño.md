@@ -6382,3 +6382,10 @@ Fernando: *«revises las nuevas reglas de /diseno y las implementes en este prod
 En los cinco productos el título del navegador es `GCC · <página> · <producto>` (por defecto `GCC · <producto>`), con la plantilla `title` del layout raíz (`productos/*/src/app/layout.tsx`). Las páginas solo dan su nombre corto. Recogida también en la skill `/producto` para los productos nuevos.
 - **Cabeceras alineadas (2026-11-08).** La cabecera de página (`CabeceraPagina`, `min-h-[68px] py-2`, título `leading-6`, estado `mt-0.5`) y las de la Bandeja miden lo mismo que la del menú (68 px): sus bordes inferiores forman una sola línea. La franja de aviso (demostración / «ver como») va en escritorio a TODO el ancho, por encima de menú y contenido, con `--alto-aviso` (2rem) desplazando los dos; en el teléfono sigue dentro de la columna.
 - **«Ver como este usuario»** (Configuración ▸ Usuarios, acción de la fila): franja ámbar fija con «Volver a mi cuenta». Solo lectura.
+
+## Automatizaciones · Estudio con poco texto (Fernando, 2026-11-08)
+*«tienes todo muy descriptivo»*. Secciones: **Comportamiento · Conocimiento · Instrucciones** (`?seccion=agente|conocimiento|instrucciones`). Reglas que valen para todo el producto:
+- **Sin títulos de tarjeta que repiten la sección** («Lo que sabe del negocio», «Cómo se comporta»): la sección ya se llama así en el raíl.
+- **Estados de una palabra**: «Activo» / «Inactivo». Etiquetas de una o dos palabras («Razonamiento», «Espera (segundos)», «Memoria (mensajes)», «Agente activo»); opciones sin coletillas («Bajo», no «Bajo — el habitual»); botones «Guardar», «Nuevo bloque», «Eliminar».
+- **Avisos de una línea**: «Guardado.», «Eliminado.», «Clave guardada.».
+- **Misma navegación en Conocimiento e Instrucciones**: tabla y, al tocar una fila, su editor en el panel lateral (las instrucciones son Perfil, Reglas y Resumen, con su versión; el texto ocupa todo el alto del panel).

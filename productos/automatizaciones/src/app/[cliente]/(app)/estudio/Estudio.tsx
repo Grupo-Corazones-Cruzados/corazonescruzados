@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  Power, PowerOff, Phone, BookOpen, MessageSquareText, Plus, Trash2, AlertTriangle, Save, BadgeCheck, KeyRound,
+  Power, PowerOff, Phone, BookOpen, ScrollText, Plus, Trash2, AlertTriangle, Save, BadgeCheck, KeyRound,
   SlidersHorizontal, Plug, CheckCircle2,
 } from 'lucide-react';
 import {
@@ -36,41 +36,29 @@ export type Instruccion = { tipo: string; contenido: string; version: number };
 export type Bloque = { clave: string; titulo: string; contenido: string; orden: number; activo: boolean };
 
 /**
- * EL ESTUDIO DEL AGENTE, en tres partes y en este orden:
+ * EL ESTUDIO DEL AGENTE: Comportamiento · Conocimiento · Instrucciones (nombres de Fernando,
+ * 2026-11-08). La CONEXIÓN con WhatsApp vive en Configuración ▸ WhatsApp; aquí, el agente.
  *
- *  1. **Comportamiento** — el interruptor general, la clave de OpenAI y los ajustes. Lo
- *     primero que se mira cuando el agente no contesta. ⚠️ La CONEXIÓN con WhatsApp (número,
- *     Meta, coexistencia) ya NO está aquí: vive en Configuración ▸ WhatsApp (Fernando,
- *     2026-11-08: «estudio y configuración son lo mismo en la sección de WhatsApp… que la
- *     interfaz no sea confusa»). Aquí, el agente; allí, el número. Cada una enlaza a la otra.
- *  2. **Lo que sabe** (conocimiento) — es lo que más se toca en el día a día: un precio
- *     que cambia, una ruta nueva. Va antes que las instrucciones a propósito.
- *  3. **Cómo habla** (instrucciones) — se toca poco y cada cambio pesa, así que va al
- *     final y cada guardado deja versión.
+ * ⭐ POCO TEXTO (Fernando, 2026-11-08: «tienes todo muy descriptivo»). Etiquetas de una o dos
+ * palabras, estados de una («Activo»), sin títulos de tarjeta que repiten la sección y sin
+ * frases que expliquen lo obvio. Conocimiento e Instrucciones se navegan IGUAL: una tabla y,
+ * al tocar una fila, su editor en el panel lateral.
  */
 
-const NOMBRE_INSTRUCCION: Record<string, { titulo: string; ayuda: string }> = {
-  perfil_agente: {
-    titulo: 'Quién es el agente',
-    ayuda: 'Su forma de hablar, su nombre y de qué se ocupa. Escrito como se lo explicarías a alguien que entra a trabajar hoy.',
-  },
-  reglas_negocio: {
-    titulo: 'Lo que puede y no puede hacer',
-    ayuda: 'Las reglas que no puede saltarse: qué no promete, cuándo pasa la conversación a una persona, qué datos pide.',
-  },
-  resumen_conversacion: {
-    titulo: 'Cómo resume una conversación larga',
-    ayuda: 'Cuando un chat crece, el agente lo resume para no repetirse. Esto le dice qué merece la pena conservar.',
-  },
-};
-
-const ORDEN = ['perfil_agente', 'reglas_negocio', 'resumen_conversacion'];
+const INSTRUCCIONES: { tipo: string; nombre: string; pista: string }[] = [
+  { tipo: 'perfil_agente', nombre: 'Perfil', pista: 'Quién es el agente y cómo habla.' },
+  { tipo: 'reglas_negocio', nombre: 'Reglas', pista: 'Lo que puede y no puede hacer.' },
+  { tipo: 'resumen_conversacion', nombre: 'Resumen', pista: 'Qué conserva al resumir una conversación larga.' },
+];
 
 const SECCIONES: OpcionRail[] = [
   { valor: 'agente', etiqueta: 'Comportamiento', icono: SlidersHorizontal },
-  { valor: 'sabe', etiqueta: 'Lo que sabe', icono: BookOpen },
-  { valor: 'habla', etiqueta: 'Cómo habla', icono: MessageSquareText },
+  { valor: 'conocimiento', etiqueta: 'Conocimiento', icono: BookOpen },
+  { valor: 'instrucciones', etiqueta: 'Instrucciones', icono: ScrollText },
 ];
+
+const ESTADO = (activo: boolean) => <Insignia tono={activo ? 'exito' : 'neutro'}>{activo ? 'Activo' : 'Inactivo'}</Insignia>;
+const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
 
 export default function Estudio({
   slug,
@@ -89,16 +77,16 @@ export default function Estudio({
   const [nuevo, setNuevo] = useState(false);
   const [borrar, setBorrar] = useState<Bloque | null>(null);
   const [clave, setClave] = useState<{ abierta: boolean; valor: string }>({ abierta: false, valor: '' });
-  const [textos, setTextos] = useState<Record<string, string>>(
-    Object.fromEntries(ORDEN.map((t) => [t, instrucciones.find((i) => i.tipo === t)?.contenido ?? ''])),
-  );
+  const [instruccion, setInstruccion] = useState<{ tipo: string; texto: string } | null>(null);
   const s = useSeccion(SECCIONES);
   const seccion = s.activo;
   const panelAbierto = nuevo || editando !== null;
   const cerrarPanel = () => { setNuevo(false); setEditando(null); };
-  // Solo los fallos del AGENTE; los de la conexión los enseña Configuración ▸ WhatsApp.
   const falloIA = esFalloDeIA(canal.ultimoError) ? canal.ultimoError : null;
   const activos = bloques.filter((b) => b.activo).length;
+  const filasInstrucciones = INSTRUCCIONES.map((i) => ({ ...i, actual: instrucciones.find((x) => x.tipo === i.tipo) ?? null }));
+  const metaInstruccion = INSTRUCCIONES.find((i) => i.tipo === instruccion?.tipo);
+  const actualInstruccion = instrucciones.find((i) => i.tipo === instruccion?.tipo);
 
   function guardarAjustesForm(datos: FormData) {
     arranca(async () => {
@@ -109,25 +97,11 @@ export default function Estudio({
     });
   }
 
-  function guardarTexto(tipo: string) {
-    arranca(async () => {
-      const r = await guardarInstruccion(slug, tipo as never, textos[tipo] ?? '');
-      if (!r.ok) { toast.error(r.error); return; }
-      toast.success(r.mensaje ?? 'Guardado.');
-      router.refresh();
-    });
-  }
-
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/*
-        El encendido del agente es INFORMACIÓN (una línea de estado en `extra`), no un botón.
-        El número es un dato: va en la burbuja (i). La conexión es SECUNDARIA y lleva a
-        Configuración ▸ WhatsApp. «Añadir bloque» es la principal de «Lo que sabe».
-      */}
       <CabeceraPagina
-        titulo="Estudio del agente"
-        descripcion="Cómo se comporta el agente, lo que sabe del negocio y cómo habla. Cada vez que guardas unas instrucciones, la versión anterior queda archivada."
+        titulo="Estudio"
+        descripcion="El comportamiento, el conocimiento y las instrucciones del agente."
         tituloTelefono={s.enUrl ? s.etiqueta : undefined}
         volverTelefono={s.enUrl ? { href: s.hrefPortada, etiqueta: 'Volver al Estudio' } : undefined}
         detalles={[
@@ -136,20 +110,18 @@ export default function Estudio({
         ]}
         extra={
           <Insignia tono={canal.botActivo ? 'exito' : 'aviso'} icono={canal.botActivo ? Power : PowerOff}>
-            {canal.botActivo ? 'Agente encendido' : 'Agente apagado'}
+            {canal.botActivo ? 'Agente activo' : 'Agente inactivo'}
           </Insignia>
         }
         menu={[{ etiqueta: 'Conexión con WhatsApp', icono: Plug, href: `/${slug}/configuracion?seccion=whatsapp` }]}
         acciones={
-          seccion === 'sabe' && (
-            <Boton icono={Plus} onClick={() => { setNuevo(true); setEditando(null); }}>
-              Añadir bloque
-            </Boton>
+          seccion === 'conocimiento' && (
+            <Boton icono={Plus} onClick={() => { setNuevo(true); setEditando(null); }}>Nuevo bloque</Boton>
           )
         }
         accionesTelefono={
           s.enUrl && seccion === 'agente'
-            ? <Boton form="form-agente" type="submit" icono={Save}>Guardar ajustes</Boton>
+            ? <Boton form="form-agente" type="submit" icono={Save}>Guardar</Boton>
             : undefined
         }
       />
@@ -157,14 +129,11 @@ export default function Estudio({
       <Secciones opciones={SECCIONES} seccion={s}>
         {seccion === 'agente' && (
           <Tarjeta className="flex h-full flex-col p-4 sm:p-5">
-            <h2 className="mb-4 hidden text-[14px] font-semibold text-texto lg:block">Cómo se comporta</h2>
-
             {falloIA && (
               <p className="mb-4 flex items-start gap-2 rounded border border-borde bg-error-suave px-3 py-2 text-[12px] leading-relaxed text-error">
                 <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
                 <span>
-                  <strong>Último fallo del agente</strong>
-                  {canal.ultimoErrorEn ? ` (${fechaHora(canal.ultimoErrorEn)})` : ''}: {falloIA}
+                  <strong>Último fallo{canal.ultimoErrorEn ? ` (${fechaHora(canal.ultimoErrorEn)})` : ''}</strong>: {falloIA}
                 </span>
               </p>
             )}
@@ -172,10 +141,10 @@ export default function Estudio({
             <form id="form-agente" action={guardarAjustesForm} className="flex min-h-0 flex-1 flex-col gap-4">
               <label
                 className="flex cursor-pointer items-center gap-2.5 rounded border border-borde bg-realce px-3 py-2.5"
-                title="Apagarlo lo calla en todo el número, sin tocar conversación por conversación. Lo que ya lleve una persona sigue igual."
+                title="Apagado, el agente no contesta en ninguna conversación."
               >
                 <input type="checkbox" name="botActivo" defaultChecked={canal.botActivo} className="h-4 w-4 shrink-0" />
-                <span className="text-[13px] font-medium text-texto">El agente contesta solo</span>
+                <span className="text-[13px] font-medium text-texto">Agente activo</span>
               </label>
 
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -190,113 +159,96 @@ export default function Estudio({
                     </Boton>
                   </div>
                 </Campo>
-                <Campo etiqueta="Cuánto se lo piensa">
+                <Campo etiqueta="Razonamiento">
                   <Selector name="razonamiento" defaultValue={canal.razonamiento}>
-                    <option value="minimal">Mínimo — rápido y barato</option>
-                    <option value="low">Bajo — el habitual</option>
-                    <option value="medium">Medio — más cuidadoso</option>
-                    <option value="high">Alto — lento y caro</option>
+                    <option value="minimal">Mínimo</option>
+                    <option value="low">Bajo</option>
+                    <option value="medium">Medio</option>
+                    <option value="high">Alto</option>
                   </Selector>
                 </Campo>
                 <Campo etiqueta="Espera (segundos)">
                   <Entrada type="number" name="debounce" min={0} max={120} defaultValue={canal.debounce}
-                    title="Si el contacto sigue escribiendo, el reloj vuelve a empezar: así contesta a un bloque de mensajes y no frase por frase." />
+                    title="Si el contacto sigue escribiendo, espera antes de contestar." />
                 </Campo>
-                <Campo etiqueta="Mensajes que recuerda">
+                <Campo etiqueta="Memoria (mensajes)">
                   <Entrada type="number" name="ventana" min={5} max={200} defaultValue={canal.ventana} />
                 </Campo>
               </div>
 
-              {/* Abajo a la derecha, en escritorio; en el teléfono va a la barra de acciones. */}
               <div className="mt-auto hidden justify-end pt-2 lg:flex">
                 <Boton type="submit" tamano="lg" icono={Save} disabled={enCurso}>
-                  {enCurso ? 'Guardando…' : 'Guardar ajustes'}
+                  {enCurso ? 'Guardando…' : 'Guardar'}
                 </Boton>
               </div>
             </form>
           </Tarjeta>
         )}
 
-        {seccion === 'sabe' && (
+        {seccion === 'conocimiento' && (
           <Tarjeta className="overflow-hidden">
-            <h2 className="hidden px-4 pt-4 pb-2 text-[14px] font-semibold text-texto lg:block">Lo que sabe del negocio</h2>
-            {/* Registros en TABLA, detalle en panel (regla 2026-10-30); galería en el teléfono. */}
             <Tabla
               filas={bloques}
               claveFila={(b) => b.clave}
               alPulsarFila={(b) => { setEditando(b); setNuevo(false); }}
               filaActiva={(b) => editando?.clave === b.clave}
-              recuento={`${bloques.length} ${bloques.length === 1 ? 'bloque' : 'bloques'} · ${activos} ${activos === 1 ? 'se le cuenta' : 'se le cuentan'} al agente`}
-              vacio={<EstadoVacio icono={BookOpen} titulo="Todavía no sabe nada del negocio" detalle="Añade el primer bloque: un tema por bloque (precios, horarios, rutas…)." />}
+              recuento={`${plural(bloques.length, 'bloque', 'bloques')} · ${plural(activos, 'activo', 'activos')}`}
+              vacio={<EstadoVacio icono={BookOpen} titulo="Sin bloques" />}
               columnas={[
-                { clave: 'titulo', titulo: 'Bloque', ancho: '28%', render: (b) => (
-                  <span className={b.activo ? 'font-medium text-texto' : 'text-tenue line-through'}>{b.titulo}</span>
+                { clave: 'titulo', titulo: 'Título', ancho: '28%', render: (b) => (
+                  <span className={b.activo ? 'font-medium text-texto' : 'text-tenue'}>{b.titulo}</span>
                 ) },
                 { clave: 'contenido', titulo: 'Contenido', render: (b) => (
-                  <span className="block truncate text-tenue" title={b.contenido}>{b.contenido || 'vacío'}</span>
+                  <span className="block truncate text-tenue" title={b.contenido}>{b.contenido || '—'}</span>
                 ) },
-                { clave: 'estado', titulo: 'Estado', ancho: '14%', render: (b) => (
-                  <Insignia tono={b.activo ? 'exito' : 'neutro'}>{b.activo ? 'Se le cuenta' : 'Apagado'}</Insignia>
-                ) },
+                { clave: 'estado', titulo: 'Estado', ancho: '12%', render: (b) => ESTADO(b.activo) },
                 { clave: 'acciones', titulo: '', ancho: '52px', alinear: 'der', render: (b) => (
-                  <BotonIcono icono={Trash2} titulo={`Borrar «${b.titulo}»`} onClick={() => setBorrar(b)} />
+                  <BotonIcono icono={Trash2} titulo={`Eliminar «${b.titulo}»`} onClick={() => setBorrar(b)} />
                 ) },
               ]}
             />
           </Tarjeta>
         )}
 
-        {seccion === 'habla' && (
-          <Tarjeta className="flex h-full flex-col p-4 sm:p-5">
-            <h2 className="mb-3 hidden text-[14px] font-semibold text-texto lg:block">Las instrucciones del agente</h2>
-            <div className="space-y-5">
-              {ORDEN.map((tipo) => {
-                const meta = NOMBRE_INSTRUCCION[tipo];
-                const actual = instrucciones.find((i) => i.tipo === tipo);
-                const cambiado = (textos[tipo] ?? '') !== (actual?.contenido ?? '');
-                return (
-                  <div key={tipo}>
-                    <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-                      <label className="text-[13px] font-medium text-texto" title={meta.ayuda}>{meta.titulo}</label>
-                      {actual && <span className="text-[11px] text-tenue">versión {actual.version}</span>}
-                    </div>
-                    <AreaTexto
-                      rows={7}
-                      value={textos[tipo] ?? ''}
-                      placeholder={meta.ayuda}
-                      onChange={(e) => setTextos((t) => ({ ...t, [tipo]: e.target.value }))}
-                      className="font-mono text-[12px]"
-                    />
-                    {/* La acción al final de lo que se rellena; lo que la acompaña, a su izquierda. */}
-                    <div className="mt-1.5 flex items-center justify-end gap-2">
-                      {cambiado && <span className="text-[11.5px] text-aviso">sin guardar</span>}
-                      <Boton icono={Save} disabled={enCurso || !cambiado} onClick={() => guardarTexto(tipo)}>
-                        {enCurso ? 'Guardando…' : 'Guardar como versión nueva'}
-                      </Boton>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+        {seccion === 'instrucciones' && (
+          <Tarjeta className="overflow-hidden">
+            <Tabla
+              filas={filasInstrucciones}
+              claveFila={(i) => i.tipo}
+              alPulsarFila={(i) => setInstruccion({ tipo: i.tipo, texto: i.actual?.contenido ?? '' })}
+              filaActiva={(i) => instruccion?.tipo === i.tipo}
+              recuento={plural(filasInstrucciones.length, 'instrucción', 'instrucciones')}
+              columnas={[
+                { clave: 'nombre', titulo: 'Instrucción', ancho: '20%', render: (i) => (
+                  <span className="font-medium text-texto" title={i.pista}>{i.nombre}</span>
+                ) },
+                { clave: 'contenido', titulo: 'Contenido', render: (i) => (
+                  <span className="block truncate text-tenue" title={i.actual?.contenido}>{i.actual?.contenido || '—'}</span>
+                ) },
+                { clave: 'version', titulo: 'Versión', ancho: '12%', alinear: 'der', render: (i) => (
+                  <span className="tabular-nums text-tenue">{i.actual ? i.actual.version : '—'}</span>
+                ) },
+              ]}
+            />
           </Tarjeta>
         )}
       </Secciones>
 
-      {/* ── El panel de un bloque: pie fijo en UNA fila, papelera sin texto a la izquierda ── */}
+      {/* ── Un bloque de conocimiento ── */}
       <PanelLateral
         abierto={panelAbierto}
         alCerrar={cerrarPanel}
-        titulo={editando ? editando.titulo : 'Bloque nuevo'}
+        titulo={editando ? editando.titulo : 'Nuevo bloque'}
         ancho="lg"
         pie={
           <PieAcciones
             eliminar={editando ? (
-              <BotonEliminar titulo={`Borrar «${editando.titulo}»`} disabled={enCurso} onClick={() => setBorrar(editando)} />
+              <BotonEliminar titulo={`Eliminar «${editando.titulo}»`} disabled={enCurso} onClick={() => setBorrar(editando)} />
             ) : undefined}
           >
             <Boton variante="secundario" type="button" onClick={cerrarPanel} disabled={enCurso}>Cancelar</Boton>
             <Boton form="form-bloque" type="submit" icono={Save} disabled={enCurso}>
-              {enCurso ? 'Guardando…' : 'Guardar bloque'}
+              {enCurso ? 'Guardando…' : 'Guardar'}
             </Boton>
           </PieAcciones>
         }
@@ -325,7 +277,7 @@ export default function Estudio({
                 defaultValue={editando?.clave ?? ''}
                 readOnly={!!editando}
                 placeholder="precios_2026"
-                title="Identifica el bloque y no cambia: así se reescribe el contenido sin crear duplicados."
+                title="No cambia: identifica el bloque."
                 required
               />
             </Campo>
@@ -335,15 +287,48 @@ export default function Estudio({
           </Campo>
           <label className="flex items-center gap-2 text-[13px] text-texto">
             <input type="checkbox" name="activo" defaultChecked={editando ? editando.activo : true} className="h-4 w-4" />
-            Contárselo al agente
+            Activo
           </label>
         </form>
+      </PanelLateral>
+
+      {/* ── Una instrucción: cada guardado deja versión ── */}
+      <PanelLateral
+        abierto={instruccion !== null}
+        alCerrar={() => setInstruccion(null)}
+        titulo={metaInstruccion ? `${metaInstruccion.nombre}${actualInstruccion ? ` · versión ${actualInstruccion.version}` : ''}` : ''}
+        ancho="lg"
+        pie={
+          <PieAcciones>
+            <Boton variante="secundario" type="button" onClick={() => setInstruccion(null)} disabled={enCurso}>Cancelar</Boton>
+            <Boton icono={Save}
+              disabled={enCurso || !instruccion || instruccion.texto === (actualInstruccion?.contenido ?? '')}
+              onClick={() => arranca(async () => {
+                if (!instruccion) return;
+                const r = await guardarInstruccion(slug, instruccion.tipo as never, instruccion.texto);
+                if (!r.ok) { toast.error(r.error); return; }
+                toast.success(r.mensaje ?? 'Guardado.');
+                setInstruccion(null);
+                router.refresh();
+              })}>
+              {enCurso ? 'Guardando…' : 'Guardar'}
+            </Boton>
+          </PieAcciones>
+        }
+      >
+        {/* El texto ocupa todo el alto del panel: es lo único que hay que editar. */}
+        <AreaTexto
+          value={instruccion?.texto ?? ''}
+          placeholder={metaInstruccion?.pista}
+          onChange={(e) => setInstruccion((x) => (x ? { ...x, texto: e.target.value } : x))}
+          className="h-full min-h-[320px] resize-none font-mono text-[12px]"
+        />
       </PanelLateral>
 
       <Ventanita
         abierto={clave.abierta}
         alCerrar={() => setClave({ abierta: false, valor: '' })}
-        titulo={canal.claveIAFin ? 'Cambiar la clave de OpenAI' : 'Añadir la clave de OpenAI'}
+        titulo="Clave de OpenAI"
         pie={
           <>
             <Boton variante="secundario" onClick={() => setClave({ abierta: false, valor: '' })} disabled={enCurso}>Cancelar</Boton>
@@ -357,7 +342,7 @@ export default function Estudio({
                 setClave({ abierta: false, valor: '' });
                 router.refresh();
               })}>
-              {enCurso ? 'Comprobando…' : 'Comprobar y guardar'}
+              {enCurso ? 'Comprobando…' : 'Guardar'}
             </Boton>
           </>
         }
@@ -371,16 +356,16 @@ export default function Estudio({
       <Confirmar
         abierto={borrar !== null}
         alCerrar={() => setBorrar(null)}
-        titulo={`¿Borrar «${borrar?.titulo}»?`}
-        mensaje="El agente dejará de saberlo. Si solo quieres que deje de contárselo por un tiempo, apágalo en vez de borrarlo."
-        textoAceptar="Borrar"
+        titulo={`¿Eliminar «${borrar?.titulo}»?`}
+        mensaje="Para dejar de usarlo sin perderlo, márcalo como inactivo."
+        textoAceptar="Eliminar"
         peligro
         alAceptar={() =>
           arranca(async () => {
             if (!borrar) return;
             const r = await borrarConocimiento(slug, borrar.clave);
             if (!r.ok) { toast.error(r.error); return; }
-            toast.success(r.mensaje ?? 'Borrado.');
+            toast.success(r.mensaje ?? 'Eliminado.');
             if (editando?.clave === borrar.clave) cerrarPanel();
             setBorrar(null);
             router.refresh();

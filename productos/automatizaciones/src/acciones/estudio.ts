@@ -47,7 +47,7 @@ export async function guardarInstruccion(
   const r = await canalDelCliente(slug);
   if (!r.ok) return { ok: false, error: r.error };
   const texto = String(contenido ?? '').trim();
-  if (!texto) return { ok: false, error: 'La instrucción no puede quedar vacía.' };
+  if (!texto) return { ok: false, error: 'Escribe la instrucción.' };
 
   const cli = await pool.connect();
   try {
@@ -71,7 +71,7 @@ export async function guardarInstruccion(
   }
 
   revalidatePath(`/${slug}/estudio`);
-  return { ok: true, mensaje: 'Guardado como versión nueva; la anterior queda archivada.' };
+  return { ok: true, mensaje: 'Guardado.' };
 }
 
 /** Crear o actualizar un bloque de conocimiento. La clave lo identifica dentro del canal. */
@@ -83,7 +83,7 @@ export async function guardarConocimiento(slug: string, datos: FormData): Promis
   const titulo = String(datos.get('titulo') || '').trim();
   const contenido = String(datos.get('contenido') || '').trim();
   const activo = String(datos.get('activo') || '') === 'on';
-  if (!clave || !titulo) return { ok: false, error: 'Hacen falta una clave y un título.' };
+  if (!clave || !titulo) return { ok: false, error: 'Faltan el título o la clave.' };
 
   await pool.query(
     `INSERT INTO conocimiento (inquilino_id, canal_id, clave, titulo, contenido, orden, activo)
@@ -96,7 +96,7 @@ export async function guardarConocimiento(slug: string, datos: FormData): Promis
     [r.canal.id, clave, titulo, contenido, activo],
   );
   revalidatePath(`/${slug}/estudio`);
-  return { ok: true, mensaje: `Bloque «${titulo}» guardado.` };
+  return { ok: true, mensaje: 'Guardado.' };
 }
 
 export async function borrarConocimiento(slug: string, clave: string): Promise<Resultado> {
@@ -104,7 +104,7 @@ export async function borrarConocimiento(slug: string, clave: string): Promise<R
   if (!r.ok) return { ok: false, error: r.error };
   await pool.query(`DELETE FROM conocimiento WHERE canal_id = $1 AND clave = $2`, [r.canal.id, clave]);
   revalidatePath(`/${slug}/estudio`);
-  return { ok: true, mensaje: 'Bloque borrado.' };
+  return { ok: true, mensaje: 'Eliminado.' };
 }
 
 /**
@@ -132,7 +132,7 @@ export async function guardarAjustes(slug: string, datos: FormData): Promise<Res
   revalidatePath(`/${slug}/estudio`);
   return {
     ok: true,
-    mensaje: botActivo ? 'Ajustes guardados. El agente está encendido.' : 'Ajustes guardados. El agente queda APAGADO en todo el número.',
+    mensaje: botActivo ? 'Guardado. Agente activo.' : 'Guardado. Agente inactivo.',
   };
 }
 
@@ -178,5 +178,5 @@ export async function guardarClaveIA(slug: string, datos: FormData): Promise<Res
     [r.canal.id],
   );
   revalidatePath(`/${slug}/estudio`);
-  return { ok: true, mensaje: 'Clave de OpenAI comprobada y guardada.' };
+  return { ok: true, mensaje: 'Clave guardada.' };
 }
