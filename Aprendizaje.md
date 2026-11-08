@@ -12053,7 +12053,7 @@ o dejarlos). **Rol:** arquitecto de plataforma.
 - P2 ¿La pasarela de Next (rewrites) conserva el host original y aguanta streaming y subidas grandes? ❓ probar.
 - P3 Orden: Reservas primero como modelo, luego los demás; los dominios se borran al final. ❓ confirmar con el inventario.
 
-# CÓMO PUBLICAR EL JUEGO DE AVENTURA EN WEB Y EN LA APP DE TIENDAS (2026-11-08) · 70 %
+# CÓMO PUBLICAR EL JUEGO DE AVENTURA EN WEB Y EN LA APP DE TIENDAS (2026-11-08) · 75 %
 
 **Objetivo (Fernando, 2026-11-08):** antes de desarrollar Aventura, aprender de cómo se llevaron los
 Zelda al navegador y decidir infraestructura, arquitectura y stack para que el MISMO juego funcione
@@ -12138,3 +12138,34 @@ Decide si los pck van dentro de la app de tiendas o se descargan.
   despliegue y responda antes de apuntar GCC World (la variable `PRODUCTO_<P>_ORIGEN` y la `url` de `tipos.ts`).
 - Falta: Pedidos, Catering (y su `APP_URL` de correos), Planificaciones (4 `fetch`, adjuntos de 12 MB, IA larga),
   Automatizaciones (webhook y alta de Meta, worker); datos `member_portfolio_items`; borrar dominios al final.
+
+## Decisión de Fernando (2026-11-08): versión NATIVA de teléfono desde el inicio
+*«si debemos proyectarnos desde un inicio a tener la versión nativa de teléfono… el videojuego se
+va a expandir mucho en su historia, al igual que hemos expandido el progreso»*. **Deroga las fases
+A/B de la P3:** el juego web dentro del WebView deja de ser la vía de las tiendas. Se queda como
+respaldo y para la web.
+
+### P3 (rehecha) — ¿Cómo entra el Godot nativo en la app única GCC World? · 🔎 Investigando
+- **LibGodot** (Godot como biblioteca) llegó en 4.6. Los parches para incrustarlo en iOS/Android
+  estaban en revisión en abril de 2026 (charla de la GodotCon de Ámsterdam). Ya existen envoltorios
+  usados en producción: `borndotcom/react-native-godot` (iOS+Android) y `SwiftGodotKit` (rama de 4.7).
+  Alguien prueba ya LibGodot bajo un WebView de Capacitor (`openzigs/onyourleft#433`).
+- **Recomendación:** un plugin de Capacitor propio que abra una vista nativa de Godot a pantalla
+  completa al entrar en Aventura. La vista lleva el MISMO proyecto `godot/` y la versión de Godot
+  queda fijada por versión de la app, porque en el teléfono se usan rutas no documentadas que se
+  rompen entre versiones menores.
+- **Alternativa descartada salvo que falle:** una app nativa aparte, «GCC Aventura». Contradice
+  la decisión de una sola app del mismo día.
+- **Primer paso (prueba de concepto):** Android primero (sin bloqueo de firma), con `PruebaPersonaje`
+  embebido, la medida de fps/memoria y el token de juego pasando de la app a Godot.
+
+### P9 — Que la historia crezca sin publicar una versión nueva en la tienda · ✅ Resuelta (regla)
+Apple (2.5.2) no deja descargar **código** que cambie la app, y un `.pck` de Godot con GDScript lo
+es. Regla de arquitectura: **el MOTOR del juego (scripts) va dentro de la app; lo que se descarga
+son DATOS**: mapas, arte, audio y la historia como datos (diálogos, misiones, condiciones de
+desbloqueo, recompensas en recursos/JSON que interpreta el motor). Así un camino nuevo se publica
+desde el servidor; solo una MECÁNICA nueva necesita versión en la tienda. En la web no hay esa
+restricción, pero se usa el mismo sistema para no tener dos caminos.
+### P10 — Guardados que sobreviven a 200 caminos · ✅ Resuelta (regla)
+La partida lleva su número de versión y el servidor la migra al cargarla, igual que una migración de
+la BD. Nunca se rompe la partida de un jugador por cambiar la historia.
