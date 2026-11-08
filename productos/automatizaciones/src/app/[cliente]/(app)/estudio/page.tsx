@@ -1,6 +1,7 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { EXIGE_ROL } from '@/lib/modulos';
 import { pool } from '@/lib/db';
+import { contextoCanal, descifrarONulo } from '@/lib/agente/cifrado';
 import { CabeceraPagina } from '@/componentes/Navegacion';
 import Link from 'next/link';
 import { BOTON_PRIMARIO, EstadoVacio } from '@/componentes/ui';
@@ -22,7 +23,8 @@ export default async function PaginaEstudio({ params }: { params: Promise<{ clie
 
   const { rows: [canal] } = await pool.query(
     `SELECT id, numero_visible, nombre_verificado, estado, bot_activo, coexistencia_verificada,
-            modelo, razonamiento, debounce_segundos, ventana_mensajes, ultimo_error, ultimo_error_en
+            modelo, razonamiento, debounce_segundos, ventana_mensajes, ultimo_error, ultimo_error_en,
+            ia_api_key_cifrada
        FROM canales WHERE inquilino_id = $1 ORDER BY id LIMIT 1`,
     [inquilino.id],
   );
@@ -69,6 +71,11 @@ export default async function PaginaEstudio({ params }: { params: Promise<{ clie
     ventana: canal.ventana_mensajes,
     ultimoError: canal.ultimo_error,
     ultimoErrorEn: canal.ultimo_error_en ? canal.ultimo_error_en.toISOString() : null,
+    // Solo los cuatro últimos caracteres salen al navegador, para reconocerla.
+    claveIAFin: (() => {
+      const c = descifrarONulo(canal.ia_api_key_cifrada, contextoCanal(canal.id, 'ia_api_key'));
+      return c ? c.slice(-4) : null;
+    })(),
   };
 
   const instrucciones: Instruccion[] = prompts.map((p: any) => ({

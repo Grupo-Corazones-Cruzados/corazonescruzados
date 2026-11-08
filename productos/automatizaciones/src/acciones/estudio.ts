@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { pool } from '@/lib/db';
 import { contextoEscritura, type Contexto } from '@/lib/inquilino';
 import { esRazonamientoValido } from '@/lib/agente/modelos';
+import { guardarSecreto } from '@/lib/agente/canales';
+import { claveMaestraConfigurada } from '@/lib/agente/cifrado';
 
 export type Resultado = { ok: true; mensaje?: string } | { ok: false; error: string };
 
@@ -132,4 +134,49 @@ export async function guardarAjustes(slug: string, datos: FormData): Promise<Res
     ok: true,
     mensaje: botActivo ? 'Ajustes guardados. El agente está encendido.' : 'Ajustes guardados. El agente queda APAGADO en todo el número.',
   };
+}
+
+/**
+ * LA CLAVE DE OPENAI DEL CLIENTE (Fernando, 2026-11-08: «no puedo configurar o actualizar
+ * la api key»). El agente usa la clave DEL CANAL (`ia_api_key_cifrada`), no la del
+ * servidor: cada cliente paga su consumo. Existía la columna y el aviso «hay que
+ * actualizarla en el Estudio», pero ninguna pantalla la escribía.
+ *
+ * Se PRUEBA antes de guardarla, contra el modelo del canal: una clave que no vale,
+ * guardada, deja al agente pasando todo a una persona sin que se sepa por qué. Nunca
+ * vuelve al navegador; la pantalla solo ve sus cuatro últimos caracteres.
+ */
+export async function guardarClaveIA(slug: string, datos: FormData): Promise<Resultado> {
+  const r = await canalDelCliente(slug);
+  if (!r.ok) return { ok: false, error: r.error };
+  if (!claveMaestraConfigurada()) return { ok: false, error: 'Falta AGENTE_CLAVE_MAESTRA en el servidor: no se puede guardar la clave cifrada.' };
+
+  const clave = String(datos.get('clave') || '').trim();
+  if (!/^sk-[A-Za-z0-9_\-]{20,}$/.test(clave))
+    return { ok: false, error: 'Eso no parece una clave de OpenAI: empieza por «sk-» y es larga.' };
+
+  let res: Response;
+  try {
+    res = await fetch(`https://api.openai.com/v1/models/${encodeURIComponent(r.canal.modelo)}`, {
+      headers: { Authorization: `Bearer ${clave}` },
+      cache: 'no-store',
+    });
+  } catch {
+    return { ok: false, error: 'No se pudo hablar con OpenAI para comprobar la clave. Inténtalo de nuevo.' };
+  }
+  if (res.status === 401) return { ok: false, error: 'OpenAI dice que esa clave no es válida (401).' };
+  if (res.status === 403 || res.status === 404)
+    return { ok: false, error: `La clave es válida, pero no tiene acceso al modelo ${r.canal.modelo}. Revisa el proyecto de la clave en OpenAI.` };
+  if (res.status === 429) return { ok: false, error: 'La cuenta de OpenAI de esa clave no tiene saldo o llegó a su límite (429).' };
+  if (!res.ok) return { ok: false, error: `OpenAI respondió ${res.status} al comprobar la clave.` };
+
+  await guardarSecreto(r.canal.id, 'ia_api_key', clave);
+  // Si el último fallo era por la clave, ya no aplica.
+  await pool.query(
+    `UPDATE canales SET ultimo_error = NULL, ultimo_error_en = NULL
+      WHERE id = $1 AND ultimo_error ILIKE '%clave de IA%'`,
+    [r.canal.id],
+  );
+  revalidatePath(`/${slug}/estudio`);
+  return { ok: true, mensaje: 'Clave de OpenAI comprobada y guardada.' };
 }

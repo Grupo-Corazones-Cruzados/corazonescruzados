@@ -30,9 +30,12 @@ export type ConexionVista = {
 declare global { interface Window { FB?: any; fbAsyncInit?: () => void } }
 
 const PLAZO_AGENDA_MS = 24 * 60 * 60 * 1000;
+// Zona fija: el servidor pinta en UTC y el navegador en la suya; con zona distinta, React
+// rechaza la hidratación (#418). Todos los inquilinos actuales son de Ecuador.
+const ZONA = 'America/Guayaquil';
 const fecha = (iso: string) =>
-  new Date(iso).toLocaleString('es-EC', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-const dia = (iso: string) => new Date(iso).toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric' });
+  new Date(iso).toLocaleString('es-EC', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: ZONA });
+const dia = (iso: string) => new Date(iso).toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric', timeZone: ZONA });
 
 const ESTADO: Record<string, { texto: string; tono: 'exito' | 'aviso' | 'error' | 'neutro' }> = {
   conectado: { texto: 'Conectado', tono: 'exito' },

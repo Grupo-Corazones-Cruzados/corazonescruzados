@@ -4,11 +4,11 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  Bot, Power, PowerOff, Phone, BookOpen, MessageSquareText, Plus, Trash2, AlertTriangle, Save, BadgeCheck,
+  Bot, Power, PowerOff, Phone, BookOpen, MessageSquareText, Plus, Trash2, AlertTriangle, Save, BadgeCheck, KeyRound,
 } from 'lucide-react';
-import { Boton, Campo, Entrada, AreaTexto, Selector, Insignia, Tarjeta, PanelLateral, Confirmar, RailFiltro } from '@/componentes/ui';
+import { Boton, Campo, Entrada, AreaTexto, Selector, Insignia, Tarjeta, PanelLateral, Confirmar, RailFiltro, Ventanita } from '@/componentes/ui';
 import { CabeceraPagina } from '@/componentes/Navegacion';
-import { guardarInstruccion, guardarConocimiento, borrarConocimiento, guardarAjustes } from '@/acciones/estudio';
+import { guardarInstruccion, guardarConocimiento, borrarConocimiento, guardarAjustes, guardarClaveIA } from '@/acciones/estudio';
 import { cn } from '@/lib/utils';
 
 export type CanalVista = {
@@ -23,6 +23,8 @@ export type CanalVista = {
   ventana: number;
   ultimoError: string | null;
   ultimoErrorEn: string | null;
+  /** Los cuatro últimos caracteres de la clave de OpenAI del canal; null si no hay. */
+  claveIAFin: string | null;
 };
 
 export type Instruccion = { tipo: string; contenido: string; version: number };
@@ -76,6 +78,7 @@ export default function Estudio({
   const [nuevo, setNuevo] = useState(false);
   const [borrar, setBorrar] = useState<Bloque | null>(null);
   const [seccion, setSeccion] = useState<Seccion>('numero');
+  const [clave, setClave] = useState<{ abierta: boolean; valor: string }>({ abierta: false, valor: '' });
   const [textos, setTextos] = useState<Record<string, string>>(
     Object.fromEntries(ORDEN.map((t) => [t, instrucciones.find((i) => i.tipo === t)?.contenido ?? ''])),
   );
@@ -165,6 +168,17 @@ export default function Estudio({
               </Dato>
               <Dato etiqueta="Coexistencia">{canal.coexistencia ? 'verificada' : 'no'}</Dato>
               <Dato etiqueta="Modelo">{canal.modelo}</Dato>
+              <Dato etiqueta="Clave de OpenAI">
+                <span className="inline-flex items-center gap-2">
+                  {canal.claveIAFin
+                    ? <Insignia tono="exito">Guardada · …{canal.claveIAFin}</Insignia>
+                    : <Insignia tono="error">Falta</Insignia>}
+                  <Boton variante="secundario" tamano="sm" icono={KeyRound} type="button"
+                    onClick={() => setClave({ abierta: true, valor: '' })}>
+                    {canal.claveIAFin ? 'Cambiar' : 'Añadir'}
+                  </Boton>
+                </span>
+              </Dato>
             </dl>
 
             {canal.ultimoError && (
@@ -172,7 +186,7 @@ export default function Estudio({
                 <AlertTriangle className="mt-px h-4 w-4 shrink-0" />
                 <span>
                   <strong>Último fallo del número</strong>
-                  {canal.ultimoErrorEn ? ` (${new Date(canal.ultimoErrorEn).toLocaleString('es-EC')})` : ''}: {canal.ultimoError}
+                  {canal.ultimoErrorEn ? ` (${new Date(canal.ultimoErrorEn).toLocaleString('es-EC', { timeZone: 'America/Guayaquil' })})` : ''}: {canal.ultimoError}
                 </span>
               </p>
             )}
@@ -352,6 +366,34 @@ export default function Estudio({
           </Boton>
         </form>
       </PanelLateral>
+
+      <Ventanita
+        abierto={clave.abierta}
+        alCerrar={() => setClave({ abierta: false, valor: '' })}
+        titulo={canal.claveIAFin ? 'Cambiar la clave de OpenAI' : 'Añadir la clave de OpenAI'}
+        pie={
+          <>
+            <Boton variante="secundario" onClick={() => setClave({ abierta: false, valor: '' })} disabled={enCurso}>Cancelar</Boton>
+            <Boton icono={Save} disabled={enCurso || clave.valor.trim().length < 20}
+              onClick={() => arranca(async () => {
+                const d = new FormData();
+                d.set('clave', clave.valor);
+                const r = await guardarClaveIA(slug, d);
+                if (!r.ok) { toast.error(r.error, { duration: 12000 }); return; }
+                toast.success(r.mensaje ?? 'Guardada.');
+                setClave({ abierta: false, valor: '' });
+                router.refresh();
+              })}>
+              {enCurso ? 'Comprobando…' : 'Comprobar y guardar'}
+            </Boton>
+          </>
+        }
+      >
+        <Campo etiqueta="Clave de API">
+          <Entrada type="password" autoComplete="off" spellCheck={false} placeholder="sk-…"
+            value={clave.valor} onChange={(e) => setClave({ abierta: true, valor: e.target.value })} />
+        </Campo>
+      </Ventanita>
 
       <Confirmar
         abierto={borrar !== null}
