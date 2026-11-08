@@ -1,6 +1,6 @@
 'use client';
 
-import type { LucideIcon } from 'lucide-react';
+import { Lock, type LucideIcon } from 'lucide-react';
 
 /**
  * CIFRA — un número con su etiqueta. La definición ÚNICA de las «stat cards» del panel.
@@ -53,12 +53,16 @@ export function Cifra({
   label,
   value,
   tone = 'accent',
+  candado,
 }: {
   Icon: LucideIcon;
   label: string;
   /** `undefined` mientras se carga: sale el esqueleto en vez de un hueco. */
   value?: number | string;
   tone?: TonoCifra;
+  /** Si para ver ese dato hace falta algo más que la sesión (p. ej. la contraseña del servidor local
+   *  por Tailscale): un candado junto a la etiqueta y el motivo en `title`. */
+  candado?: string;
 }) {
   return (
     // Una línea de alto: icono pequeño a la izquierda y, a su lado, etiqueta y cifra. ~58 px.
@@ -67,8 +71,9 @@ export function Cifra({
         <Icon className="w-3.5 h-3.5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="cifra-etiqueta text-[10px] uppercase tracking-wide text-digi-muted truncate leading-tight" style={mf} title={label}>
-          {label}
+        <p className="cifra-etiqueta flex items-center gap-1 text-[10px] uppercase tracking-wide text-digi-muted leading-tight" style={mf} title={candado ? `${label} · ${candado}` : label}>
+          <span className="truncate min-w-0">{label}</span>
+          {candado && <Lock className="w-3 h-3 shrink-0" aria-label={candado} />}
         </p>
         {value !== undefined ? (
           <p className="cifra-valor text-[16px] font-semibold text-digi-text leading-tight tabular-nums truncate" style={mf} title={String(value)}>

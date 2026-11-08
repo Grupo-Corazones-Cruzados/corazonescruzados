@@ -138,7 +138,9 @@
 }
 /* El acento como TEXTO sobre el grafito: el tono de relleno no llega a 4,5:1, así que los
    temas oscuros con paneles neutros declaran `--texto-acento`, más claro. */
-.corp.tema-progreso:is(.tema-corazon, .tema-orquidea, .tema-electrico, .tema-videojuego, .tema-negro).dark .text-accent:not(.rail .text-accent) { color: var(--texto-acento); }
+/* Menos el icono de `Cifra`: va en blanco sobre su ficha de degradado; en rosa claro sobre rosa no se
+   distinguía (Fernando, 2026-11-08). */
+.corp.tema-progreso:is(.tema-corazon, .tema-orquidea, .tema-electrico, .tema-videojuego, .tema-negro).dark .text-accent:not(.rail .text-accent):not(.cifra-icono) { color: var(--texto-acento); }
 .corp.tema-progreso.tema-corazon .rail {
   --color-digi-card: #1b080d;
   --color-digi-darker: #150609;

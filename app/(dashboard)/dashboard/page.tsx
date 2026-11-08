@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
 import { Cifra, RejillaCifras } from '@/components/ui/Cifra';
+import Saludo from '@/components/dashboard/Saludo';
 import { fmt2 } from '@/lib/format';
 import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
   Download, ChevronRight, FileDown, FileText } from 'lucide-react';
@@ -177,10 +178,6 @@ export default function DashboardHome() {
     : 0;
   const cumulativeSavings = priorSavings + detailSavings;
 
-  const hour = new Date().getHours();
-  const greet = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
-  const name = user?.first_name || user?.email?.split('@')[0] || '';
-
   const money = (n: number) => `$${fmt2(n)}`;
 
   return (
@@ -194,9 +191,7 @@ export default function DashboardHome() {
           degradado de «cruzar al mundo». Sin la insignia «Tu progreso» y SIN EL PENSAMIENTO
           (Fernando, el mismo día: ocupaba mucho del espacio de arriba; aquí lo que importa
           es la tabla). */}
-      <h1 className="titulo-progreso text-[26px] sm:text-[34px] text-digi-text leading-[1.05] mb-4 sm:mb-5">
-        {greet}{name ? <>, <span className="acento-progreso">{name}</span></> : ''}
-      </h1>
+      <Saludo />
 
       {/* Stat cards — para no-staff solo sus propios tickets/proyectos (acotados por el API);
           las finanzas globales y el conteo de clientes son solo para staff/admin. */}
