@@ -50,10 +50,7 @@ export default function MenuCentralizado() {
           <span className="text-[14px] font-bold text-digi-text tracking-tight truncate" style={mf}>GCC WORLD</span>
         </Link>
 
-        <div className="flex-1 min-h-0 overflow-y-auto px-2.5 pb-3">
-          <div className="h-7 flex items-center">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-digi-muted/70 px-1 truncate" style={mf}>Modelo 4P</p>
-          </div>
+        <div className="flex-1 min-h-0 overflow-y-auto px-2.5 py-3">
           <Mapa4P sistemas={sistemas} rutaActual={pathname} />
         </div>
 

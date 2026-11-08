@@ -89,10 +89,17 @@ export default function Mapa4P({ sistemas: cargados, rutaActual }: { sistemas: S
 
       {elegida && lista.length > 0 && (
         <div className="rounded-xl border border-digi-border bg-digi-card overflow-hidden">
-          <p className="px-4 pt-3 pb-2 text-[12px] text-digi-muted">
-            <span className="font-semibold text-digi-text">{cellName(pisoElegido, pasoElegido)}</span>
-            {' · '}{PISOS.find((p) => p.key === pisoElegido)?.label}{' · '}{PASOS.find((p) => p.key === pasoElegido)?.label}
-          </p>
+          {/* El nombre de la celda en su línea y, debajo, «Piso:» y «Paso:» con el valor a la derecha, como
+              las filas del detalle de un sistema (Fernando, 2026-11-08). */}
+          <div className="px-4 pt-3 pb-2.5 space-y-1">
+            <p className="text-[13.5px] font-semibold text-digi-text">{cellName(pisoElegido, pasoElegido)}</p>
+            {([['Piso', PISOS.find((p) => p.key === pisoElegido)?.label], ['Paso', PASOS.find((p) => p.key === pasoElegido)?.label]] as const).map(([k, v]) => (
+              <p key={k} className="flex items-center justify-between gap-3 text-[12px]">
+                <span className="text-digi-muted">{k}:</span>
+                <span className="text-digi-text">{v}</span>
+              </p>
+            ))}
+          </div>
           {lista.map((s) => {
             const ruta = systemPath(s);
             const abierto = !!rutaActual && (rutaActual === ruta || rutaActual.startsWith(ruta + '/'));
