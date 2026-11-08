@@ -58,7 +58,9 @@ export const ACCESO_VIDEOJUEGO = 'videojuego';
 // `/enlace`: un enlace de un solo uso atado a un cliente pide iniciar sesión y luego vuelve a
 // él (Herramientas → Gestión, 2026-10-16).
 // `/herramienta`: lo mismo con un acceso compartido a una herramienta (2026-10-27).
-const DESTINOS_PERMITIDOS = ['/dashboard', '/juego', '/enlace', '/entrega', '/herramienta'];
+// `/api/productos/entrar`: un producto manda aquí a quien quiere entrar sin sesión; tras iniciarla
+// vuelve y entra al producto con su pase (2026-11-08).
+const DESTINOS_PERMITIDOS = ['/dashboard', '/juego', '/enlace', '/entrega', '/herramienta', '/api/productos/entrar'];
 
 export function destinoTrasAccesoValido(ruta: string | null | undefined): string | null {
   if (!ruta) return null;

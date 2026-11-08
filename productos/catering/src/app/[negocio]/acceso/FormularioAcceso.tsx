@@ -24,7 +24,9 @@ import { Boton, Campo, Entrada } from '@/componentes/ui';
  * inquilino para su gente entra de una vez, como siempre. Por eso el formulario no
  * pregunta «¿qué clase de cuenta tienes?»: eso es asunto nuestro, no suyo.
  */
-export default function FormularioAcceso({ slug }: { slug: string }) {
+export default function FormularioAcceso({ slug, soloClientes = false }: { slug: string; soloClientes?: boolean }) {
+  // `soloClientes`: negocio que no es de demostración. El personal entra con GCC World (el botón de
+  // encima) y este formulario queda para el cliente final del portal: correo y contraseña, sin más.
   const [paso, setPaso] = useState<'clave' | 'elegir' | 'codigo'>('clave');
   const [clave, setClave] = useState('');
   const [codigo, setCodigo] = useState('');
@@ -108,8 +110,14 @@ export default function FormularioAcceso({ slug }: { slug: string }) {
           Quien tiene cuenta de cliente en GCC World escribe su correo y su contraseña
           de siempre; quien tiene una cuenta creada aquí escribe su usuario.
         */}
-        <Campo etiqueta="Usuario o correo">
-          <Entrada name="usuario" autoComplete="username" autoFocus required />
+        <Campo etiqueta={soloClientes ? 'Correo' : 'Usuario o correo'}>
+          <Entrada
+            name="usuario"
+            type={soloClientes ? 'email' : 'text'}
+            autoComplete={soloClientes ? 'email' : 'username'}
+            autoFocus={!soloClientes}
+            required
+          />
         </Campo>
         <Campo etiqueta="Contraseña">
           <Entrada name="clave" type="password" autoComplete="current-password" required />
@@ -121,10 +129,12 @@ export default function FormularioAcceso({ slug }: { slug: string }) {
           {enCurso ? 'Entrando…' : 'Entrar'}
         </Boton>
 
-        <p className="pt-1 text-center text-[11px] leading-relaxed text-tenue">
-          Si tienes cuenta de cliente de GCC World, entra con ese correo y esa contraseña:
-          es la misma para todo. Si te creó la cuenta tu administrador, pídesela a él.
-        </p>
+        {!soloClientes && (
+          <p className="pt-1 text-center text-[11px] leading-relaxed text-tenue">
+            Si tienes cuenta de cliente de GCC World, entra con ese correo y esa contraseña:
+            es la misma para todo. Si te creó la cuenta tu administrador, pídesela a él.
+          </p>
+        )}
       </form>
     );
   }

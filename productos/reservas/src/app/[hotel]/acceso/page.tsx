@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db';
 import { leerSesionUsuario } from '@/lib/sesion';
 import { AplicaMarca, LogoHotel } from '@/componentes/Marca';
 import FormularioAcceso from './FormularioAcceso';
+import EntrarConGcc from './EntrarConGcc';
+import { config } from '@/lib/identidadGcc';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,6 +28,13 @@ export default async function PaginaAcceso({ params }: { params: Promise<{ hotel
   const sesion = await leerSesionUsuario();
   if (sesion?.slug === hotel && sesion.inquilinoId === inquilino.id) redirect(`/${hotel}/panel`);
 
+  // Fuera de los escaparates, aquí ya no se escribe ninguna contraseña (Fernando, 2026-11-08): se
+  // entra con la cuenta de GCC World. La dirección de la plataforma se lee en el servidor.
+  const conGcc = !inquilino.soloLectura;
+  const urlGcc = `${config().base}/api/productos/entrar?${new URLSearchParams({
+    producto: 'reservas', slug: hotel, destino: 'panel', fuera: '1',
+  })}`;
+
   return (
     <AplicaMarca
       colorAcento={inquilino.colorAcento}
@@ -45,7 +54,7 @@ export default async function PaginaAcceso({ params }: { params: Promise<{ hotel
             Alojamiento de demostración. Se puede recorrer entero; los cambios no se guardan.
           </p>
         )}
-        <FormularioAcceso slug={hotel} />
+        {conGcc ? <EntrarConGcc href={urlGcc} /> : <FormularioAcceso slug={hotel} />}
       </div>
       <p className="pointer-events-none fixed bottom-4 left-0 right-0 text-center text-[11px] text-tenue">
         Un producto del Grupo Corazones Cruzados

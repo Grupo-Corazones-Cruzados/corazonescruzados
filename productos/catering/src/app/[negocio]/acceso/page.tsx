@@ -5,6 +5,8 @@ import { leerSesionUsuario } from '@/lib/sesion';
 import { INICIO_DE_ROL } from '@/lib/permisos';
 import { AplicaMarca, LogoNegocio } from '@/componentes/Marca';
 import FormularioAcceso from './FormularioAcceso';
+import EntrarConGcc from './EntrarConGcc';
+import { config } from '@/lib/identidadGcc';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,6 +31,16 @@ export default async function PaginaAcceso({ params }: { params: Promise<{ negoc
   if (sesion?.slug === negocio && sesion.inquilinoId === inquilino.id)
     redirect(sesion.tipo === 'cliente' ? `/${negocio}/mi-servicio` : `/${negocio}/${INICIO_DE_ROL[sesion.rol]}`);
 
+  // Fuera de los escaparates, aquí ya no se escribe ninguna contraseña (Fernando, 2026-11-08): se
+  // entra con la cuenta de GCC World. La dirección de la plataforma se lee en el servidor.
+  // ⚠️ Solo el PERSONAL: el cliente final del portal sigue entrando con su correo y su contraseña,
+  // en el mismo formulario de siempre (que aquí queda solo para él). `destino=inicio` no es una
+  // pantalla: `entrar/route.ts` lo manda al puesto de su oficio, como el acceso normal.
+  const conGcc = !inquilino.soloLectura;
+  const urlGcc = `${config().base}/api/productos/entrar?${new URLSearchParams({
+    producto: 'catering', slug: negocio, destino: 'inicio', fuera: '1',
+  })}`;
+
   return (
     <AplicaMarca
       colorAcento={inquilino.colorAcento}
@@ -48,7 +60,17 @@ export default async function PaginaAcceso({ params }: { params: Promise<{ negoc
             Negocio de demostración. Se puede recorrer entero; los cambios no se guardan.
           </p>
         )}
-        <FormularioAcceso slug={negocio} />
+        {conGcc ? (
+          <>
+            <EntrarConGcc href={urlGcc} />
+            <div className="mt-6 border-t border-borde pt-5">
+              <p className="mb-3 text-center text-[12.5px] font-semibold text-texto">¿Eres cliente del servicio?</p>
+              <FormularioAcceso slug={negocio} soloClientes />
+            </div>
+          </>
+        ) : (
+          <FormularioAcceso slug={negocio} />
+        )}
         {inquilino.registroAbierto && (
           <p className="mt-5 border-t border-borde pt-4 text-center text-[12px] text-tenue">
             ¿Todavía no eres cliente?{' '}

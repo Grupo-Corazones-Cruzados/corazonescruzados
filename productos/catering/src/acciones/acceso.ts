@@ -38,6 +38,21 @@ const FALLOS_PARA_CERRAR = 8;
 const MINUTOS_CERRADA = 15;
 
 /**
+ * ⚠️ SIN CONTRASEÑA PROPIA FUERA DE LOS ESCAPARATES (Fernando, 2026-11-08): todos los usuarios son
+ * clientes de GCC World y entran por GCC World (`/[slug]/entrar`). La pantalla ya no ofrece el
+ * formulario, pero una acción de servidor se puede llamar igual: por eso se cierra también aquí,
+ * antes de mirar ninguna contraseña. Los negocios de demostración (`soloLectura`) siguen como antes.
+ */
+const SOLO_CON_GCC = 'Este negocio se usa con tu cuenta de GCC World.';
+
+/** ¿Este negocio solo admite la entrada desde GCC World? (Un negocio que no existe no se cierra
+ *  aquí: cada acción ya responde lo suyo.) */
+async function soloConGcc(slug: string): Promise<boolean> {
+  const inq = await prisma.inquilino.findUnique({ where: { slug }, select: { soloLectura: true } });
+  return !!inq && !inq.soloLectura;
+}
+
+/**
  * Apunta un intento fallido del PERSONAL y, al llegar al tope, cierra la cuenta un rato.
  * Desde el 2026-09-24 esta pantalla comprueba contraseñas de GCC World para quien es
  * cliente de la plataforma: sin freno sería un sitio cómodo donde probarlas.
@@ -118,6 +133,14 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
   }
 
   // ── Personal (por usuario o por correo)
+  // Fuera de los escaparates, el personal ya no entra con contraseña (ver `SOLO_CON_GCC`); el cliente
+  // final, arriba, sí. Con un correo que no es de ningún cliente se responde como a una contraseña
+  // equivocada —y tardando lo mismo— para no delatar qué correos son de clientes del negocio.
+  if (!inquilino.soloLectura) {
+    if (!quien.includes('@')) return { error: SOLO_CON_GCC };
+    await bcrypt.compare(clave, HASH_FALSO);
+    return { error: 'Usuario o contraseña incorrectos.' };
+  }
   const cuenta = await prisma.usuario.findFirst({
     where: { inquilinoId: inquilino.id, OR: [{ usuario: quien }, { email: quien }] },
   });
@@ -223,6 +246,7 @@ async function continuar(slug: string) {
 
 /** Pide que le manden el código de seis cifras al correo. */
 export async function pedirCodigo(slug: string, clave: string): Promise<ResultadoAcceso> {
+  if (await soloConGcc(slug)) return { error: SOLO_CON_GCC };
   const c = await continuar(slug);
   if (!c) return { error: 'La sesión de acceso caducó. Vuelve a escribir tu contraseña.' };
   const enviado = await enviarCodigo(c.p.email, clave);
@@ -232,6 +256,7 @@ export async function pedirCodigo(slug: string, clave: string): Promise<Resultad
 
 /** Segundo paso con el código del correo. */
 export async function entrarConCodigo(slug: string, codigo: string): Promise<ResultadoAcceso> {
+  if (await soloConGcc(slug)) return { error: SOLO_CON_GCC };
   const c = await continuar(slug);
   if (!c) return { error: 'La sesión de acceso caducó. Vuelve a escribir tu contraseña.' };
   if (!(await codigoCorrecto(c.p.email, codigo))) {
@@ -246,6 +271,7 @@ export async function entrarConCodigo(slug: string, codigo: string): Promise<Res
 
 /** Segundo paso con passkey: lo que el navegador necesita para pedirla. */
 export async function passkeyOpciones(slug: string, origen: string) {
+  if (await soloConGcc(slug)) return null;
   const c = await continuar(slug);
   if (!c) return null;
   return passkeyIniciar(c.p.email, origen);
@@ -257,6 +283,7 @@ export async function entrarConPasskey(
   origen: string,
   credencial: unknown,
 ): Promise<ResultadoAcceso> {
+  if (await soloConGcc(slug)) return { error: SOLO_CON_GCC };
   const c = await continuar(slug);
   if (!c) return { error: 'La sesión de acceso caducó. Vuelve a escribir tu contraseña.' };
   if (!(await passkeyTerminar(c.p.email, origen, credencial))) {

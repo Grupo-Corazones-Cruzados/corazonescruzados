@@ -22,6 +22,15 @@ export type ResultadoAcceso = {
 
 const HASH_FALSO = '$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidin';
 
+/**
+ * SOLO EL ESCAPARATE ENTRA CON CONTRASEÑA PROPIA (Fernando, 2026-11-08: «todos los usuarios deben ser
+ * clientes de GCC World e ingresar por GCC World»). En cualquier otro inquilino se entra con el pase de
+ * la plataforma (`[slug]/entrar`), y estas acciones se niegan ANTES de mirar ninguna contraseña,
+ * código o passkey: la pantalla ya no ofrece el formulario, pero una acción de servidor se puede
+ * llamar sin ella.
+ */
+const SOLO_CON_GCC = 'Este negocio se usa con tu cuenta de GCC World.';
+
 /** A partir de cuántos fallos seguidos se cierra la puerta, y por cuánto. */
 const FALLOS_PARA_CERRAR = 8;
 const MINUTOS_CERRADA = 15;
@@ -74,6 +83,7 @@ export async function entrar(slug: string, datos: FormData): Promise<ResultadoAc
     include: { suscripcion: true },
   });
   if (!inquilino) return { error: 'Esa institución no existe.' };
+  if (!inquilino.soloLectura) return { error: SOLO_CON_GCC };
 
   // Por usuario O por correo: quien es cliente de GCC World escribe su correo, y su
   // cuenta de aquí puede tener otro nombre de usuario.
@@ -184,6 +194,7 @@ async function continuar(slug: string) {
 export async function pedirCodigo(slug: string, clave: string): Promise<ResultadoAcceso> {
   const c = await continuar(slug);
   if (!c) return { error: 'La sesión de acceso caducó. Vuelve a escribir tu contraseña.' };
+  if (!c.inquilino.soloLectura) return { error: SOLO_CON_GCC };
   // Se vuelve a exigir la contraseña: así el testigo por sí solo no sirve para llenarle
   // el buzón a nadie.
   const enviado = await enviarCodigo(c.p.email, clave);
@@ -195,6 +206,7 @@ export async function pedirCodigo(slug: string, clave: string): Promise<Resultad
 export async function entrarConCodigo(slug: string, codigo: string): Promise<ResultadoAcceso> {
   const c = await continuar(slug);
   if (!c) return { error: 'La sesión de acceso caducó. Vuelve a escribir tu contraseña.' };
+  if (!c.inquilino.soloLectura) return { error: SOLO_CON_GCC };
   if (!(await codigoCorrecto(c.p.email, codigo))) {
     // Un código equivocado cuenta como intento: si no, el segundo paso sería el único
     // sitio del acceso sin freno, y es de seis cifras.
@@ -208,7 +220,7 @@ export async function entrarConCodigo(slug: string, codigo: string): Promise<Res
 /** Segundo paso con passkey: lo que el navegador necesita para pedirla. */
 export async function passkeyOpciones(slug: string, origen: string) {
   const c = await continuar(slug);
-  if (!c) return null;
+  if (!c || !c.inquilino.soloLectura) return null;
   return passkeyIniciar(c.p.email, origen);
 }
 
@@ -220,6 +232,7 @@ export async function entrarConPasskey(
 ): Promise<ResultadoAcceso> {
   const c = await continuar(slug);
   if (!c) return { error: 'La sesión de acceso caducó. Vuelve a escribir tu contraseña.' };
+  if (!c.inquilino.soloLectura) return { error: SOLO_CON_GCC };
   if (!(await passkeyTerminar(c.p.email, origen, credencial))) {
     if (!c.inquilino.soloLectura) await apuntarFallo(c.cuenta.id, c.cuenta.intentosFallidos);
     return { error: 'No se pudo comprobar la passkey.' };

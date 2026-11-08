@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { evaluarAcceso } from '@/lib/inquilino';
 import { canjearPase } from '@/lib/identidadGcc';
-import { abrirSesionUsuario, cerrarPasoDos, marcarEmbebido } from '@/lib/sesion';
+import { abrirSesionUsuario, cerrarPasoDos, marcarEmbebido, quitarEmbebido } from '@/lib/sesion';
 
 export const dynamic = 'force-dynamic';
 
@@ -48,7 +48,10 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ cliente: st
     await prisma.usuario.update({ where: { id: cuenta.id }, data: { ultimoAcceso: new Date(), intentosFallidos: 0, bloqueadoHasta: null } });
   await cerrarPasoDos();
   await abrirSesionUsuario({ uid: cuenta.id, inquilinoId: inquilino.id, slug: inquilino.slug, nombre: cuenta.nombre, rol: cuenta.rol });
-  await marcarEmbebido();
+  // `fuera=1`: se entró desde una pestaña normal (la pantalla de acceso del producto), no dentro de la
+  // app de GCC World, así que se ve el producto completo, con su menú propio.
+  if (q.get('fuera') === '1') await quitarEmbebido();
+  else await marcarEmbebido();
 
   const pedido = q.get('destino') || '';
   const destino = DESTINOS.has(pedido) ? pedido : 'panel';

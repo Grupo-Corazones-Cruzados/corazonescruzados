@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from 'react';
 import { startAuthentication } from '@simplewebauthn/browser';
-import { AlertCircle, Fingerprint, Mail, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Fingerprint, Mail, ArrowLeft, ShieldCheck, LogIn } from 'lucide-react';
 import { entrar, pedirCodigo, entrarConCodigo, passkeyOpciones, entrarConPasskey } from '@/acciones/acceso';
-import { Boton, Campo, Entrada } from '@/componentes/ui';
+import { Boton, Campo, Entrada, BOTON_PRIMARIO } from '@/componentes/ui';
+import { cn } from '@/lib/utils';
 
 /**
  * ENTRAR, EN UNO O EN DOS PASOS.
@@ -228,5 +229,25 @@ function Volver({ alVolver }: { alVolver: () => void }) {
     >
       <ArrowLeft className="h-3.5 w-3.5" /> Volver
     </button>
+  );
+}
+
+/**
+ * ENTRAR CON GCC WORLD (Fernando, 2026-11-08: «todos los usuarios deben ser clientes de GCC World e
+ * ingresar por GCC World»). Lo que ve aquí una institución que NO es escaparate: sin usuario ni contraseña
+ * propios, solo el paso a la plataforma, que inicia sesión allí si hace falta y vuelve con un pase de
+ * un uso (`entrar/route.ts`, con `fuera=1`: se ve el producto completo, con su menú). La URL la arma
+ * la página en el servidor, con `GCC_URL`.
+ */
+export function EntrarConGcc({ url }: { url: string }) {
+  return (
+    <div className="space-y-3 text-center">
+      <h2 className="text-[15px] font-semibold text-texto">Entra con tu cuenta de GCC World</h2>
+      <p className="text-[12.5px] leading-relaxed text-tenue">Esta institución se usa con la cuenta de GCC World de cada persona.</p>
+      <a href={url} className={cn(BOTON_PRIMARIO, 'h-9 w-full px-4 text-[13px]')}>
+        <LogIn className="h-4 w-4 shrink-0" />
+        Entrar con GCC World
+      </a>
+    </div>
   );
 }

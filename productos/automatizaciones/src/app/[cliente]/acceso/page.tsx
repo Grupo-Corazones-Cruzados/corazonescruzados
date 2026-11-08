@@ -3,9 +3,16 @@ import { prisma } from '@/lib/db';
 import { leerSesionUsuario } from '@/lib/sesion';
 import { AplicaMarca, LogoHotel } from '@/componentes/Marca';
 import { urlLogo } from '@/lib/marca';
-import FormularioAcceso from './FormularioAcceso';
+import FormularioAcceso, { EntrarConGcc } from './FormularioAcceso';
 
 export const dynamic = 'force-dynamic';
+
+/** El paso a GCC World desde una pestaña normal (`fuera=1`: con el menú propio del producto). */
+function urlGcc(slug: string) {
+  const base = (process.env.GCC_URL || 'https://app.grupocc.org').replace(/\/$/, '');
+  const q = new URLSearchParams({ producto: 'automatizaciones', slug, destino: 'panel', fuera: '1' });
+  return `${base}/api/productos/entrar?${q}`;
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ cliente: string }> }) {
   const { cliente } = await params;
@@ -42,7 +49,16 @@ export default async function PaginaAcceso({ params }: { params: Promise<{ clien
             Cliente de demostración. Se puede recorrer entero; los cambios no se guardan.
           </p>
         )}
-        <FormularioAcceso slug={cliente} />
+        {/*
+          Solo el escaparate conserva usuario y contraseña propios; en los demás se entra con la
+          cuenta de GCC World de cada persona (Fernando, 2026-11-08). La plataforma inicia sesión si
+          hace falta, comprueba que la cuenta tiene este negocio y vuelve a `entrar` con un pase.
+        */}
+        {inquilino.soloLectura ? (
+          <FormularioAcceso slug={cliente} />
+        ) : (
+          <EntrarConGcc url={urlGcc(cliente)} />
+        )}
       </div>
       <p className="pointer-events-none fixed bottom-4 left-0 right-0 text-center text-[11px] text-tenue">
         Un producto del Grupo Corazones Cruzados
