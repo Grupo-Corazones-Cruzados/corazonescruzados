@@ -378,6 +378,8 @@ export default function DashboardSidebar() {
           {/* En las apps el tema lo pone la sección (`TemaPanel`): no se ofrece cambiarlo. */}
           {!appTel && <SelectorTema collapsed={collapsed} alCambiarAbierto={setTemasAbierto} />}
 
+          {/* En las apps se sale solo desde Accesos, arriba a la derecha (`CabeceraSeccion`). */}
+          {!enApp && (
           <button
             onClick={signOut}
             aria-label="Cerrar sesión"
@@ -394,6 +396,7 @@ export default function DashboardSidebar() {
             <LogOut className="w-4 h-4" />
             {!collapsed && 'Salir'}
           </button>
+          )}
           </div>
         </div>
       </aside>

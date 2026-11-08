@@ -84,8 +84,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Salir de la cuenta apaga el rastreo de este teléfono: no sigue enviando a nombre de nadie.
     await apagarProteccionNativa().catch(() => {});
     await fetch("/api/auth/logout", { method: "POST" });
-    setUser(null);
-    window.location.href = "/";
+    // Directo a la portada, SIN vaciar antes el usuario: `setUser(null)` hacía que `AuthGuard` saltara a
+    // `/auth` a la vez, y en las apps la pantalla se quedaba en blanco hasta recargar (Fernando,
+    // 2026-11-08). La página nueva arranca sin sesión de todos modos.
+    window.location.replace("/");
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
