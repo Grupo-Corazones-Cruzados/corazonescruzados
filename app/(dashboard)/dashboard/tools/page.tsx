@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import PageHeader from '@/components/ui/PageHeader';
@@ -59,6 +60,11 @@ const CONVERSIONS: Record<string, string[]> = {
 };
 
 export default function ToolsPage() {
+  // `useSearchParams` pide un Suspense por encima para poder compilar la página.
+  return <Suspense fallback={null}><Herramientas /></Suspense>;
+}
+
+function Herramientas() {
   const { user } = useAuth();
   const rol = accessRoleOf(user);
   const esEquipo = rol === 'admin' || rol === 'member';
@@ -73,11 +79,17 @@ export default function ToolsPage() {
   const [search, setSearch] = useState('');
   const [cat, setCat] = useState('all');
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
-  // `?herramienta=<id>` la deja abierta (el QR de las apps para el teléfono apunta aquí).
+  // `?herramienta=<id>` la deja abierta (el QR de las apps para el teléfono apunta aquí). Se ESCUCHA, no
+  // se lee una vez: en las apps se salta de una herramienta a otra desde el menú, la página no se
+  // vuelve a montar y antes se quedaba mostrando la primera (Fernando, 2026-11-08).
+  const herramientaUrl = useSearchParams().get('herramienta');
   useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get('herramienta');
-    if (id && tools.some((t) => t.id === id)) setSelectedTool(id);
-  }, [tools]);
+    if (herramientaUrl && tools.some((t) => t.id === herramientaUrl)) {
+      setSelectedTool(herramientaUrl);
+      if (herramientaUrl === 'convert') resetConvert();
+      else if (herramientaUrl === 'transcribe') resetTranscribe();
+    }
+  }, [tools, herramientaUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Convert state
   const [convertFrom, setConvertFrom] = useState('m4a');
