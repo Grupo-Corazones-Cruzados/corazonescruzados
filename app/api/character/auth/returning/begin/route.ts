@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { codigoNuevo } from '@/lib/auth/codigo-acceso';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyPassword } from '@/lib/auth/password';
@@ -11,9 +12,8 @@ function maskEmail(email: string): string {
   const head = user.slice(0, Math.min(2, user.length));
   return `${head}${'*'.repeat(Math.max(1, user.length - 2))}@${domain}`;
 }
-function generateCode(): string {
-  return Math.floor(Math.random() * 1_000_000).toString().padStart(6, '0');
-}
+// Aleatoriedad criptográfica y contador de intentos: `lib/auth/codigo-acceso`.
+const generateCode = codigoNuevo;
 
 /**
  * Login para CONTINUAR LA PARTIDA (jugador recurrente) — paso 1, unificado:
@@ -123,7 +123,7 @@ export async function POST(req: Request) {
            ADD COLUMN IF NOT EXISTS login_code_exp timestamptz`,
       );
       await pool.query(
-        `UPDATE gcc_world.users SET login_code = $1, login_code_exp = NOW() + INTERVAL '15 minutes' WHERE id = $2`,
+        `UPDATE gcc_world.users SET login_code = $1, login_code_exp = NOW() + INTERVAL '15 minutes', login_code_intentos = 0 WHERE id = $2`,
         [code, account.id],
       );
       try {
@@ -160,7 +160,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, kind: 'candidate', masked: maskEmail(cleanEmail) });
     }
     await pool.query(
-      `UPDATE gcc_world.clients SET recovery_code = $1, recovery_code_exp = NOW() + INTERVAL '15 minutes' WHERE id = $2`,
+      `UPDATE gcc_world.clients SET recovery_code = $1, recovery_code_exp = NOW() + INTERVAL '15 minutes', recovery_code_intentos = 0 WHERE id = $2`,
       [code, row.id],
     );
     try {

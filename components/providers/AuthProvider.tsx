@@ -27,7 +27,6 @@ interface AuthContextValue {
    */
   suplantacion: Suplantacion | null;
   isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, meta?: { first_name?: string; last_name?: string }) => Promise<void>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
@@ -63,17 +62,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchUser();
   }, [fetchUser]);
-
-  const signIn = useCallback(async (email: string, password: string) => {
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Error al iniciar sesión");
-    setUser(data.user);
-  }, []);
 
   const signUp = useCallback(
     async (
@@ -116,7 +104,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         suplantacion,
         isLoading,
-        signIn,
         signUp,
         signOut,
         resetPassword,

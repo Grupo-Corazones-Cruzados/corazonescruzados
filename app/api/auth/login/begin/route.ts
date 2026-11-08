@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
+import { codigoNuevo } from '@/lib/auth/codigo-acceso';
 import { verifyPassword } from '@/lib/auth/password';
 import { sendCodigoDeAccesoEmail } from '@/lib/integrations/email';
 import { createToken, setAuthCookie } from '@/lib/auth/jwt';
@@ -36,9 +37,8 @@ function maskEmail(email: string): string {
   const head = user.slice(0, Math.min(2, user.length));
   return `${head}${'*'.repeat(Math.max(1, user.length - 2))}@${domain}`;
 }
-function generateCode(): string {
-  return Math.floor(Math.random() * 1_000_000).toString().padStart(6, '0');
-}
+// Aleatoriedad criptográfica y contador de intentos: `lib/auth/codigo-acceso`.
+const generateCode = codigoNuevo;
 
 /**
  * Paso 1 del login de usuario (cliente/staff) con 2FA: valida credenciales
@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
     const code = generateCode();
     await pool.query(
       `UPDATE gcc_world.users
-          SET login_code = $1, login_code_exp = NOW() + INTERVAL '15 minutes'
+          SET login_code = $1, login_code_exp = NOW() + INTERVAL '15 minutes', login_code_intentos = 0
         WHERE id = $2`,
       [code, user.id],
     );

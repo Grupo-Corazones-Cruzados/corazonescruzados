@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { codigoNuevo, gastarCodigo } from '@/lib/auth/codigo-acceso';
 import { verifyPassword } from '@/lib/auth/password';
 import { sendCodigoDeAccesoEmail } from '@/lib/integrations/email';
 import { cuentaEncaja } from '@/lib/auth/tipos';
@@ -62,8 +63,6 @@ export function taparCorreo(email: string): string {
   return `${u.slice(0, Math.min(2, u.length))}${'*'.repeat(Math.max(1, u.length - 2))}@${d}`;
 }
 
-const codigoNuevo = () =>
-  Math.floor(Math.random() * 1_000_000).toString().padStart(6, '0');
 
 /** La ficha de cliente del mundo, que es donde cuelgan las passkeys. */
 async function fichaCliente(email: string) {
@@ -155,7 +154,7 @@ export async function mandarCodigo(email: string, nombre: string): Promise<void>
   const codigo = codigoNuevo();
   await pool.query(
     `UPDATE gcc_world.users
-        SET login_code = $1, login_code_exp = NOW() + INTERVAL '15 minutes'
+        SET login_code = $1, login_code_exp = NOW() + INTERVAL '15 minutes', login_code_intentos = 0
       WHERE lower(email) = $2`,
     [codigo, correo],
   );
@@ -177,15 +176,9 @@ export async function codigoCorrecto(email: string, codigo: string): Promise<boo
     [correo],
   );
   const u = rows[0];
-  if (!u?.login_code) return false;
-  if (!u.login_code_exp || new Date(u.login_code_exp).getTime() < Date.now()) return false;
-  if (String(u.login_code) !== String(codigo).trim()) return false;
-
-  await pool.query(
-    `UPDATE gcc_world.users SET login_code = NULL, login_code_exp = NULL WHERE id = $1`,
-    [u.id],
-  );
-  return true;
+  if (!u) return false;
+  // Cuenta el intento, compara y gasta el código (máximo 5 intentos por código): `lib/auth/codigo-acceso`.
+  return (await gastarCodigo('login', u.id, String(codigo))) === 'ok';
 }
 
 /**

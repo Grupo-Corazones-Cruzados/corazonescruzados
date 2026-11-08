@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { codigoNuevo } from '@/lib/auth/codigo-acceso';
 import { NextResponse } from 'next/server';
 import { verifyPassword } from '@/lib/auth/password';
 import { sendCodigoDeRecuperacionEmail } from '@/lib/integrations/email';
@@ -11,10 +12,8 @@ function maskEmail(email: string): string {
   return `${head}${'*'.repeat(Math.max(1, user.length - 2))}@${domain}`;
 }
 
-function generateCode(): string {
-  const n = Math.floor(Math.random() * 1_000_000);
-  return n.toString().padStart(6, '0');
-}
+// Aleatoriedad criptográfica y contador de intentos: `lib/auth/codigo-acceso`.
+const generateCode = codigoNuevo;
 
 export async function POST(req: Request) {
   try {
@@ -96,7 +95,8 @@ export async function POST(req: Request) {
     await pool.query(
       `UPDATE gcc_world.clients
           SET recovery_code = $1,
-              recovery_code_exp = NOW() + INTERVAL '15 minutes'
+              recovery_code_exp = NOW() + INTERVAL '15 minutes',
+              recovery_code_intentos = 0
         WHERE id = $2`,
       [code, row.id],
     );

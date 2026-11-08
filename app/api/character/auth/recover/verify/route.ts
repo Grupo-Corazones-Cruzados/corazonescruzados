@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { gastarCodigo, respuestaCodigo } from '@/lib/auth/codigo-acceso';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
@@ -33,26 +34,14 @@ export async function POST(req: Request) {
       [cleanEmail],
     );
     const row = r.rows[0];
-    if (!row || !row.recovery_code) {
-      return NextResponse.json(
-        { error: 'Solicita primero un código' },
-        { status: 400 },
-      );
+    if (!row) {
+      return NextResponse.json({ error: 'Solicita primero un código' }, { status: 400 });
     }
-    if (
-      !row.recovery_code_exp ||
-      new Date(row.recovery_code_exp).getTime() < Date.now()
-    ) {
-      return NextResponse.json(
-        { error: 'El código expiró, pide uno nuevo' },
-        { status: 400 },
-      );
-    }
-    if (row.recovery_code !== cleanCode) {
-      return NextResponse.json(
-        { error: 'Código incorrecto' },
-        { status: 401 },
-      );
+    // Cuenta el intento, compara y gasta el código (máximo 5 intentos por código).
+    const resultado = await gastarCodigo('recuperacion', row.id, cleanCode);
+    if (resultado !== 'ok') {
+      const { error, status } = respuestaCodigo(resultado);
+      return NextResponse.json({ error }, { status });
     }
 
     // Code accepted: bind this device's IP and (re)generate cookies.

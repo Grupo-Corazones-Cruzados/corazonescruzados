@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { gastarCodigo, respuestaCodigo } from '@/lib/auth/codigo-acceso';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
@@ -57,19 +58,11 @@ export async function POST(req: Request) {
     );
     const member = u.rows[0];
     if (member) {
-      if (!member.login_code) {
-        return NextResponse.json({ error: 'Solicita primero un código' }, { status: 400 });
+      const resultado = await gastarCodigo('login', member.id, cleanCode);
+      if (resultado !== 'ok') {
+        const { error, status } = respuestaCodigo(resultado);
+        return NextResponse.json({ error }, { status });
       }
-      if (!member.login_code_exp || new Date(member.login_code_exp).getTime() < Date.now()) {
-        return NextResponse.json({ error: 'El código expiró, pide uno nuevo' }, { status: 400 });
-      }
-      if (member.login_code !== cleanCode) {
-        return NextResponse.json({ error: 'Código incorrecto' }, { status: 401 });
-      }
-      await pool.query(
-        `UPDATE gcc_world.users SET login_code = NULL, login_code_exp = NULL WHERE id = $1`,
-        [member.id],
-      );
       const c = await pool.query(
         `SELECT id FROM gcc_world.clients
           WHERE (LOWER(email) = $1 OR user_id = $2) AND character_data IS NOT NULL
@@ -90,19 +83,14 @@ export async function POST(req: Request) {
       [cleanEmail],
     );
     const row = r.rows[0];
-    if (!row || !row.recovery_code) {
+    if (!row) {
       return NextResponse.json({ error: 'Solicita primero un código' }, { status: 400 });
     }
-    if (!row.recovery_code_exp || new Date(row.recovery_code_exp).getTime() < Date.now()) {
-      return NextResponse.json({ error: 'El código expiró, pide uno nuevo' }, { status: 400 });
+    const resultado = await gastarCodigo('recuperacion', row.id, cleanCode);
+    if (resultado !== 'ok') {
+      const { error, status } = respuestaCodigo(resultado);
+      return NextResponse.json({ error }, { status });
     }
-    if (row.recovery_code !== cleanCode) {
-      return NextResponse.json({ error: 'Código incorrecto' }, { status: 401 });
-    }
-    await pool.query(
-      `UPDATE gcc_world.clients SET recovery_code = NULL, recovery_code_exp = NULL WHERE id = $1`,
-      [row.id],
-    );
     await openCharacterSession(row.id, null);
     return NextResponse.json({ ok: true, hasCharacter: true });
   } catch (err: unknown) {
