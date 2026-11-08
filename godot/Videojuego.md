@@ -226,6 +226,13 @@ export web de Godot. **Se sigue con Godot 4.7 en 2D**, sin cambiar de motor. Det
 2. **ORDEN DE TRABAJO:** primero **la versión web, empezando por diseñar un prólogo**. Cuando
    Fernando dé por lista una versión, se pasa a la nativa en el teléfono, y **ese prólogo es el banco
    de pruebas** de la implementación nativa (fps, memoria, sesión de la app → juego; Android primero).
+   **Alcance de esa versión web (Fernando, 2026-11-08: «completar eso y desarrollar un primer tramo
+   jugable»):** (a) **terminar el prólogo cinemático que ya existe** (orden y reparto de `TRAMOS`,
+   las estampas pendientes y el flujo `Prologo → Intro`); (b) **un primer tramo JUGABLE**. Propuesta,
+   a confirmar: el **Encuentro** en el fondo del Hoyo (moverse, diálogos con la niña, registro del
+   nombre, temblor, captura de los hermanos), hasta **despertar con la voz**. Se construye con la
+   historia como datos y medirá lo que importa en el teléfono: movimiento, cámara, colisiones,
+   partículas, audio y diálogos.
 3. **Multijugador:** habrá **misiones cooperativas** y un **lobby de reunión** donde se ven los
    jugadores. **La arena / PvP competitivo queda a futuro** y no está decidida.
 4. **Sin modo sin conexión:** el juego exige conexión (solo Progreso funciona sin ella).

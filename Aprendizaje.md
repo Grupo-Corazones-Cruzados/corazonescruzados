@@ -12171,7 +12171,7 @@ La partida lleva su número de versión y el servidor la migra al cargarla, igua
 la BD. Nunca se rompe la partida de un jugador por cambiar la historia.
 
 ## Orden de trabajo (Fernando, 2026-11-08)
-1. Versión web: **diseñar un prólogo**.
+1. Versión web: **terminar el prólogo cinemático que ya existe y desarrollar un primer tramo jugable** (Fernando, 2026-11-08). Propuesta de tramo: el Encuentro hasta despertar con la voz.
 2. Cuando Fernando decida que esa versión está lista, se pasa a la versión nativa del teléfono, y
    ese prólogo es la prueba de concepto en Android (fps, memoria, sesión).
 Fernando pidió solo guardar lo aprendido; no se construye nada todavía. Fuente de verdad del juego:
