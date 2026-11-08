@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { AccionNuevaCtx } from '@/components/herramientas/AccionNueva';
 import { toast } from 'sonner';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -50,6 +51,8 @@ const mb = (b: number) => `${fmt2(b / 1024 / 1024)} MB`;
  * si ya se usó, lo que respondieron. Patrón «rail + lista + panel», como Soporte.
  */
 export default function EnlacesPage() {
+  // «Generar…» cuando el historial se muestra dentro de la herramienta (`AccionNueva`).
+  const accionNueva = useContext(AccionNuevaCtx);
   // El panel de teléfono NO se monta en escritorio: un <dialog> montado deja inerte la página.
   const enTelefono = !useConsultaMedia(PANTALLA_XL);
   const { user } = useAuth();
@@ -180,7 +183,7 @@ export default function EnlacesPage() {
           <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 items-start">
             {/* La barra va en la columna de la tabla: así el panel derecho empieza arriba. */}
             <div className="min-w-0">
-              <BarraLista busqueda={search} onBusqueda={setSearch} placeholder="Buscar por título, cliente o respuesta..." />
+              <BarraLista busqueda={search} onBusqueda={setSearch} placeholder="Buscar por título, cliente o respuesta..." acciones={accionNueva ? [accionNueva] : []} />
               <PixelDataTable
             unidad={['enlace', 'enlaces']}
                 singleLine

@@ -26,6 +26,7 @@ import {
 import GeneradorQR from '@/components/herramientas/GeneradorQR';
 import FormatosExcel from '@/components/herramientas/FormatosExcel';
 import HistorialHerramienta from '@/components/herramientas/HistorialHerramienta';
+import { AccionNuevaCtx } from '@/components/herramientas/AccionNueva';
 import HistorialEnlaces from '../tools/enlaces/page';
 import HistorialEntregas from '../tools/entregas/page';
 import AppMovil from '@/components/herramientas/AppMovil';
@@ -519,14 +520,11 @@ function Herramientas() {
         <div>
           <h1 className="text-[18px] font-semibold text-digi-text mb-3" style={mf}>{tool.name}</h1>
           {tool.id === 'enlace-unico' || tool.id === 'entrega-unica' ? (
-            <>
-              <div className="flex justify-end mb-3">
-                <button type="button" onClick={tool.id === 'enlace-unico' ? abrirEnlace : abrirEntrega} className={BTN_PRIMARY}>
-                  <Plus className="w-4 h-4" /> {tool.id === 'enlace-unico' ? 'Generar enlace' : 'Generar entrega'}
-                </button>
-              </div>
+            // El botón va en su barra, junto al buscador, como en las demás herramientas.
+            <AccionNuevaCtx.Provider value={{ label: tool.id === 'enlace-unico' ? 'Generar enlace' : 'Generar entrega', icon: Plus,
+              onClick: tool.id === 'enlace-unico' ? abrirEnlace : abrirEntrega, tipo: 'primaria' }}>
               {tool.id === 'enlace-unico' ? <HistorialEnlaces key={versionUsos} /> : <HistorialEntregas key={versionUsos} />}
-            </>
+            </AccionNuevaCtx.Provider>
           ) : ['convert', 'transcribe', 'qr', 'formatos-excel'].includes(tool.id) ? (
             <HistorialHerramienta
               herramienta={tool.id}
