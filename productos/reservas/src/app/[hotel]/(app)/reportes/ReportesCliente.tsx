@@ -11,6 +11,7 @@ import { Boton, Campo, Entrada, Selector, Tabla, Insignia, Tarjeta, EstadoVacio 
 import { ETIQUETA_ESTADO_RESERVA, TONO_ESTADO_RESERVA, noches } from '@/lib/reservas';
 import { dinero, numEntero } from '@/lib/formato';
 import type { EstadoReserva, EstadoPagoReserva } from '@/generated/prisma/enums';
+import { conBase } from '@/lib/base';
 
 export type FilaReporte = {
   id: number;
@@ -60,9 +61,9 @@ export default function ReportesCliente({
     return { total, abonos, saldo: total - abonos, noches: nochesTotales };
   }, [filas]);
 
-  const enlaceExcel = `/${slug}/api/reportes/excel?${new URLSearchParams(
+  const enlaceExcel = conBase(`/${slug}/api/reportes/excel?${new URLSearchParams(
     Object.entries(f).filter(([, v]) => v) as [string, string][],
-  )}`;
+  )}`);
 
   return (
     <>

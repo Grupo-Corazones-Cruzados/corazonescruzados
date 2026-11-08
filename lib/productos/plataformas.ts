@@ -1,5 +1,5 @@
 import { pool } from '@/lib/db';
-import { accesosDelUsuario, anfitrionDe, PAGADO_HASTA_GCC, PRODUCTOS, type AccesoProducto } from './accesos';
+import { accesosDelUsuario, productoDeUrl, PAGADO_HASTA_GCC, PRODUCTOS, type AccesoProducto } from './accesos';
 
 /**
  * PLATAFORMAS CON DETALLE (Fernando, 2026-10-29).
@@ -37,7 +37,7 @@ export async function plataformasDelUsuario(email: string): Promise<{ soluciones
   ).catch(() => ({ rows: [] as any[] }));
   const porAnfitrion = new Map<string, { talento: string | null; portada: string | null }>();
   for (const f of fichas) {
-    const host = anfitrionDe(f.project_url);
+    const host = productoDeUrl(f.project_url);
     if (host && !porAnfitrion.has(host)) porAnfitrion.set(host, { talento: f.talent ?? null, portada: f.portada ?? null });
   }
 
@@ -53,7 +53,7 @@ export async function plataformasDelUsuario(email: string): Promise<{ soluciones
        RETURNING id`,
       [a.producto, a.slug, a.nombre, email.toLowerCase()],
     );
-    const ficha = porAnfitrion.get(anfitrionDe(a.url));
+    const ficha = porAnfitrion.get(productoDeUrl(a.url));
     const talento = ficha?.talento ?? null;
     plataformas.push({
       ...a,

@@ -37,10 +37,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Esta cuenta no tiene ese negocio' }, { status: 403 });
 
   const ticket = await emitirPase(user.email, producto.clave, slug);
-  const url = new URL(`${producto.url}/${encodeURIComponent(slug)}/entrar`);
+  // La dirección del producto es relativa (`/p/<producto>`, bajo GCC World) o, si aún no se migró, su subdominio.
+  const url = new URL(`${producto.url}/${encodeURIComponent(slug)}/entrar`, origenPublico(req));
   url.searchParams.set('ticket', ticket);
   url.searchParams.set('destino', destino);
   // Desde una pestaña normal (no dentro de la app), el producto se ve completo, con su menú.
   if (q.get('fuera') === '1') url.searchParams.set('fuera', '1');
+  // Bajo GCC World la redirección es RELATIVA: se queda en el dominio desde el que se entró (app, www o el
+  // M1). `origenPublico` sale de una variable fijada al compilar y saltaría a producción.
+  if (producto.url.startsWith('/'))
+    return new NextResponse(null, { status: 302, headers: { Location: `${url.pathname}${url.search}`, 'Cache-Control': 'no-store' } });
   return NextResponse.redirect(url);
 }

@@ -14,7 +14,7 @@ import ImageGallery from '@/components/ui/ImageGallery';
 import CardMedia from '@/components/marketplace/CardMedia';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { FolderKanban, Package, Workflow, X, ListChecks, FileText, ExternalLink, Image as ImageIcon, PlayCircle, KeyRound, Copy, Check, LogIn, LayoutGrid } from 'lucide-react';
-import { anfitrionDe, type AccesoProducto } from '@/lib/productos/tipos';
+import { productoDeUrl, type AccesoProducto } from '@/lib/productos/tipos';
 import { fmt2 } from '@/lib/format';
 import { esUrlCloudinary, urlRedimensionada } from '@/lib/cloudinary-url';
 import { slugDeTitulo } from '@/lib/marketplace/slug';
@@ -165,7 +165,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
       .catch(() => setAccesos({}));
   }, []);
   const accesosDe = (item: any): AccesoProducto[] | undefined =>
-    item?.item_type === 'product' || item?.es_suscripcion ? accesos[anfitrionDe(item?.project_url)] : undefined;
+    item?.item_type === 'product' || item?.es_suscripcion ? accesos[productoDeUrl(item?.project_url)] : undefined;
   const isCatalog = CATALOG_VALUES.has(tab);
 
   const [items, setItems] = useState<any[]>([]);

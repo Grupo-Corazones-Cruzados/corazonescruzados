@@ -15,22 +15,34 @@ export type AccesoProducto = {
   diasDeRetraso: number | null;
 };
 
-/** El anfitrión de la dirección de un producto, que es como el catálogo lo identifica (`project_url`). */
-export const anfitrionDe = (url: string | null | undefined) => {
+const CLAVES_PRODUCTO = ['reservas', 'pedidos', 'catering', 'planificaciones', 'automatizaciones'] as const;
+
+/**
+ * QUÉ PRODUCTO ES UNA DIRECCIÓN, que es como el catálogo y Accesos lo identifican (`project_url`).
+ * Reconoce la dirección nueva (`/p/<producto>`, bajo GCC World) y las viejas (`<producto>.grupocc.org` y
+ * `<producto>-….up.railway.app`), que siguen en `member_portfolio_items`. Antes era el anfitrión: con
+ * todos los productos bajo `app.grupocc.org` habrían chocado (2026-11-08).
+ */
+export const productoDeUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
   try {
-    return url ? new URL(url).hostname : '';
+    const u = new URL(url, 'https://app.grupocc.org');
+    const ruta = u.pathname.match(/^\/p\/([a-z]+)/)?.[1];
+    if (ruta) return ruta;
+    const h = u.hostname;
+    return CLAVES_PRODUCTO.find((c) => h === `${c}.grupocc.org` || (h.startsWith(`${c}-`) && h.endsWith('.up.railway.app'))) ?? h;
   } catch {
     return '';
   }
 };
 
 /**
- * Cada producto vive en su subdominio (Fernando, 2026-09-21): el nombre del oficio, a
- * secas, igual que el servicio de Railway y el esquema de la base. Las direcciones
- * `*.up.railway.app` siguen respondiendo, pero ya no se enlazan desde ningún sitio.
+ * DÓNDE VIVE CADA PRODUCTO. Desde el 2026-11-08 (Fernando: sin subdominios) se sirven desde GCC World
+ * bajo `/p/<producto>` (la pasarela `app/p/[producto]`), con dirección RELATIVA. Los que aún tienen su
+ * subdominio están a medio migrar: se pasan uno a uno junto con su `basePath`.
  */
 export const PRODUCTOS = [
-  { clave: 'reservas', esquema: 'reservas', nombre: 'Gestión de Reservas', url: 'https://reservas.grupocc.org' },
+  { clave: 'reservas', esquema: 'reservas', nombre: 'Gestión de Reservas', url: '/p/reservas' },
   { clave: 'pedidos', esquema: 'pedidos', nombre: 'Gestión de Pedidos', url: 'https://pedidos.grupocc.org' },
   { clave: 'catering', esquema: 'catering', nombre: 'Gestión de Catering', url: 'https://catering.grupocc.org' },
   { clave: 'planificaciones', esquema: 'planificaciones', nombre: 'Planificación de Clases', url: 'https://planificaciones.grupocc.org' },

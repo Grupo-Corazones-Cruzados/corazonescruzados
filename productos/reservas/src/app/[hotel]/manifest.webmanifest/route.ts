@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { ACENTO_GCC, esHexValido } from '@/lib/marca';
+import { conBase } from '@/lib/base';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,19 +31,19 @@ export async function GET(_: Request, { params }: { params: Promise<{ hotel: str
       name: `${inquilino.nombre} · Reservas`,
       short_name: inquilino.nombre.slice(0, 12),
       description: 'Gestión de reservas: ubicaciones, suites, agenda y reportes.',
-      id: `/${hotel}/`,
-      start_url: `/${hotel}/panel`,
-      scope: `/${hotel}/`,
+      id: conBase(`/${hotel}/`),
+      start_url: conBase(`/${hotel}/panel`),
+      scope: conBase(`/${hotel}/`),
       display: 'standalone',
       orientation: 'portrait',
       lang: 'es',
       theme_color: color,
       background_color: fondo,
       icons: [
-        { src: '/icono-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: '/icono-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-        { src: '/apple-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
-        { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+        { src: conBase('/icono-192.png'), sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: conBase('/icono-512.png'), sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: conBase('/apple-icon.png'), sizes: '180x180', type: 'image/png', purpose: 'any' },
+        { src: conBase('/icon.svg'), sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
       ],
     },
     {

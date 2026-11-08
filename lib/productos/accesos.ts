@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
-import { anfitrionDe, type AccesoProducto } from './tipos';
+import { productoDeUrl, type AccesoProducto } from './tipos';
 
-export { anfitrionDe, type AccesoProducto };
+export { productoDeUrl, type AccesoProducto };
 
 /**
  * QUÉ PRODUCTOS PUEDE ABRIR UN USUARIO DESDE EL MARKETPLACE (Fernando, 2026-09-16:
@@ -68,7 +68,7 @@ export async function accesosDelUsuario(email: string | null | undefined): Promi
       if (!rows.length) return null;
       const hoy = new Date();
       hoy.setUTCHours(0, 0, 0, 0);
-      return [anfitrionDe(p.url), rows.map((r: { slug: string; nombre: string; cortesia: boolean; pagado_hasta: Date | null }) => {
+      return [productoDeUrl(p.url), rows.map((r: { slug: string; nombre: string; cortesia: boolean; pagado_hasta: Date | null }) => {
         const pagado = r.pagado_hasta ? new Date(r.pagado_hasta) : null;
         const retraso = r.cortesia || !pagado ? null : Math.max(0, Math.round((hoy.getTime() - pagado.getTime()) / 86_400_000));
         return {
