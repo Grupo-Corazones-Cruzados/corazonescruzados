@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Volume2, VolumeX, Send, Loader2, AlertTriangle, X, Plus } from 'lucide-react';
-import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { Volume2, VolumeX, Send, Loader2, AlertTriangle, X, Plus, PhoneOff } from 'lucide-react';
+import { BTN_SECONDARY } from '@/components/ui/Button';
 import Segmentado from '@/components/ui/Segmentado';
 import BotonEditar from '@/components/ui/BotonEditar';
 import BotonEliminar from '@/components/ui/BotonEliminar';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PixelInput from '@/components/ui/PixelInput';
+import Interruptor from '@/components/ui/Interruptor';
 import { QuickEditDialog } from '@/components/ui/EditDialog';
 import { hace } from '@/components/espacio/api';
 import { useGumdramon, type Consulta, type Dictado, type SesionGum } from './useGumdramon';
@@ -104,6 +105,7 @@ export default function PanelGumdramon() {
   const [editando, setEditando] = useState<SesionGum | null>(null);
   const [nombre, setNombre] = useState('');
   const [borrando, setBorrando] = useState<SesionGum | null>(null);
+  const [terminando, setTerminando] = useState(false);
   const fin = useRef<HTMLDivElement>(null);
 
   useEffect(() => { if (vista !== 'sesiones') fin.current?.scrollIntoView?.({ block: 'end' }); }, [g.consultas, g.dictado, g.lineas.length, vista]);
@@ -133,9 +135,17 @@ export default function PanelGumdramon() {
             <span className="block h-full bg-accent" style={{ width: `${Math.min(100, g.nivel * 800)}%` }} />
           </span>
         )}
+        {/* Encender = escuchar con ESTE teléfono; si escucha la Mac, encenderlo se lo quita. */}
+        <Interruptor activo={g.capturando} onChange={() => g.alternar()} disabled={!g.conectado}
+          etiqueta={g.capturando ? 'Desactivar Gumdramon' : g.enOtro ? 'Escuchar con este teléfono' : 'Activar Gumdramon'} className="shrink-0 ml-1" />
         <button type="button" onClick={g.alternarVoz} aria-label={g.voz ? 'Apagar la voz' : 'Activar la voz'} aria-pressed={g.voz} title={g.voz ? 'Voz activada' : 'Voz apagada'}
           className="w-10 h-10 shrink-0 rounded-lg inline-flex items-center justify-center text-digi-muted hover:text-digi-text">
           {g.voz ? <Volume2 className="w-5 h-5 text-accent" /> : <VolumeX className="w-5 h-5" />}
+        </button>
+        <button type="button" onClick={() => setTerminando(true)} disabled={!g.activo && !g.lineas.length}
+          aria-label="Terminar la reunión" title="Terminar la reunión"
+          className="w-10 h-10 shrink-0 rounded-lg inline-flex items-center justify-center text-red-500 hover:bg-red-500/10 disabled:text-digi-muted disabled:opacity-40 disabled:hover:bg-transparent">
+          <PhoneOff className="w-5 h-5" />
         </button>
       </div>
 
@@ -155,7 +165,7 @@ export default function PanelGumdramon() {
       <main className="flex-1 min-h-0 overflow-y-auto px-3 py-3">
         {vista === 'respuestas' && (
           !g.consultas.length && !g.dictado
-            ? <Vacio texto={g.capturando ? 'Di «GUMDRAMON» y tu pregunta.' : g.enOtro ? 'Gumdramon está escuchando desde la Mac.' : 'Actívalo para empezar.'} />
+            ? <Vacio texto={g.capturando ? 'Di «GUMDRAMON» y tu pregunta.' : g.enOtro ? 'Gumdramon está escuchando desde la Mac.' : 'Enciende el interruptor de arriba para empezar.'} />
             : (
               <div className="space-y-2.5">
                 {g.consultas.map((c) => <TarjetaConsulta key={c.id} c={c} detener={g.detenerConsulta} />)}
@@ -206,18 +216,15 @@ export default function PanelGumdramon() {
             className="field-control flex-1 min-w-0 h-11 px-3 rounded-lg bg-digi-darker border border-digi-border text-[16px] text-digi-text placeholder:text-digi-muted/70 focus:outline-none disabled:opacity-60" />
           <button type="submit" disabled={!g.activo || !texto.trim()} aria-label="Enviar" className={`${BTN_SECONDARY} !h-11 !w-11 !px-0 shrink-0`}><Send className="w-4 h-4" /></button>
         </form>
-        <div className="grid grid-cols-2 gap-2">
-          <button type="button" onClick={g.terminar} disabled={!g.activo && !g.lineas.length} className={`${BTN_SECONDARY} !h-11`}>Terminar</button>
-          <button type="button" onClick={g.alternar} disabled={!g.conectado} className={`${BTN_PRIMARY} !h-11`}>
-            {g.capturando ? 'Desactivar' : g.enOtro ? 'Usar este teléfono' : 'Activar'}
-          </button>
-        </div>
       </footer>
 
       <QuickEditDialog open={!!editando} title="Nombre de la sesión" onClose={() => setEditando(null)} canSave={!!nombre.trim()}
         onSave={() => { if (editando) g.renombrar(editando.id, nombre.trim()); setEditando(null); }}>
         <PixelInput label="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} autoFocus maxLength={200} />
       </QuickEditDialog>
+      <PixelConfirm open={terminando} title="Terminar la reunión" confirmLabel="Terminar" danger
+        message="Gumdramon deja de escuchar y la transcripción se guarda en Recordatorios."
+        onConfirm={() => { setTerminando(false); g.terminar(); }} onCancel={() => setTerminando(false)} />
       <PixelConfirm open={!!borrando} title="Eliminar la sesión" danger confirmLabel="Eliminar"
         message={`«${borrando?.titulo ?? ''}» va a la papelera del Espacio de trabajo y se borra a los 30 días.`}
         onConfirm={() => { if (borrando) g.eliminar(borrando.id); setBorrando(null); }} onCancel={() => setBorrando(null)} />
