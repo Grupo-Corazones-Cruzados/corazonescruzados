@@ -89,7 +89,7 @@ En la misma página:
 
 **Qué debe verse:** quedan la M4 Pro, el MacBook Air (M1), el iPhone y el iPad.
 
-### ☐ C3. Router: contraseña de administración y UPnP (5-10 minutos; desde casa, con cualquier equipo)
+### ⏸ C3. Router: UPnP (aplazado por Fernando, 2026-11-08: la contraseña de administración ya no es la de fábrica y no la cambiará; apagar UPnP queda para el futuro)
 **Por qué:** quien entre al wifi y adivine la contraseña del router puede abrir puertos hacia el M1.
 1. Desde un equipo o el teléfono **conectado a la red de casa**, abrir **http://192.168.100.1**.
 2. Entrar con el usuario y la contraseña de administración (si nunca se cambiaron, suelen venir en la etiqueta
