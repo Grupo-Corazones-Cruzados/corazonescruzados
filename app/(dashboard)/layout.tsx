@@ -17,6 +17,7 @@ import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import CabeceraMovil from '@/components/dashboard/CabeceraMovil';
 import CabeceraSeccion from '@/components/dashboard/CabeceraSeccion';
 import MenuCentralizado from '@/components/centralized/MenuCentralizado';
+import MenuAccesos from '@/components/accesos/MenuAccesos';
 import { ProveedorMenuMovil } from '@/components/dashboard/MenuMovil';
 import DashboardBreadcrumb from '@/components/dashboard/DashboardBreadcrumb';
 import DashboardAccessGuard from '@/components/dashboard/DashboardAccessGuard';
@@ -56,6 +57,8 @@ function Panel({ children }: { children: React.ReactNode }) {
   const seccion = enApp && esSeccionDeApp(pathname);
   // Centralizado se navega con su mapa 4P y la cabecera de siempre (logo → Accesos).
   const enCentralizado = seccion && (pathname === '/dashboard/centralized' || pathname.startsWith('/dashboard/centralized/'));
+  // Accesos lleva su propio menú lateral (Apps, Productos, Herramientas) y la cabecera del teléfono.
+  const enAccesos = seccion && pathname === '/dashboard/accesos';
   const mainRef = useRef<HTMLElement>(null);
   // Las transiciones de teléfono de `movimiento.css` solo corren dentro de una app.
   useEffect(() => {
@@ -94,6 +97,7 @@ function Panel({ children }: { children: React.ReactNode }) {
       <PolicyBanner collapsed />
       {!seccion && <DashboardSidebar />}
       {enCentralizado && <MenuCentralizado />}
+      {enAccesos && <MenuAccesos />}
       {/* ⇒ LA CABECERA DEL TELÉFONO VA EN EL FLUJO, NO PEGADA A LA VENTANA.
           Empuja al contenido en vez de taparlo, así que **ninguna página puede quedar
           debajo** — no hay «debajo». Por eso el `main` ya no necesita reservar hueco
@@ -120,8 +124,8 @@ function Panel({ children }: { children: React.ReactNode }) {
           Por debajo de `lg` la columna mide la pantalla (`h-dvh`), la cabecera se queda fija
           y el único que se desplaza —y solo si su contenido no cabe— es el `main`. En
           escritorio no hay cabecera y todo sigue como siempre. */}
-      <div className={`flex-1 min-w-0 flex flex-col ml-0 ${seccion ? '' : 'lg:ml-16'} max-lg:min-h-0`}>
-        {seccion && !enCentralizado ? <CabeceraSeccion /> : <CabeceraMovil siempre={enCentralizado} />}
+      <div className={`flex-1 min-w-0 flex flex-col ml-0 ${seccion && !enAccesos ? '' : 'lg:ml-16'} max-lg:min-h-0`}>
+        {seccion && !enCentralizado && !enAccesos ? <CabeceraSeccion /> : <CabeceraMovil siempre={enCentralizado} />}
         {/* El relleno inferior sale de la MISMA variable que el alto del pie: antes era
             `pb-14` escrito a mano contra un pie de 36 px, y al crecer el pie en teléfono
             el contenido se le habría metido debajo. */}
