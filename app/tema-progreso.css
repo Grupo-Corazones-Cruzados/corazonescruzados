@@ -162,10 +162,17 @@
   border-radius: var(--radio-control);
 }
 
-/* ── El pie de la ruta: cristal, como la barra del pensamiento ─────────────────────── */
-.corp.tema-progreso:not(.dark) [data-app-footer] { background-color: rgba(255, 255, 255, 0.72); border-top-color: var(--tarjeta-borde); }
-.corp.tema-progreso.dark [data-app-footer] { background-color: rgba(13, 10, 26, 0.78); }
-.corp.tema-progreso #barra-acciones-movil > div { background-color: var(--tarjeta-fondo); border-top-color: var(--tarjeta-borde); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+/* ── El pie de la ruta y la barra de acciones del teléfono: OPACOS ─────────────────── */
+/* Eran de cristal (72-86 %) y el contenido se veía pasar por detrás, mezclado con los botones y la
+   navegación (Fernando, 2026-11-08: «tiene cierta transparencia que no se ve bien»). Llevan el color
+   sólido de la tarjeta de cada tema, claro u oscuro, sin desenfoque. */
+.corp.tema-progreso [data-app-footer],
+.corp.tema-progreso #barra-acciones-movil > div {
+  background-color: var(--color-digi-card);
+  border-top-color: var(--tarjeta-borde);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 
 /* ── Piezas de la portada, reutilizables en cualquier pantalla del panel ────────────── */
 
