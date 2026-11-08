@@ -12185,8 +12185,9 @@ Fernando pidió solo guardar lo aprendido; no se construye nada todavía. Fuente
 - Trampas de la API de Railway: `serviceInstanceUpdate` da «Not Authorized» a ratos (reintentar minutos después);
   un despliegue que arranca justo tras cambiar `healthcheckPath` aún usa el valor viejo (relanzar con
   `serviceInstanceDeployV2`); `APP_URL` de los tres productos NO se deja cambiar («Problem processing request»).
-- ⚠️ **Requisito antes de borrar dominios:** `APP_URL` de Catering debe ser `https://app.grupocc.org/p/catering`
-  (enlaces de sus correos, `acciones/clientes.ts`); hoy apunta al subdominio, que redirige. Cambiarlo en el panel.
+- ✅ `APP_URL` de Pedidos, Catering y Planificaciones = `https://app.grupocc.org/p/<p>` (enlaces de los correos de
+  Catering). La API GraphQL lo rechazaba; **la CLI sí**: `railway link -p <proyecto> -e production -s <servicio>` en
+  una carpeta temporal y `railway variables --service <s> --environment production --set "APP_URL=…"`.
 - Coordinación: la sesión «Publicación Tiendas GCC» rediseña los cuatro productos respetando `conBase`.
 - Falta: Automatizaciones (webhook y alta de Meta con Fernando, worker), datos `member_portfolio_items`, borrar los
   dominios (Railway por API; Cloudflare con token o a mano).
