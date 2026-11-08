@@ -159,3 +159,24 @@ export async function leerPasoDos(): Promise<PasoDos | null> {
 export async function cerrarPasoDos() {
   (await cookies()).delete(COOKIE_PASO2);
 }
+
+/**
+ * DENTRO DE GCC WORLD (Fernando, 2026-11-08). Quien entra con un pase de la plataforma
+ * (`/<slug>/entrar`) ve el producto enmarcado en GCC World, que ya pone el menú: aquí no se pinta el
+ * propio. Cookie de sesión del navegador (sin caducidad) que borra cualquier entrada normal.
+ */
+export const COOKIE_EMBEBIDO = 'catering_embebido';
+
+export async function marcarEmbebido() {
+  (await cookies()).set(COOKIE_EMBEBIDO, '1', {
+    httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/',
+  });
+}
+
+export async function quitarEmbebido() {
+  (await cookies()).delete(COOKIE_EMBEBIDO);
+}
+
+export async function estaEmbebido(): Promise<boolean> {
+  return (await cookies()).get(COOKIE_EMBEBIDO)?.value === '1';
+}

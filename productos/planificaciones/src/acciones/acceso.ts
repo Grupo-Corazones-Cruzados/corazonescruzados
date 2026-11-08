@@ -12,7 +12,7 @@ import {
 } from '@/lib/identidadGcc';
 import {
   abrirSesionUsuario, abrirSesionOperador, cerrarSesion,
-  abrirPasoDos, leerPasoDos, cerrarPasoDos, COOKIE_GCC, COOKIE_SESION,
+  abrirPasoDos, leerPasoDos, cerrarPasoDos, quitarEmbebido, COOKIE_GCC, COOKIE_SESION,
 } from '@/lib/sesion';
 
 export type ResultadoAcceso = {
@@ -154,6 +154,8 @@ async function terminarDeEntrar(
       data: { ultimoAcceso: new Date(), intentosFallidos: 0, bloqueadoHasta: null },
     });
   await cerrarPasoDos();
+  // Una entrada normal es fuera de GCC World: vuelve el menú propio.
+  await quitarEmbebido();
   await abrirSesionUsuario({
     uid: cuenta.id,
     inquilinoId: inquilino.id,

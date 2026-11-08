@@ -2,6 +2,7 @@ import { exigirContexto } from '@/lib/inquilino';
 import { AplicaMarca } from '@/componentes/Marca';
 import { BarraLateral, BarraInferior, HuecoBarraAcciones } from '@/componentes/Navegacion';
 import { AvisoEscaparate } from '@/componentes/AvisoEscaparate';
+import { estaEmbebido } from '@/lib/sesion';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,8 @@ export default async function LayoutApp({
 }) {
   const { negocio } = await params;
   const { inquilino, sesion } = await exigirContexto(negocio);
+  // Dentro de GCC World el menú lo pone la plataforma (`/<slug>/entrar`, `lib/sesion.ts`).
+  const embebido = await estaEmbebido();
   const menu = {
     slug: negocio,
     negocio: inquilino.nombre,
@@ -29,15 +32,15 @@ export default async function LayoutApp({
 
   return (
     <AplicaMarca colorAcento={inquilino.colorAcento} tema={inquilino.tema}>
-      <BarraLateral {...menu} />
+      {!embebido && <BarraLateral {...menu} />}
       {/* En el teléfono el contenido llena la pantalla para que el hueco de la barra de
           acciones (último hijo, `mt-auto`) quede abajo aunque la página sea corta. */}
-      <div className="flex min-h-[calc(100dvh-env(safe-area-inset-top))] flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] lg:ml-16 lg:block lg:min-h-0 lg:pb-0 print:ml-0 print:pb-0">
+      <div className={embebido ? 'flex min-h-dvh flex-col' : "flex min-h-[calc(100dvh-env(safe-area-inset-top))] flex-col pb-[calc(4rem+env(safe-area-inset-bottom))] lg:ml-16 lg:block lg:min-h-0 lg:pb-0 print:ml-0 print:pb-0"}>
         {inquilino.soloLectura && <AvisoEscaparate />}
         {children}
         <HuecoBarraAcciones />
       </div>
-      <BarraInferior {...menu} />
+      {!embebido && <BarraInferior {...menu} />}
     </AplicaMarca>
   );
 }

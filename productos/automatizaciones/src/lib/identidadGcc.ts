@@ -129,3 +129,13 @@ export async function passkeyTerminar(
   const r = await preguntar({ paso: 'passkey-terminar', email, origen, credencial });
   return r?.ok === true;
 }
+
+/**
+ * Canjea un pase de entrada de GCC World (`/<slug>/entrar`): la plataforma lo marca como usado y
+ * devuelve el correo de quien lo pidió, si el pase es de este producto y de este cliente. `null` si
+ * no vale o si no se pudo preguntar: nunca se entra por un fallo.
+ */
+export async function canjearPase(ticket: string, slug: string): Promise<string | null> {
+  const r = await preguntar({ paso: 'canjear', ticket, producto: 'automatizaciones', slug });
+  return r?.ok === true && typeof r.email === 'string' ? r.email.toLowerCase() : null;
+}

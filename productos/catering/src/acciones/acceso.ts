@@ -19,6 +19,7 @@ import {
   abrirPasoDos,
   leerPasoDos,
   cerrarPasoDos,
+  quitarEmbebido,
   COOKIE_GCC,
   COOKIE_SESION,
 } from '@/lib/sesion';
@@ -193,6 +194,8 @@ async function terminarDeEntrar(
       data: { ultimoAcceso: new Date(), intentosFallidos: 0, bloqueadoHasta: null },
     });
   await cerrarPasoDos();
+  // Una entrada normal es fuera de GCC World: vuelve el menú propio.
+  await quitarEmbebido();
   await abrirSesionUsuario({
     tipo: 'personal',
     uid: cuenta.id,

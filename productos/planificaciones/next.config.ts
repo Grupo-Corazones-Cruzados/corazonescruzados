@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   // Las acciones reciben archivos (adjuntos, formatos, el currículo del Ministerio: 3 MB);
   // el tope por defecto de Next es 1 MB y el del producto, 10 MB (`MAX_TAMANO`).
   experimental: { serverActions: { bodySizeLimit: '12mb' } },
+  // Solo GCC World puede mostrarlo dentro de un marco (Accesos de las apps, 2026-11-08). Antes cualquier
+  // web podía enmarcarlo.
+  async headers() {
+    return [{ source: '/:path*', headers: [{ key: 'Content-Security-Policy', value: "frame-ancestors 'self' https://app.grupocc.org" }] }];
+  },
 };
 
 export default nextConfig;

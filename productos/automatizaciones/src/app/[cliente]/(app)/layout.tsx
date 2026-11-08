@@ -7,6 +7,7 @@ import { urlLogo } from '@/lib/marca';
 import { BarraLateral, BarraInferior, HuecoBarraAcciones } from '@/componentes/Navegacion';
 import { AvisoEscaparate } from '@/componentes/AvisoEscaparate';
 import { AvisoVistaComo } from '@/componentes/AvisoVistaComo';
+import { estaEmbebido } from '@/lib/sesion';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,8 @@ export default async function LayoutApp({
 }) {
   const { cliente } = await params;
   const { inquilino, sesion, montados } = await exigirContexto(cliente);
+  // Dentro de GCC World el menú lo pone la plataforma (`/<slug>/entrar`, `lib/sesion.ts`).
+  const embebido = await estaEmbebido();
 
   // La foto de quien entra con su cuenta de GCC World (2026-11-08), servida por `/<cliente>/foto`
   // (en la plataforma es un `data:` grande: no se mete en cada página).
@@ -43,8 +46,8 @@ export default async function LayoutApp({
   return (
     <AplicaMarca>
       <div className="contents" style={{ '--alto-aviso': aviso ? '2rem' : '0px' } as CSSProperties}>
-      {aviso && <div className="hidden h-8 overflow-hidden lg:block [&>*]:h-8 [&>*]:py-0">{aviso}</div>}
-      <BarraLateral
+      {aviso && !embebido && <div className="hidden h-8 overflow-hidden lg:block [&>*]:h-8 [&>*]:py-0">{aviso}</div>}
+      {!embebido && <BarraLateral
         slug={cliente}
         cliente={inquilino.nombre}
         logoUrl={urlLogo(inquilino)}
@@ -53,7 +56,7 @@ export default async function LayoutApp({
         montados={montados}
         foto={foto}
         enVista={!!sesion.suplantadoPor}
-      />
+      />}
       {/*
         ⭐⭐ EL ALTO SE HEREDA; NO SE CALCULA RESTANDO PÍXELES A MANO.
         (Fernando, 2026-09-23, y con razón: «terminas generando un desbordamiento».)
@@ -78,15 +81,18 @@ export default async function LayoutApp({
         `main` es `flex-col` por la barra de acciones del teléfono: su hueco va como ÚLTIMO
         hijo y con `mt-auto` baja al fondo aunque la página sea corta. Una pantalla que pide
         `h-full` sigue midiendo exactamente lo que queda (el alto de `main` es definido).
+
+        Dentro de GCC World no hay raíl ni barra táctil: la columna es la ventana entera (el alto
+        sigue siendo DEFINIDO, por lo de arriba) y el aviso va dentro de ella en todos los anchos.
       */}
-      <div className="flex h-[calc(100dvh-env(safe-area-inset-top))] flex-col lg:ml-16 lg:h-[calc(100dvh-env(safe-area-inset-top)-var(--alto-aviso,0px))]">
-        {aviso && <div className="lg:hidden">{aviso}</div>}
-        <main className="desplaza flex min-h-0 flex-1 flex-col overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+      <div className={embebido ? 'flex h-dvh flex-col' : 'flex h-[calc(100dvh-env(safe-area-inset-top))] flex-col lg:ml-16 lg:h-[calc(100dvh-env(safe-area-inset-top)-var(--alto-aviso,0px))]'}>
+        {aviso && <div className={embebido ? undefined : 'lg:hidden'}>{aviso}</div>}
+        <main className={embebido ? 'desplaza flex min-h-0 flex-1 flex-col overflow-y-auto' : 'desplaza flex min-h-0 flex-1 flex-col overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0'}>
           {children}
           <HuecoBarraAcciones />
         </main>
       </div>
-      <BarraInferior
+      {!embebido && <BarraInferior
         slug={cliente}
         cliente={inquilino.nombre}
         logoUrl={urlLogo(inquilino)}
@@ -95,7 +101,7 @@ export default async function LayoutApp({
         montados={montados}
         foto={foto}
         enVista={!!sesion.suplantadoPor}
-      />
+      />}
       </div>
     </AplicaMarca>
   );
