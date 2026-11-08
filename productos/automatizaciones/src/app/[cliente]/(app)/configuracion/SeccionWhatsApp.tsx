@@ -47,12 +47,13 @@ const ESTADO: Record<string, { texto: string; tono: 'exito' | 'aviso' | 'error' 
  * El alta del número por Embedded Signup con COEXISTENCIA, portada de la plataforma
  * (`AgenteConexion.tsx`, retirado con el módulo). Las tres cicatrices que trae:
  *
- *  1. `featureType: 'whatsapp_business_app_onboarding'`. Sin él Meta abre el flujo
- *     estándar, cuyo único camino para un número que ya usa WhatsApp Business es el que
- *     se lo quita del teléfono (Peter Tours, 2026-08-03).
+ *  1. La coexistencia hay que PEDIRLA. Sin ella Meta abre el flujo estándar, cuyo único
+ *     camino para un número que ya usa WhatsApp Business es el que se lo quita del
+ *     teléfono (Peter Tours, 2026-08-03). Desde 2026-11-07 se pide con Embedded Signup v5
+ *     (`extras.version = 'v5'`), donde viene activada por defecto.
  *  2. El callback de `FB.login` NO puede ser `async`: el SDK lo rechaza y no abre nada.
  *  3. El `postMessage` de Meta es una pista: en coexistencia el evento es
- *     `FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING` y trae solo `waba_id`. El servidor deduce
+ *     `FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING` (en v5 la cuenta va en `messaging_account_ids`). El servidor deduce
  *     la cuenta del token si no llega.
  */
 export default function SeccionWhatsApp({
@@ -86,7 +87,7 @@ export default function SeccionWhatsApp({
     if (!appId || !configId) return;
     if (window.FB) { setSdkListo(true); return; }
     window.fbAsyncInit = () => {
-      window.FB.init({ appId, cookie: true, xfbml: false, version: 'v21.0' });
+      window.FB.init({ appId, cookie: true, xfbml: false, version: 'v27.0' });
       setSdkListo(true);
     };
     if (document.getElementById('sdk-meta')) return;
@@ -105,8 +106,12 @@ export default function SeccionWhatsApp({
         const d = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data;
         if (d?.type !== 'WA_EMBEDDED_SIGNUP') return;
         hablo.current = true;
+        // v5: la cuenta llega en `messaging_account_ids` (sustituye a `waba_id`).
         if (typeof d.event === 'string' && d.event.startsWith('FINISH'))
-          datosDelAlta.current = { wabaId: d.data?.waba_id, phoneNumberId: d.data?.phone_number_id };
+          datosDelAlta.current = {
+            wabaId: d.data?.messaging_account_ids?.[0] ?? d.data?.waba_id,
+            phoneNumberId: d.data?.phone_number_id,
+          };
         if (d.event === 'CANCEL') toast.info('Se cerró la ventana de Meta sin terminar.');
       } catch { /* mensajes de Meta que no son del alta */ }
     };
@@ -149,7 +154,14 @@ export default function SeccionWhatsApp({
           config_id: configId,
           response_type: 'code',
           override_default_response_type: true,
-          extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' },
+          /**
+           * ⚠️ EMBEDDED SIGNUP v5 (2026-11-07). Meta retiró v2 y v3 el 2026-10-15: un launch
+           * con `sessionInfoVersion: '3'` + `featureType` se atiende como v4 y, con nuestra
+           * configuración, abrió la lista estándar «Agrega tu número… / Ingresar un nuevo
+           * número» en vez de la coexistencia. En v5 la coexistencia viene activada por
+           * defecto; `version` va DENTRO de `extras`.
+           */
+          extras: { version: 'v5' },
         },
       );
     } catch (e) {
