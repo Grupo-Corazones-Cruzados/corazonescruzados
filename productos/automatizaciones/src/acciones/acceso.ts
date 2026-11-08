@@ -11,6 +11,7 @@ import {
 } from '@/lib/identidadGcc';
 import {
   abrirSesionUsuario,
+  leerSesionUsuario,
   abrirSesionOperador,
   cerrarSesion,
   abrirPasoDos,
@@ -311,6 +312,14 @@ export async function entrarConPasskey(
 }
 
 export async function salir(slug: string) {
+  // Salir en mitad de «ver como» también cierra su anotación.
+  const sesion = await leerSesionUsuario();
+  if (sesion?.suplantadoPor) {
+    await prisma.vistaComo.updateMany({
+      where: { adminId: sesion.suplantadoPor, usuarioId: sesion.uid, terminada: null },
+      data: { terminada: new Date() },
+    });
+  }
   await cerrarSesion(COOKIE_SESION);
   await cerrarPasoDos();
   redirect(`/${slug}/acceso`);

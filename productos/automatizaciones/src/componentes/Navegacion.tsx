@@ -237,7 +237,8 @@ export function BarraLateral(props: Props) {
         onMouseEnter={() => setSobreElMenu(true)}
         onMouseLeave={() => setSobreElMenu(false)}
         className={cn(
-          'fixed inset-y-0 left-0 z-40 hidden flex-col border-r border-borde bg-tarjeta lg:flex transition-[width] duration-200 print:hidden',
+          // Empieza bajo la franja de aviso (demostración / «ver como») si la hay: `--alto-aviso`.
+          'fixed bottom-0 left-0 top-[var(--alto-aviso,0px)] z-40 hidden flex-col border-r border-borde bg-tarjeta lg:flex transition-[width] duration-200 print:hidden',
           colapsado ? 'w-16' : 'w-60 shadow-2xl',
         )}
       >
@@ -414,7 +415,9 @@ export function CabeceraPagina({
   const hayMenu = !!menu?.length;
 
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-3.5 sm:px-6 lg:flex-wrap print:hidden">
+    <div className="flex min-h-[68px] items-center justify-between gap-3 border-b border-borde bg-tarjeta px-4 py-2 sm:px-6 lg:flex-wrap print:hidden">
+      {/* ALTO MÍNIMO = el de la cabecera del menú (68 px), para que sus bordes inferiores queden en
+        la misma línea (Fernando, 2026-11-08). Con la línea de estado (`extra`) también cabe en 68. */}
       <div className="flex min-w-0 items-start gap-2">
         {volver && (
           <Link href={volver.href} aria-label={volver.etiqueta} title={volver.etiqueta}
@@ -431,18 +434,18 @@ export function CabeceraPagina({
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-1">
             {tituloTelefono ? (
-              <h1 className="truncate text-[17px] font-semibold text-texto">
+              <h1 className="truncate text-[17px] font-semibold leading-6 text-texto">
                 <span className="lg:hidden">{tituloTelefono}</span>
                 <span className="hidden lg:inline">{titulo}</span>
               </h1>
             ) : (
-              <h1 className="truncate text-[17px] font-semibold text-texto">{titulo}</h1>
+              <h1 className="truncate text-[17px] font-semibold leading-6 text-texto">{titulo}</h1>
             )}
             {(descripcion || !!detalles?.length) && (
               <BurbujaDetalles texto={descripcion} detalles={detalles} titulo={detalles?.length ? `Datos de ${titulo}` : 'Ayuda'} className="shrink-0" />
             )}
           </div>
-          {extra && <div className="mt-1.5">{extra}</div>}
+          {extra && <div className="mt-0.5 leading-4">{extra}</div>}
         </div>
       </div>
       {hayMenu && <MenuMas acciones={menu!} />}

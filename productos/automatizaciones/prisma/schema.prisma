@@ -856,3 +856,15 @@ model Logo {
 
   @@map("logos")
 }
+
+/// «Ver como este usuario»: quién miró la app con los ojos de quién y cuándo (migración 015).
+model VistaComo {
+  id          Int       @id @default(autoincrement())
+  inquilinoId Int       @map("inquilino_id")
+  adminId     Int       @map("admin_id")
+  usuarioId   Int       @map("usuario_id")
+  iniciada    DateTime  @default(now()) @map("iniciada_en") @db.Timestamptz(3)
+  terminada   DateTime? @map("terminada_en") @db.Timestamptz(3)
+
+  @@map("vistas_como")
+}

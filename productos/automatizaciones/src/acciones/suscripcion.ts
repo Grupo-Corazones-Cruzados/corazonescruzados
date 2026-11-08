@@ -1,6 +1,6 @@
 'use server';
 
-import { contextoApi } from '@/lib/inquilino';
+import { contextoApi, AVISO_VISTA } from '@/lib/inquilino';
 import { estadoSuscripcionGcc } from '@/lib/suscripcionGcc';
 import { leerSesionUsuario } from '@/lib/sesion';
 import { prisma } from '@/lib/db';
@@ -25,6 +25,7 @@ export async function enlaceDePago(slug: string): Promise<ResultadoEnlace> {
   // Así que si no pasa por ahí, se comprueba la sesión a mano y se sigue.
   const sesion = ctx?.sesion ?? (await leerSesionUsuario());
   if (!sesion || sesion.slug !== slug) return { ok: false, error: 'No tienes sesión.' };
+  if (sesion.suplantadoPor) return { ok: false, error: AVISO_VISTA };
 
   const inquilino = await prisma.inquilino.findUnique({ where: { id: sesion.inquilinoId } });
   if (!inquilino || inquilino.slug !== slug) return { ok: false, error: 'Ese cliente no existe.' };

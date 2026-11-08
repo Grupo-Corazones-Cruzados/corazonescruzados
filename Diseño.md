@@ -6380,3 +6380,5 @@ Fernando: *«revises las nuevas reglas de /diseno y las implementes en este prod
 
 ## Regla de los productos: el nombre de la ventana empieza por «GCC» (Fernando, 2026-11-08)
 En los cinco productos el título del navegador es `GCC · <página> · <producto>` (por defecto `GCC · <producto>`), con la plantilla `title` del layout raíz (`productos/*/src/app/layout.tsx`). Las páginas solo dan su nombre corto. Recogida también en la skill `/producto` para los productos nuevos.
+- **Cabeceras alineadas (2026-11-08).** La cabecera de página (`CabeceraPagina`, `min-h-[68px] py-2`, título `leading-6`, estado `mt-0.5`) y las de la Bandeja miden lo mismo que la del menú (68 px): sus bordes inferiores forman una sola línea. La franja de aviso (demostración / «ver como») va en escritorio a TODO el ancho, por encima de menú y contenido, con `--alto-aviso` (2rem) desplazando los dos; en el teléfono sigue dentro de la columna.
+- **«Ver como este usuario»** (Configuración ▸ Usuarios, acción de la fila): franja ámbar fija con «Volver a mi cuenta». Solo lectura.

@@ -209,6 +209,7 @@ export async function contextoEscritura(
 ): Promise<PermisoEscritura> {
   const ctx = await contextoApi(slug, minimo);
   if (!ctx) return { ok: false, error: 'No tienes permiso para hacer este cambio.' };
+  if (ctx.sesion.suplantadoPor) return { ok: false, error: AVISO_VISTA };
   if (ctx.inquilino.soloLectura)
     return {
       ok: false,
@@ -217,3 +218,11 @@ export async function contextoEscritura(
     };
   return { ok: true, ctx };
 }
+
+/**
+ * «VER COMO ESTE USUARIO» ES DE SOLO LECTURA (2026-11-08). El administrador ve exactamente lo
+ * que ve esa cuenta —su menú, sus permisos, sus botones—, pero nada se guarda: si no, quedarían
+ * mensajes, envíos o cambios hechos en nombre de otra persona.
+ */
+export const AVISO_VISTA =
+  'Estás viendo la app como otro usuario: aquí no se guarda nada. Vuelve a tu cuenta para hacer cambios.';

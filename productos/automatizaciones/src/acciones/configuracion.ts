@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
-import { contextoEscritura, contextoApi } from '@/lib/inquilino';
+import { contextoEscritura, contextoApi, AVISO_VISTA } from '@/lib/inquilino';
 import { verificarCuentaGcc } from '@/lib/cuentaGcc';
 
 export type Resultado = { ok: true; mensaje?: string; url?: string } | { ok: false; error: string };
@@ -109,6 +109,7 @@ export async function quitarLogo(slug: string): Promise<Resultado> {
 export async function cambiarMiClave(slug: string, datos: FormData): Promise<Resultado> {
   const ctx = await contextoApi(slug);
   if (!ctx) return { ok: false, error: 'No tienes sesión.' };
+  if (ctx.sesion.suplantadoPor) return { ok: false, error: AVISO_VISTA };
 
   const actual = String(datos.get('actual') || '');
   const nueva = String(datos.get('nueva') || '');

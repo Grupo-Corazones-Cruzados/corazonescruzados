@@ -94,7 +94,7 @@ export default function Bandeja({
           abierta && 'hidden lg:flex',
         )}
       >
-        <form onSubmit={buscar} className="flex items-center gap-2 border-b border-borde p-2.5">
+        <form onSubmit={buscar} className="flex min-h-[68px] items-center gap-2 border-b border-borde p-2.5">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-tenue" />
             {/* Ancho completo, no `w-56`: una casilla de ancho fijo se corta contra el
@@ -103,7 +103,7 @@ export default function Bandeja({
               value={texto}
               onChange={(e) => setTexto(e.target.value)}
               placeholder="Buscar por nombre o número"
-              className="h-11 w-full rounded border border-borde bg-tarjeta pl-8 pr-2 text-[13px] text-texto outline-none placeholder:text-tenue focus:border-acento"
+              className="h-11 w-full rounded border border-borde bg-tarjeta pl-8 pr-2 text-[13px] text-texto outline-none placeholder:text-tenue focus:border-tenue"
             />
           </div>
         </form>
@@ -145,7 +145,7 @@ export default function Bandeja({
           </div>
         ) : (
           <>
-            <header className="flex items-center gap-2 border-b border-borde p-2.5">
+            <header className="flex min-h-[68px] items-center gap-2 border-b border-borde p-2.5">
               {/* 44 px de alto y de ancho: es un destino táctil, no un adorno. */}
               <Link
                 href={`/${slug}/conversaciones${busca ? `?q=${encodeURIComponent(busca)}` : ''}`}

@@ -33,6 +33,13 @@ export type SesionUsuario = {
   slug: string;
   nombre: string;
   rol: Rol;
+  /**
+   * «Ver como este usuario» (2026-11-08): el administrador que está mirando la app con los ojos
+   * de esta cuenta. Va FIRMADO en el token —nadie puede fabricarlo— y es lo único que permite
+   * volver a su cuenta. Mientras está, no se guarda nada (`contextoEscritura`).
+   */
+  suplantadoPor?: number;
+  suplantadoPorNombre?: string;
 };
 
 export type SesionOperador = { oid: number; nombre: string; email: string };

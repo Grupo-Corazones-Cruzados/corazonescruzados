@@ -1,8 +1,10 @@
+import type { CSSProperties } from 'react';
 import { exigirContexto } from '@/lib/inquilino';
 import { AplicaMarca } from '@/componentes/Marca';
 import { urlLogo } from '@/lib/marca';
 import { BarraLateral, BarraInferior, HuecoBarraAcciones } from '@/componentes/Navegacion';
 import { AvisoEscaparate } from '@/componentes/AvisoEscaparate';
+import { AvisoVistaComo } from '@/componentes/AvisoVistaComo';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,8 +23,19 @@ export default async function LayoutApp({
   const { cliente } = await params;
   const { inquilino, sesion, montados } = await exigirContexto(cliente);
 
+  // La franja de aviso: demostración o «ver como». En escritorio va a TODO el ancho, por encima
+  // del menú y del contenido, para que las dos cabeceras sigan alineadas (Fernando, 2026-11-08);
+  // en el teléfono, dentro de la columna, como siempre.
+  const aviso = inquilino.soloLectura
+    ? <AvisoEscaparate />
+    : sesion.suplantadoPor
+      ? <AvisoVistaComo slug={cliente} nombre={sesion.nombre} rol={sesion.rol} />
+      : null;
+
   return (
     <AplicaMarca>
+      <div className="contents" style={{ '--alto-aviso': aviso ? '2rem' : '0px' } as CSSProperties}>
+      {aviso && <div className="hidden h-8 overflow-hidden lg:block [&>*]:h-8 [&>*]:py-0">{aviso}</div>}
       <BarraLateral
         slug={cliente}
         cliente={inquilino.nombre}
@@ -56,8 +69,8 @@ export default async function LayoutApp({
         hijo y con `mt-auto` baja al fondo aunque la página sea corta. Una pantalla que pide
         `h-full` sigue midiendo exactamente lo que queda (el alto de `main` es definido).
       */}
-      <div className="flex h-[calc(100dvh-env(safe-area-inset-top))] flex-col lg:ml-16">
-        {inquilino.soloLectura && <AvisoEscaparate />}
+      <div className="flex h-[calc(100dvh-env(safe-area-inset-top))] flex-col lg:ml-16 lg:h-[calc(100dvh-env(safe-area-inset-top)-var(--alto-aviso,0px))]">
+        {aviso && <div className="lg:hidden">{aviso}</div>}
         <main className="desplaza flex min-h-0 flex-1 flex-col overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
           {children}
           <HuecoBarraAcciones />
@@ -71,6 +84,7 @@ export default async function LayoutApp({
         rol={sesion.rol}
         montados={montados}
       />
+      </div>
     </AplicaMarca>
   );
 }

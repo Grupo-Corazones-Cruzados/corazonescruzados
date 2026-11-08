@@ -3,10 +3,11 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { UserPlus, KeyRound, Copy, ShieldCheck, Link2, UserX, UserCheck, Save } from 'lucide-react';
+import { UserPlus, KeyRound, Copy, ShieldCheck, Link2, UserX, UserCheck, Save, Eye } from 'lucide-react';
 import { Boton, Campo, Entrada, Selector, Insignia, Tarjeta, PanelLateral, Tabla, PieAcciones } from '@/componentes/ui';
 import { AccionesTarjeta } from '@/componentes/Navegacion';
 import { crearUsuario, cambiarActivo, regenerarClave } from '@/acciones/usuarios';
+import { verComo } from '@/acciones/vistaComo';
 
 export type UsuarioVista = {
   id: number;
@@ -153,6 +154,20 @@ export default function SeccionUsuarios({
               <div className="flex justify-end">
                 <AccionesTarjeta
                   acciones={[
+                    // Ver la app con sus ojos (solo lectura). La primera: es la que más se usa
+                    // para responder «¿qué ve fulano?» sin pedirle la contraseña.
+                    ...(u.activo && !u.esYo
+                      ? [{
+                          etiqueta: 'Ver como este usuario',
+                          icono: Eye,
+                          deshabilitado: enCurso,
+                          alPulsar: () =>
+                            arranca(async () => {
+                              const r = await verComo(slug, u.id);
+                              if (r && !r.ok) toast.error(r.error);
+                            }),
+                        }]
+                      : []),
                     ...(u.origen === 'PRODUCTO'
                       ? [{
                           etiqueta: 'Nueva contraseña',
