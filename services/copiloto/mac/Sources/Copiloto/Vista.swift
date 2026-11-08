@@ -118,9 +118,14 @@ struct Widget: View {
         Picker("", selection: $vista) {
           Text("Respuestas").tag(0)
           Text("Transcripción").tag(1)
+          Text("Sesiones").tag(2)
         }
         .pickerStyle(.segmented).labelsHidden().padding(.horizontal, 12).padding(.top, 9)
-        contenido
+        if vista == 2 {
+          ListaSesiones(m: m) { vista = 0 }
+        } else {
+          contenido
+        }
         pie
       }
     }
@@ -237,6 +242,88 @@ struct Widget: View {
       }
     }
     .padding(12)
+  }
+}
+
+/// Las sesiones de Gumdramon: retomarlas, ponerles nombre (queda fijo) o eliminarlas.
+struct ListaSesiones: View {
+  @ObservedObject var m: Modelo
+  let alRetomar: () -> Void
+  @State private var editando: SesionGum?
+  @State private var nombre = ""
+  @State private var borrar: SesionGum?
+
+  private static let fecha: DateFormatter = {
+    let f = DateFormatter()
+    f.locale = Locale(identifier: "es_EC")
+    f.dateFormat = "d MMM, HH:mm"
+    return f
+  }()
+
+  var body: some View {
+    VStack(spacing: 0) {
+      HStack {
+        Button { m.nuevaSesion() } label: { Label("Nueva sesión", systemImage: "plus") }.controlSize(.small)
+        Spacer()
+        if m.cargandoSesiones { ProgressView().controlSize(.mini) }
+      }
+      .padding(.horizontal, 12).padding(.top, 9)
+      ScrollView {
+        LazyVStack(spacing: 6) {
+          if m.sesiones.isEmpty && !m.cargandoSesiones {
+            Text("Aún no hay sesiones.").font(.system(size: 12)).foregroundStyle(.secondary).padding(.top, 20)
+          }
+          ForEach(m.sesiones) { s in fila(s) }
+        }
+        .padding(12)
+      }
+    }
+    .frame(maxHeight: .infinity)
+    .onAppear { m.cargarSesiones() }
+    .alert("Nombre de la sesión", isPresented: Binding(get: { editando != nil }, set: { if !$0 { editando = nil } })) {
+      TextField("Nombre", text: $nombre)
+      Button("Guardar") {
+        let t = nombre.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let s = editando, !t.isEmpty { m.renombrar(s.id, t) }
+        editando = nil
+      }
+      Button("Cancelar", role: .cancel) { editando = nil }
+    }
+    .confirmationDialog("¿Eliminar «\(borrar?.titulo ?? "")»?", isPresented: Binding(get: { borrar != nil }, set: { if !$0 { borrar = nil } })) {
+      Button("Eliminar", role: .destructive) { if let s = borrar { m.eliminar(s.id) }; borrar = nil }
+      Button("Cancelar", role: .cancel) { borrar = nil }
+    } message: {
+      Text("Va a la papelera del Espacio de trabajo y se borra a los 30 días.")
+    }
+  }
+
+  private func fila(_ s: SesionGum) -> some View {
+    HStack(spacing: 8) {
+      Button {
+        if !s.actual { m.retomar(s.id) }
+        alRetomar()
+      } label: {
+        VStack(alignment: .leading, spacing: 2) {
+          Text(s.titulo).font(.system(size: 12.5, weight: .medium)).lineLimit(2).multilineTextAlignment(.leading)
+          HStack(spacing: 6) {
+            Text(Self.fecha.string(from: s.actualizada)).font(.system(size: 10.5)).foregroundStyle(.secondary)
+            if s.actual { Text("En uso").font(.system(size: 10.5, weight: .semibold)).foregroundStyle(violeta) }
+            if s.trabajando { Text("Respondiendo").font(.system(size: 10.5)).foregroundStyle(.orange) }
+          }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+      }
+      .buttonStyle(.plain)
+      .help(s.actual ? "Es la sesión en uso" : "Retomar esta conversación")
+      Button { nombre = s.titulo; editando = s } label: { Image(systemName: "pencil").frame(width: 22, height: 22).contentShape(Rectangle()) }
+        .buttonStyle(.plain).help("Cambiar el nombre").accessibilityLabel("Cambiar el nombre")
+      Button { borrar = s } label: { Image(systemName: "trash").frame(width: 22, height: 22).contentShape(Rectangle()) }
+        .buttonStyle(.plain).foregroundStyle(.red.opacity(0.85)).disabled(s.trabajando)
+        .help("Eliminar").accessibilityLabel("Eliminar")
+    }
+    .padding(.horizontal, 10).padding(.vertical, 8)
+    .background(.white.opacity(s.actual ? 0.1 : 0.05), in: RoundedRectangle(cornerRadius: 9))
   }
 }
 

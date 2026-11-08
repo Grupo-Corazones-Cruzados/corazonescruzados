@@ -6,7 +6,7 @@ import path from 'node:path';
 import { buscarClave, ordenaTerminar } from './palabra-clave.mjs';
 import { esAlucinacion, esEco, parecePregunta } from './filtro.mjs';
 import { limpiarFilas, validarConsulta } from './bd.mjs';
-import { SesionClaude, describirHerramienta } from './sesion-claude.mjs';
+import { SesionClaude, describirHerramienta, paresDeMensajes } from './sesion-claude.mjs';
 import { Segmentador, energia } from './segmentador.mjs';
 import { Sesion, leerPendiente } from './sesion.mjs';
 import { buscar, rutaSegura } from './buscar.mjs';
@@ -65,6 +65,63 @@ test('el turno de la sesión devuelve el último texto, no la narración previa'
   assert.equal(await r, 'Hicimos dos proyectos de flota.');
   assert.deepEqual(buscando, ['Buscando en los proyectos: flota']);
   assert.equal(c.visto, 5);
+});
+
+test('el historial enseña la pregunta y la respuesta final, sin el contexto de la reunión', () => {
+  const pares = paresDeMensajes([
+    { rol: 'user', bloques: [{ tipo: 'texto', texto: 'MODO cliente\n\nDicho en la reunión:\n"""\nCliente: hola\n"""\n\nEl cliente pregunta: ¿Cuánto cuesta Reservas?' }] },
+    { rol: 'assistant', bloques: [{ tipo: 'texto', texto: 'Voy a mirar' }, { tipo: 'herramienta', nombre: 'Read' }] },
+    { rol: 'user', bloques: [{ tipo: 'resultado', texto: 'x' }] },
+    { rol: 'assistant', bloques: [{ tipo: 'texto', texto: '5 $ al mes.' }] },
+    { rol: 'user', bloques: [{ tipo: 'texto', texto: 'MODO pedido\n\nFernando te pide: y en anual' }] },
+    { rol: 'assistant', bloques: [{ tipo: 'texto', texto: 'Voy a comprobarlo' }] },
+    { rol: 'assistant', bloques: [{ tipo: 'herramienta', nombre: 'Bash' }] },
+    { rol: 'user', bloques: [{ tipo: 'resultado', texto: 'denegado' }] },
+  ]);
+  assert.deepEqual(pares, [{ pregunta: '¿Cuánto cuesta Reservas?', respuesta: '5 $ al mes.' }, { pregunta: 'y en anual', respuesta: '' }]);
+});
+
+test('retomar, renombrar y eliminar sesiones de Gumdramon', async () => {
+  const carpeta = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'gum-sesion-')));
+  process.env.COPILOTO_CARPETA_SESION = carpeta;
+  const llamadas = [];
+  const fetcher = async (url, op) => {
+    const ruta = url.replace(/^http:\/\/[^/]+/, '');
+    llamadas.push(`${op.method} ${ruta}${op.body ? ' ' + op.body : ''}`);
+    const r = (j) => ({ ok: true, json: async () => j });
+    if (ruta === '/proyectos') return r({ proyectos: [{ id: 'p1', ruta: carpeta }] });
+    if (ruta === '/proyectos/p1/sesiones') return r({ sesiones: [{ id: 'a', titulo: 'Con Adisa', actualizada: 2, viva: { estado: 'trabajando' } }, { id: 'b', titulo: 'Reunión', actualizada: 1, viva: null }] });
+    if (ruta.startsWith('/sesiones/a/mensajes?proyecto=p1')) return r({ mensajes: [{ rol: 'user', bloques: [{ tipo: 'texto', texto: 'Fernando te pide: hola' }] }, { rol: 'assistant', bloques: [{ tipo: 'texto', texto: 'Hola.' }] }], ultimoSeq: 42 });
+    return r({ ok: true });
+  };
+  const vistas = [];
+  const c = new SesionClaude({ fetcher, alSesion: (d) => vistas.push(d) });
+  c.id = 'b';
+  const lista = await c.lista();
+  assert.deepEqual(lista.map((x) => [x.id, x.actual, x.trabajando]), [['a', false, true], ['b', true, false]]);
+
+  const pares = await c.retomar('a');
+  assert.deepEqual(pares, [{ pregunta: 'hola', respuesta: 'Hola.' }]);
+  assert.equal(c.id, 'a');
+  assert.equal(c.visto, 42, 'los eventos viejos de una sesión viva no contestan la próxima pregunta');
+  assert.equal(c.titulada, true, 'retomar no le cambia el nombre');
+  assert.deepEqual(vistas.at(-1), { id: 'a', proyecto: 'p1' });
+
+  // Un nombre puesto a la sesión nueva, antes de su primera respuesta, no lo pisa «Reunión <hora>».
+  c.olvidar(); c.id = 'n'; c.titulada = false;
+  await c.renombrar('n', '  Precios con Motordesa ');
+  assert.match(llamadas.at(-1), /POST \/sesiones\/n\/titulo .*"titulo":"Precios con Motordesa"/);
+  assert.equal(c.titulada, true);
+  await assert.rejects(c.renombrar('n', '   '), /nombre/);
+
+  c.turno = { ok() {}, mal() {} };
+  await assert.rejects(c.eliminar('n'), /respondiendo/);
+  await assert.rejects(c.retomar('a'), /termine/);
+  c.turno = null;
+  await c.eliminar('n');
+  assert.match(llamadas.at(-1), /POST \/sesiones\/n\/eliminar .*"proyecto":"p1"/);
+  assert.equal(c.id, null, 'borrada la de ahora, la siguiente pregunta abre otra');
+  delete process.env.COPILOTO_CARPETA_SESION;
 });
 
 test('un turno fallido llega como error', async () => {

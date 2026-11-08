@@ -75,7 +75,8 @@ export class SesionClaude {
     this.alSesion({ id, proyecto: p.id });
   }
 
-  /** El archivo de la sesión existe desde la primera respuesta: antes no hay qué titular. */
+  /** El archivo de la sesión existe desde la primera respuesta: antes no hay qué titular. Solo una vez y solo en
+   *  las sesiones nuevas: un nombre puesto por Fernando no se vuelve a tocar (Fernando, 2026-11-08). */
   #titular() {
     if (this.titulada || !this.proyecto) return;
     this.titulada = true;
@@ -183,9 +184,77 @@ export class SesionClaude {
     if (t) { const d = new Error('Detenida.'); d.detenida = true; t.mal(d); }
   }
 
+  /** Las sesiones de Gumdramon, la más reciente primero. */
+  async lista() {
+    const p = await this.#proyecto();
+    const { sesiones } = await this.#api(`/proyectos/${p.id}/sesiones`);
+    return sesiones.map((x) => ({
+      id: x.id, titulo: x.titulo, actualizada: x.actualizada, actual: x.id === this.id,
+      trabajando: x.viva?.estado === 'trabajando',
+    }));
+  }
+
+  /** El nombre queda fijo: el Espacio lo guarda aparte y manda sobre el resumen que Claude Code va escribiendo. */
+  async renombrar(id, titulo) {
+    const t = String(titulo || '').trim().slice(0, 200);
+    if (!t) throw new Error('Escribe un nombre.');
+    const p = await this.#proyecto();
+    await this.#api(`/sesiones/${id}/titulo`, { proyecto: p.id, titulo: t });
+    if (id === this.id) this.titulada = true;
+  }
+
+  /** A la papelera del Espacio (30 días). Si es la de ahora, la siguiente pregunta abre otra. */
+  async eliminar(id) {
+    if (id === this.id && this.turno) throw new Error('Está respondiendo. Deténla antes de eliminarla.');
+    const p = await this.#proyecto();
+    await this.#api(`/sesiones/${id}/eliminar`, { proyecto: p.id });
+    if (id === this.id) this.olvidar();
+  }
+
+  /** Lo preguntado y lo respondido, sin el contexto de la reunión que va en cada mensaje. */
+  async historial(id) {
+    const p = await this.#proyecto();
+    const r = await this.#api(`/sesiones/${id}/mensajes?proyecto=${encodeURIComponent(p.id)}`);
+    return { pares: paresDeMensajes(r.mensajes || []), ultimoSeq: r.ultimoSeq || 0 };
+  }
+
+  /** Las siguientes preguntas van a esta sesión, con todo lo que ya sabe. */
+  async retomar(id) {
+    if (this.turno) throw new Error('Espera a que termine la respuesta en curso.');
+    const p = await this.#proyecto();
+    const h = await this.historial(id);
+    this.detener();
+    this.id = id;
+    this.titulada = true;
+    // Si sigue viva en el Espacio, sus eventos viejos no deben contestar la próxima pregunta.
+    this.visto = h.ultimoSeq;
+    this.alSesion({ id, proyecto: p.id });
+    return h.pares;
+  }
+
   /** La reunión terminó: la siguiente pregunta abre otra sesión. */
   olvidar() {
     this.detener();
     this.id = null;
   }
+}
+
+const textoDe = (m) => (m.bloques || []).filter((b) => b.tipo === 'texto').map((b) => b.texto).join('\n').trim();
+
+/** Empareja cada pregunta con su respuesta final; vacía si Claude no llegó a responder. Público para probarlo. */
+export function paresDeMensajes(mensajes) {
+  const pares = [];
+  for (const m of mensajes) {
+    // Lo escrito antes de una herramienta es narración, no la respuesta (igual que en directo).
+    if (m.rol === 'assistant' && pares.length && (m.bloques || []).some((b) => b.tipo === 'herramienta')) { pares.at(-1).respuesta = ''; continue; }
+    const t = textoDe(m);
+    if (!t) continue;
+    if (m.rol === 'user') {
+      const q = t.match(/(?:El cliente pregunta|Fernando te pide):\s*([\s\S]*)$/);
+      pares.push({ pregunta: (q ? q[1] : t).trim(), respuesta: '' });
+    } else if (m.rol === 'assistant' && pares.length) {
+      pares.at(-1).respuesta = t;
+    }
+  }
+  return pares.filter((x) => x.pregunta);
 }

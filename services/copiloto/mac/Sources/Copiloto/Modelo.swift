@@ -13,6 +13,15 @@ struct Consulta: Identifiable {
   var ms: Int?
 }
 
+/// Una sesión de Claude Code de Gumdramon (proyecto Gumdramon del Espacio de trabajo).
+struct SesionGum: Identifiable {
+  let id: String
+  var titulo: String
+  let actualizada: Date
+  let actual: Bool
+  let trabajando: Bool
+}
+
 struct Linea: Identifiable {
   let id = UUID()
   let quien: String
@@ -34,6 +43,8 @@ final class Modelo: ObservableObject {
   @Published var totalEspera: Double = 4
   /// La sesión de Claude Code de esta reunión, para abrirla en el Espacio de trabajo.
   @Published var sesionURL: URL?
+  @Published var sesiones: [SesionGum] = []
+  @Published var cargandoSesiones = false
   @Published var nivelMic: Float = 0
   @Published var nivelSistema: Float = 0
   /// Lo que le pasa a la captura ahora mismo. Se quita solo cuando vuelve el audio.
@@ -162,6 +173,55 @@ final class Modelo: ObservableObject {
     Task { await llamar("terminar") }
   }
 
+  /// Para lo que necesita respuesta: devuelve el JSON, o nil y deja el motivo en `aviso`.
+  private func pedir(_ ruta: String, metodo: String = "POST", cuerpo: [String: Any]? = nil) async -> [String: Any]? {
+    do {
+      let d = cuerpo.flatMap { try? JSONSerialization.data(withJSONObject: $0) }
+      let (datos, res) = try await URLSession.shared.data(for: peticion(ruta, metodo: metodo, cuerpo: d))
+      let j = (try? JSONSerialization.jsonObject(with: datos)) as? [String: Any] ?? [:]
+      if let h = res as? HTTPURLResponse, h.statusCode != 200 {
+        aviso = j["error"] as? String ?? "El núcleo respondió \(h.statusCode)."
+        return nil
+      }
+      return j
+    } catch {
+      aviso = "El núcleo de Gumdramon no responde."
+      return nil
+    }
+  }
+
+  func cargarSesiones() {
+    cargandoSesiones = true
+    Task {
+      defer { cargandoSesiones = false }
+      guard let j = await pedir("sesiones", metodo: "GET"), let filas = j["sesiones"] as? [[String: Any]] else { return }
+      sesiones = filas.compactMap { f in
+        guard let id = f["id"] as? String else { return nil }
+        let ms = (f["actualizada"] as? Double) ?? Double(f["actualizada"] as? Int ?? 0)
+        return SesionGum(id: id, titulo: f["titulo"] as? String ?? "Sesión sin título", actualizada: Date(timeIntervalSince1970: ms / 1000),
+                         actual: f["actual"] as? Bool ?? false, trabajando: f["trabajando"] as? Bool ?? false)
+      }
+    }
+  }
+
+  /// Las siguientes preguntas van a esa sesión, que recuerda lo ya hablado.
+  func retomar(_ id: String) {
+    Task { if await pedir("sesiones/\(id)/retomar") != nil { nota = "Sesión retomada: lo que preguntes sigue esa conversación." } }
+  }
+
+  func renombrar(_ id: String, _ titulo: String) {
+    if let i = sesiones.firstIndex(where: { $0.id == id }) { sesiones[i].titulo = titulo }
+    Task { if await pedir("sesiones/\(id)/titulo", cuerpo: ["titulo": titulo]) == nil { cargarSesiones() } }
+  }
+
+  func eliminar(_ id: String) {
+    Task { _ = await pedir("sesiones/\(id)/eliminar"); cargarSesiones() }
+  }
+
+  func nuevaSesion() {
+    Task { if await pedir("sesiones/nueva") != nil { nota = "La próxima pregunta abre una sesión nueva." } }
+  }
+
   /// Corta la investigación en curso: cada búsqueda de más gasta la suscripción.
   func detenerConsulta() { Task { await llamar("detener") } }
 
@@ -219,7 +279,18 @@ final class Modelo: ObservableObject {
     case "sesion":
       if let id = j["id"] as? String, let p = j["proyecto"] as? String {
         sesionURL = URL(string: "http://localhost:3792/dashboard/admin/espacio?p=\(p)&s=\(id)")
+      } else {
+        sesionURL = nil
+        consultas = []
       }
+      cargarSesiones()
+    case "retomada":
+      let pares = j["pares"] as? [[String: Any]] ?? []
+      consultas = pares.enumerated().map { i, p in
+        Consulta(id: -(i + 1), pregunta: p["pregunta"] as? String ?? "", modo: "historial", respuesta: (p["respuesta"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "Sin respuesta en esta sesión.", terminada: true)
+      }
+    case "sesiones":
+      cargarSesiones()
     case "consulta":
       guard let id = j["id"] as? Int else { return }
       consultas.append(Consulta(id: id, pregunta: j["pregunta"] as? String ?? "", modo: j["modo"] as? String ?? ""))

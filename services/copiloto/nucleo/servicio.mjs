@@ -6,6 +6,7 @@
  *   POST /audio?canal=mic|sistema   PCM 16 bits, 16 kHz, mono
  *   GET  /eventos                   flujo de eventos (SSE)
  *   GET  /estado · POST /activar · POST /desactivar · POST /terminar · POST /consulta {texto}
+ *   GET  /sesiones · POST /sesiones/nueva · POST /sesiones/:id/{retomar|titulo|eliminar}   (las de Claude Code)
  */
 import http from 'node:http';
 import fs from 'node:fs';
@@ -112,6 +113,29 @@ const servidor = http.createServer(async (req, res) => {
       if (!motor.activo) return responder(409, { error: 'Activa el copiloto primero.' });
       motor.consultaEscrita(texto);
       return responder(200, { ok: true });
+    }
+    if (ruta === 'GET /sesiones') return responder(200, { sesiones: await agente.lista() });
+    if (ruta === 'POST /sesiones/nueva') { agente.olvidar(); emitir('sesion', { id: null }); return responder(200, { ok: true }); }
+    const s = url.pathname.match(/^\/sesiones\/([0-9a-f-]{36})\/(retomar|titulo|eliminar)$/);
+    if (s && req.method === 'POST') {
+      const [, id, accion] = s;
+      try {
+        if (accion === 'retomar') {
+          const pares = await agente.retomar(id);
+          emitir('retomada', { id, pares });
+          return responder(200, { ok: true, pares });
+        }
+        if (accion === 'titulo') {
+          const { titulo } = JSON.parse((await leer(req, 4000)).toString() || '{}');
+          await agente.renombrar(id, titulo);
+        } else {
+          const actual = id === agente.id;
+          await agente.eliminar(id);
+          if (actual) emitir('sesion', { id: null });
+        }
+        emitir('sesiones', {});
+        return responder(200, { ok: true });
+      } catch (e) { return responder(409, { error: e.message }); }
     }
     return responder(404, { error: 'No existe.' });
   } catch (e) {
