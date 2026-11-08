@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Mic, Square, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { conBase } from '@/lib/base';
 
 /**
  * EL MICRÓFONO. El docente pulsa, cuenta la semana, vuelve a pulsar y el texto
@@ -47,7 +48,7 @@ export function Dictado({ slug, alTranscribir, deshabilitado }: { slug: string; 
         try {
           const fd = new FormData();
           fd.append('audio', audio, 'dictado.webm');
-          const r = await fetch(`/${slug}/api/transcribir`, { method: 'POST', body: fd });
+          const r = await fetch(conBase(`/${slug}/api/transcribir`), { method: 'POST', body: fd });
           const j = await r.json();
           if (!r.ok) throw new Error(j.error || 'No se pudo transcribir.');
           if (j.texto) alTranscribir(j.texto);

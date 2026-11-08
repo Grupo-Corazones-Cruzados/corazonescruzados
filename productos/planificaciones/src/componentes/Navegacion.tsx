@@ -11,6 +11,7 @@ import { LogoNegocio } from '@/componentes/Marca';
 import { puede, ETIQUETA_ROL, type Capacidad } from '@/lib/permisos';
 import { cn } from '@/lib/utils';
 import type { RolUsuario } from '@/generated/prisma/enums';
+import { conBase } from '@/lib/base';
 
 type Destino = {
   ruta: string;
@@ -372,7 +373,7 @@ function BotonAccion({ accion: a, tamano }: { accion: AccionMenu; tamano?: 'sm' 
     </Boton>
   );
   if (!a.href || a.deshabilitado) return boton;
-  return a.descargar ? <a href={a.href} download>{boton}</a> : <Link href={a.href}>{boton}</Link>;
+  return a.descargar ? <a href={conBase(a.href)} download>{boton}</a> : <Link href={a.href}>{boton}</Link>;
 }
 
 /** El «⋯» del teléfono con las acciones secundarias; entra y sale con movimiento. */
@@ -407,7 +408,7 @@ function MenuMas({ acciones }: { acciones: AccionMenu[] }) {
               const cerrar = () => setAbierto(false);
               if (a.href && !a.deshabilitado)
                 return a.descargar
-                  ? <a key={a.etiqueta} role="menuitem" href={a.href} download className={clase} onClick={cerrar}>{contenido}</a>
+                  ? <a key={a.etiqueta} role="menuitem" href={conBase(a.href)} download className={clase} onClick={cerrar}>{contenido}</a>
                   : <Link key={a.etiqueta} role="menuitem" href={a.href} className={clase} onClick={cerrar}>{contenido}</Link>;
               return (
                 <button key={a.etiqueta} type="button" role="menuitem" disabled={a.deshabilitado} title={a.titulo} className={clase}

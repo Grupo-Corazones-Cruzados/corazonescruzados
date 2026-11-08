@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { ACENTO_GCC, esHexValido } from '@/lib/marca';
+import { conBase } from '@/lib/base';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,20 +31,20 @@ export async function GET(_: Request, { params }: { params: Promise<{ institucio
       name: `${inquilino.nombre} · Planificaciones`,
       short_name: inquilino.nombre.slice(0, 12),
       description: 'Planificación de clases: el PUD de cada docente, semana a semana.',
-      id: `/${institucion}/`,
+      id: conBase(`/${institucion}/`),
       // La entrada decide sola: con sesión, a su puesto; sin ella, al acceso.
-      start_url: `/${institucion}`,
-      scope: `/${institucion}/`,
+      start_url: conBase(`/${institucion}`),
+      scope: conBase(`/${institucion}/`),
       display: 'standalone',
       orientation: 'portrait',
       lang: 'es',
       theme_color: color,
       background_color: fondo,
       icons: [
-        { src: '/icono-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
-        { src: '/icono-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
-        { src: '/apple-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
-        { src: '/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+        { src: conBase('/icono-192.png'), sizes: '192x192', type: 'image/png', purpose: 'any' },
+        { src: conBase('/icono-512.png'), sizes: '512x512', type: 'image/png', purpose: 'any' },
+        { src: conBase('/apple-icon.png'), sizes: '180x180', type: 'image/png', purpose: 'any' },
+        { src: conBase('/icon.svg'), sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
       ],
     },
     {

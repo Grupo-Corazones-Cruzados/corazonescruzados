@@ -37,6 +37,7 @@ import { NIVELES, ETIQUETA_NIVEL, ETIQUETA_ESTADO_SEMANA } from '@/lib/catalogo'
 import { diaDeMes, fechaCorta, sumarDias } from '@/lib/fechas';
 import { cn } from '@/lib/utils';
 import type { Nivel, EstadoSemana } from '@/generated/prisma/enums';
+import { conBase } from '@/lib/base';
 
 export type PlanificacionVista = {
   id: number;
@@ -168,7 +169,7 @@ export default function PlanificacionesCliente(p: Props) {
     const firma = p.semanas.map((s) => `${s.id}:${s.estado}`).join(',');
     const t = setInterval(async () => {
       try {
-        const r = await fetch(`/${p.slug}/api/semanas?planificacion=${p.actual!.id}`);
+        const r = await fetch(conBase(`/${p.slug}/api/semanas?planificacion=${p.actual!.id}`));
         const j = await r.json();
         const nueva = (j.semanas as { id: number; estado: string }[]).map((s) => `${s.id}:${s.estado}`).join(',');
         if (nueva !== firma) router.refresh();
@@ -239,7 +240,7 @@ export default function PlanificacionesCliente(p: Props) {
         acciones={
           <>
             {actual && (
-              <a href={`/${p.slug}/api/pdf/${actual.id}`} download>
+              <a href={conBase(`/${p.slug}/api/pdf/${actual.id}`)} download>
                 <Boton variante="secundario" icono={FileDown}>
                   PDF
                 </Boton>

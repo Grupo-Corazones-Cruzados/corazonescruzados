@@ -47,6 +47,7 @@ import {
 } from '@/acciones/gcc';
 import { dinero } from '@/lib/formato';
 import type { EstadoAcceso } from '@/lib/inquilino';
+import { conBase } from '@/lib/base';
 
 export type PagoGcc = {
   periodo: string;
@@ -283,7 +284,7 @@ export default function PanelGcc({
                       alinear: 'der',
                       render: (i) => (
                         <a
-                          href={`/${i.slug}/acceso`}
+                          href={conBase(`/${i.slug}/acceso`)}
                           target="_blank"
                           rel="noreferrer"
                           onClick={(e) => e.stopPropagation()}

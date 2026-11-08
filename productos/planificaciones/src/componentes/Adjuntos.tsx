@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { Paperclip, X, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Boton } from '@/componentes/ui';
+import { conBase } from '@/lib/base';
 
 export type AdjuntoSubido = { id: number; nombre: string; fragmentos: number; caracteres: number };
 
@@ -30,7 +31,7 @@ export function Adjuntos({ slug, valor, alCambiar, deshabilitado }: { slug: stri
       try {
         const fd = new FormData();
         fd.append('archivo', a);
-        const r = await fetch(`/${slug}/api/adjuntos`, { method: 'POST', body: fd });
+        const r = await fetch(conBase(`/${slug}/api/adjuntos`), { method: 'POST', body: fd });
         const j = await r.json();
         if (!r.ok) throw new Error(j.error || 'No se pudo subir.');
         alCambiar([...valor, j]);
@@ -46,7 +47,7 @@ export function Adjuntos({ slug, valor, alCambiar, deshabilitado }: { slug: stri
 
   async function quitar(id: number) {
     alCambiar(valor.filter((v) => v.id !== id));
-    await fetch(`/${slug}/api/adjuntos?id=${id}`, { method: 'DELETE' }).catch(() => {});
+    await fetch(conBase(`/${slug}/api/adjuntos?id=${id}`), { method: 'DELETE' }).catch(() => {});
   }
 
   const lleno = valor.length + subiendo.length >= MAX;
