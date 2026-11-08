@@ -76,6 +76,7 @@ struct TarjetaDictado: View {
 struct Widget: View {
   @ObservedObject var m: Modelo
   @Binding var plegado: Bool
+  let minimizar: () -> Void
   @State private var vista = 0
   @State private var texto = ""
   @State private var confirmar = false
@@ -145,6 +146,11 @@ struct Widget: View {
       Toggle("", isOn: Binding(get: { m.activo }, set: { _ in m.alternar() }))
         .toggleStyle(.switch).tint(violeta).controlSize(.mini).labelsHidden().disabled(!m.conectado)
         .help(m.activo ? "Desactivar" : "Activar")
+      Button(action: minimizar) {
+        Image(systemName: "minus").font(.system(size: 10, weight: .semibold))
+      }
+      .buttonStyle(.plain).help("Minimizar al Dock")
+      .accessibilityLabel("Minimizar al Dock")
       Button { plegado.toggle() } label: {
         Image(systemName: plegado ? "chevron.down" : "chevron.up").font(.system(size: 10, weight: .semibold))
       }

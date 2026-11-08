@@ -39,7 +39,7 @@ final class Delegado: NSObject, NSApplicationDelegate {
     panel.standardWindowButton(.closeButton)?.isHidden = true
     panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
     panel.standardWindowButton(.zoomButton)?.isHidden = true
-    panel.contentView = NSHostingView(rootView: Widget(m: modelo, plegado: plegado))
+    panel.contentView = NSHostingView(rootView: Widget(m: modelo, plegado: plegado, minimizar: { [weak self] in self?.minimizar() }))
     panel.orderFrontRegardless()
 
     icono = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -64,6 +64,7 @@ final class Delegado: NSObject, NSApplicationDelegate {
 
     modelo.conectar()
     if CommandLine.arguments.contains("--activar") { modelo.activar() }
+    if CommandLine.arguments.contains("--minimizar") { minimizar() }
     if CommandLine.arguments.contains("--probar-voz") { DispatchQueue.main.asyncAfter(deadline: .now() + 6) { self.modelo.probarVoz() } }
   }
 
@@ -78,7 +79,25 @@ final class Delegado: NSObject, NSApplicationDelegate {
     modelo.objectWillChange.send()
   }
 
-  @objc private func alternarPanel() { panel.isVisible ? panel.orderOut(nil) : panel.orderFrontRegardless() }
+  /// Minimizado, el panel se esconde y Gumdramon pasa al Dock; sigue escuchando igual. Mientras se ve
+  /// el panel no hay icono en el Dock: así no estorba en la barra cuando se comparte pantalla.
+  private func minimizar() {
+    panel.orderOut(nil)
+    NSApp.setActivationPolicy(.regular)
+  }
+
+  private func mostrar() {
+    panel.orderFrontRegardless()
+    NSApp.setActivationPolicy(.accessory)
+  }
+
+  /// Al pulsar el icono del Dock.
+  func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+    mostrar()
+    return false
+  }
+
+  @objc private func alternarPanel() { panel.isVisible ? minimizar() : mostrar() }
   @objc private func alternarVoz() { modelo.vozActiva.toggle() }
   @objc private func probarVoz() { modelo.probarVoz() }
   @objc private func elegirTono(_ i: NSMenuItem) {
