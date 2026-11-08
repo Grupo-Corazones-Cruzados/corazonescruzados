@@ -16,6 +16,14 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { TEMA_POR_DEFECTO, definicionTema, type TemaId } from '@/lib/temas';
+import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
+
+/**
+ * El tema según la app (Fernando, 2026-11-08): GCC Miembros es siempre rojo y negro («Corazón») y
+ * no se cambia; GCC World empieza en «Mixto» mientras la cuenta no elija otro. La web, como siempre.
+ */
+const TEMA_FIJO_MIEMBROS: TemaId = 'corazon';
+const temaInicialDeApp = (): TemaId => (appDeTelefono() === 'progreso' ? 'mixto' : TEMA_POR_DEFECTO);
 
 /**
  * La preferencia se guarda POR CUENTA (`gcc_dash_theme:<id>`), no por navegador
@@ -59,13 +67,20 @@ export function ProveedorTemaPanel({ children }: { children: React.ReactNode }) 
   // empieza en claro.
   useEffect(() => {
     try {
-      const t = leerGuardado(localStorage.getItem(llave));
+      if (appDeTelefono() === 'centralizado') {
+        setTema(TEMA_FIJO_MIEMBROS);
+        localStorage.setItem(LLAVE_ULTIMO_TEMA, TEMA_FIJO_MIEMBROS);
+        return;
+      }
+      const guardado = localStorage.getItem(llave);
+      const t = guardado ? leerGuardado(guardado) : temaInicialDeApp();
       setTema(t);
       if (user?.id) localStorage.setItem(LLAVE_ULTIMO_TEMA, t);
     } catch { /* sin almacenamiento: claro */ }
   }, [llave, user?.id]);
 
   const poner = useCallback((t: TemaId) => {
+    if (appDeTelefono() === 'centralizado') return;
     setTema(t);
     try { localStorage.setItem(llave, t); localStorage.setItem(LLAVE_ULTIMO_TEMA, t); } catch { /* no impide cambiarlo ahora */ }
   }, [llave]);

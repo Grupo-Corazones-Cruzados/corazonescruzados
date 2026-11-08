@@ -1,7 +1,7 @@
 'use client';
 
 import { useConsultaMedia } from '@/lib/hooks/useConsultaMedia';
-import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
+import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -146,15 +146,18 @@ export default function DashboardSidebar() {
   }, [user]);
 
   // «Accesos» solo existe dentro de las apps (`lib/dashboard/modules.ts`).
-  const [enApp, setEnApp] = useState(false);
-  useEffect(() => { setEnApp(!!appDeTelefono()); }, []);
+  const [appTel, setAppTel] = useState<AppDeTelefono | null>(null);
+  useEffect(() => { setAppTel(appDeTelefono()); }, []);
+  const enApp = !!appTel;
 
   const accessRole = accessRoleOf(user);
   const { blockedModules } = usePolicyEffects();
   const groups = NAV_GROUPS
     .map((g) => ({ ...g, items: g.items.filter((it) => canAccessModule(accessRole, it.href) && (accessRole === 'admin' || !isPathBlocked(it.href, blockedModules))
       && (it.href !== '/dashboard/plataformas' || tienePlataformas)
-      && (it.href !== '/dashboard/accesos' || enApp)) }))
+      && (it.href !== '/dashboard/accesos' || enApp)
+      // En las apps Herramientas, Plataformas (los productos) y Centralizado se abren desde Accesos.
+      && !(enApp && ['/dashboard/tools', '/dashboard/plataformas', '/dashboard/centralized'].includes(it.href))) }))
     .filter((g) => g.items.length > 0);
 
   const isActive = (href: string) =>
@@ -372,7 +375,8 @@ export default function DashboardSidebar() {
 
               El de tema abre una burbuja con los temas (`SelectorTema`). */}
           <div className="flex flex-col gap-1.5">
-          <SelectorTema collapsed={collapsed} alCambiarAbierto={setTemasAbierto} />
+          {/* En GCC Miembros el tema es fijo (`TemaPanel`): no se ofrece cambiarlo. */}
+          {appTel !== 'centralizado' && <SelectorTema collapsed={collapsed} alCambiarAbierto={setTemasAbierto} />}
 
           <button
             onClick={signOut}

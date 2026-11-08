@@ -301,6 +301,8 @@ export default function ToolsPage() {
   // Por debajo de `xl` la herramienta se abre ENCIMA, no bajo la lista (Fernando, 2026-10-23).
   // Se decide qué se MONTA: un <dialog> montado y escondido deja inerte toda la página.
   const enTelefono = !useConsultaMedia(PANTALLA_XL);
+  // En una app, la herramienta elegida en Accesos se abre sola, como sección propia, sin la lista.
+  const enSeccion = !!app && !!tool;
   const cuerpoHerramienta = () => !tool ? null
     : tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'formatos-excel' ? renderFormatosExcel() : tool.id === 'gcc-centralizado' ? renderCentralizado() : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace();
 
@@ -485,7 +487,9 @@ export default function ToolsPage() {
     <div>
       <PageHeader title="Herramientas" description="Utilidades de uso interno" />
 
-      <div className="flex flex-col lg:flex-row gap-4 items-start">
+      {enSeccion && <div className="max-w-2xl">{cuerpoHerramienta()}</div>}
+
+      <div className={`flex flex-col lg:flex-row gap-4 items-start ${enSeccion ? 'hidden' : ''}`}>
         {/* ── Left rail: categorías ── */}
         <FilterRail
           title="Categoría"
@@ -533,7 +537,7 @@ export default function ToolsPage() {
       </div>
 
       {/* La herramienta en teléfono y tableta. En escritorio NO se monta: ver `enTelefono`. */}
-      {enTelefono && (
+      {enTelefono && !enSeccion && (
         <PixelModal open={!!tool} onClose={() => setSelectedTool(null)} title={tool?.name || 'Herramienta'} size="md">
           {cuerpoHerramienta()}
         </PixelModal>

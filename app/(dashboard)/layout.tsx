@@ -5,7 +5,7 @@ import '../tema-progreso.css';
 import '../temas.css';
 import '../movimiento.css';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
 import AuthGuard from '@/components/providers/AuthGuard';
@@ -13,6 +13,7 @@ import PolicyEffectsProvider from '@/components/providers/PolicyEffectsProvider'
 import { ProveedorTemaPanel, useTemaPanel } from '@/components/providers/TemaPanel';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import CabeceraMovil from '@/components/dashboard/CabeceraMovil';
+import CabeceraSeccion from '@/components/dashboard/CabeceraSeccion';
 import { ProveedorMenuMovil } from '@/components/dashboard/MenuMovil';
 import DashboardBreadcrumb from '@/components/dashboard/DashboardBreadcrumb';
 import DashboardAccessGuard from '@/components/dashboard/DashboardAccessGuard';
@@ -45,12 +46,17 @@ function Panel({ children }: { children: React.ReactNode }) {
   const { tema, oscuro } = useTemaPanel();
   const entrada = useEntrada();
   // El espacio de trabajo tiene su cuadro de escritura justo donde flotan estos botones.
-  const sinMuelle = usePathname().startsWith('/dashboard/admin/espacio');
+  const pathname = usePathname();
+  const sinMuelle = pathname.startsWith('/dashboard/admin/espacio');
+  // En las apps, Accesos, Herramientas y Centralizado no son Progreso: sin su menú ni su pie.
+  const [enApp, setEnApp] = useState(false);
+  const seccion = enApp && esSeccionDeApp(pathname);
   const mainRef = useRef<HTMLElement>(null);
   // Las transiciones de teléfono de `movimiento.css` solo corren dentro de una app.
   useEffect(() => {
     const app = appDeTelefono();
     if (app) document.documentElement.dataset.gccApp = app;
+    setEnApp(!!app);
   }, []);
   useEntradaTrasCarga(mainRef);
 
@@ -69,7 +75,7 @@ function Panel({ children }: { children: React.ReactNode }) {
     // (`tema-<id>`, ver `app/temas.css`).
     <div className={`corp tema-progreso tema-${tema} ${oscuro ? 'dark' : ''} flex min-h-screen max-lg:h-dvh max-lg:overflow-hidden`}>
       <PolicyBanner collapsed />
-      <DashboardSidebar />
+      {!seccion && <DashboardSidebar />}
       {/* ⇒ LA CABECERA DEL TELÉFONO VA EN EL FLUJO, NO PEGADA A LA VENTANA.
           Empuja al contenido en vez de taparlo, así que **ninguna página puede quedar
           debajo** — no hay «debajo». Por eso el `main` ya no necesita reservar hueco
@@ -96,8 +102,8 @@ function Panel({ children }: { children: React.ReactNode }) {
           Por debajo de `lg` la columna mide la pantalla (`h-dvh`), la cabecera se queda fija
           y el único que se desplaza —y solo si su contenido no cabe— es el `main`. En
           escritorio no hay cabecera y todo sigue como siempre. */}
-      <div className="flex-1 min-w-0 flex flex-col ml-0 lg:ml-16 max-lg:min-h-0">
-        <CabeceraMovil />
+      <div className={`flex-1 min-w-0 flex flex-col ml-0 ${seccion ? '' : 'lg:ml-16'} max-lg:min-h-0`}>
+        {seccion ? <CabeceraSeccion /> : <CabeceraMovil />}
         {/* El relleno inferior sale de la MISMA variable que el alto del pie: antes era
             `pb-14` escrito a mano contra un pie de 36 px, y al crecer el pie en teléfono
             el contenido se le habría metido debajo. */}
@@ -108,15 +114,15 @@ function Panel({ children }: { children: React.ReactNode }) {
           <HuecoBarraAcciones />
         </main>
       </div>
-      <div className={sinMuelle ? 'max-lg:hidden' : ''}><DashboardBreadcrumb collapsed /></div>
+      {!seccion && <div className={sinMuelle ? 'max-lg:hidden' : ''}><DashboardBreadcrumb collapsed /></div>}
       {/* Muelle inferior derecho, de derecha a izquierda: campanita · Mis chats · Chat
           (y GCC Bot cuando hay cotización). La campanita es el ancla: los demás se miden
           contra ella. Dentro de `.corp` para heredar el tema. */}
-      {!sinMuelle && <NotificationsDock />}
+      {!sinMuelle && !seccion && <NotificationsDock />}
       <AvisoReuniones />
-      {!sinMuelle && <ChatDock />}
+      {!sinMuelle && !seccion && <ChatDock />}
       {/* El agente de GCC. A miembros y candidatos además les lee los datos de su cuenta. */}
-      {!sinMuelle && <AgentePresupuestos />}
+      {!sinMuelle && !seccion && <AgentePresupuestos />}
     </div>
   );
 }
@@ -177,4 +183,13 @@ function useEntradaTrasCarga(mainRef: React.RefObject<HTMLElement | null>) {
     obs.observe(main, { childList: true, subtree: true });
     return () => obs.disconnect();
   }, [mainRef]);
+}
+
+/**
+ * Lo que en las apps es una sección aparte de Progreso (Fernando, 2026-11-08): Accesos, cada
+ * herramienta y Centralizado. En la web siguen dentro del panel, como siempre.
+ */
+const RUTAS_SECCION = ['/dashboard/accesos', '/dashboard/tools', '/dashboard/centralized'];
+function esSeccionDeApp(ruta: string) {
+  return RUTAS_SECCION.some((r) => ruta === r || ruta.startsWith(r + '/'));
 }
