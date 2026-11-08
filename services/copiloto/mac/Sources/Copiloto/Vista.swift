@@ -21,6 +21,31 @@ struct Medidor: View {
   }
 }
 
+/// El botón amarillo de las ventanas de macOS, en su sitio: arriba a la izquierda. El área de clic es
+/// mayor que el círculo, como en el sistema; un icono suelto solo respondía si se acertaba el trazo.
+struct BotonMinimizar: View {
+  let accion: () -> Void
+  @State private var encima = false
+  var body: some View {
+    Button(action: accion) {
+      ZStack {
+        Circle().fill(Color(red: 1, green: 0.74, blue: 0.18))
+        Circle().strokeBorder(.black.opacity(0.18), lineWidth: 0.5)
+        if encima {
+          Image(systemName: "minus").font(.system(size: 7, weight: .black)).foregroundStyle(Color(red: 0.6, green: 0.34, blue: 0))
+        }
+      }
+      .frame(width: 12, height: 12)
+      .frame(width: 22, height: 22)
+      .contentShape(Rectangle())
+    }
+    .buttonStyle(.plain)
+    .onHover { encima = $0 }
+    .help("Minimizar al Dock")
+    .accessibilityLabel("Minimizar al Dock")
+  }
+}
+
 struct TarjetaConsulta: View {
   let c: Consulta
   let detener: () -> Void
@@ -127,6 +152,7 @@ struct Widget: View {
 
   private var cabecera: some View {
     HStack(spacing: 9) {
+      BotonMinimizar(accion: minimizar)
       Circle().fill(!m.conectado ? .red : !m.activo ? .gray : escuchaBien ? .green : .orange).frame(width: 8, height: 8)
         .help(!m.conectado ? "El núcleo no responde" : !m.activo ? "Desactivado" : escuchaBien ? "Escuchando" : "No está escuchando bien")
       if let i = imagenPersonaje { Image(nsImage: i).resizable().scaledToFit().frame(width: 20, height: 20) }
@@ -146,17 +172,12 @@ struct Widget: View {
       Toggle("", isOn: Binding(get: { m.activo }, set: { _ in m.alternar() }))
         .toggleStyle(.switch).tint(violeta).controlSize(.mini).labelsHidden().disabled(!m.conectado)
         .help(m.activo ? "Desactivar" : "Activar")
-      Button(action: minimizar) {
-        Image(systemName: "minus").font(.system(size: 10, weight: .semibold))
-      }
-      .buttonStyle(.plain).help("Minimizar al Dock")
-      .accessibilityLabel("Minimizar al Dock")
       Button { plegado.toggle() } label: {
         Image(systemName: plegado ? "chevron.down" : "chevron.up").font(.system(size: 10, weight: .semibold))
       }
       .buttonStyle(.plain).help(plegado ? "Mostrar" : "Plegar")
     }
-    .padding(.horizontal, 12).frame(height: 38)
+    .padding(.leading, 7).padding(.trailing, 12).frame(height: 38)
   }
 
   @ViewBuilder private var contenido: some View {
