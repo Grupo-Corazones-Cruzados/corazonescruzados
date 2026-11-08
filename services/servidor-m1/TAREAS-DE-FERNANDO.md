@@ -53,6 +53,7 @@ la producción sigue en Railway, así que no afecta a nadie.
    ssh fernandogonzalez@192.168.100.15
    ```
    Escribir la contraseña del M1: eso desbloquea el disco y termina de arrancar.
+   Si sale **«REMOTE HOST IDENTIFICATION HAS CHANGED»**, es normal antes del desbloqueo (el arranque usa otra llave): no borrar nada y avisar a Claude.
 4. Avisar a Claude: comprueba la versión, los servicios, el filtro de red y los respaldos.
 
 ### ☐ 2.2 Si vas junto al M1: permitir accesorios siempre
@@ -63,6 +64,7 @@ Así un adaptador o un disco nuevos no se quedan esperando una aceptación en pa
 
 ### ☐ 3.1 Terminar la transferencia de `grupocc.org` a Namecheap
 El registro vence el **2026-11-15**. **No cancelar Microsoft 365 antes** de que la transferencia termine.
+Estado el 2026-11-08: **«pending transfer»** (sigue en Wild West Domains, servidores de Microsoft). El registrador anterior la aprueba sola en unos 5 días; se adelanta aprobándola en el correo que manda. Si el 2026-11-13 sigue pendiente, avisar a Claude.
 
 ### ☐ 3.2 Después, con Claude: pasar el dominio a Cloudflare
 Cambiar los servidores de nombres en Namecheap a los que dé Cloudflare. Se hace junto con Claude, porque
