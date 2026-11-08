@@ -1,11 +1,9 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
+import { BTN_PRIMARY } from '@/components/ui/Button';
 import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
 import { abrirFuera } from '@/lib/movil/abrir-fuera';
-
-const INSTALAR = 'https://app.grupocc.org/dashboard/tools?herramienta=gcc-centralizado';
 
 /**
  * Dentro de GCC Progreso, Centralizado no se abre: los miembros pasan a GCC Centralizado, su app, que
@@ -27,10 +25,9 @@ export default function PuertaCentralizado({ children }: { children: ReactNode }
     <div className="flex flex-col items-center justify-center text-center gap-4 min-h-[60vh] px-6" style={{ fontFamily: 'var(--font-body)' }}>
       <h1 className="text-xl font-semibold text-digi-text">Centralizado</h1>
       <p className="text-sm text-digi-muted max-w-sm">
-        {falta ? 'Aún no la tienes en este teléfono. Descárgala desde Herramientas, en tu navegador.' : 'Este módulo se abre en GCC Miembros, la app de los miembros.'}
+        {falta ? 'Aún no la tienes en este teléfono. GCC Miembros se instala en persona, durante tu incorporación.' : 'Este módulo se abre en GCC Miembros, la app de los miembros.'}
       </p>
       <div className="flex gap-2">
-        {falta && <button onClick={() => abrirFuera(INSTALAR)} className={BTN_SECONDARY}>Descargar</button>}
         <button onClick={abrir} className={BTN_PRIMARY}>Abrir GCC Miembros</button>
       </div>
     </div>

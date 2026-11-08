@@ -1,5 +1,5 @@
 import {
-  Repeat2, Captions, Printer, QrCode, Link2, MonitorDown, PackageOpen, type LucideIcon,
+  Repeat2, Captions, Printer, QrCode, Link2, MonitorDown, PackageOpen, SquareTerminal, AudioLines, type LucideIcon,
 } from 'lucide-react';
 import type { AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 
@@ -13,6 +13,9 @@ import type { AppDeTelefono } from '@/lib/sitio/appDeTelefono';
  * `soloMiembrosApp`: piden permisos o hacen cosas que las tiendas no aceptan (instalar un APK,
  * descargar de YouTube, ubicación y micrófono en segundo plano). En la app de la tienda, GCC World,
  * no se ofrecen; en GCC Miembros y en el navegador, sí (Fernando, 2026-11-08).
+ * `soloAdmin` + `abre`: el Espacio de trabajo y Gumdramon, que eran pestañas del módulo Admin. No
+ * tienen pantalla aquí: llevan a su ruta (`useRutasEspacio`), y donde no existe no se ofrecen.
+ * GCC Miembros NO está: se instala en persona en el onboarding, nunca la descarga el usuario.
  */
 export type Herramienta = {
   id: string;
@@ -23,6 +26,8 @@ export type Herramienta = {
   soloEquipo?: boolean;
   compartible?: boolean;
   soloMiembrosApp?: boolean;
+  soloAdmin?: boolean;
+  abre?: 'espacio' | 'gumdramon';
 };
 
 export const HERRAMIENTAS: Herramienta[] = [
@@ -32,11 +37,18 @@ export const HERRAMIENTAS: Herramienta[] = [
   { id: 'qr', name: 'Enlace a código QR', Icon: QrCode, category: 'edicion', description: 'Convierte un enlace en un código QR para descargar en PNG o SVG.' },
   { id: 'enlace-unico', name: 'Enlace de un solo uso', Icon: Link2, category: 'gestion', soloEquipo: true, description: 'Pide un texto y hasta 10 archivos con un enlace que se cierra al recibir la respuesta.' },
   { id: 'descargador-video', name: 'Descargador de video', Icon: MonitorDown, category: 'app', soloMiembrosApp: true, description: 'App para Android que guarda en el teléfono videos o audio a partir de un enlace.' },
-  { id: 'gcc-centralizado', name: 'GCC Miembros', Icon: MonitorDown, category: 'app', soloEquipo: true, soloMiembrosApp: true, description: 'App para Android de los miembros, con Centralizado y Control Psicosocial.' },
   { id: 'entrega-unica', name: 'Entrega de un solo uso', Icon: PackageOpen, category: 'gestion', soloEquipo: true, description: 'Envía un mensaje y hasta 10 archivos con un enlace que se cierra cuando lo descargan.' },
+  { id: 'entorno', name: 'Espacio de trabajo', Icon: SquareTerminal, category: 'gestion', soloEquipo: true, soloAdmin: true, abre: 'espacio', description: 'Las sesiones de Claude Code y de desarrollo del servidor local.' },
+  { id: 'gumdramon', name: 'Gumdramon', Icon: AudioLines, category: 'gestion', soloEquipo: true, soloAdmin: true, soloMiembrosApp: true, abre: 'gumdramon', description: 'Copiloto de reuniones: escucha la conversación y te sugiere qué responder.' },
 ];
 
 /** Las que ve esta cuenta en este sitio. `app` = `appDeTelefono()` (null en el navegador). */
-export function herramientasPara(esEquipo: boolean, app: AppDeTelefono | null): Herramienta[] {
-  return HERRAMIENTAS.filter((h) => (!h.soloEquipo || esEquipo) && !(h.soloMiembrosApp && app === 'progreso'));
+export function herramientasPara(
+  { esEquipo, esAdmin, app, conEspacio }: { esEquipo: boolean; esAdmin: boolean; app: AppDeTelefono | null; conEspacio: boolean },
+): Herramienta[] {
+  return HERRAMIENTAS.filter((h) => (!h.soloEquipo || esEquipo) && (!h.soloAdmin || esAdmin)
+    && !(h.soloMiembrosApp && app === 'progreso') && (!h.abre || conEspacio));
 }
+
+/** Rutas que en las apps son una herramienta (sección aparte de Progreso, tema de Accesos). */
+export const RUTAS_HERRAMIENTA = ['/dashboard/tools', '/dashboard/admin/espacio', '/dashboard/admin/espacio-app', '/dashboard/admin/gumdramon-app'];

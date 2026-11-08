@@ -27,6 +27,7 @@ import AppMovil from '@/components/herramientas/AppMovil';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { accessRoleOf } from '@/lib/dashboard/access';
 import { HERRAMIENTAS, herramientasPara, type Herramienta } from '@/lib/herramientas/catalogo';
+import { useRutasEspacio } from '@/components/espacio/useRutasEspacio';
 import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -64,7 +65,11 @@ export default function ToolsPage() {
   // En GCC World (la app de la tienda) no se ofrecen las que solo van en GCC Miembros.
   const [app, setApp] = useState<AppDeTelefono | null>(null);
   useEffect(() => { setApp(appDeTelefono()); }, []);
-  const tools = useMemo(() => herramientasPara(esEquipo, app), [esEquipo, app]);
+  const rutasEspacio = useRutasEspacio();
+  const tools = useMemo(
+    () => herramientasPara({ esEquipo, esAdmin: rol === 'admin', app, conEspacio: !!rutasEspacio }),
+    [esEquipo, rol, app, rutasEspacio],
+  );
   const [search, setSearch] = useState('');
   const [cat, setCat] = useState('all');
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
@@ -193,6 +198,9 @@ export default function ToolsPage() {
   const resetTranscribe = () => { setTranscribeFile(null); setTranscribePhase('idle'); setTranscribeProgress(0); setTranscribeResult(null); };
 
   const selectTool = (id: string) => {
+    // El Espacio de trabajo y Gumdramon no tienen pantalla aquí: van a la suya.
+    const abre = tools.find((t) => t.id === id)?.abre;
+    if (abre && rutasEspacio) { window.location.href = rutasEspacio[abre]; return; }
     setSelectedTool(id);
     if (id === 'convert') resetConvert();
     else if (id === 'transcribe') resetTranscribe();
@@ -304,7 +312,7 @@ export default function ToolsPage() {
   // En una app, la herramienta elegida en Accesos se abre sola, como sección propia, sin la lista.
   const enSeccion = !!app && !!tool;
   const cuerpoHerramienta = () => !tool ? null
-    : tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'formatos-excel' ? renderFormatosExcel() : tool.id === 'gcc-centralizado' ? renderCentralizado() : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace();
+    : tool.id === 'convert' ? renderConvert() : tool.id === 'transcribe' ? renderTranscribe() : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'formatos-excel' ? renderFormatosExcel() : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace();
 
   // Panel derecho: usar la herramienta seleccionada.
   const renderToolPanel = () => {
@@ -336,17 +344,6 @@ export default function ToolsPage() {
     );
   };
 
-  const renderCentralizado = () => (
-    <AppMovil
-      slug="gcc-centralizado"
-      descripcion="La app de los miembros de la organización, con Centralizado y Control Psicosocial."
-      pasos={[
-        'Descarga el archivo desde el teléfono.',
-        'Ábrelo y, si Android lo pide, permite instalar apps de este origen.',
-        'Abre «GCC Miembros» e inicia sesión como miembro.',
-      ]}
-    />
-  );
 
   // Descargador GCC (`movil/descargador/`): el video se descarga en el propio teléfono, nunca en el servidor.
   const renderDescargador = () => (

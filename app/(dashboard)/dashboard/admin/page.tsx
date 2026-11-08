@@ -14,8 +14,7 @@ import ListasPanel from '@/components/admin/ListasPanel';
 import FaqsPanel from '@/components/admin/FaqsPanel';
 import SolucionesPanel from '@/components/admin/SolucionesPanel';
 import PromptsPanel from '@/components/admin/PromptsPanel';
-import { AudioLines, Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers, NotebookPen, SquareTerminal } from 'lucide-react';
-import { esAppInstalada } from '@/components/espacio/api';
+import { Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers, NotebookPen } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -41,13 +40,8 @@ const TABS = [
   { value: 'prompts', label: 'Prompts', Icon: NotebookPen, grupo: 'Personal' },
 ];
 
-/** Solo existe en la instancia local: en la web esa ruta responde 404 y la pestaña no aparece. */
-const RUTA_ESPACIO = '/dashboard/admin/espacio';
-const RUTA_ESPACIO_APP = '/dashboard/admin/espacio-app';
-const TAB_ESPACIO = { value: 'espacio', label: 'Espacio de trabajo', Icon: SquareTerminal, grupo: 'Personal' };
-/** Va por el mismo camino que el Espacio: en la Mac directo y en las apps en un marco, por Tailscale. */
-const TAB_GUMDRAMON = { value: 'gumdramon', label: 'Gumdramon', Icon: AudioLines, grupo: 'Personal' };
-const rutaGumdramon = (rutaEspacio: string | null) => (rutaEspacio === RUTA_ESPACIO_APP ? '/dashboard/admin/gumdramon-app' : '/gumdramon');
+// El Espacio de trabajo y Gumdramon eran pestañas de aquí; desde el 2026-11-08 son herramientas
+// (`lib/herramientas/catalogo.ts`, `useRutasEspacio`).
 
 
 const sinSuscripcion = () => () => {};
@@ -64,16 +58,7 @@ function Admin() {
   const tabUrl = useSearchParams().get('tab');
   const enTelefono = !useConsultaMedia(PANTALLA_LG);
   const hidratado = useSyncExternalStore(sinSuscripcion, () => true, () => false);
-  // En la Mac se abre directo. En la app de escritorio o la del teléfono va en un marco, por la
-  // red privada. En una pestaña normal de la web la opción no existe.
-  const [rutaEspacio, setRutaEspacio] = useState<string | null>(null);
-  useEffect(() => {
-    const enApp = esAppInstalada();
-    fetch('/api/espacio-trabajo/estado')
-      .then((r) => setRutaEspacio(r.ok ? RUTA_ESPACIO : enApp ? RUTA_ESPACIO_APP : null))
-      .catch(() => setRutaEspacio(enApp ? RUTA_ESPACIO_APP : null));
-  }, []);
-  const pestanas = rutaEspacio ? [TAB_ESPACIO, TAB_GUMDRAMON, ...TABS] : TABS;
+  const pestanas = TABS;
 
   useEffect(() => {
     if (tabUrl && TABS.some((t) => t.value === tabUrl)) setTab(tabUrl);
@@ -99,7 +84,7 @@ function Admin() {
       return (
         <PortadaSecciones titulo="Admin"
           secciones={pestanas.map((t) => ({ key: t.value, label: t.label, Icon: t.Icon, grupo: t.grupo }))}
-          onAbrir={(key) => router.push(key === TAB_ESPACIO.value ? rutaEspacio! : key === TAB_GUMDRAMON.value ? rutaGumdramon(rutaEspacio) : `/dashboard/admin?tab=${key}`, { scroll: false })} />
+          onAbrir={(key) => router.push(`/dashboard/admin?tab=${key}`, { scroll: false })} />
       );
     }
     return (
@@ -118,7 +103,7 @@ function Admin() {
         {pestanas.map((t) => {
           const active = tab === t.value;
           return (
-            <button key={t.value} onClick={() => (t.value === TAB_ESPACIO.value ? router.push(rutaEspacio!) : t.value === TAB_GUMDRAMON.value ? router.push(rutaGumdramon(rutaEspacio)) : setTab(t.value))}
+            <button key={t.value} onClick={() => setTab(t.value)}
               className={`inline-flex items-center gap-2 px-4 py-2 rounded-md whitespace-nowrap transition-colors ${
                 active ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-black/[0.03]'
               }`}>

@@ -18,8 +18,10 @@ import PieAcciones from '@/components/ui/PieAcciones';
 import MenuMas from '@/components/ui/MenuMas';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import ShareAccessModal from '@/components/centralized/ShareAccessModal';
+import Mapa4P from '@/components/centralized/Mapa4P';
+import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
 import {
-  Layers, Globe, Landmark, ClipboardList, Wrench, Boxes, Users, Plus,
+  Layers, Globe, Landmark, ClipboardList, Wrench, Boxes, Users,
   Share2, Pencil, Power, ArrowRight, X,
 } from 'lucide-react';
 import {
@@ -38,8 +40,12 @@ export default function CentralizedPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
   const router = useRouter();
+  // En las apps la portada de Centralizado es el mapa 4P (`Mapa4P`), no la tabla (2026-11-08).
+  const [enApp, setEnApp] = useState(false);
+  useEffect(() => { setEnApp(!!appDeTelefono()); }, []);
 
   const [allSystems, setAllSystems] = useState<any[]>([]);
+  const [sistemasCargados, setSistemasCargados] = useState(false);
 
   const [scopePiso, setScopePiso] = useState<string>('all');
   const [pasoFilter, setPasoFilter] = useState<string>('');
@@ -68,6 +74,7 @@ export default function CentralizedPage() {
       const data = await res.json();
       setAllSystems(data.data || []);
     } catch { setAllSystems([]); }
+    setSistemasCargados(true);
   }, []);
 
   useEffect(() => { fetchSystems(); }, [fetchSystems]);
@@ -220,6 +227,8 @@ export default function CentralizedPage() {
   </div>
   );
 
+  if (enApp) return <Mapa4P sistemas={sistemasCargados ? allSystems : null} />;
+
   return (
     <div>
       <PageHeader title="Proyecto Centralizado" description="Modelo 4P — sistemas fundamentales del grupo" />
@@ -243,12 +252,12 @@ export default function CentralizedPage() {
             <div className="min-w-0">
               {/* ⇒ EL PANEL DE DETALLE EMPIEZA ARRIBA (Fernando, 2026-10-29): la barra va dentro de
                   la columna de la lista. */}
-              {/* Buscador y «Nuevo sistema» arriba; el filtro de paso, debajo (BarraLista). */}
+              {/* Buscador arriba y el filtro de paso debajo (BarraLista). Sin «Nuevo sistema»: los
+                  sistemas se crean a mano (Fernando, 2026-11-08). */}
               <BarraLista
                 busqueda={search}
                 onBusqueda={setSearch}
                 placeholder="Buscar sistema..."
-                acciones={isAdmin ? [{ label: 'Nuevo sistema', icon: Plus, onClick: openNewSystem, tipo: 'primaria' }] : []}
                 filtros={
                   <select
                     value={pasoFilter}
@@ -268,7 +277,7 @@ export default function CentralizedPage() {
                 data={visibleSystems}
                 onRowClick={(s: any) => setSelected(s)}
                 emptyTitle="Sin sistemas"
-                emptyDesc={isAdmin ? 'Crea el primer sistema con "Nuevo sistema".' : 'Aún no hay sistemas en este ámbito.'}
+                emptyDesc="Aún no hay sistemas en este ámbito."
                 columns={[
                   { key: 'name', header: 'Sistema', render: (s: any) => (
                     <div className="flex items-center gap-2.5">

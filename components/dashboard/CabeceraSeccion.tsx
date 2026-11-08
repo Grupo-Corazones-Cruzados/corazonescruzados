@@ -26,6 +26,8 @@ export default function CabeceraSeccion() {
 
   useEffect(() => {
     if (pathname.startsWith('/dashboard/centralized')) return setTitulo('Centralizado');
+    if (pathname.startsWith('/dashboard/admin/gumdramon-app')) return setTitulo('Gumdramon');
+    if (pathname.startsWith('/dashboard/admin/espacio')) return setTitulo('Espacio de trabajo');
     if (pathname.startsWith('/dashboard/tools')) {
       const id = new URLSearchParams(window.location.search).get('herramienta');
       return setTitulo(HERRAMIENTAS.find((h) => h.id === id)?.name ?? 'Herramientas');

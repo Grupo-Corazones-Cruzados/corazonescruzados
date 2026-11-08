@@ -375,8 +375,8 @@ export default function DashboardSidebar() {
 
               El de tema abre una burbuja con los temas (`SelectorTema`). */}
           <div className="flex flex-col gap-1.5">
-          {/* En GCC Miembros el tema es fijo (`TemaPanel`): no se ofrece cambiarlo. */}
-          {appTel !== 'centralizado' && <SelectorTema collapsed={collapsed} alCambiarAbierto={setTemasAbierto} />}
+          {/* En las apps el tema lo pone la sección (`TemaPanel`): no se ofrece cambiarlo. */}
+          {!appTel && <SelectorTema collapsed={collapsed} alCambiarAbierto={setTemasAbierto} />}
 
           <button
             onClick={signOut}

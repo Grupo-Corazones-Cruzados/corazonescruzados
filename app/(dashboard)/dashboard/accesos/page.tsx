@@ -9,6 +9,7 @@ import Segmentado from '@/components/ui/Segmentado';
 import Miniatura from '@/components/productos/Miniatura';
 import { accessRoleOf } from '@/lib/dashboard/access';
 import { herramientasPara } from '@/lib/herramientas/catalogo';
+import { useRutasEspacio } from '@/components/espacio/useRutasEspacio';
 import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 import { markGameEntry } from '@/lib/world/gameEntry';
 import type { Plataforma } from '@/lib/productos/plataformas';
@@ -91,11 +92,15 @@ export default function AccesosPage() {
     else window.open(url, '_blank', 'noopener');
   };
 
-  const herramientas = herramientasPara(esEquipo, app);
+  const rutasEspacio = useRutasEspacio();
+  const herramientas = herramientasPara({ esEquipo, esAdmin: rol === 'admin', app, conEspacio: !!rutasEspacio });
 
   return (
     <div className="flex flex-col gap-4 max-w-5xl" style={mf}>
-      <Segmentado opciones={PESTANAS} valor={pestana} onChange={elegir} etiqueta="Accesos" className="w-full max-w-md" />
+      {/* Fijas arriba al desplazarse (Fernando, 2026-11-08). El fondo tapa lo que pasa por debajo. */}
+      <div className="sticky -top-4 md:-top-6 z-10 -mx-4 md:-mx-6 -mt-4 md:-mt-6 px-4 md:px-6 pt-4 md:pt-6 pb-2 bg-digi-dark">
+        <Segmentado opciones={PESTANAS} valor={pestana} onChange={elegir} etiqueta="Accesos" className="w-full max-w-md" />
+      </div>
 
       {pestana === 'apps' && (
         <Rejilla>
@@ -103,7 +108,8 @@ export default function AccesosPage() {
             onClick={() => router.push(rol === 'client' ? '/dashboard/marketplace' : '/dashboard')} />
           <Mosaico Icono={Gamepad2} tema="negro" titulo="Aventura" texto={entrandoAlJuego ? 'Entrando…' : 'El videojuego del grupo.'}
             onClick={entrarAlJuego} />
-          {esEquipo && (
+          {/* Centralizado solo en GCC Miembros (y en la web): en GCC World no se ofrece a nadie. */}
+          {esEquipo && app !== 'progreso' && (
             <Mosaico Icono={Network} tema="orquidea" titulo="Centralizado" texto="Los sistemas de los miembros."
               onClick={() => router.push('/dashboard/centralized')} />
           )}
@@ -130,7 +136,8 @@ export default function AccesosPage() {
         ) : (
           <Rejilla>
             {herramientas.map((h) => (
-              <Mosaico key={h.id} Icono={h.Icon} titulo={h.name} texto={h.description} href={`/dashboard/tools?herramienta=${h.id}`} />
+              <Mosaico key={h.id} Icono={h.Icon} titulo={h.name} texto={h.description}
+                href={h.abre && rutasEspacio ? rutasEspacio[h.abre] : `/dashboard/tools?herramienta=${h.id}`} />
             ))}
           </Rejilla>
         )

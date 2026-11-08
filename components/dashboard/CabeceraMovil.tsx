@@ -31,21 +31,28 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Menu, RotateCw } from 'lucide-react';
+import { Grid3x3, Menu, RotateCw } from 'lucide-react';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 import BotonPantallaActiva from '@/components/espacio/BotonPantallaActiva';
 import { esAppInstalada } from '@/components/espacio/api';
+import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-export default function CabeceraMovil() {
+/** `siempre`: también en pantallas anchas (Centralizado en las apps no tiene el menú lateral). */
+export default function CabeceraMovil({ siempre = false }: { siempre?: boolean }) {
   const { abrir } = useMenuMovil();
   // Se decide tras montar: en el servidor no hay `window` y el HTML tiene que coincidir.
   const [enApp, setEnApp] = useState(false);
   const [recargando, setRecargando] = useState(false);
-  const enEspacio = usePathname().startsWith('/dashboard/admin/espacio');
+  const ruta = usePathname();
+  const enEspacio = ruta.startsWith('/dashboard/admin/espacio');
+  // En Centralizado (apps) el botón abre el mapa 4P (`MenuCentralizado`); en su portada el mapa ya
+  // está en la página y el botón sobra.
+  const enCentralizado = ruta.startsWith('/dashboard/centralized');
+  const sinBoton = ruta === '/dashboard/centralized';
   useEffect(() => {
-    setEnApp(esAppInstalada());
+    setEnApp(esAppInstalada() || !!appDeTelefono());
   }, []);
 
   return (
@@ -57,14 +64,16 @@ export default function CabeceraMovil() {
        apuntarle. Ahora el menú es de 44 px —el destino táctil— y la marca crece con él. */
     /* `--seguro-arriba`: en la app nativa la cabecera baja lo que mide la zona de la hora y
        la batería, y su fondo la cubre; los 56 px de controles quedan debajo, intactos. */
-    <header className="rail lg:hidden shrink-0 h-[calc(3.5rem+var(--seguro-arriba))] pt-[var(--seguro-arriba)] flex items-center gap-2 px-2 bg-digi-card border-b border-digi-border">
+    <header className={`rail ${siempre ? '' : 'lg:hidden'} shrink-0 h-[calc(3.5rem+var(--seguro-arriba))] pt-[var(--seguro-arriba)] flex items-center gap-2 px-2 bg-digi-card border-b border-digi-border`}>
+      {!(enApp && sinBoton) && (
       <button
         onClick={abrir}
         className="w-11 h-11 flex items-center justify-center rounded-lg text-digi-text transition-[filter] duration-150 hover:brightness-125 active:brightness-150"
-        aria-label="Abrir menú"
+        aria-label={enCentralizado ? 'Abrir mapa 4P' : 'Abrir menú'}
       >
-        <Menu className="w-6 h-6" />
+        {enCentralizado ? <Grid3x3 className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
       </button>
+      )}
 
       {/* En la app, la marca vuelve a Accesos; en el navegador, a la portada. */}
       <Link href={enApp ? '/dashboard/accesos' : '/'} className="flex items-center gap-2 min-w-0 h-11 px-1 rounded-lg">
