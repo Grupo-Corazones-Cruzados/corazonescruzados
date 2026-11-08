@@ -6443,3 +6443,12 @@ posición 17/32 y tamaño 13,6/32 del lado. Va en los cuatro sitios: `src/app/ic
 `src/app/apple-icon.png` (180), `public/icono-192.png` y `public/icono-512.png` (en el manifiesto; a sangre y con
 el dibujo al 75 % centrado), y la copia de 96 px de la plataforma en `public/productos-iconos/<producto>.png`. Hecho
 en los cinco el 2026-11-08 (Automatizaciones primero).
+
+## EL TEMA DE LOS PRODUCTOS: oscuro de WhatsApp en todo (Fernando, 2026-11-08)
+*«el mismo tema que estamos usando en el módulo de conversaciones debemos usar en todos los módulos… tengo pensado usar el mismo tema para todos los demás productos»*. Deroga el «tema Mixto de GCC World» de los productos (aprobado el mismo día).
+- **Un solo tema, sin clase que lo active**: los tokens viven en `@theme` de `productos/automatizaciones/src/app/globals.css` con los valores de WhatsApp de escritorio en oscuro. Vale en toda página (acceso, suscripción, `/gcc`) y en los portales a `<body>`. No hay tema claro ni color por cliente.
+- **Planos**: `fondo #0b0b0b` (contenido, chat) → `tarjeta #161717` (columnas, tarjetas, menú) → `wa-panel #1d1f1f` (panel de filtros) → `realce #2a2c2c` (hover/activo); `borde #262828`; texto `#e9edef`, tenue `#8696a0`. **Acento = verde de WhatsApp** `#21c063` con texto ENCIMA oscuro (`acento-contraste #0b0b0b`); activo suave `#103529`. Error `#f1707b`, aviso `#e0b34d`, info y ✓✓ `#53bdeb`.
+- **Lo que flota** (`.superficie-flotante`: panel lateral, ventanitas, menús) sube un plano: tarjeta `#1d1f1f`, realce/borde `#2e3030`.
+- **Nada de `text-white`** encima de un color: `text-acento-contraste` (el verde, el rojo y el ámbar de este tema piden texto oscuro). Única excepción: la inicial del avatar sobre sus colores saturados.
+- Lo que no lee CSS (`themeColor`, manifiesto, barra de iOS `black`) sale de `lib/marca.ts › TEMA`.
+- **Para llevarlo a otro producto**: copiar el `@theme`, `:root { color-scheme: dark }`, `.superficie-flotante`, `.fondo-chat` y `.burbuja-cola-*`; quitar sus clases de tema (`tema-mixto`, `.oscuro`) y los colores por inquilino; buscar `text-white`/hex en componentes; y revisar todas las pantallas en el navegador.

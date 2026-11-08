@@ -29,7 +29,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ cliente: st
   const q = req.nextUrl.searchParams;
   const aviso = (texto: string, estado: number) =>
     new NextResponse(
-      `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:15px system-ui;display:grid;place-items:center;height:90vh;margin:0;color:#555;text-align:center;padding:24px">${texto}</body>`,
+      `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:15px system-ui;display:grid;place-items:center;height:90vh;margin:0;background:#0b0b0b;color:#8696a0;color-scheme:dark;text-align:center;padding:24px">${texto}</body>`,
       { status: estado, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
     );
 

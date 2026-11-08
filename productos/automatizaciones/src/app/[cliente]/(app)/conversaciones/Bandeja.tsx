@@ -74,7 +74,7 @@ const PARAM_ESTADO: Record<Estado, string> = { ABIERTO: 'abierto', EN_PROCESO: '
     sitio; Etiquetas y Usuarios con su buscador y su desplazamiento propio, porque crecen sin
     límite), la lista de chats y el chat.
   · Selección múltiple con «Opciones»: etiquetas, usuario, estado, borrar mensajes, eliminar.
-  · Colores de WhatsApp oscuro (`.tema-wa`).
+  · Colores de WhatsApp oscuro: el tema de todo el producto (globals.css).
 
   ⚠️ La Cloud API NO da la foto de perfil del contacto: el avatar es su inicial sobre un color fijo.
   ⚠️ En el teléfono la lista y el chat se ALTERNAN; el panel de filtros se abre con «Filtros».
@@ -401,7 +401,7 @@ export default function Bandeja({
     : null;
 
   return (
-    <div className="tema-wa flex h-full min-h-0 bg-tarjeta">
+    <div className="flex h-full min-h-0 bg-tarjeta">
       {/* ── EL PANEL DE FILTROS (escritorio): cada grupo en su sitio, con desplazamiento propio. */}
       <nav aria-label="Filtros" className="hidden w-[240px] shrink-0 border-r border-borde bg-wa-panel px-2 py-3 lg:block">
         <PanelFiltros bandeja={bandeja} estados={itemsEstado} etiquetas={itemsEtiqueta} usuarios={itemsUsuario} />
@@ -503,7 +503,7 @@ export default function Bandeja({
                     <span className="flex shrink-0 items-center gap-1.5">
                       {!c.botActivo && <Hand className="h-4 w-4 text-tenue" aria-label="La atiende una persona" />}
                       {c.sinLeer > 0 && (
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-wa px-1.5 text-[11px] font-semibold text-white" aria-label={`${c.sinLeer} sin leer`}>
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-wa px-1.5 text-[11px] font-semibold text-acento-contraste" aria-label={`${c.sinLeer} sin leer`}>
                           {c.sinLeer}
                         </span>
                       )}
@@ -659,7 +659,7 @@ export default function Bandeja({
                       disabled={enviando || !mensaje.trim()}
                       title="Enviar"
                       aria-label="Enviar"
-                      className="foco-visible flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-wa text-white transition-colors hover:bg-wa-fuerte disabled:opacity-45"
+                      className="foco-visible flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-wa text-acento-contraste transition-colors hover:bg-wa-fuerte disabled:opacity-45"
                     >
                       <SendHorizontal className="h-5 w-5" />
                     </button>

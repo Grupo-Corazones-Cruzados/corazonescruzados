@@ -23,7 +23,7 @@ export const BOTON_PRIMARIO =
 export const BOTON_SECUNDARIO =
   `${BOTON_BASE} bg-tarjeta text-texto border border-borde hover:bg-realce`;
 export const BOTON_PELIGRO =
-  `${BOTON_BASE} bg-error text-white hover:brightness-90`;
+  `${BOTON_BASE} bg-error text-acento-contraste hover:brightness-90`;
 export const BOTON_FANTASMA =
   `${BOTON_BASE} text-tenue hover:bg-realce hover:text-texto`;
 

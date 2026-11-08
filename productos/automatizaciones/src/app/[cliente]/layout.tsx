@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { prisma } from '@/lib/db';
-import { ACENTO_GCC } from '@/lib/marca';
+import { TEMA } from '@/lib/marca';
 
 type Params = Promise<{ cliente: string }>;
 
@@ -11,8 +11,8 @@ async function marcaDe(cliente: string) {
   });
   return {
     nombre: inq?.nombre ?? 'Automatizaciones de WhatsApp',
-    // Color fijo del grupo: el producto tiene un solo tema (2026-11-08).
-    color: ACENTO_GCC,
+    // El fondo del tema: la barra del teléfono se funde con la app (2026-11-08).
+    color: TEMA.fondo,
   };
 }
 
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const { nombre } = await marcaDe(cliente);
   return {
     manifest: `/${cliente}/manifest.webmanifest`,
-    appleWebApp: { capable: true, statusBarStyle: 'default', title: nombre },
+    appleWebApp: { capable: true, statusBarStyle: 'black', title: nombre },
     // Next emite `mobile-web-app-capable`; iOS sigue leyendo el suyo.
     other: { 'apple-mobile-web-app-capable': 'yes' },
   };

@@ -14,7 +14,7 @@ const ROL = { ADMIN: 'Administrador', OPERADOR: 'Operador', CONSULTA: 'Consulta'
  * habíamos implementado en gcc world como una opción dentro del menú, no donde se configuran
  * los usuarios»). Se abre al tocar tu nombre en el pie del menú.
  *
- * ⚠️ Va con un portal al envoltorio del TEMA (`.tema-mixto`): dentro del menú «Más» del
+ * ⚠️ Va con un portal al envoltorio del TEMA (`.app-producto`): dentro del menú «Más» del
  * teléfono, que se desliza con `transform`, un `fixed` se colocaría respecto al menú y no a la
  * pantalla; y colgado del <body> perdería el tema.
  */
@@ -24,7 +24,7 @@ export function DialogoVerComo({ slug, abierto, alCerrar }: { slug: string; abie
   const [enCurso, arranca] = useTransition();
   const [destino, setDestino] = useState<HTMLElement | null>(null);
 
-  useEffect(() => setDestino(document.querySelector<HTMLElement>('.tema-mixto')), []);
+  useEffect(() => setDestino(document.querySelector<HTMLElement>('.app-producto')), []);
   useEffect(() => {
     if (!abierto) return;
     setBusca('');

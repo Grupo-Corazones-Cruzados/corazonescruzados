@@ -1,24 +1,16 @@
-import type { ReactNode, CSSProperties } from 'react';
-import { ACENTO_GCC, tokensDeMarca, neutrosDeTema } from '@/lib/marca';
+import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * Envuelve la aplicación con el TEMA ÚNICO del producto: el Mixto de GCC World con el
- * violeta del grupo (Fernando, 2026-11-08). El cliente ya NO elige color ni tema; las
- * columnas `color_acento` y `tema` del inquilino quedan en la base sin uso.
+ * Envuelve la aplicación. El tema ya no lo pone este componente: está en `@theme`
+ * (globals.css) y vale en toda página. Queda como el contenedor de alto completo y como
+ * DESTINO de los portales que tienen que salir de un padre con `transform` (`.app-producto`).
  */
 export function AplicaMarca({ className, children }: { className?: string; children: ReactNode }) {
-  const n = neutrosDeTema(false);
   return (
-    <>
-      <style>{`html,body{background:${n.fondo};color:${n.texto};color-scheme:${n.esquema}}`}</style>
-      <div
-        className={cn('tema-mixto min-h-[calc(100dvh-env(safe-area-inset-top))] bg-fondo text-texto', className)}
-        style={tokensDeMarca(ACENTO_GCC, false) as CSSProperties}
-      >
-        {children}
-      </div>
-    </>
+    <div className={cn('app-producto min-h-[calc(100dvh-env(safe-area-inset-top))] bg-fondo text-texto', className)}>
+      {children}
+    </div>
   );
 }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { ACENTO_GCC } from '@/lib/marca';
+import { TEMA } from '@/lib/marca';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,9 +22,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ cliente: s
   });
   if (!inquilino) return NextResponse.json({ error: 'No existe' }, { status: 404 });
 
-  // Un solo tema en el producto (2026-11-08): el violeta del grupo sobre el fondo claro.
-  const color = ACENTO_GCC;
-  const fondo = '#faf9f8';
+  // Un solo tema en el producto (2026-11-08): el oscuro de WhatsApp (ver lib/marca.ts).
+  const color = TEMA.fondo;
+  const fondo = TEMA.fondo;
 
   return NextResponse.json(
     {
