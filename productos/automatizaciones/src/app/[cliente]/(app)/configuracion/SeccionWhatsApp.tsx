@@ -161,7 +161,9 @@ export default function SeccionWhatsApp({
            * número» en vez de la coexistencia. En v5 la coexistencia viene activada por
            * defecto; `version` va DENTRO de `extras`.
            */
-          extras: { version: 'v5' },
+          // `featureType` también: si Meta no tiene v5 habilitada para la app, sirve el
+          // launch como v4, y en v4 la coexistencia solo se activa con él. En v5 sobra.
+          extras: { version: 'v5', featureType: 'whatsapp_business_app_onboarding' },
         },
       );
     } catch (e) {
