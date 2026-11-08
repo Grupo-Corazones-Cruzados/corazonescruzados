@@ -729,6 +729,101 @@ portada → "Entrar" → login; escribir la URL a pelo devuelve a la portada.
     Aquí se pidió una a una, pero conviene reconocer antes el patrón y proponer las salidas en
     vez de seguir probando prompts.
 
+## 4-ter. ⭐ FLUJO DE PRODUCCIÓN POR TIPO DE ASSET (propuesto 2026-11-08)
+
+Nada se publica sin que Fernando lo apruebe. Los originales (.aseprite, .pixaki, .procreate) se
+guardan como fuente; al juego solo entra el PNG exportado.
+
+### Flujo común (vale para todo)
+| # | Paso | Herramienta | Resultado |
+|---|---|---|---|
+| 1 | Idea y boceto | Papel, Procreate o IA como borrador | Boceto de referencia |
+| 2 | Pieza maestra a mano, con la paleta propia | Pixaki o Aseprite (iPad por Sidecar) | La referencia de estilo de ese tipo |
+| 3 | Variantes y volumen | A mano, o IA referenciada a la pieza maestra | Borradores |
+| 4 | Ajuste a la paleta y a la rejilla, y repaso a mano | Script de paleta + Aseprite | Asset limpio |
+| 5 | Exportar PNG a 1×, fondo transparente | Pixaki / Aseprite | `godot/assets/…` |
+| 6 | Importar en Godot: filtro `nearest`, **sin compresión con pérdida** | Godot | Textura nítida |
+| 7 | Montar en su escena; los números y textos van en **datos** (`.tres`/JSON), no en el código | Godot | Escena funcionando |
+| 8 | Probar con F6 y en el navegador del teléfono | Godot / Chrome | Funciona en web y teléfono |
+| 9 | Aprobación de Fernando → publicar | `npm run juego:publicar` | En producción |
+
+### A. Personajes (jugador y NPC importantes) — marioneta por piezas
+| # | Paso | Herramienta | Detalle |
+|---|---|---|---|
+| 1 | Diseño en las 4 vistas (frente, espalda, izquierda, derecha) | Procreate / Aseprite | Lienzo 96×128 por vista |
+| 2 | Despiece en piezas sueltas: cabeza, torso, brazos, antebrazos, manos, muslos, piernas, pies | Aseprite (o `scripts/despiezar.mjs`) | Articulaciones redondeadas y material de sobra en cada unión |
+| 3 | Pivotes: lo que CUELGA gira por arriba; lo que SE APOYA, por abajo | `scripts/armar-piezas.mjs` | `piezas-X.png` + `piezas-X.json` |
+| 4 | Montaje automático en Godot | `PersonajeArticulado.gd` | El torso es la raíz y el resto cuelga de él |
+| 5 | Prueba en el banco | `PruebaPersonaje.tscn` + F6 | Camina y gira entre vistas |
+| 6 | Equipo (casco, armadura, arma) como piezas que se anclan a un hueso | Aseprite + Godot | Se dibuja UNA vez y sirve para todas las animaciones |
+
+### B. Animaciones de movimiento (quieto, caminar, correr, esquivar)
+| # | Paso | Herramienta | Detalle |
+|---|---|---|---|
+| 1 | Poses clave en papel (contacto, paso, apoyo) | Papel / Procreate | 4-8 poses por ciclo |
+| 2 | Fotogramas clave de rotación y posición de las piezas, por dirección | `AnimationPlayer` | **Máximo ~16° de giro**; para más, se cambia la pieza por otra dibujada en esa pose |
+| 3 | Ritmo | `AnimationPlayer` | Caminar ~0,6 s por ciclo; quieto = respiración de 1-2 px |
+| 4 | Máquina de estados quieto ↔ caminar ↔ correr, mezcla por dirección | `AnimationTree` + `BlendSpace2D` | Cambios sin saltos |
+| 5 | Sonido de pasos en el fotograma del apoyo | Pista de audio del `AnimationPlayer` | Sincronizado con la pose |
+| 6 | Comprobar que el pie no patina: la velocidad del cuerpo cuadra con el ciclo | F6 | Ajustar velocidad o ritmo |
+
+### C. Ataques y combate
+| # | Paso | Herramienta | Detalle |
+|---|---|---|---|
+| 1 | Diseñar en 3 tiempos: **anticipación** (lenta), **golpe** (1-3 fotogramas rápidos) y **recuperación** | Papel | Es lo que da peso al golpe |
+| 2 | Poses del golpe con piezas cambiadas (brazo extendido dibujado aparte) | Aseprite | El giro pasa de 16°, así que no se rota |
+| 3 | Efecto del tajo, dibujado fotograma a fotograma | Aseprite → `AnimatedSprite2D` | 4-6 fotogramas, encima del personaje |
+| 4 | Zona de golpe (`Area2D`) que solo se activa en los fotogramas del golpe; zona de daño en el enemigo | Pista de métodos del `AnimationPlayer` | El golpe acierta solo cuando se ve |
+| 5 | Sensación de impacto: pausa de 50-80 ms, sacudida de cámara, destello blanco y empuje | Godot | Lo que distingue un combate tipo Guardian Tales |
+| 6 | Daño, alcance y enfriamiento en un recurso de datos | `.tres` | Se equilibra sin tocar código |
+| 7 | Probar contra un muñeco de pruebas | F6 | Ritmo y sensación |
+
+### D. Enemigos y jefes
+| # | Paso | Herramienta | Detalle |
+|---|---|---|---|
+| 1 | Decidir la técnica: **enemigo pequeño = fotograma a fotograma** (más barato); **jefe = marioneta** como en A | — | — |
+| 2 | Fotograma a fotograma: quieto, moverse, atacar, recibir daño y morir, de 4-6 fotogramas cada uno | Aseprite → `godot-aseprite-wizard` | Hoja de sprites + animaciones automáticas |
+| 3 | Comportamiento como estados: patrullar, perseguir, atacar, retirarse | Script del enemigo | Estados genéricos y reutilizables |
+| 4 | Vida, daño, velocidad y botín como datos | `.tres` | Un enemigo nuevo puede ser solo datos y arte |
+| 5 | Ataques con aviso visible (destello o marca en el suelo) antes de golpear | `AnimationPlayer` | Justo para el jugador |
+
+### E. Casillas y mapas
+| # | Paso | Herramienta | Detalle |
+|---|---|---|---|
+| 1 | Juego de casillas de 32×32 con bordes y esquinas | Aseprite (modo tilemap) | Se pinta viendo cómo encajan |
+| 2 | Revisar la repetición en un lienzo grande | Aseprite | Variantes para que no se vea en cuadrícula |
+| 3 | TileSet: terrenos (bordes automáticos), colisión por casilla y capas | Godot | Suelo · decoración · lo que tapa al jugador |
+| 4 | Pintar el mapa en capas `TileMapLayer` y ordenar en Y los objetos altos | Godot | El jugador pasa por detrás de un árbol |
+| 5 | Cada zona es su propia escena, para descargarla por partes | Godot | Un paquete por zona |
+
+### F. Objetos (árboles, rocas, cofres, palancas)
+| # | Paso | Herramienta | Detalle |
+|---|---|---|---|
+| 1 | Pieza maestra a mano | Pixaki / Aseprite | Tamaño en múltiplos de 32 |
+| 2 | Variantes (IA referenciada → paleta → repaso) | IA + script + Aseprite | Volumen sin perder el estilo |
+| 3 | Sombra ovalada bajo el objeto y colisión solo en la base | Godot | El jugador pasa por detrás de la copa |
+| 4 | Si se usa (cofre, palanca), zona de interacción + datos de qué hace | `Area2D` + `.tres` | Interacción por datos |
+
+### G. Efectos visuales (polvo, chispas, magia, curación)
+| # | Paso | Herramienta | Detalle |
+|---|---|---|---|
+| 1 | Efectos con forma (un tajo, una explosión): fotograma a fotograma | Aseprite | 32×32, 4-8 fotogramas |
+| 2 | Efectos de muchas partículas (polvo, lluvia, chispas) | `CPUParticles2D` | Funciona igual en web y teléfono |
+| 3 | Color siempre de la paleta | — | Mantiene la identidad |
+
+### H. Estampas y cinemáticas (prólogo)
+Se sigue el flujo ya probado (§4, §4-bis, §7-bis): guion → `tools/generar_estampas.py` con anclas →
+**Fernando aprueba** → 1344×768 → importación WebP con `lossy_quality=0.85` → orden en `TRAMOS` y
+`LETRAS`. Los clips de Veo se convierten a `.ogv` sin audio.
+
+### I. Retratos de diálogo, interfaz e iconos
+| # | Paso | Herramienta | Detalle |
+|---|---|---|---|
+| 1 | Retrato de 96×96 con varias expresiones (neutral, alegre, triste, enfadado, sorprendido) | Procreate o Aseprite | Uno por personaje que habla |
+| 2 | Iconos de 32×32 (objetos, monedas, menús) | Aseprite | Misma paleta |
+| 3 | Los diálogos como **datos**: quién habla, retrato, texto y condiciones | JSON / `.tres` + `CajaDialogo.gd` | La historia crece sin tocar código |
+| 4 | Fuente Silkscreen | — | La misma de la plataforma |
+
 ## 5. Diseño del juego (Fase 1 y progresión)
 
 **Fase 1 (foco tras el prólogo/intro/encuentro):**

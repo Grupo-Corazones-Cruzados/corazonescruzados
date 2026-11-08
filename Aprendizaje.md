@@ -12192,7 +12192,7 @@ Fernando pidió solo guardar lo aprendido; no se construye nada todavía. Fuente
 - Falta: Automatizaciones (webhook y alta de Meta con Fernando, worker), datos `member_portfolio_items`, borrar los
   dominios (Railway por API; Cloudflare con token o a mano).
 
-### P11 — ¿Cómo se consigue un arte con identidad propia, hecho a mano y con libertad? · 🔎 Propuesto a Fernando (2026-11-08)
+### P11 — ¿Cómo se consigue un arte con identidad propia, hecho a mano y con libertad? · 🔎 Propuesto a Fernando (2026-11-08). Flujo por tipo de asset en `godot/Videojuego.md` §4-ter
 - **Primero una biblia de estilo** dibujada por Fernando: paleta propia cerrada (~32-48 colores),
   una sola densidad de píxel, regla de contorno, luz y proporciones, y **piezas maestras** a mano (el
   personaje, un suelo, un árbol, una casa). La IA y cualquier otro asset se miden contra ellas.
@@ -12204,7 +12204,7 @@ Fernando pidió solo guardar lo aprendido; no se construye nada todavía. Fuente
   pixel art como PixelLab / Retro Diffusion, siempre con referencia a sus piezas maestras. Después
   se ajusta a su paleta y rejilla y se repasa a mano. Se puede hacer un script que fuerce la paleta y
   la rejilla.
-- **Riesgo:** el repo de GitHub es **PÚBLICO**: todo el arte del juego que se suba ahí queda a la
+- **Riesgo (aclarado por Fernando el 2026-11-08: es público TEMPORALMENTE por la transferencia del dominio y volverá a ser privado cuando termine):** el repo de GitHub es **PÚBLICO**: todo el arte del juego que se suba ahí queda a la
   vista de cualquiera. Proponer que los originales vayan a un repo o almacenamiento privado.
 
 ## Automatizaciones migrado (2026-11-08) — los cinco bajo /p/
