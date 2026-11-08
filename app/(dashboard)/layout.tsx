@@ -15,7 +15,6 @@ import PolicyEffectsProvider from '@/components/providers/PolicyEffectsProvider'
 import { ProveedorTemaPanel, useTemaPanel } from '@/components/providers/TemaPanel';
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar';
 import CabeceraMovil from '@/components/dashboard/CabeceraMovil';
-import CabeceraSeccion from '@/components/dashboard/CabeceraSeccion';
 import MenuCentralizado from '@/components/centralized/MenuCentralizado';
 import MenuAccesos from '@/components/accesos/MenuAccesos';
 import MenuProducto from '@/components/productos/MenuProducto';
@@ -63,6 +62,7 @@ function Panel({ children }: { children: React.ReactNode }) {
   const enAccesos = seccion && pathname === '/dashboard/accesos';
   // Un producto dentro de la app: Accesos como primera capa y el menú del producto como segunda.
   const enProducto = seccion && pathname.startsWith('/dashboard/producto/');
+  const enHerramienta = seccion && RUTAS_HERRAMIENTA.some((r) => pathname === r || pathname.startsWith(r + '/'));
   const [, , , productoActivo, slugActivo] = pathname.split('/');
   // Después de montar lo nuevo: los menús leen de qué ruta se venía (`nivelMenu`).
   useEffect(() => { anotarRuta(pathname); }, [pathname]);
@@ -103,12 +103,13 @@ function Panel({ children }: { children: React.ReactNode }) {
     <div className={`corp tema-progreso tema-${tema} ${oscuro ? 'dark' : ''} ${enApp && !seccion ? 'dos-capas' : ''} flex min-h-screen max-lg:h-dvh max-lg:overflow-hidden`}>
       <PolicyBanner collapsed />
       {/* En las apps Progreso va en dos capas: Accesos (raíl) y su propio menú al lado. */}
-      {enApp && !seccion && <MenuAccesos capa activo="progreso" />}
+      {enApp && !seccion && <Suspense fallback={null}><MenuAccesos capa activo="progreso" /></Suspense>}
       {!seccion && <DashboardSidebar />}
-      {enCentralizado && <MenuAccesos capa activo="centralizado" />}
+      {enCentralizado && <Suspense fallback={null}><MenuAccesos capa activo="centralizado" /></Suspense>}
       {enCentralizado && <MenuCentralizado />}
-      {enAccesos && <MenuAccesos />}
-      {enProducto && <MenuAccesos capa activo={`${productoActivo}/${decodeURIComponent(slugActivo ?? '')}`} />}
+      {/* Accesos y las herramientas: el menú de Accesos, sin segunda capa (la herramienta abierta, marcada). */}
+      {(enAccesos || enHerramienta) && <Suspense fallback={null}><MenuAccesos /></Suspense>}
+      {enProducto && <Suspense fallback={null}><MenuAccesos capa activo={`${productoActivo}/${decodeURIComponent(slugActivo ?? '')}`} /></Suspense>}
       {enProducto && <Suspense fallback={null}><MenuProducto /></Suspense>}
       {/* ⇒ LA CABECERA DEL TELÉFONO VA EN EL FLUJO, NO PEGADA A LA VENTANA.
           Empuja al contenido en vez de taparlo, así que **ninguna página puede quedar
@@ -136,8 +137,8 @@ function Panel({ children }: { children: React.ReactNode }) {
           Por debajo de `lg` la columna mide la pantalla (`h-dvh`), la cabecera se queda fija
           y el único que se desplaza —y solo si su contenido no cabe— es el `main`. En
           escritorio no hay cabecera y todo sigue como siempre. */}
-      <div className={`flex-1 min-w-0 flex flex-col ml-0 ${enCentralizado ? 'lg:ml-[22rem]' : seccion && !enAccesos ? '' : enApp && !seccion ? 'lg:ml-32' : 'lg:ml-16'} max-lg:min-h-0`}>
-        {seccion && !enCentralizado && !enAccesos && !enProducto ? <CabeceraSeccion /> : <CabeceraMovil />}
+      <div className={`flex-1 min-w-0 flex flex-col ml-0 ${enCentralizado ? 'lg:ml-[22rem]' : seccion && !enAccesos && !enHerramienta ? '' : enApp && !seccion ? 'lg:ml-32' : 'lg:ml-16'} max-lg:min-h-0`}>
+        <CabeceraMovil />
         {/* El relleno inferior sale de la MISMA variable que el alto del pie: antes era
             `pb-14` escrito a mano contra un pie de 36 px, y al crecer el pie en teléfono
             el contenido se le habría metido debajo. */}

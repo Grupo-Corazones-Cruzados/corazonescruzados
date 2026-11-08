@@ -484,7 +484,13 @@ export default function ToolsPage() {
     <div>
       <PageHeader title="Herramientas" description="Utilidades de uso interno" />
 
-      {enSeccion && <div className="max-w-2xl">{cuerpoHerramienta()}</div>}
+      {/* Sin cabecera de sección: el nombre va arriba, como el título de Comunicados. */}
+      {enSeccion && (
+        <div className="max-w-2xl">
+          <h1 className="text-[18px] font-semibold text-digi-text mb-3" style={mf}>{tool?.name}</h1>
+          {cuerpoHerramienta()}
+        </div>
+      )}
 
       <div className={`flex flex-col lg:flex-row gap-4 items-start ${enSeccion ? 'hidden' : ''}`}>
         {/* ── Left rail: categorías ── */}

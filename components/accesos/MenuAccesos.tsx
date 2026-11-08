@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
@@ -34,6 +34,11 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
   const pathname = usePathname();
   const { signOut } = useAuth();
   const { abierto, cerrar } = useMenuMovil();
+  // En una herramienta, la abierta queda marcada (sin `activo`, lo dice la ruta).
+  const herramientaAbierta = useSearchParams().get('herramienta');
+  const activoReal = activo ?? (pathname.startsWith('/dashboard/admin/gumdramon-app') ? 'gumdramon'
+    : pathname.startsWith('/dashboard/admin/espacio') ? 'entorno'
+    : pathname.startsWith('/dashboard/tools') ? herramientaAbierta ?? undefined : undefined);
   const { apps, productos, herramientas, rutaHerramienta, abrirProducto, entrandoAlJuego } = useAccesos();
   const [sobreElMenu, setSobreElMenu] = useState(false);
   const telefono = useConsultaMedia('(max-width: 63.99rem)');
@@ -44,7 +49,7 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
 
   useEffect(() => { cerrar(); }, [pathname, cerrar]);
 
-  const fila = (id?: string) => `relative flex items-center gap-2.5 rounded-md h-9 w-full text-[13px] font-medium transition-colors ${id && id === activo ? (capa ? 'item-capa-activo text-digi-text' : 'bg-accent-light text-accent') : 'text-digi-muted hover:text-digi-text hover:bg-white/[0.06]'} ${estrecho ? 'justify-center px-0' : 'px-2.5'}`;
+  const fila = (id?: string) => `relative flex items-center gap-2.5 rounded-md h-9 w-full text-[13px] font-medium transition-colors ${id && id === activoReal ? (capa ? 'item-capa-activo text-digi-text' : 'bg-accent-light text-accent') : 'text-digi-muted hover:text-digi-text hover:bg-white/[0.06]'} ${estrecho ? 'justify-center px-0' : 'px-2.5'}`;
 
   const Grupo = ({ titulo, primero, children }: { titulo: string; primero?: boolean; children: ReactNode }) => (
     <div className={primero ? '' : 'mt-2'}>
