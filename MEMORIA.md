@@ -331,6 +331,7 @@ Stack estándar de la casa, con particularidades de este repo:
   `source_id::bigint`, que rompe con source_id de suscripción tipo `5-2026-06`). Verificado contra BD + build.
 
 ## Decisiones recientes (feature)
+- **🧭 AUTOMATIZACIONES: ESTUDIO = AGENTE, CONFIGURACIÓN ▸ WHATSAPP = CONEXIÓN (Fernando, 2026-11-08: «estudio y configuración son lo mismo en la sección de WhatsApp… que la interfaz no sea confusa»).** El Estudio ya no enseña estado ni coexistencia; su primera sección es «Comportamiento» (encendido, clave de OpenAI, ajustes). Los fallos de `canales.ultimo_error` se reparten con `lib/fallos.ts › esFalloDeIA`. Con las reglas de /diseno del 29-oct al 4-nov aplicadas (detalle en Diseño.md); las piezas nuevas (`Secciones`, `PieAcciones`, `recuento` de `Tabla`) faltan en los otros cuatro productos.
 - **📱 AUTOMATIZACIONES: CONFIGURACIÓN ▸ WHATSAPP (Fernando, 2026-11-07).** *«hace falta un apartado para configurar la conexión con WhatsApp en el tenant»*. El alta del número (Embedded Signup con coexistencia) existía solo en la plataforma y se borró con el módulo (dbe8f077); el producto tenía las funciones de Meta portadas pero **nadie las llamaba**: un inquilino nuevo no podía conectar su número. Ahora: `src/acciones/whatsapp.ts` + `configuracion/SeccionWhatsApp.tsx`, migración 013 (`canales.conectado_en`).
   - **Lo hace el ADMIN del inquilino**, no solo GCC (antes, en la plataforma, solo el equipo). El paso irreversible de Meta se avisa en la pantalla y se confirma antes de abrir la ventana.
   - El alta **crea la automatización AGENTE_IA** si no existe (con eso aparecen Conversaciones y Estudio en el menú). Un número ocupado por otro inquilino **no dice de quién es**. El número de prueba de Meta solo en el inquilino de cortesía (usa `WHATSAPP_TOKEN`, que da acceso a las cuentas de todos).
@@ -674,7 +675,7 @@ Stack estándar de la casa, con particularidades de este repo:
   la tira de 7 días de Reservas (la sustituye `PasoDia`); Reservas: «Registrar salida» ya no dice
   «(falta el pago)»; Automatizaciones mantiene la píldora de coste de IA en el chat. Pedidos/Reservas:
   el día de la reserva se lee de la cadena `AAAA-MM-DD`, no de `new Date()` (salía el día anterior).
-  Avisos de hidratación ya existentes, sin tocar: hora del chat de Automatizaciones y el temporizador
+  Avisos de hidratación ya existentes, sin tocar: hora del chat de Automatizaciones (✅ corregida el 2026-11-08 con `fechaHora` de `lib/formato.ts`: Node y Chrome escriben «a. m.» distinto) y el temporizador
   de Cocina en Pedidos. Pendiente: GCC World.
 - **📱 Catering se instala como app en el iPhone (Fernando, 2026-10-22).** Anclada al inicio se abría con
   los controles de Safari encima. Faltaba lo que Reservas ya tenía: `src/app/[negocio]/layout.tsx`
