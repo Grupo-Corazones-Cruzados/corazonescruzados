@@ -16,14 +16,26 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { TEMA_POR_DEFECTO, definicionTema, type TemaId } from '@/lib/temas';
-import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
+import { usePathname } from 'next/navigation';
+import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 
 /**
- * El tema según la app (Fernando, 2026-11-08): GCC Miembros es siempre rojo y negro («Corazón») y
- * no se cambia; GCC World empieza en «Mixto» mientras la cuenta no elija otro. La web, como siempre.
+ * EL TEMA SEGÚN LA APP Y LA SECCIÓN (Fernando, 2026-11-08). En el navegador manda el que elige la
+ * cuenta. En las apps:
+ *   · Accesos y las herramientas: GCC World en «Mixto», GCC Miembros en «Corazón».
+ *   · Centralizado: «Orquídea».
+ *   · Progreso: el que elija la cuenta (empieza en «Claro»); en GCC Miembros, siempre «Claro».
+ *   · Aventura es el juego (`/juego`): se entra fundiendo a negro desde Accesos.
+ * En GCC Miembros el tema no se cambia (no hay selector). El cambio entre secciones se anima en el
+ * layout del panel.
  */
-const TEMA_FIJO_MIEMBROS: TemaId = 'corazon';
-const temaInicialDeApp = (): TemaId => (appDeTelefono() === 'progreso' ? 'mixto' : TEMA_POR_DEFECTO);
+function temaDeSeccion(app: AppDeTelefono | null, ruta: string, elegido: TemaId): TemaId {
+  if (!app) return elegido;
+  const en = (r: string) => ruta === r || ruta.startsWith(r + '/');
+  if (en('/dashboard/centralized')) return 'orquidea';
+  if (en('/dashboard/accesos') || en('/dashboard/tools')) return app === 'centralizado' ? 'corazon' : 'mixto';
+  return app === 'centralizado' ? 'claro' : elegido;
+}
 
 /**
  * La preferencia se guarda POR CUENTA (`gcc_dash_theme:<id>`), no por navegador
@@ -67,13 +79,7 @@ export function ProveedorTemaPanel({ children }: { children: React.ReactNode }) 
   // empieza en claro.
   useEffect(() => {
     try {
-      if (appDeTelefono() === 'centralizado') {
-        setTema(TEMA_FIJO_MIEMBROS);
-        localStorage.setItem(LLAVE_ULTIMO_TEMA, TEMA_FIJO_MIEMBROS);
-        return;
-      }
-      const guardado = localStorage.getItem(llave);
-      const t = guardado ? leerGuardado(guardado) : temaInicialDeApp();
+      const t = leerGuardado(localStorage.getItem(llave));
       setTema(t);
       if (user?.id) localStorage.setItem(LLAVE_ULTIMO_TEMA, t);
     } catch { /* sin almacenamiento: claro */ }
@@ -85,9 +91,19 @@ export function ProveedorTemaPanel({ children }: { children: React.ReactNode }) 
     try { localStorage.setItem(llave, t); localStorage.setItem(LLAVE_ULTIMO_TEMA, t); } catch { /* no impide cambiarlo ahora */ }
   }, [llave]);
 
-  const oscuro = definicionTema(tema)?.base === 'oscuro';
+  // El que se ve: en las apps lo decide la sección (`temaDeSeccion`); `tema` es el que eligió la cuenta.
+  const ruta = usePathname() ?? '';
+  const [app, setApp] = useState<AppDeTelefono | null>(null);
+  useEffect(() => { setApp(appDeTelefono()); }, []);
+  const visto = temaDeSeccion(app, ruta, tema);
+  // La pantalla de carga (`CargaPanel`) se pinta con el último que se vio.
+  useEffect(() => {
+    if (!app) return;
+    try { localStorage.setItem(LLAVE_ULTIMO_TEMA, visto); } catch { /* da igual */ }
+  }, [app, visto]);
+  const oscuro = definicionTema(visto)?.base === 'oscuro';
 
-  return <Ctx.Provider value={{ tema, oscuro, poner }}>{children}</Ctx.Provider>;
+  return <Ctx.Provider value={{ tema: visto, oscuro, poner }}>{children}</Ctx.Provider>;
 }
 
 /**

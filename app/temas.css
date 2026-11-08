@@ -138,7 +138,7 @@
 }
 /* El acento como TEXTO sobre el grafito: el tono de relleno no llega a 4,5:1, así que los
    temas oscuros con paneles neutros declaran `--texto-acento`, más claro. */
-.corp.tema-progreso:is(.tema-corazon, .tema-electrico, .tema-videojuego, .tema-negro).dark .text-accent:not(.rail .text-accent) { color: var(--texto-acento); }
+.corp.tema-progreso:is(.tema-corazon, .tema-orquidea, .tema-electrico, .tema-videojuego, .tema-negro).dark .text-accent:not(.rail .text-accent) { color: var(--texto-acento); }
 .corp.tema-progreso.tema-corazon .rail {
   --color-digi-card: #1b080d;
   --color-digi-darker: #150609;
@@ -150,35 +150,40 @@
   --color-accent-glow: #ff94a4;
 }
 
-/* ── ORQUÍDEA — #C71585 sobre rosa casi blanco ─────────────────────────────────────── */
-.corp.tema-progreso.tema-orquidea:not(.dark) {
-  --color-digi-dark: #fbf1f7;
-  --color-digi-card: #ffffff;
-  --color-digi-border: #f1dbe8;
-  --color-digi-text: #2a0f20;
-  --color-digi-muted: #7a5a6c;
+/* ── ORQUÍDEA — #C71585 sobre noche ciruela ──────────────────────────────────────────────
+   Era claro (rosa casi blanco). Fernando, 2026-11-08: «que sus fondos de relleno sean oscuros y
+   que no sea igual de clarito». Se rehízo con lo aprendido en Corazón: paneles en grafito con un
+   toque ciruela, el magenta solo en el fondo, el menú, lo elegido y los botones. Blanco sobre el
+   botón #C71585: 5,6:1. El magenta como TEXTO no llega sobre el grafito: `--texto-acento` rosa. */
+.corp.tema-progreso.tema-orquidea.dark {
+  --color-digi-dark: #14070f;
+  --color-digi-darker: #161216;
+  --color-digi-card: #2a2228;
+  --color-digi-border: #43363f;
+  --color-digi-text: #f7eef4;
+  --color-digi-muted: #b9a3b1;
   --color-accent: #c71585;
-  --color-accent-hover: #a5106d;
-  --color-accent-light: #fce7f3;
+  --color-accent-hover: #db2799;
+  --color-accent-light: #4a1238;
   --color-accent-dark: #9d0f68;
-  --color-accent-glow: #c71585;
-  --tarjeta-fondo: rgba(255, 255, 255, 0.86);
-  --cabecera-tabla: #fffbfd;
-  --tarjeta-borde: #f1dbe8;
-  --tarjeta-sombra: 0 14px 34px -16px rgba(199, 21, 133, 0.32);
-  --etiqueta: #7a5a6c;
-  --fila-hover: rgba(199, 21, 133, 0.05);
+  --color-accent-glow: #ff7ac6;
+  --tarjeta-fondo: rgba(42, 34, 40, 0.98);
+  --cabecera-tabla: #2a2228;
+  --tarjeta-borde: rgba(255, 255, 255, 0.08);
+  --tarjeta-sombra: 0 18px 40px -22px rgba(0, 0, 0, 0.9);
+  --etiqueta: #c3adbb;
+  --texto-acento: #f472b6;
+  --fila-hover: rgba(255, 255, 255, 0.05);
   --sombra-boton: rgba(199, 21, 133, 0.7);
-  --degradado-boton: linear-gradient(135deg, #db2799, #a5106d);
+  --degradado-boton: linear-gradient(135deg, #db2799, #9d0f68);
   --degradado-icono: linear-gradient(135deg, #e04aa8, #c71585);
-  --degradado-acento: linear-gradient(90deg, #f472b6, #c71585 50%, #86198f);
+  --degradado-acento: linear-gradient(90deg, #f9a8d4, #f472b6 45%, #c71585);
 
   background:
-    radial-gradient(rgba(199, 21, 133, 0.11) 1px, transparent 1.6px) 0 0 / 28px 28px,
-    radial-gradient(34vw 34vw at 92% -4%, rgba(199, 21, 133, 0.17), transparent 70%),
-    radial-gradient(30vw 30vw at 6% 104%, rgba(244, 114, 182, 0.16), transparent 70%),
-    radial-gradient(24vw 24vw at 52% 45%, rgba(199, 21, 133, 0.05), transparent 70%),
-    linear-gradient(160deg, #fffafd 0%, #fbeef6 55%, #f6e1ee 100%);
+    radial-gradient(rgba(252, 231, 243, 0.08) 1px, transparent 1.6px) 0 0 / 30px 30px,
+    radial-gradient(36vw 36vw at 90% -6%, rgba(199, 21, 133, 0.30), transparent 70%),
+    radial-gradient(30vw 30vw at 4% 106%, rgba(244, 114, 182, 0.14), transparent 70%),
+    linear-gradient(180deg, #10050c 0%, #1a0814 100%);
   background-attachment: fixed;
 }
 .corp.tema-progreso.tema-orquidea .rail {

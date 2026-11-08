@@ -12,6 +12,7 @@ import { herramientasPara } from '@/lib/herramientas/catalogo';
 import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 import { markGameEntry } from '@/lib/world/gameEntry';
 import type { Plataforma } from '@/lib/productos/plataformas';
+import { definicionTema, type TemaId } from '@/lib/temas';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -70,6 +71,8 @@ export default function AccesosPage() {
   const entrarAlJuego = async () => {
     if (entrandoAlJuego) return;
     setEntrandoAlJuego(true);
+    // Aventura usa el tema negro: se funde a negro mientras se decide a dónde entrar.
+    await new Promise((r) => window.setTimeout(r, 320));
     try {
       const j = await fetch('/api/character/me', { cache: 'no-store' }).then((r) => r.json());
       const enRegla = j?.isMember || j?.hasAccount || (j?.approved && j?.emailVerified);
@@ -96,12 +99,12 @@ export default function AccesosPage() {
 
       {pestana === 'apps' && (
         <Rejilla>
-          <Mosaico Icono={LayoutDashboard} titulo="Progreso" texto="La plataforma: tickets, proyectos y tu día."
+          <Mosaico Icono={LayoutDashboard} tema="claro" titulo="Progreso" texto="La plataforma: tickets, proyectos y tu día."
             onClick={() => router.push(rol === 'client' ? '/dashboard/marketplace' : '/dashboard')} />
-          <Mosaico Icono={Gamepad2} titulo="Aventura" texto={entrandoAlJuego ? 'Entrando…' : 'El videojuego del grupo.'}
+          <Mosaico Icono={Gamepad2} tema="negro" titulo="Aventura" texto={entrandoAlJuego ? 'Entrando…' : 'El videojuego del grupo.'}
             onClick={entrarAlJuego} />
           {esEquipo && (
-            <Mosaico Icono={Network} titulo="Centralizado" texto="Los sistemas de los miembros."
+            <Mosaico Icono={Network} tema="orquidea" titulo="Centralizado" texto="Los sistemas de los miembros."
               onClick={() => router.push('/dashboard/centralized')} />
           )}
         </Rejilla>
@@ -132,6 +135,7 @@ export default function AccesosPage() {
           </Rejilla>
         )
       )}
+      {entrandoAlJuego && <div aria-hidden className="cambio-tema entra" style={{ background: '#000' }} />}
     </div>
   );
 }
@@ -143,8 +147,10 @@ function Rejilla({ children }: { children: React.ReactNode }) {
 const MOSAICO = 'flex flex-col items-start gap-3 p-4 min-h-[140px] rounded-xl border border-digi-border bg-digi-card text-left transition-colors hover:border-accent/40';
 
 /** Un acceso: icono (o portada del producto), nombre y una línea. */
-function Mosaico({ Icono, imagen, titulo, texto, onClick, href }: {
+function Mosaico({ Icono, imagen, titulo, texto, onClick, href, tema }: {
   Icono?: ComponentType<{ className?: string }>;
+  /** Las apps llevan el color del tema con que se abren (Fernando, 2026-11-08). */
+  tema?: TemaId;
   imagen?: string | null;
   titulo: string;
   texto: string;
@@ -153,7 +159,12 @@ function Mosaico({ Icono, imagen, titulo, texto, onClick, href }: {
 }) {
   const contenido = (
     <>
-      {Icono ? (
+      {Icono && tema ? (
+        <span className="w-12 h-12 shrink-0 rounded-lg grid place-items-center border border-white/15"
+          style={{ background: definicionTema(tema)?.muestra.acento === '#fafafa' ? '#000' : definicionTema(tema)?.muestra.acento }}>
+          <Icono className="w-6 h-6 text-white" />
+        </span>
+      ) : Icono ? (
         <span className="w-12 h-12 shrink-0 rounded-lg bg-accent-light border border-accent/15 grid place-items-center">
           <Icono className="w-6 h-6 text-accent" />
         </span>

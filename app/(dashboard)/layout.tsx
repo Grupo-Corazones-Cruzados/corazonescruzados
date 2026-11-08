@@ -1,6 +1,7 @@
 'use client';
 
 import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
+import { definicionTema } from '@/lib/temas';
 import '../tema-progreso.css';
 import '../temas.css';
 import '../movimiento.css';
@@ -59,6 +60,18 @@ function Panel({ children }: { children: React.ReactNode }) {
     setEnApp(!!app);
   }, []);
   useEntradaTrasCarga(mainRef);
+  // Al cambiar de sección en una app cambia el tema (`TemaPanel`): un velo del color del nuevo se
+  // desvanece encima, para que el cambio se vea como transición y no como un salto (2026-11-08).
+  const [velo, setVelo] = useState<string | null>(null);
+  const temaAntes = useRef(tema);
+  useEffect(() => {
+    if (temaAntes.current === tema) return;
+    temaAntes.current = tema;
+    if (!enApp) return;
+    setVelo(definicionTema(tema)?.muestra.fondo ?? null);
+    const t = window.setTimeout(() => setVelo(null), 460);
+    return () => window.clearTimeout(t);
+  }, [tema, enApp]);
 
   /**
    * ⇒ EL MENÚ YA NO SE COLAPSA A MANO: se abre al pasar el puntero (ver
@@ -123,6 +136,7 @@ function Panel({ children }: { children: React.ReactNode }) {
       {!sinMuelle && !seccion && <ChatDock />}
       {/* El agente de GCC. A miembros y candidatos además les lee los datos de su cuenta. */}
       {!sinMuelle && !seccion && <AgentePresupuestos />}
+      {velo && <div aria-hidden className="cambio-tema" style={{ background: velo }} />}
     </div>
   );
 }

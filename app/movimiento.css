@@ -108,3 +108,14 @@ html[data-gcc-app] *, html[data-gcc-app] *::backdrop { -webkit-backdrop-filter: 
 @media (prefers-reduced-motion: reduce) {
   .corp .carga-bloque, .corp .carga-barra::before { animation: none; }
 }
+
+/* CAMBIO DE TEMA ENTRE SECCIONES DE LAS APPS (2026-11-08). El velo del color del tema nuevo cubre y
+   se desvanece (`layout` del panel); al entrar a Aventura, el de Accesos entra a negro (`.entra`). */
+@keyframes cambioTemaSale { from { opacity: 1; } to { opacity: 0; } }
+@keyframes cambioTemaEntra { from { opacity: 0; } to { opacity: 1; } }
+.cambio-tema { position: fixed; inset: 0; z-index: 250; pointer-events: none; animation: cambioTemaSale 450ms ease-out forwards; }
+.cambio-tema.entra { pointer-events: auto; animation: cambioTemaEntra 320ms ease-in forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .cambio-tema { display: none; }
+  .cambio-tema.entra { display: block; animation: none; }
+}

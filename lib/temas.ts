@@ -25,8 +25,9 @@ export const TEMAS: DefinicionTema[] = [
   { id: 'mixto', nombre: 'Mixto', base: 'claro', muestra: { fondo: '#f3effb', tarjeta: '#ffffff', acento: '#7c5ce0', ventana: '#17122b' } },
   // El corazón del grupo: rojo sangre sobre una noche granate, paneles en grafito.
   { id: 'corazon', nombre: 'Corazón', base: 'oscuro', muestra: { fondo: '#12060a', tarjeta: '#26262b', acento: '#e11d48' } },
-  // #C71585 (Fernando) sobre un rosa casi blanco.
-  { id: 'orquidea', nombre: 'Orquídea', base: 'claro', muestra: { fondo: '#fbeef6', tarjeta: '#ffffff', acento: '#C71585' } },
+  // #C71585 (Fernando) sobre una noche ciruela; desde el 2026-11-08 es oscuro («que sus fondos de
+  // relleno sean oscuros y que no sea igual de clarito»). Es el tema de Centralizado en las apps.
+  { id: 'orquidea', nombre: 'Orquídea', base: 'oscuro', muestra: { fondo: '#14070f', tarjeta: '#2a2228', acento: '#C71585' } },
   // Azul eléctrico sobre la noche de una ciudad, paneles en grafito.
   { id: 'electrico', nombre: 'Eléctrico', base: 'oscuro', muestra: { fondo: '#040a1c', tarjeta: '#1f2229', acento: '#1f5bff' } },
   // Nieve y pino, con los botones en rojo de Navidad.
