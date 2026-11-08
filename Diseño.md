@@ -6393,3 +6393,10 @@ En los cinco productos el título del navegador es `GCC · <página> · <product
 - **«Ver como» va en el MENÚ, como en GCC World**: tu nombre y foto en el pie del menú son un botón con un ojo (solo ADMIN, no durante una vista) que abre una ventanita con los usuarios activos del negocio y un buscador (`DialogoVerComo`, portal al envoltorio `.tema-mixto`).
 - **Paneles que llenan el alto**: `PanelLateral lleno` hace del cuerpo una columna; el texto largo (instrucción, contenido de un bloque) lleva `flex-1` y llega hasta el pie.
 - ⚠️ **Las piezas CSS van en `@layer components`** (`.campo`, `.tarjeta`…) y `* {border-color}` en `@layer base`. Sueltas ganaban a las utilidades de Tailwind v4 (`campo pl-8` no apartaba el texto de la lupa; `border-transparent` salía gris). Comprobar al portar a los otros productos.
+
+## Automatizaciones · Conversaciones (Fernando, 2026-11-08)
+- **Etiquetas de contactos**: botón de icono (etiqueta) en la cabecera del hilo → ventanita con las etiquetas del negocio (marcar) y «Nueva etiqueta». Se ven como **texto de color con icono**, sin cápsula, en la lista y en la cabecera. Filtro por etiqueta en un `<select>` DEBAJO del buscador (`?e=`), solo si hay etiquetas.
+- **Tomar / devolver** es un **icono** (mano = tomar; robot = devolver al agente) con su nombre en `title`, en todos los anchos; quién la lleva es una `Insignia` (solo desde `sm`; en el teléfono basta el icono).
+- **Contestar desde la app**: con la conversación tomada aparece la caja de mensaje abajo (Enter envía, Mayús+Enter salto de línea, botón de enviar de icono). Fuera de las 24 h de WhatsApp, una línea lo dice en vez de la caja.
+- **Consumo de IA** junto al número: solo texto de color, sin relleno.
+- Números en atributos (`title`) con `miles()` de `lib/formato.ts`: `toLocaleString` agrupa distinto en Node y Chrome y rompe la hidratación.

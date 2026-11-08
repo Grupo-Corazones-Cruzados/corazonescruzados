@@ -375,6 +375,7 @@ model Contacto {
   actualizado DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   conversaciones Conversacion[]
+  etiquetas      ContactoEtiqueta[]
 
   @@unique([canalId, waId])
   @@index([inquilinoId])
@@ -867,4 +868,25 @@ model VistaComo {
   terminada   DateTime? @map("terminada_en") @db.Timestamptz(3)
 
   @@map("vistas_como")
+}
+
+/// Una etiqueta del negocio para clasificar contactos (migración 016).
+model Etiqueta {
+  id          Int      @id @default(autoincrement())
+  inquilinoId Int      @map("inquilino_id")
+  nombre      String   @db.VarChar(40)
+  creado      DateTime @default(now()) @map("creado_en") @db.Timestamptz(3)
+  contactos   ContactoEtiqueta[]
+
+  @@map("etiquetas")
+}
+
+model ContactoEtiqueta {
+  contactoId Int      @map("contacto_id")
+  contacto   Contacto @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  etiquetaId Int      @map("etiqueta_id")
+  etiqueta   Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+
+  @@id([contactoId, etiquetaId])
+  @@map("contacto_etiquetas")
 }

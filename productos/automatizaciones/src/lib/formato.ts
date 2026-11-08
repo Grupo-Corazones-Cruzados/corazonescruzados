@@ -44,3 +44,6 @@ export function fechaLarga(fecha: string | Date, zona = 'America/Guayaquil') {
   const { d, m, a } = partes(fecha, zona);
   return `${d} de ${MESES[m - 1]} de ${a}`;
 }
+
+/** Miles con «.» armados a mano: igual en Node y en Chrome (los ICU agrupan distinto «1234»). */
+export const miles = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');

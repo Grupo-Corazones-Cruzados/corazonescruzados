@@ -16,32 +16,43 @@ export default async function PaginaConversaciones({
   searchParams,
 }: {
   params: Promise<{ cliente: string }>;
-  searchParams: Promise<{ c?: string; q?: string }>;
+  searchParams: Promise<{ c?: string; q?: string; e?: string }>;
 }) {
   const { cliente } = await params;
-  const { c, q } = await searchParams;
+  const { c, q, e } = await searchParams;
   const { inquilino, sesion } = await exigirContexto(cliente);
 
   const busca = (q || '').trim();
+  // Las etiquetas del negocio, y la elegida en el filtro (`?e=`), solo si es SUYA.
+  const etiquetas = await prisma.etiqueta.findMany({
+    where: { inquilinoId: inquilino.id },
+    orderBy: { nombre: 'asc' },
+    select: { id: true, nombre: true },
+  });
+  const etiquetaId = e && etiquetas.some((x) => String(x.id) === e) ? Number(e) : null;
+
   const conversaciones = await prisma.conversacion.findMany({
     where: {
       inquilinoId: inquilino.id,
-      ...(busca
-        ? {
-            contacto: {
+      contacto: {
+        ...(busca
+          ? {
               OR: [
                 { nombreAgenda: { contains: busca, mode: 'insensitive' } },
                 { nombrePerfil: { contains: busca, mode: 'insensitive' } },
                 { waId: { contains: busca } },
               ],
-            },
-          }
-        : {}),
+            }
+          : {}),
+        ...(etiquetaId ? { etiquetas: { some: { etiquetaId } } } : {}),
+      },
     },
     orderBy: { ultimoMensajeEn: 'desc' },
     take: 100,
     include: {
-      contacto: { select: { nombreAgenda: true, nombrePerfil: true, waId: true } },
+      contacto: {
+        select: { nombreAgenda: true, nombrePerfil: true, waId: true, etiquetas: { select: { etiqueta: { select: { nombre: true } } } } },
+      },
       tomadaPor: { select: { nombre: true } },
     },
   });
@@ -53,7 +64,7 @@ export default async function PaginaConversaciones({
     ? await prisma.conversacion.findFirst({
         where: { id: abiertaId, inquilinoId: inquilino.id },
         include: {
-          contacto: true,
+          contacto: { include: { etiquetas: { select: { etiqueta: { select: { nombre: true } } } } } },
           tomadaPor: { select: { nombre: true } },
           mensajes: { orderBy: { creado: 'asc' }, take: 200 },
         },
@@ -67,7 +78,14 @@ export default async function PaginaConversaciones({
     ultimo: x.ultimoMensajeEn ? x.ultimoMensajeEn.toISOString() : null,
     botActivo: x.botActivo,
     tomadaPor: x.tomadaPor?.nombre ?? null,
+    etiquetas: x.contacto.etiquetas.map((t) => t.etiqueta.nombre).sort(),
   }));
+
+  // ¿Sigue abierta la ventana de 24 h de WhatsApp? Decide si se puede escribir libremente.
+  const ultimoEntrante = abierta
+    ? [...abierta.mensajes].reverse().find((m) => m.direccion === 'ENTRANTE')?.creado ?? null
+    : null;
+  const ventanaAbierta = !!ultimoEntrante && Date.now() - ultimoEntrante.getTime() < 24 * 60 * 60 * 1000;
 
   /**
    * LO QUE HA COSTADO ESTA CONVERSACIÓN (Fernando, 2026-09-23: «un contador de tokens o
@@ -106,6 +124,8 @@ export default async function PaginaConversaciones({
       slug={cliente}
       lista={lista}
       busca={busca}
+      etiquetas={etiquetas}
+      etiquetaId={etiquetaId}
       abierta={
         abierta
           ? {
@@ -115,6 +135,9 @@ export default async function PaginaConversaciones({
               numero: abierta.contacto.waId,
               botActivo: abierta.botActivo,
               tomadaPor: abierta.tomadaPor?.nombre ?? null,
+              contactoId: abierta.contactoId,
+              etiquetas: abierta.contacto.etiquetas.map((t) => t.etiqueta.nombre).sort(),
+              ventanaAbierta,
             }
           : null
       }
