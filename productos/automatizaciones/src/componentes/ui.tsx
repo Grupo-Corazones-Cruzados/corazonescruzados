@@ -44,6 +44,7 @@ export function Boton({
   variante?: 'primario' | 'secundario' | 'peligro' | 'fantasma';
   tamano?: keyof typeof TAMANOS;
   icono?: React.ComponentType<{ className?: string }>;
+  ref?: React.Ref<HTMLButtonElement>;
 }) {
   const estilo = {
     primario: BOTON_PRIMARIO,

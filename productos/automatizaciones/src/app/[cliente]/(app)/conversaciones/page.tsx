@@ -16,10 +16,12 @@ export default async function PaginaConversaciones({
   searchParams,
 }: {
   params: Promise<{ cliente: string }>;
-  searchParams: Promise<{ c?: string; q?: string; e?: string; f?: string }>;
+  searchParams: Promise<{ c?: string; q?: string; e?: string; f?: string; s?: string; u?: string }>;
 }) {
   const { cliente } = await params;
-  const { c, q, e, f } = await searchParams;
+  const { c, q, e, f, s: sParam, u: uParam } = await searchParams;
+  const ESTADOS = { abierto: 'ABIERTO', enproceso: 'EN_PROCESO', cerrado: 'CERRADO' } as const;
+  const estadoFiltro = sParam && sParam in ESTADOS ? ESTADOS[sParam as keyof typeof ESTADOS] : null;
   const soloNoLeidos = f === 'noleidos';
   const soloTomadas = f === 'tomadas';
   const { inquilino, sesion } = await exigirContexto(cliente);
@@ -54,10 +56,32 @@ export default async function PaginaConversaciones({
   );
   const nEtiqueta = new Map(porEtiqueta.map((x) => [x.etiqueta_id, x.n]));
 
+  // Estados y responsables, con su cuenta (2026-11-08).
+  const { rows: porEstado } = await pool.query<{ estado_atencion: string; n: number }>(
+    `SELECT estado_atencion, COUNT(*)::int n FROM conversaciones WHERE inquilino_id = $1 GROUP BY estado_atencion`,
+    [inquilino.id],
+  );
+  const nEstado = Object.fromEntries(porEstado.map((x) => [x.estado_atencion, x.n]));
+  const usuariosNegocio = await prisma.usuario.findMany({
+    where: { inquilinoId: inquilino.id, activo: true },
+    orderBy: { nombre: 'asc' },
+    select: { id: true, nombre: true },
+  });
+  const { rows: porUsuario } = await pool.query<{ asignada_a_id: number | null; n: number }>(
+    `SELECT asignada_a_id, COUNT(*)::int n FROM conversaciones WHERE inquilino_id = $1 GROUP BY asignada_a_id`,
+    [inquilino.id],
+  );
+  const nUsuario = new Map(porUsuario.map((x) => [x.asignada_a_id, x.n]));
+  // `?u=ninguno` = sin asignar; `?u=<id>` solo si es una cuenta activa de ESTE negocio.
+  const usuarioFiltro: number | 'ninguno' | null =
+    uParam === 'ninguno' ? 'ninguno' : uParam && usuariosNegocio.some((x) => String(x.id) === uParam) ? Number(uParam) : null;
+
   const conversaciones = await prisma.conversacion.findMany({
     where: {
       inquilinoId: inquilino.id,
       ...(soloTomadas ? { botActivo: false } : {}),
+      ...(estadoFiltro ? { estadoAtencion: estadoFiltro } : {}),
+      ...(usuarioFiltro === 'ninguno' ? { asignadaAId: null } : usuarioFiltro ? { asignadaAId: usuarioFiltro } : {}),
       contacto: {
         ...(busca
           ? {
@@ -78,6 +102,7 @@ export default async function PaginaConversaciones({
         select: { nombreAgenda: true, nombrePerfil: true, waId: true, etiquetas: { select: { etiqueta: { select: { nombre: true } } } } },
       },
       tomadaPor: { select: { nombre: true } },
+      asignadaA: { select: { nombre: true } },
     },
   });
 
@@ -90,6 +115,7 @@ export default async function PaginaConversaciones({
         include: {
           contacto: { include: { etiquetas: { select: { etiqueta: { select: { nombre: true } } } } } },
           tomadaPor: { select: { nombre: true } },
+          asignadaA: { select: { id: true, nombre: true } },
           mensajes: { orderBy: { creado: 'asc' }, take: 200 },
         },
       })
@@ -126,6 +152,8 @@ export default async function PaginaConversaciones({
     botActivo: x.botActivo,
     tomadaPor: x.tomadaPor?.nombre ?? null,
     etiquetas: x.contacto.etiquetas.map((t) => t.etiqueta.nombre).sort(),
+    asignadaA: x.asignadaA?.nombre ?? null,
+    estado: x.estadoAtencion as 'ABIERTO' | 'EN_PROCESO' | 'CERRADO',
     vistaPrevia: resumen.get(x.id)
       ? {
           nuestro: resumen.get(x.id)!.direccion === 'SALIENTE',
@@ -187,6 +215,12 @@ export default async function PaginaConversaciones({
       etiquetaId={etiquetaId}
       filtro={soloNoLeidos ? 'noleidos' : soloTomadas ? 'tomadas' : null}
       cuentas={{ todas: cuentas.todas, noLeidas: cuentas.no_leidas, tomadas: cuentas.tomadas }}
+      estados={{ ABIERTO: nEstado.ABIERTO ?? 0, EN_PROCESO: nEstado.EN_PROCESO ?? 0, CERRADO: nEstado.CERRADO ?? 0 }}
+      estadoFiltro={estadoFiltro}
+      usuarios={usuariosNegocio.map((x) => ({ ...x, n: nUsuario.get(x.id) ?? 0 }))}
+      sinAsignar={nUsuario.get(null) ?? 0}
+      usuarioFiltro={usuarioFiltro}
+      esAdmin={sesion.rol === 'ADMIN'}
       abierta={
         abierta
           ? {
@@ -197,6 +231,8 @@ export default async function PaginaConversaciones({
               botActivo: abierta.botActivo,
               tomadaPor: abierta.tomadaPor?.nombre ?? null,
               contactoId: abierta.contactoId,
+              asignadaA: abierta.asignadaA ? { id: abierta.asignadaA.id, nombre: abierta.asignadaA.nombre } : null,
+              estado: abierta.estadoAtencion as 'ABIERTO' | 'EN_PROCESO' | 'CERRADO',
               etiquetas: abierta.contacto.etiquetas.map((t) => t.etiqueta.nombre).sort(),
               ventanaAbierta,
             }

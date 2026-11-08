@@ -14,6 +14,7 @@ import {
   Ellipsis,
   ArrowLeft,
   Eye,
+  ChevronDown,
 } from 'lucide-react';
 import { salir } from '@/acciones/acceso';
 import { Boton, BotonIcono, BurbujaDetalles, useAparicion, type Detalle } from '@/componentes/ui';
@@ -544,7 +545,19 @@ export function MenuFila({ acciones }: { acciones: AccionMenu[] }) {
   return <MenuMas acciones={acciones} siempre />;
 }
 
-function MenuMas({ acciones, siempre = false }: { acciones: AccionMenu[]; siempre?: boolean }) {
+/**
+ * UN BOTÓN CON TEXTO QUE DESPLIEGA OPCIONES (regla «Botón que despliega variantes», 2026-10-30):
+ * el mismo menú del «⋯», con su animación y su cierre, pero con texto, icono y flecha.
+ */
+export function MenuBoton({ texto, icono, acciones }: { texto: string; icono?: React.ComponentType<{ className?: string }>; acciones: AccionMenu[] }) {
+  return <MenuMas acciones={acciones} siempre boton={{ texto, icono }} />;
+}
+
+function MenuMas({ acciones, siempre = false, boton: conTexto }: {
+  acciones: AccionMenu[];
+  siempre?: boolean;
+  boton?: { texto: string; icono?: React.ComponentType<{ className?: string }> };
+}) {
   const [abierto, setAbierto] = useState(false);
   const { montado, visible } = useAparicion(abierto);
   /*
@@ -580,8 +593,16 @@ function MenuMas({ acciones, siempre = false }: { acciones: AccionMenu[]; siempr
   const opcion = 'flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-[13px] font-medium transition-colors hover:bg-realce disabled:opacity-50';
   return (
     <div className={cn('relative shrink-0', !siempre && 'lg:hidden')}>
-      <BotonIcono ref={boton} icono={Ellipsis} titulo="Más acciones" aria-expanded={abierto} aria-haspopup="menu" onClick={abrir}
+{conTexto ? (
+        <Boton ref={boton} variante="secundario" icono={conTexto.icono} aria-expanded={abierto} aria-haspopup="menu" onClick={abrir}
+          className={cn(abierto && 'bg-realce')}>
+          {conTexto.texto}
+          <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+        </Boton>
+      ) : (
+            <BotonIcono ref={boton} icono={Ellipsis} titulo="Más acciones" aria-expanded={abierto} aria-haspopup="menu" onClick={abrir}
         className={cn('border border-borde', abierto && 'bg-realce text-texto')} />
+      )}
       {montado && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setAbierto(false)} />

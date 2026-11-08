@@ -143,3 +143,84 @@ export async function marcarVista(slug: string, conversacionId: number): Promise
     data: { vistoEn: new Date() },
   });
 }
+
+export type AccionMasiva =
+  | { tipo: 'estado'; estado: 'ABIERTO' | 'EN_PROCESO' | 'CERRADO' }
+  | { tipo: 'asignar'; usuarioId: number | null }
+  | { tipo: 'etiquetas'; nombres: string[] }
+  | { tipo: 'borrarMensajes' }
+  | { tipo: 'eliminar' };
+
+/**
+ * ACCIONES SOBRE VARIOS CONTACTOS A LA VEZ (Fernando, 2026-11-08: «seleccionar múltiples contactos…
+ * eliminar a todos, asignar etiquetas, asignar usuario, borrar todos los mensajes»), y también
+ * sobre uno solo desde su conversación.
+ *
+ *  · Se trabaja con las conversaciones QUE SON DE ESTE NEGOCIO entre las pedidas: un id ajeno se
+ *    ignora sin tocar nada.
+ *  · Estado, usuario y etiquetas: desde OPERADOR. Borrar mensajes y eliminar no tienen vuelta
+ *    atrás: solo ADMIN.
+ *  · Las etiquetas se AÑADEN a las que ya tenga cada contacto (no se le quitan las suyas).
+ *  · «Eliminar» borra el CONTACTO: con él se van su conversación, sus mensajes, su cola y sus
+ *    etiquetas; el consumo de IA se conserva (queda sin conversación). Si vuelve a escribir, entra
+ *    como nuevo.
+ */
+export async function accionMasiva(slug: string, ids: number[], accion: AccionMasiva): Promise<Resultado & { n?: number }> {
+  const destructiva = accion.tipo === 'borrarMensajes' || accion.tipo === 'eliminar';
+  const permiso = await contextoEscritura(slug, destructiva ? 'ADMIN' : 'OPERADOR');
+  if (!permiso.ok) return { ok: false, error: permiso.error };
+  const inquilinoId = permiso.ctx.inquilino.id;
+
+  const propias = await prisma.conversacion.findMany({
+    where: { id: { in: ids.filter((x) => Number.isInteger(x)).slice(0, 500) }, inquilinoId },
+    select: { id: true, contactoId: true },
+  });
+  if (!propias.length) return { ok: false, error: 'No hay conversaciones seleccionadas.' };
+  const convIds = propias.map((c) => c.id);
+  const contactoIds = propias.map((c) => c.contactoId);
+
+  switch (accion.tipo) {
+    case 'estado':
+      if (!['ABIERTO', 'EN_PROCESO', 'CERRADO'].includes(accion.estado)) return { ok: false, error: 'Estado no válido.' };
+      await prisma.conversacion.updateMany({ where: { id: { in: convIds } }, data: { estadoAtencion: accion.estado } });
+      break;
+    case 'asignar': {
+      if (accion.usuarioId !== null) {
+        const u = await prisma.usuario.findFirst({ where: { id: accion.usuarioId, inquilinoId, activo: true }, select: { id: true } });
+        if (!u) return { ok: false, error: 'Ese usuario no existe o está desactivado.' };
+      }
+      await prisma.conversacion.updateMany({ where: { id: { in: convIds } }, data: { asignadaAId: accion.usuarioId } });
+      break;
+    }
+    case 'etiquetas': {
+      const limpios = [...new Map(
+        accion.nombres.map((n) => n.trim().replace(/\s+/g, ' ')).filter((n) => n && n.length <= 40).map((n) => [n.toLowerCase(), n]),
+      ).values()].slice(0, 20);
+      if (!limpios.length) return { ok: false, error: 'Elige al menos una etiqueta.' };
+      const existentes = await prisma.etiqueta.findMany({ where: { inquilinoId } });
+      const porNombre = new Map(existentes.map((e) => [e.nombre.toLowerCase(), e.id]));
+      const etiquetaIds: number[] = [];
+      for (const n of limpios) {
+        let id = porNombre.get(n.toLowerCase());
+        if (!id) id = (await prisma.etiqueta.create({ data: { inquilinoId, nombre: n } })).id;
+        etiquetaIds.push(id);
+      }
+      await prisma.contactoEtiqueta.createMany({
+        data: contactoIds.flatMap((contactoId) => etiquetaIds.map((etiquetaId) => ({ contactoId, etiquetaId }))),
+        skipDuplicates: true,
+      });
+      break;
+    }
+    case 'borrarMensajes':
+      await prisma.$transaction([
+        prisma.mensaje.deleteMany({ where: { conversacionId: { in: convIds } } }),
+        prisma.conversacion.updateMany({ where: { id: { in: convIds } }, data: { resumen: null, resumenHastaId: null } }),
+      ]);
+      break;
+    case 'eliminar':
+      await prisma.contacto.deleteMany({ where: { id: { in: contactoIds }, inquilinoId } });
+      break;
+  }
+  revalidatePath(`/${slug}/conversaciones`);
+  return { ok: true, n: convIds.length };
+}

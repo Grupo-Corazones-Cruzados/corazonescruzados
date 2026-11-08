@@ -265,6 +265,7 @@ model Usuario {
   actualizado  DateTime  @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(3)
 
   conversacionesTomadas Conversacion[] @relation("TomadaPor")
+  asignadas     Conversacion[] @relation("AsignadaA")
   enviosLanzados        Envio[]        @relation("LanzadoPor")
 
   @@unique([inquilinoId, usuario])
@@ -396,6 +397,11 @@ model Conversacion {
   tomadaPorId    Int?      @map("tomada_por_id")
   tomadaPor      Usuario?  @relation("TomadaPor", fields: [tomadaPorId], references: [id], onDelete: SetNull)
   tomadaEn       DateTime? @map("tomada_en") @db.Timestamptz(3)
+  /// La persona responsable de esta conversación (2026-11-08). Distinto de quién la tomó.
+  asignadaAId    Int?      @map("asignada_a_id")
+  asignadaA      Usuario?  @relation("AsignadaA", fields: [asignadaAId], references: [id], onDelete: SetNull)
+  /// ABIERTO (por defecto) · EN_PROCESO · CERRADO — lo cambia una persona a mano.
+  estadoAtencion String    @default("ABIERTO") @map("estado_atencion") @db.VarChar(12)
   motivoEscalado String?   @map("motivo_escalado")
 
   /// Resumen de lo ya hablado, para no mandarle al modelo la conversación entera.

@@ -7,13 +7,16 @@ import { toast } from 'sonner';
 import {
   ChevronLeft, Hand, Search, AlertCircle, Bot, Tag, SendHorizontal, Plus, Check, CheckCheck,
   Camera, Mic, Video, FileText, MapPin, Sticker, Info, Phone, Coins, MessagesSquare, MessageCircleMore,
+  ListChecks, X, UserRound, CircleDot, Clock, CircleCheck, Eraser, Trash2, SlidersHorizontal, Users, Settings2,
 } from 'lucide-react';
-import { Boton, BotonIcono, Insignia, Ventanita, Entrada, PanelLateral } from '@/componentes/ui';
-import { MenuFila } from '@/componentes/Navegacion';
-import { cambiarBot, etiquetarContacto, responder, marcarVista } from '@/acciones/conversaciones';
+import { Boton, BotonIcono, Insignia, Ventanita, Entrada, PanelLateral, Confirmar } from '@/componentes/ui';
+import { MenuFila, MenuBoton, type AccionMenu } from '@/componentes/Navegacion';
+import { cambiarBot, etiquetarContacto, responder, marcarVista, accionMasiva, type AccionMasiva } from '@/acciones/conversaciones';
 import { costoEnDolares, costoLegible } from '@/lib/ia/precios';
 import { cn } from '@/lib/utils';
 import { miles, horaCorta, cuandoEnLista, separadorDia, claveDia } from '@/lib/formato';
+
+type Estado = 'ABIERTO' | 'EN_PROCESO' | 'CERRADO';
 
 export type ConversacionLista = {
   id: number;
@@ -23,6 +26,9 @@ export type ConversacionLista = {
   botActivo: boolean;
   tomadaPor: string | null;
   etiquetas: string[];
+  /** La persona responsable (2026-11-08). */
+  asignadaA: string | null;
+  estado: Estado;
   /** El último mensaje, para la vista previa de la fila (como WhatsApp). */
   vistaPrevia: { nuestro: boolean; texto: string | null; tipo: string; estado: string | null } | null;
   /** Mensajes del contacto que el equipo aún no ha visto. */
@@ -51,24 +57,27 @@ type Abierta = {
   botActivo: boolean;
   tomadaPor: string | null;
   contactoId: number;
+  asignadaA: { id: number; nombre: string } | null;
+  estado: Estado;
   etiquetas: string[];
   /** ¿Sigue abierta la ventana de 24 h de WhatsApp para escribir libremente? */
   ventanaAbierta: boolean;
 };
 
-/*
-  LA BANDEJA, COMO WHATSAPP (Fernando, 2026-11-08: «quiero una interfaz igualita a la de WhatsApp»).
+const NOMBRE_ESTADO: Record<Estado, string> = { ABIERTO: 'Abierto', EN_PROCESO: 'En proceso', CERRADO: 'Cerrado' };
+const PARAM_ESTADO: Record<Estado, string> = { ABIERTO: 'abierto', EN_PROCESO: 'enproceso', CERRADO: 'cerrado' };
 
-  · Columna de chats: título, buscador en píldora gris, filtros en botones (Todos · No leídos ·
-    etiquetas), y filas con avatar, nombre, hora, vista previa con ✓ y el círculo verde.
-  · Chat: cabecera con avatar, nombre y una línea de estado; los iconos agrupados a la derecha.
-    El número, las etiquetas y el consumo de IA van en «Datos del contacto» (al tocar la cabecera).
-  · Fondo beige con dibujo, mis burbujas en verde claro, piquito en la primera de cada tanda, hora
-    y ✓ dentro de la burbuja, separador de día con sombra.
-  · Barra de escribir abajo; si lo atiende el agente, en su lugar va «Tomar».
+/*
+  LA BANDEJA, COMO WHATSAPP DE ESCRITORIO (Fernando, 2026-11-08).
+
+  · Tres columnas: el PANEL DE FILTROS (Bandeja · Estado · Etiquetas · Usuarios, cada grupo en su
+    sitio; Etiquetas y Usuarios con su buscador y su desplazamiento propio, porque crecen sin
+    límite), la lista de chats y el chat.
+  · Selección múltiple con «Opciones»: etiquetas, usuario, estado, borrar mensajes, eliminar.
+  · Colores de WhatsApp oscuro (`.tema-wa`).
 
   ⚠️ La Cloud API NO da la foto de perfil del contacto: el avatar es su inicial sobre un color fijo.
-  ⚠️ En el teléfono la lista y el chat se ALTERNAN (Diseño.md, 2026-09-23).
+  ⚠️ En el teléfono la lista y el chat se ALTERNAN; el panel de filtros se abre con «Filtros».
 */
 
 /** Las etiquetas de un contacto: texto de color, sin cápsula. `<span>` porque va dentro de un `<p>`. */
@@ -129,14 +138,14 @@ function Contenido({ texto, tipo }: { texto: string | null; tipo: string }) {
   );
 }
 
-/** Un botón de filtro de la lista, como «Todos» / «No leídos» de WhatsApp. */
+/** Un botón de filtro redondo (teléfono), como WhatsApp en el móvil. */
 function Filtro({ href, activo, children }: { href: string; activo: boolean; children: React.ReactNode }) {
   return (
     <Link
       href={href}
       aria-current={activo ? 'true' : undefined}
       className={cn(
-        'foco-visible inline-flex h-8 items-center rounded-full px-3 text-[13px] transition-colors',
+        'foco-visible inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] transition-colors',
         activo ? 'bg-acento-suave font-semibold text-acento' : 'bg-realce text-tenue hover:text-texto',
       )}
     >
@@ -145,16 +154,17 @@ function Filtro({ href, activo, children }: { href: string; activo: boolean; chi
   );
 }
 
+type ItemFiltro = { clave: string; nombre: string; icono: React.ComponentType<{ className?: string }>; n: number; href: string; activo: boolean };
+
 /** Una fila del panel de filtros: icono, nombre y su cuenta a la derecha (como «Chats 10»). */
-function FiltroPanel({ nombre, icono: Icono, n, href, activo }: {
-  nombre: string; icono: React.ComponentType<{ className?: string }>; n: number; href: string; activo: boolean;
-}) {
+function FiltroPanel({ nombre, icono: Icono, n, href, activo, alElegir }: ItemFiltro & { alElegir?: () => void }) {
   return (
     <Link
       href={href}
+      onClick={alElegir}
       aria-current={activo ? 'page' : undefined}
       className={cn(
-        'foco-visible flex h-9 items-center gap-3 rounded-lg px-3 text-[14px] transition-colors',
+        'foco-visible flex h-9 shrink-0 items-center gap-3 rounded-lg px-3 text-[14px] transition-colors',
         activo ? 'bg-realce font-semibold text-texto' : 'text-texto hover:bg-realce/60',
       )}
     >
@@ -165,6 +175,61 @@ function FiltroPanel({ nombre, icono: Icono, n, href, activo }: {
   );
 }
 
+/**
+ * Un grupo que crece sin límite (Etiquetas, Usuarios): su título, su buscador y su lista con
+ * desplazamiento PROPIO, en el espacio que le toca del panel (Fernando, 2026-11-08: «no podemos
+ * dejar que etiquetas se expanda hasta el infinito ni tampoco usuarios»).
+ */
+function GrupoBuscable({ titulo, items, alElegir, vacio }: { titulo: string; items: ItemFiltro[]; alElegir?: () => void; vacio: string }) {
+  const [busca, setBusca] = useState('');
+  const t = busca.trim().toLowerCase();
+  const vistos = t ? items.filter((x) => x.nombre.toLowerCase().includes(t)) : items;
+  return (
+    <section className="flex min-h-[150px] flex-1 flex-col border-t border-borde pt-2">
+      <p className="px-3 pb-1.5 text-[12px] font-medium text-tenue">{titulo}</p>
+      <div className="relative mx-1 mb-1.5">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-tenue" />
+        <input
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder={`Buscar ${titulo.toLowerCase()}`}
+          aria-label={`Buscar ${titulo.toLowerCase()}`}
+          className="campo h-8 rounded-full border-transparent bg-realce pl-8 text-[12.5px] focus:border-transparent"
+        />
+      </div>
+      <div className="desplaza flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto">
+        {vistos.length ? vistos.map((x) => <FiltroPanel key={x.clave} {...x} alElegir={alElegir} />)
+          : <p className="px-3 py-2 text-[12.5px] text-tenue">{t ? 'Sin resultados' : vacio}</p>}
+      </div>
+    </section>
+  );
+}
+
+/** El panel de filtros entero: el mismo en la columna de escritorio y en el panel del teléfono. */
+function PanelFiltros({ bandeja, estados, etiquetas, usuarios, alElegir }: {
+  bandeja: ItemFiltro[]; estados: ItemFiltro[]; etiquetas: ItemFiltro[]; usuarios: ItemFiltro[]; alElegir?: () => void;
+}) {
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-0.5">
+      <div className="flex shrink-0 flex-col gap-0.5 pb-2">
+        {bandeja.map((x) => <FiltroPanel key={x.clave} {...x} alElegir={alElegir} />)}
+      </div>
+      <section className="flex shrink-0 flex-col gap-0.5 border-t border-borde py-2">
+        <p className="px-3 pb-1 text-[12px] font-medium text-tenue">Estado</p>
+        {estados.map((x) => <FiltroPanel key={x.clave} {...x} alElegir={alElegir} />)}
+      </section>
+      <GrupoBuscable titulo="Etiquetas" items={etiquetas} alElegir={alElegir} vacio="Sin etiquetas" />
+      <GrupoBuscable titulo="Usuarios" items={usuarios} alElegir={alElegir} vacio="Sin usuarios" />
+    </div>
+  );
+}
+
+type Dialogo =
+  | { tipo: 'etiquetas'; ids: number[] }
+  | { tipo: 'asignar'; ids: number[]; actual: number | null }
+  | { tipo: 'borrar'; ids: number[] }
+  | { tipo: 'eliminar'; ids: number[] };
+
 export default function Bandeja({
   slug,
   lista,
@@ -173,6 +238,12 @@ export default function Bandeja({
   etiquetaId,
   filtro,
   cuentas,
+  estados,
+  estadoFiltro,
+  usuarios,
+  sinAsignar,
+  usuarioFiltro,
+  esAdmin,
   abierta,
   mensajes,
   gasto,
@@ -187,6 +258,12 @@ export default function Bandeja({
   /** Filtro de la lista: «No leídos», «Tomadas» o ninguno (Todos). */
   filtro: 'noleidos' | 'tomadas' | null;
   cuentas: { todas: number; noLeidas: number; tomadas: number };
+  estados: Record<Estado, number>;
+  estadoFiltro: Estado | null;
+  usuarios: { id: number; nombre: string; n: number }[];
+  sinAsignar: number;
+  usuarioFiltro: number | 'ninguno' | null;
+  esAdmin: boolean;
   abierta: Abierta | null;
   mensajes: MensajeVista[];
   gasto: Gasto | null;
@@ -198,8 +275,13 @@ export default function Bandeja({
   const [cambiando, arranca] = useTransition();
   const [mensaje, setMensaje] = useState('');
   const [enviando, arrancaEnvio] = useTransition();
+  const [enMasa, arrancaMasa] = useTransition();
   const [editarEtiquetas, setEditarEtiquetas] = useState(false);
   const [datos, setDatos] = useState(false);
+  const [filtrosTel, setFiltrosTel] = useState(false);
+  const [seleccionando, setSeleccionando] = useState(false);
+  const [sel, setSel] = useState<Set<number>>(new Set());
+  const [dialogo, setDialogo] = useState<Dialogo | null>(null);
 
   // Abrirla la marca como vista: deja de contar como «sin leer».
   useEffect(() => { if (abierta) void marcarVista(slug, abierta.id); }, [slug, abierta?.id]);
@@ -210,19 +292,46 @@ export default function Bandeja({
     if (h) h.scrollTop = h.scrollHeight;
   }, [abierta?.id, mensajes.length]);
 
-  // La dirección lleva el filtro: buscar, «No leídos», etiqueta y conversación abierta.
-  const url = (o: { q?: string; e?: number | null; f?: 'noleidos' | 'tomadas' | null; c?: number | null }) => {
+  // La dirección lleva los filtros (se combinan): bandeja, estado, etiqueta, usuario, búsqueda.
+  type Url = { q?: string; f?: 'noleidos' | 'tomadas' | null; s?: Estado | null; e?: number | null; u?: number | 'ninguno' | null; c?: number | null };
+  const url = (o: Url) => {
     const p = new URLSearchParams();
     const q = o.q ?? busca;
-    const e = o.e === undefined ? etiquetaId : o.e;
     const f = o.f === undefined ? filtro : o.f;
+    const s = o.s === undefined ? estadoFiltro : o.s;
+    const e = o.e === undefined ? etiquetaId : o.e;
+    const u = o.u === undefined ? usuarioFiltro : o.u;
     if (q) p.set('q', q);
     if (f) p.set('f', f);
+    if (s) p.set('s', PARAM_ESTADO[s]);
     if (e) p.set('e', String(e));
+    if (u) p.set('u', String(u));
     if (o.c) p.set('c', String(o.c));
     const t = p.toString();
     return `/${slug}/conversaciones${t ? `?${t}` : ''}`;
   };
+
+  // Los grupos del panel. Tocar el elegido otra vez lo quita (se pueden combinar grupos).
+  const bandeja: ItemFiltro[] = [
+    { clave: 'todos', nombre: 'Todos', icono: MessagesSquare, n: cuentas.todas, href: url({ f: null, s: null, e: null, u: null, c: null }), activo: !filtro && !estadoFiltro && !etiquetaId && !usuarioFiltro },
+    { clave: 'noleidos', nombre: 'No leídos', icono: MessageCircleMore, n: cuentas.noLeidas, href: url({ f: filtro === 'noleidos' ? null : 'noleidos', c: null }), activo: filtro === 'noleidos' },
+    { clave: 'tomadas', nombre: 'Tomadas', icono: Hand, n: cuentas.tomadas, href: url({ f: filtro === 'tomadas' ? null : 'tomadas', c: null }), activo: filtro === 'tomadas' },
+  ];
+  const ICONO_ESTADO: Record<Estado, React.ComponentType<{ className?: string }>> = { ABIERTO: CircleDot, EN_PROCESO: Clock, CERRADO: CircleCheck };
+  const itemsEstado: ItemFiltro[] = (['ABIERTO', 'EN_PROCESO', 'CERRADO'] as Estado[]).map((s) => ({
+    clave: s, nombre: NOMBRE_ESTADO[s], icono: ICONO_ESTADO[s], n: estados[s], href: url({ s: estadoFiltro === s ? null : s, c: null }), activo: estadoFiltro === s,
+  }));
+  const itemsEtiqueta: ItemFiltro[] = etiquetas.map((t) => ({
+    clave: `e${t.id}`, nombre: t.nombre, icono: Tag, n: t.n, href: url({ e: etiquetaId === t.id ? null : t.id, c: null }), activo: etiquetaId === t.id,
+  }));
+  const itemsUsuario: ItemFiltro[] = [
+    { clave: 'sin', nombre: 'Sin asignar', icono: UserRound, n: sinAsignar, href: url({ u: usuarioFiltro === 'ninguno' ? null : 'ninguno', c: null }), activo: usuarioFiltro === 'ninguno' },
+    ...usuarios.map((x) => ({
+      clave: `u${x.id}`, nombre: x.nombre, icono: UserRound, n: x.n, href: url({ u: usuarioFiltro === x.id ? null : x.id, c: null }), activo: usuarioFiltro === x.id,
+    })),
+  ];
+  const activos = [...bandeja.slice(1), ...itemsEstado, ...itemsEtiqueta, ...itemsUsuario].filter((x) => x.activo).map((x) => x.nombre);
+  const titulo = activos.length ? activos.join(' · ') : 'Todos';
 
   function alternarBot() {
     if (!abierta) return;
@@ -243,16 +352,48 @@ export default function Bandeja({
     });
   }
 
-  // Los filtros, una sola lista: la pinta el panel de la izquierda (escritorio) y los botones (teléfono).
-  const filtros = [
-    { clave: 'todos', nombre: 'Todos', icono: MessagesSquare, n: cuentas.todas, href: url({ f: null, e: null, c: null }), activo: !filtro && !etiquetaId },
-    { clave: 'noleidos', nombre: 'No leídos', icono: MessageCircleMore, n: cuentas.noLeidas, href: url({ f: 'noleidos', e: null, c: null }), activo: filtro === 'noleidos' },
-    { clave: 'tomadas', nombre: 'Tomadas', icono: Hand, n: cuentas.tomadas, href: url({ f: 'tomadas', e: null, c: null }), activo: filtro === 'tomadas' },
-  ];
-  const filtrosEtiqueta = etiquetas.map((t) => ({
-    clave: `e${t.id}`, nombre: t.nombre, icono: Tag, n: t.n, href: url({ f: null, e: t.id, c: null }), activo: etiquetaId === t.id,
-  }));
-  const titulo = [...filtros, ...filtrosEtiqueta].find((x) => x.activo)?.nombre ?? 'Todos';
+  /** Ejecuta una acción sobre varias conversaciones (o una) y deja la pantalla al día. */
+  function ejecutar(ids: number[], accion: AccionMasiva, hecho: string) {
+    arrancaMasa(async () => {
+      const r = await accionMasiva(slug, ids, accion);
+      if (!r.ok) { toast.error(r.error); return; }
+      toast.success(hecho);
+      setDialogo(null);
+      setSel(new Set());
+      setSeleccionando(false);
+      // Si se eliminó la conversación abierta, se vuelve a la lista.
+      if (accion.tipo === 'eliminar' && abierta && ids.includes(abierta.id)) router.push(url({ c: null }));
+      else router.refresh();
+    });
+  }
+
+  /** Las opciones para unas conversaciones: las mismas en «Opciones» (varias) y en el «⋯» (una). */
+  function opciones(ids: number[], actual?: { estado: Estado; asignada: number | null }): AccionMenu[] {
+    if (!puedeOperar || !ids.length) return [];
+    const estadosOp: AccionMenu[] = (['ABIERTO', 'EN_PROCESO', 'CERRADO'] as Estado[])
+      .filter((s) => s !== actual?.estado)
+      .map((s) => ({
+        etiqueta: `Marcar ${NOMBRE_ESTADO[s].toLowerCase()}`,
+        icono: ICONO_ESTADO[s],
+        deshabilitado: enMasa,
+        alPulsar: () => ejecutar(ids, { tipo: 'estado', estado: s }, 'Estado cambiado.'),
+      }));
+    return [
+      { etiqueta: 'Asignar etiquetas', icono: Tag, alPulsar: () => setDialogo({ tipo: 'etiquetas', ids }) },
+      { etiqueta: 'Asignar usuario', icono: UserRound, alPulsar: () => setDialogo({ tipo: 'asignar', ids, actual: actual?.asignada ?? null }) },
+      ...estadosOp,
+      ...(esAdmin
+        ? [
+            { etiqueta: 'Borrar mensajes', icono: Eraser, peligro: true, alPulsar: () => setDialogo({ tipo: 'borrar', ids }) },
+            { etiqueta: ids.length > 1 ? 'Eliminar contactos' : 'Eliminar contacto', icono: Trash2, peligro: true, alPulsar: () => setDialogo({ tipo: 'eliminar', ids }) },
+          ]
+        : []),
+    ];
+  }
+
+  const idsSel = [...sel];
+  const alternarSel = (id: number) => setSel((x) => { const n = new Set(x); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const todosSel = lista.length > 0 && lista.every((c) => sel.has(c.id));
 
   const quienAtiende = abierta ? (abierta.botActivo ? 'Lo atiende el agente' : `Lo atiende ${abierta.tomadaPor ?? 'el equipo'}`) : '';
   const costo = gasto && gasto.corridas > 0
@@ -261,15 +402,9 @@ export default function Bandeja({
 
   return (
     <div className="tema-wa flex h-full min-h-0 bg-tarjeta">
-      {/* ── EL PANEL DE FILTROS, como el de la izquierda de WhatsApp (solo escritorio). */}
-      <nav aria-label="Filtros" className="hidden w-[230px] shrink-0 flex-col gap-0.5 border-r border-borde bg-wa-panel px-2 py-3 lg:flex">
-        {filtros.map((x) => <FiltroPanel key={x.clave} {...x} />)}
-        {filtrosEtiqueta.length > 0 && (
-          <>
-            <p className="mt-4 mb-1 px-3 text-[12px] font-medium text-tenue">Etiquetas</p>
-            {filtrosEtiqueta.map((x) => <FiltroPanel key={x.clave} {...x} />)}
-          </>
-        )}
+      {/* ── EL PANEL DE FILTROS (escritorio): cada grupo en su sitio, con desplazamiento propio. */}
+      <nav aria-label="Filtros" className="hidden w-[240px] shrink-0 border-r border-borde bg-wa-panel px-2 py-3 lg:block">
+        <PanelFiltros bandeja={bandeja} estados={itemsEstado} etiquetas={itemsEtiqueta} usuarios={itemsUsuario} />
       </nav>
 
       {/* ── LOS CHATS. En el teléfono desaparecen cuando hay uno abierto. */}
@@ -279,9 +414,32 @@ export default function Bandeja({
           abierta && 'hidden lg:flex',
         )}
       >
-        <div className="flex min-h-[68px] items-center px-4">
-          <h1 className="truncate text-[17px] font-semibold text-texto">{titulo}</h1>
-        </div>
+        {seleccionando ? (
+          /* La barra de selección: cuántos, «Opciones» y salir. */
+          <div className="flex min-h-[68px] items-center gap-2 px-3">
+            <BotonIcono icono={X} titulo="Salir de la selección" onClick={() => { setSeleccionando(false); setSel(new Set()); }} />
+            <label className="flex cursor-pointer items-center gap-2 text-[14px] font-semibold text-texto">
+              <input
+                type="checkbox"
+                checked={todosSel}
+                onChange={() => setSel(todosSel ? new Set() : new Set(lista.map((c) => c.id)))}
+                className="h-4 w-4 accent-[var(--color-acento)]"
+                aria-label="Seleccionar todos"
+              />
+              {sel.size} {sel.size === 1 ? 'seleccionado' : 'seleccionados'}
+            </label>
+            <span className="ml-auto">
+              {sel.size > 0 && <MenuBoton texto="Opciones" icono={Settings2} acciones={opciones(idsSel)} />}
+            </span>
+          </div>
+        ) : (
+          <div className="flex min-h-[68px] items-center gap-2 px-4">
+            <h1 className="min-w-0 flex-1 truncate text-[17px] font-semibold text-texto">{titulo}</h1>
+            {puedeOperar && lista.length > 0 && (
+              <BotonIcono icono={ListChecks} titulo="Seleccionar" onClick={() => setSeleccionando(true)} />
+            )}
+          </div>
+        )}
         <form
           onSubmit={(e) => { e.preventDefault(); router.push(url({ q: texto.trim(), c: null })); }}
           className="px-3 pb-2"
@@ -297,55 +455,85 @@ export default function Bandeja({
             />
           </div>
         </form>
-        {/* Los filtros, como los de WhatsApp: se envuelven si no caben (nada se desliza de lado). */}
-        {/* En el teléfono, los filtros en botones, como WhatsApp en el móvil (se envuelven). */}
+        {/* En el teléfono: los de la bandeja en botones y el resto en el panel «Filtros». */}
         <div className="flex flex-wrap gap-1.5 px-3 pb-2 lg:hidden">
-          {[...filtros, ...filtrosEtiqueta].map((x) => <Filtro key={x.clave} href={x.href} activo={x.activo}>{x.nombre}</Filtro>)}
+          {bandeja.map((x) => <Filtro key={x.clave} href={x.href} activo={x.activo}>{x.nombre}</Filtro>)}
+          <button
+            type="button"
+            onClick={() => setFiltrosTel(true)}
+            className={cn(
+              'foco-visible inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[13px] transition-colors',
+              estadoFiltro || etiquetaId || usuarioFiltro ? 'bg-acento-suave font-semibold text-acento' : 'bg-realce text-tenue hover:text-texto',
+            )}
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5" /> Filtros
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 pb-2">
           {lista.length === 0 && (
             <p className="px-4 py-8 text-center text-[13px] text-tenue">
-              {busca || etiquetaId || filtro ? 'Sin resultados' : 'Sin conversaciones'}
+              {activos.length || busca ? 'Sin resultados' : 'Sin conversaciones'}
             </p>
           )}
-          {lista.map((c) => (
-            <Link
-              key={c.id}
-              href={url({ c: c.id })}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-2 transition-colors',
-                abierta?.id === c.id ? 'bg-realce' : 'hover:bg-realce/60',
-              )}
-            >
-              <Avatar nombre={c.nombre} semilla={c.numero} />
-              <div className="min-w-0 flex-1 border-b border-borde py-3">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p className={cn('truncate text-[15px] text-texto', c.sinLeer > 0 ? 'font-semibold' : 'font-medium')}>{c.nombre}</p>
-                  <span className={cn('shrink-0 text-[12px]', c.sinLeer > 0 ? 'font-semibold text-wa' : 'text-tenue')}>
-                    {c.ultimo ? cuandoEnLista(c.ultimo, zona) : ''}
+          {lista.map((c) => {
+            const marcado = sel.has(c.id);
+            const fila = (
+              <>
+                {seleccionando && (
+                  <span className={cn('flex h-5 w-5 shrink-0 items-center justify-center rounded border', marcado ? 'border-acento bg-acento text-acento-contraste' : 'border-tenue')}>
+                    {marcado && <Check className="h-3.5 w-3.5" />}
                   </span>
+                )}
+                <Avatar nombre={c.nombre} semilla={c.numero} />
+                <div className="min-w-0 flex-1 border-b border-borde py-3 text-left">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className={cn('truncate text-[15px] text-texto', c.sinLeer > 0 ? 'font-semibold' : 'font-medium')}>{c.nombre}</p>
+                    <span className={cn('shrink-0 text-[12px]', c.sinLeer > 0 ? 'font-semibold text-wa' : 'text-tenue')}>
+                      {c.ultimo ? cuandoEnLista(c.ultimo, zona) : ''}
+                    </span>
+                  </div>
+                  <div className="mt-0.5 flex items-center justify-between gap-2">
+                    <p className="flex min-w-0 items-center gap-1 text-[13px] text-tenue">
+                      {c.vistaPrevia?.nuestro && <Acuse estado={c.vistaPrevia.estado} className="shrink-0" />}
+                      {c.vistaPrevia
+                        ? <span className="min-w-0 truncate"><Contenido texto={c.vistaPrevia.texto} tipo={c.vistaPrevia.tipo} /></span>
+                        : 'Sin mensajes'}
+                    </p>
+                    <span className="flex shrink-0 items-center gap-1.5">
+                      {!c.botActivo && <Hand className="h-4 w-4 text-tenue" aria-label="La atiende una persona" />}
+                      {c.sinLeer > 0 && (
+                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-wa px-1.5 text-[11px] font-semibold text-white" aria-label={`${c.sinLeer} sin leer`}>
+                          {c.sinLeer}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  {/* Estado (si no es «Abierto»), responsable y etiquetas: texto de color, sin cápsulas. */}
+                  {(c.estado !== 'ABIERTO' || c.asignadaA || c.etiquetas.length > 0) && (
+                    <span className="mt-0.5 flex min-w-0 items-center gap-2.5 text-[11px]">
+                      {c.estado !== 'ABIERTO' && (
+                        <span className={cn('shrink-0 font-medium', c.estado === 'CERRADO' ? 'text-tenue' : 'text-aviso')}>{NOMBRE_ESTADO[c.estado]}</span>
+                      )}
+                      {c.asignadaA && (
+                        <span className="flex shrink-0 items-center gap-1 text-tenue"><UserRound className="h-3 w-3" />{c.asignadaA.split(' ')[0]}</span>
+                      )}
+                      <Etiquetas nombres={c.etiquetas} />
+                    </span>
+                  )}
                 </div>
-                <div className="mt-0.5 flex items-center justify-between gap-2">
-                  <p className="flex min-w-0 items-center gap-1 text-[13px] text-tenue">
-                    {c.vistaPrevia?.nuestro && <Acuse estado={c.vistaPrevia.estado} className="shrink-0" />}
-                    {c.vistaPrevia
-                      ? <span className="min-w-0 truncate"><Contenido texto={c.vistaPrevia.texto} tipo={c.vistaPrevia.tipo} /></span>
-                      : 'Sin mensajes'}
-                  </p>
-                  <span className="flex shrink-0 items-center gap-1.5">
-                    {!c.botActivo && <Hand className="h-4 w-4 text-tenue" aria-label="La atiende una persona" />}
-                    {c.sinLeer > 0 && (
-                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-wa px-1.5 text-[11px] font-semibold text-white" aria-label={`${c.sinLeer} sin leer`}>
-                        {c.sinLeer}
-                      </span>
-                    )}
-                  </span>
-                </div>
-                <Etiquetas nombres={c.etiquetas} className="mt-0.5" />
-              </div>
-            </Link>
-          ))}
+              </>
+            );
+            const clases = cn(
+              'flex w-full items-center gap-3 rounded-lg px-2 transition-colors',
+              abierta?.id === c.id || marcado ? 'bg-realce' : 'hover:bg-realce/60',
+            );
+            return seleccionando ? (
+              <button key={c.id} type="button" onClick={() => alternarSel(c.id)} aria-pressed={marcado} className={cn(clases, 'foco-visible')}>{fila}</button>
+            ) : (
+              <Link key={c.id} href={url({ c: c.id })} className={clases}>{fila}</Link>
+            );
+          })}
         </div>
       </section>
 
@@ -370,10 +558,16 @@ export default function Bandeja({
                 <Avatar nombre={abierta.nombre} semilla={abierta.numero} tamano={40} />
                 <span className="min-w-0">
                   <span className="block truncate text-[15px] font-semibold text-texto">{abierta.nombre}</span>
-                  <span className={cn('block truncate text-[12px]', abierta.botActivo ? 'text-tenue' : 'text-aviso')}>{quienAtiende}</span>
+                  <span className="block truncate text-[12px] text-tenue">
+                    <span className={abierta.botActivo ? undefined : 'text-aviso'}>{quienAtiende}</span>
+                    {abierta.estado !== 'ABIERTO' && ` · ${NOMBRE_ESTADO[abierta.estado]}`}
+                    {abierta.asignadaA && ` · ${abierta.asignadaA.nombre.split(' ')[0]}`}
+                  </span>
                 </span>
               </button>
-              {/* Las acciones, agrupadas como los iconos de WhatsApp. */}
+              {/* «Opciones» de lo seleccionado, a la izquierda de «Tomar» (Fernando, 2026-11-08). */}
+              {sel.size > 0 && <span className="hidden sm:inline-flex"><MenuBoton texto={`Opciones (${sel.size})`} icono={Settings2} acciones={opciones(idsSel)} /></span>}
+              {/* Las acciones de ESTA conversación, agrupadas como los iconos de WhatsApp. */}
               <div className="flex shrink-0 items-center gap-0.5 rounded-full border border-borde p-0.5">
                 {puedeOperar && (
                   <BotonIcono
@@ -387,7 +581,7 @@ export default function Bandeja({
                 <MenuFila
                   acciones={[
                     { etiqueta: 'Datos del contacto', icono: Info, alPulsar: () => setDatos(true) },
-                    ...(puedeOperar ? [{ etiqueta: 'Etiquetas', icono: Tag, alPulsar: () => setEditarEtiquetas(true) }] : []),
+                    ...opciones([abierta.id], { estado: abierta.estado, asignada: abierta.asignadaA?.id ?? null }),
                   ]}
                 />
               </div>
@@ -493,6 +687,17 @@ export default function Bandeja({
                   <dd><Insignia tono={abierta.botActivo ? 'exito' : 'aviso'}>{abierta.botActivo ? 'Agente' : abierta.tomadaPor ?? 'Equipo'}</Insignia></dd>
                 </div>
                 <div className="flex items-center justify-between gap-3 py-3">
+                  <dt className="text-[13px] text-tenue">Estado</dt>
+                  <dd className="text-[13px] font-medium text-texto">{NOMBRE_ESTADO[abierta.estado]}</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3 py-3">
+                  <dt className="text-[13px] text-tenue">Asignado a</dt>
+                  <dd className="flex min-w-0 items-center gap-2">
+                    <span className="truncate text-[13px] text-texto">{abierta.asignadaA?.nombre ?? '—'}</span>
+                    {puedeOperar && <BotonIcono icono={UserRound} titulo="Asignar usuario" onClick={() => setDialogo({ tipo: 'asignar', ids: [abierta.id], actual: abierta.asignadaA?.id ?? null })} />}
+                  </dd>
+                </div>
+                <div className="flex items-center justify-between gap-3 py-3">
                   <dt className="text-[13px] text-tenue">Etiquetas</dt>
                   <dd className="flex min-w-0 items-center gap-2">
                     {abierta.etiquetas.length ? <Etiquetas nombres={abierta.etiquetas} /> : <span className="text-[13px] text-tenue">—</span>}
@@ -515,26 +720,109 @@ export default function Bandeja({
 
             {puedeOperar && (
               <DialogoEtiquetas
-                slug={slug}
+                titulo="Etiquetas"
                 abierto={editarEtiquetas}
                 alCerrar={() => setEditarEtiquetas(false)}
-                contactoId={abierta.contactoId}
                 actuales={abierta.etiquetas}
                 todas={etiquetas.map((t) => t.nombre)}
+                alGuardar={(nombres) => etiquetarContacto(slug, abierta.contactoId, nombres)}
               />
             )}
           </>
         )}
       </section>
+
+      {/* ── FILTROS EN EL TELÉFONO: el mismo panel, encima. */}
+      <PanelLateral abierto={filtrosTel} alCerrar={() => setFiltrosTel(false)} titulo="Filtros" lleno>
+        <PanelFiltros bandeja={bandeja} estados={itemsEstado} etiquetas={itemsEtiqueta} usuarios={itemsUsuario} alElegir={() => setFiltrosTel(false)} />
+      </PanelLateral>
+
+      {/* ── LOS DIÁLOGOS DE LAS OPCIONES ── */}
+      <DialogoEtiquetas
+        titulo={dialogo?.tipo === 'etiquetas' && dialogo.ids.length > 1 ? `Añadir etiquetas a ${dialogo.ids.length}` : 'Añadir etiquetas'}
+        abierto={dialogo?.tipo === 'etiquetas'}
+        alCerrar={() => setDialogo(null)}
+        actuales={[]}
+        todas={etiquetas.map((t) => t.nombre)}
+        alGuardar={async (nombres) => {
+          if (dialogo?.tipo !== 'etiquetas') return { ok: false, error: '' };
+          const r = await accionMasiva(slug, dialogo.ids, { tipo: 'etiquetas', nombres });
+          if (r.ok) { setSel(new Set()); setSeleccionando(false); }
+          return r;
+        }}
+      />
+      <DialogoAsignar
+        abierto={dialogo?.tipo === 'asignar'}
+        alCerrar={() => setDialogo(null)}
+        usuarios={usuarios}
+        actual={dialogo?.tipo === 'asignar' ? dialogo.actual : null}
+        ocupado={enMasa}
+        alElegir={(usuarioId) => dialogo && ejecutar(dialogo.ids, { tipo: 'asignar', usuarioId }, usuarioId ? 'Asignado.' : 'Sin asignar.')}
+      />
+      <Confirmar
+        abierto={dialogo?.tipo === 'borrar'}
+        titulo={dialogo && dialogo.ids.length > 1 ? `¿Borrar los mensajes de ${dialogo.ids.length} conversaciones?` : '¿Borrar los mensajes?'}
+        mensaje="Se borran todos sus mensajes de esta app (no del teléfono del contacto). No se puede deshacer."
+        textoAceptar="Borrar"
+        ocupado={enMasa}
+        alCerrar={() => setDialogo(null)}
+        alAceptar={() => dialogo && ejecutar(dialogo.ids, { tipo: 'borrarMensajes' }, 'Mensajes borrados.')}
+      />
+      <Confirmar
+        abierto={dialogo?.tipo === 'eliminar'}
+        titulo={dialogo && dialogo.ids.length > 1 ? `¿Eliminar ${dialogo.ids.length} contactos?` : '¿Eliminar el contacto?'}
+        mensaje="Se borran el contacto, su conversación, sus mensajes y sus etiquetas. Si vuelve a escribir, entra como nuevo. No se puede deshacer."
+        textoAceptar="Eliminar"
+        ocupado={enMasa}
+        alCerrar={() => setDialogo(null)}
+        alAceptar={() => dialogo && ejecutar(dialogo.ids, { tipo: 'eliminar' }, 'Eliminado.')}
+      />
     </div>
   );
 }
 
-/** Las etiquetas de un contacto: marcar las del negocio o escribir una nueva. */
+/** Elegir el responsable: «Sin asignar» o un usuario activo del negocio. */
+function DialogoAsignar({ abierto, alCerrar, usuarios, actual, ocupado, alElegir }: {
+  abierto: boolean; alCerrar: () => void; usuarios: { id: number; nombre: string }[]; actual: number | null; ocupado: boolean;
+  alElegir: (usuarioId: number | null) => void;
+}) {
+  const [busca, setBusca] = useState('');
+  const t = busca.trim().toLowerCase();
+  const opciones = [{ id: null as number | null, nombre: 'Sin asignar' }, ...usuarios.filter((u) => !t || u.nombre.toLowerCase().includes(t))];
+  return (
+    <Ventanita abierto={abierto} alCerrar={alCerrar} titulo="Asignar usuario">
+      <div className="space-y-2">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-tenue" />
+          <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar" aria-label="Buscar usuario" className="campo pl-8" />
+        </div>
+        <ul className="max-h-[45vh] divide-y divide-borde overflow-y-auto">
+          {opciones.map((u) => (
+            <li key={u.id ?? 'ninguno'}>
+              <button
+                type="button"
+                disabled={ocupado}
+                onClick={() => alElegir(u.id)}
+                className="foco-visible flex w-full items-center gap-2.5 px-1 py-2.5 text-left text-[13px] transition-colors hover:bg-realce disabled:opacity-50"
+              >
+                <UserRound className="h-4 w-4 shrink-0 text-tenue" />
+                <span className="min-w-0 flex-1 truncate text-texto">{u.nombre}</span>
+                {u.id === actual && <Check className="h-4 w-4 shrink-0 text-acento" />}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </Ventanita>
+  );
+}
+
+/** Etiquetas: marcar las del negocio o escribir una nueva. Sirve para uno (fija) o varios (añade). */
 function DialogoEtiquetas({
-  slug, abierto, alCerrar, contactoId, actuales, todas,
+  titulo, abierto, alCerrar, actuales, todas, alGuardar,
 }: {
-  slug: string; abierto: boolean; alCerrar: () => void; contactoId: number; actuales: string[]; todas: string[];
+  titulo: string; abierto: boolean; alCerrar: () => void; actuales: string[]; todas: string[];
+  alGuardar: (nombres: string[]) => Promise<{ ok: true } | { ok: false; error: string }>;
 }) {
   const router = useRouter();
   const [elegidas, setElegidas] = useState<string[]>(actuales);
@@ -559,7 +847,7 @@ function DialogoEtiquetas({
     <Ventanita
       abierto={abierto}
       alCerrar={alCerrar}
-      titulo="Etiquetas"
+      titulo={titulo}
       pie={
         <>
           <Boton variante="secundario" onClick={alCerrar} disabled={enCurso}>Cancelar</Boton>
@@ -567,7 +855,7 @@ function DialogoEtiquetas({
             disabled={enCurso}
             onClick={() =>
               arranca(async () => {
-                const r = await etiquetarContacto(slug, contactoId, elegidas);
+                const r = await alGuardar(elegidas);
                 if (!r.ok) { toast.error(r.error); return; }
                 alCerrar();
                 router.refresh();
