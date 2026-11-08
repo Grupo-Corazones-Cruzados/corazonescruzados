@@ -11,7 +11,8 @@ que se hace desde cualquier navegador. Contexto en `Aprendizaje.md` («SEGURIDAD
 
 ## A. En el M1 (MacBook Air)
 
-### ☐ A1. Actualizar macOS del M1, de 26.2 a 26.7.2 (unos 40 minutos, casi todo de espera)
+### 🔄 A1. Actualizar macOS del M1, de 26.2 a 26.7.2 (unos 40 minutos, casi todo de espera) — en curso el 2026-11-08
+**Antes del reinicio:** el M1 tiene que estar con el cargador y el adaptador (cable de red + SSD) puestos. Por wifi su IP es otra (`192.168.100.32`): si el cable no está, usar esa en los pasos 4 y 5.
 **Por qué:** trae arreglos de seguridad. Hay que estar **en casa**: tras el reinicio el disco queda cifrado
 hasta desbloquearlo desde la red de casa, y Tailscale no funciona hasta entonces. Los comandos se escriben en
 la Terminal de la M4 Pro, pero lo que se actualiza es el M1. No afecta a nadie: producción sigue en Railway.
@@ -32,13 +33,13 @@ la Terminal de la M4 Pro, pero lo que se actualiza es el M1. No afecta a nadie: 
    llave): **no borrar nada** y avisar a Claude.
 6. Avisar a Claude: comprueba la versión, los servicios, el filtro de red y los respaldos.
 
-### ☐ A2. Junto al M1: permitir accesorios siempre (1 minuto)
+### ✅ A2. Junto al M1: permitir accesorios siempre (hecho por Fernando, 2026-11-08)
 **Por qué:** sin esto, un adaptador o un disco nuevos se quedan esperando una aceptación en la pantalla del M1.
 1. En el M1: menú  → **Ajustes del Sistema → Privacidad y seguridad**.
 2. Bajar hasta **«Permitir que se conecten accesorios»** y elegir **«Siempre»**.
 3. Pide la contraseña del M1.
 
-### ☐ A3. A futuro: Compartir pantalla en el M1 (solo por Tailscale)
+### ✅ A3. Compartir pantalla en el M1, solo por Tailscale (hecho por Fernando, 2026-11-08; comprobado: 5900 abierto por Tailscale y cerrado por la red de casa)
 Se apagó al desactivar Gestión remota; Fernando lo deja para más adelante. Cuando se quiera, en la Terminal de
 la M4 Pro:
 ```
