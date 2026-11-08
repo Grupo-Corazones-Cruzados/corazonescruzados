@@ -984,6 +984,14 @@ en `MEMORIA.md` → *Decisiones recientes*):
 
 ## 10. Registro de aprendizajes/decisiones
 
+- **2026-11-08 (QUIÉN HACE QUÉ Y URGENCIA):** Fernando sigue desarrollando él mismo en el editor
+  de Godot y **avisa cuando tenga cambios** para llevarlos a la versión publicada. Yo no toco
+  `godot/` hasta su aviso. Hay urgencia: la plataforma se abrirá al público general y **tiene que
+  haber ya una base del juego** con la que arranque la historia. ⚠ El 2026-11-08 faltaban en la Mac
+  los PNG del prólogo (130 borrados en git, quedaban solo los `.import`), y
+  `scripts/publicar-juego.sh` hace `git add -A`, así que publicar así **borraría las estampas del
+  repositorio** y el export saldría sin ellas. Antes de publicar: `git status godot/`, y recuperar
+  con `git checkout -- godot/assets/Prologo/escenas` si siguen faltando (decisión de Fernando).
 - **2026-11-08 (RUMBO DE PUBLICACIÓN):** web primero con un prólogo nuevo como banco de pruebas, y
   después la versión nativa del teléfono embebida en GCC World; misiones cooperativas y lobby de
   reunión; sin modo sin conexión; arena a futuro. Detalle en §3-bis.
