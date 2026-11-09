@@ -95,8 +95,16 @@ final class Delegado: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKU
         decisionHandler(.allow)
     }
 
+    /// UN ARCHIVO NUNCA TAPA EL PANEL (Fernando, 2026-11-09: «abre el PDF y ya no me deja salir»). La web
+    /// los abre en su visor (`VisorArchivos`); si alguno llega igual a la ventana principal, se descarga a
+    /// Descargas y se enseña en el Finder en vez de quedarse encima sin forma de volver.
     func webView(_ w: WKWebView, decidePolicyFor respuesta: WKNavigationResponse, decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
-        decisionHandler(respuesta.canShowMIMEType ? .allow : .download)
+        let tipo = respuesta.response.mimeType ?? ""
+        let adjunto = ((respuesta.response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Disposition") ?? "")
+            .lowercased().hasPrefix("attachment")
+        let pagina = ["text/html", "application/xhtml+xml"].contains(tipo)
+        let archivo = respuesta.isForMainFrame && (adjunto || !pagina)
+        decisionHandler(respuesta.canShowMIMEType && !archivo ? .allow : .download)
     }
 
     /// `target=_blank` / `window.open`: lo del grupo en esta misma ventana; lo de fuera, al navegador.

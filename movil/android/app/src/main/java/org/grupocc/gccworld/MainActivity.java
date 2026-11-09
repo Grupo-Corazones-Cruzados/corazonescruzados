@@ -66,6 +66,27 @@ public class MainActivity extends BridgeActivity {
                 guardarCookies();
             }
         });
+        // DESCARGAR (Fernando, 2026-11-09: «no funciona el botón de descargar»). La WebView de Capacitor no
+        // trae descargador: sin esto un enlace a un archivo no hacía nada. Lo baja el sistema con la sesión
+        // de la app (sus cookies) a Descargas y lo avisa en la barra. El visor de la web (`VisorArchivos`)
+        // manda aquí la dirección real del archivo.
+        getBridge().getWebView().setDownloadListener((url, agente, disposicion, tipo, largo) -> {
+            String nombre = android.webkit.URLUtil.guessFileName(url, disposicion, tipo);
+            try {
+                android.app.DownloadManager.Request pedido = new android.app.DownloadManager.Request(android.net.Uri.parse(url));
+                String cookies = android.webkit.CookieManager.getInstance().getCookie(url);
+                if (cookies != null) pedido.addRequestHeader("Cookie", cookies);
+                pedido.addRequestHeader("User-Agent", agente);
+                pedido.setTitle(nombre);
+                pedido.setMimeType(tipo);
+                pedido.setNotificationVisibility(android.app.DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                pedido.setDestinationInExternalPublicDir(android.os.Environment.DIRECTORY_DOWNLOADS, nombre);
+                ((android.app.DownloadManager) getSystemService(DOWNLOAD_SERVICE)).enqueue(pedido);
+                android.widget.Toast.makeText(this, "Descargando " + nombre, android.widget.Toast.LENGTH_SHORT).show();
+            } catch (Exception e) {
+                android.widget.Toast.makeText(this, "No se pudo descargar " + nombre, android.widget.Toast.LENGTH_LONG).show();
+            }
+        });
         abrirRuta(getIntent());
     }
 

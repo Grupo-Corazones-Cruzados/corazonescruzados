@@ -6,6 +6,7 @@ import RelojesNativos from '@/components/providers/RelojesNativos';
 import ProteccionNativa from '@/components/providers/ProteccionNativa';
 import AvisoMantenimiento from '@/components/providers/AvisoMantenimiento';
 import SincronizadorBorradores from '@/components/providers/SincronizadorBorradores';
+import VisorArchivos from '@/components/movil/VisorArchivos';
 import { SITIO } from '@/lib/sitio/contenido';
 import './globals.css';
 
@@ -167,6 +168,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <AuthProvider>
           {children}
         </AuthProvider>
+        <VisorArchivos />
         {/* Con X para quitar un aviso que tapa algo (Fernando, 2026-10-21); arriba a la derecha. */}
         <Toaster theme="dark" richColors position="bottom-right" closeButton
           style={{ '--toast-close-button-start': 'unset', '--toast-close-button-end': '0', '--toast-close-button-transform': 'translate(35%, -35%)' } as React.CSSProperties} />

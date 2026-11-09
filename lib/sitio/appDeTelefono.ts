@@ -8,7 +8,7 @@ export type AppDeTelefono = 'progreso' | 'aventura' | 'centralizado';
  * ¿Estamos DENTRO de una app? La del teléfono (Capacitor), la nativa de la Mac (puente `gccEscritorio`) o la
  * web instalada (sin barra del navegador). Lo mismo que `esAppInstalada` (components/espacio/api.ts).
  */
-function dentroDeUnaApp(): boolean {
+export function dentroDeUnaApp(): boolean {
   const w = window as any;
   return !!w.Capacitor?.isNativePlatform?.() || !!w.webkit?.messageHandlers?.gccEscritorio
     || window.matchMedia?.('(display-mode: standalone)').matches || (navigator as any).standalone === true;
