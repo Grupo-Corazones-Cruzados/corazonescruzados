@@ -6,6 +6,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Renombra a cualquier cliente: solo el admin (2026-11-09). Antes bastaba con tener sesión,
+    // un cliente incluido. La ficha se edita por /api/billing-clients/[id].
+    if (user.role !== 'admin') return NextResponse.json({ error: 'Sin acceso' }, { status: 403 });
     const { id } = await params;
     const body = await req.json();
 

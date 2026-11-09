@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { puedeVerFactura } from '@/lib/invoices/acceso';
 import { nombrarTrasPago } from '@/lib/pagos/nombre-estandar';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -46,6 +47,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id } = await params;
+    if (!(await puedeVerFactura(user, id))) return NextResponse.json({ error: 'Sin comprobante' }, { status: 404 });
 
     const { rows: [inv] } = await pool.query(
       `SELECT payment_proof, payment_proof_type FROM gcc_world.invoices WHERE id = $1`, [id]

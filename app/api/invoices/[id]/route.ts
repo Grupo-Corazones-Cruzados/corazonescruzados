@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { nombrarTrasPago } from '@/lib/pagos/nombre-estandar';
+import { puedeVerFactura } from '@/lib/invoices/acceso';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -21,20 +22,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     // No-staff (candidato/cliente): solo puede ver una factura SUYA (por client_id de
     // suscripción/factura, o por un ticket/proyecto creado por él). Si no, 404.
-    if (user.role !== 'admin' && user.role !== 'member') {
-      const cr = await pool.query(`SELECT id FROM gcc_world.clients WHERE user_id = $1 LIMIT 1`, [user.userId]);
-      const ownClientId = cr.rows[0]?.id != null ? Number(cr.rows[0].id) : -1;
-      const owns = await pool.query(
-        `SELECT 1 FROM gcc_world.invoices i
-          WHERE i.id = $1 AND (
-            i.client_id = $2
-            OR i.ticket_id IN (SELECT id FROM gcc_world.tickets WHERE user_id = $3::uuid OR client_id = $2)
-            OR i.project_id IN (SELECT id FROM gcc_world.projects WHERE created_by_user_id = $3::text OR client_id = $2)
-          ) LIMIT 1`,
-        [id, ownClientId, user.userId],
-      );
-      if (owns.rows.length === 0) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
+    if (!(await puedeVerFactura(user, id))) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const items = await pool.query(
       `SELECT * FROM gcc_world.invoice_items WHERE invoice_id = $1 ORDER BY id`,
@@ -57,6 +45,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Cambia estado, pago e impuesto: solo el admin, como las demás escrituras de facturas
+    // (anular, enviar al SRI, comprobante…). Antes cualquier sesión podía marcar pagada cualquiera.
+    if (user.role !== 'admin') return NextResponse.json({ error: 'Sin acceso' }, { status: 403 });
 
     const { id } = await params;
     const body = await req.json();
