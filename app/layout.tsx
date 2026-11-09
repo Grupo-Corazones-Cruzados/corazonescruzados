@@ -6,7 +6,7 @@ import RelojesNativos from '@/components/providers/RelojesNativos';
 import ProteccionNativa from '@/components/providers/ProteccionNativa';
 import AvisoMantenimiento from '@/components/providers/AvisoMantenimiento';
 import SincronizadorBorradores from '@/components/providers/SincronizadorBorradores';
-import VisorArchivos from '@/components/movil/VisorArchivos';
+import VisorArchivos from '@/components/ui/VisorArchivos';
 import { SITIO } from '@/lib/sitio/contenido';
 import './globals.css';
 

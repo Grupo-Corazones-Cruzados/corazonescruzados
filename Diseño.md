@@ -1990,6 +1990,26 @@ teléfono, y salió con la piel pixel antigua (Silkscreen, borde violeta, campo 
 - **Botón cerrar (X) junto a acciones:** ambos como botones **32×32** (`w-8 h-8 flex items-center
   justify-center rounded-md`) en un contenedor `flex items-center` para que queden a la misma altura.
 
+### ⭐ Visor de archivos — `VisorArchivos` / `abrirArchivo()` (Fernando, 2026-11-09) — ESTÁNDAR
+
+Fernando lo aprobó como la forma de presentar archivos en toda la plataforma. **Un PDF, una imagen, un
+video, un comprobante o un adjunto se abre SIEMPRE en este visor**, en las apps y en la web (todo lo que
+vive bajo `.corp`). Nunca una pestaña nueva, un `<dialog>` propio ni un PDF cargado encima del panel.
+
+- **Cómo se usa:** basta con `window.open('/api/…/pdf')` o un `<a href="/api/…">` / `<a download>`: el
+  visor (montado una vez en `app/layout.tsx`) los recoge. Para un `Blob` hecho en el navegador:
+  `abrirArchivo(blob, 'nombre.pdf')` de `components/ui/VisorArchivos.tsx`.
+- **Forma:** pantalla completa con su movimiento (`useAparicion`); cabecera `bg-digi-card` con «‹ Volver»
+  a la izquierda (texto solo desde `sm`), el nombre del archivo truncado, la lupa de zoom (solo PDF:
+  1× → 1,5× → 2×) y **Descargar** (`BTN_PRIMARY`) a la derecha. Cuerpo `bg-digi-darker`; las páginas del
+  PDF en blanco con sombra, al ancho de la pantalla hasta 900 px. Sin vista previa (hoja de cálculo, ZIP):
+  icono, nombre y el botón Descargar en el centro. Un error se dice en el visor, nunca una pantalla vacía.
+- **Salida:** «‹ Volver», el atrás del teléfono/navegador (el visor añade una entrada al historial) y Escape.
+- **Descargar:** Mac app → Descargas + Finder; app del iPhone → hoja de compartir; Android → descargador
+  del sistema; web → descarga normal. Siempre un aviso (`toast`) que diga dónde quedó.
+- Una ruta `/api/` que NO es archivo (OAuth, entrar a un producto) va en la lista `NAVEGACION` del visor.
+- Los enlaces a Google Drive (fuera del sitio) siguen abriendo Drive.
+
 ### Patrón "Explorador Azure" (rail + lista + panel) — estándar para módulos con jerarquía
 Adoptado 2026-07-05 en **Centralizado** (`app/(dashboard)/dashboard/centralized/page.tsx`) para
 navegar el **Modelo 4P** (16 celdas = 4 Pisos × 4 Pasos, cada una con N *sistemas*). Layout

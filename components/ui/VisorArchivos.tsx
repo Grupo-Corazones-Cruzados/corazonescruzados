@@ -28,6 +28,17 @@ function comoArchivo(href: string | URL | null | undefined, conDescarga = false)
   return u.pathname.startsWith('/api/') && !NAVEGACION.test(u.pathname) ? u.href : null;
 }
 
+const EVENTO = 'gcc:abrir-archivo';
+
+/**
+ * Abre un archivo en el visor desde cualquier parte: una dirección (`/api/…`) o un `Blob` hecho en el
+ * navegador (un CSV, un PDF generado aquí). Con un `Blob` el nombre es obligatorio: no hay cabecera.
+ */
+export function abrirArchivo(origen: string | Blob, nombre?: string) {
+  const url = typeof origen === 'string' ? new URL(origen, location.href).href : URL.createObjectURL(origen);
+  window.dispatchEvent(new CustomEvent(EVENTO, { detail: { url, nombre } }));
+}
+
 function nombreDe(r: Response, url: string, sugerido?: string | null): string {
   if (sugerido) return sugerido;
   const cd = r.headers.get('content-disposition') ?? '';
@@ -50,9 +61,14 @@ function nombreDe(r: Response, url: string, sugerido?: string | null): string {
  * pestañas ni barra del navegador: un `window.open` o un enlace a `/api/…/pdf` cargaba el PDF ENCIMA del
  * panel (Mac, Android) sin forma de volver, y descargar no hacía nada visible.
  *
- * Solo dentro de las apps (`dentroDeUnaApp`; en el navegador una pestaña nueva ya tiene su «atrás»): se
- * interceptan `window.open` y los clics en enlaces que son archivos (`comoArchivo`) y se abren aquí, con
+ * Se interceptan `window.open` y los clics en enlaces que son archivos (`comoArchivo`) y se abren aquí, con
  * «‹» para volver (también el gesto/botón atrás del teléfono y Escape) y «Descargar» siempre a la vista.
+ *
+ * ⭐ ES EL ESTÁNDAR DE LA PLATAFORMA (Fernando, 2026-11-09: «la forma en como presentas los archivos está
+ * muy bien para otras partes de la plataforma»): en las apps Y en la web, en todo lo que vive bajo `.corp`
+ * (el panel). Un archivo se abre con `window.open('/api/…')`, un enlace, o `abrirArchivo()` (para un
+ * `Blob` hecho en el navegador). Nunca un visor propio ni una pestaña nueva. Las páginas públicas sin
+ * `.corp` siguen como siempre.
  * Los PDF se pintan con pdf.js: las WebView del iPhone y de Android no muestran un PDF por sí solas.
  *
  * Descargar, según dónde: en la Mac la app guarda en Descargas y lo enseña en el Finder (`WKDownload`);
@@ -75,7 +91,10 @@ export default function VisorArchivos() {
   const descargar = useCallback((a: Archivo) => {
     const w = window as any;
     const plataforma = w.Capacitor?.getPlatform?.();
-    if (a.blob && !w.webkit?.messageHandlers?.gccEscritorio && plataforma !== 'android') {
+    // La hoja de compartir solo en la app del iPhone (o la web anclada al inicio): allí no hay descargas.
+    // En la web del ordenador Chrome también sabe compartir, pero ahí se espera una descarga normal.
+    const iphoneSinDescargas = plataforma === 'ios' || (dentroDeUnaApp() && /iPhone|iPad/.test(navigator.userAgent) && !w.webkit?.messageHandlers?.gccEscritorio);
+    if (a.blob && iphoneSinDescargas) {
       const file = new File([a.blob], a.nombre, { type: a.tipo || 'application/octet-stream' });
       if (navigator.canShare?.({ files: [file] })) {
         navigator.share({ files: [file], title: a.nombre }).catch((e) => {
@@ -93,7 +112,8 @@ export default function VisorArchivos() {
     pasando.current = true;
     try { enlace.click(); } finally { pasando.current = false; enlace.remove(); }
     if (href.startsWith('blob:')) setTimeout(() => URL.revokeObjectURL(href), 60_000);
-    toast.success(w.webkit?.messageHandlers?.gccEscritorio ? `Guardado en Descargas: ${a.nombre}` : `Descargando ${a.nombre}…`);
+    toast.success(w.webkit?.messageHandlers?.gccEscritorio ? `Guardado en Descargas: ${a.nombre}`
+      : plataforma === 'android' ? `Descargando ${a.nombre}…` : `Descargado: ${a.nombre}`);
   }, []);
 
   const abrir = useCallback(async (url: string, sugerido?: string | null) => {
@@ -126,12 +146,13 @@ export default function VisorArchivos() {
     setArchivo(null);
   }, []);
 
-  // Solo en las apps: `window.open` y los enlaces que son archivos vienen aquí.
+  // `window.open` y los enlaces que son archivos vienen aquí: en las apps siempre; en la web, dentro del
+  // panel (`.corp`), porque fuera de él el visor no tendría su tema.
   useEffect(() => {
-    if (!dentroDeUnaApp()) return;
+    const aplica = () => dentroDeUnaApp() || !!document.querySelector('.corp');
     const original = window.open;
     window.open = function (url?: string | URL, objetivo?: string, rasgos?: string) {
-      const u = comoArchivo(url);
+      const u = aplica() ? comoArchivo(url) : null;
       if (u) { void abrir(u); return null; }
       return original.call(window, url, objetivo, rasgos);
     } as typeof window.open;
@@ -139,16 +160,19 @@ export default function VisorArchivos() {
       if (pasando.current || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = (e.target as Element | null)?.closest?.('a[href]') as HTMLAnchorElement | null;
       if (!a) return;
-      const u = comoArchivo(a.href, a.hasAttribute('download'));
+      const u = aplica() ? comoArchivo(a.href, a.hasAttribute('download')) : null;
       if (!u) return;
       e.preventDefault();
       void abrir(u, a.getAttribute('download') || null);
     };
     // Atrás del teléfono (Android) o del navegador: cierra el visor, no la página de debajo.
     const alVolver = () => { if (conHistoria.current) { conHistoria.current = false; setArchivo(null); } };
+    const alPedir = (e: Event) => { const d = (e as CustomEvent<{ url: string; nombre?: string }>).detail; if (d?.url) void abrir(d.url, d.nombre ?? null); };
     document.addEventListener('click', alPulsar);
     window.addEventListener('popstate', alVolver);
+    window.addEventListener(EVENTO, alPedir);
     return () => {
+      window.removeEventListener(EVENTO, alPedir);
       window.open = original;
       document.removeEventListener('click', alPulsar);
       window.removeEventListener('popstate', alVolver);
