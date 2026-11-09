@@ -7154,6 +7154,15 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
     el CV es una premisa que se valida en el trabajo. Al perfil se asocian los 5 primeros demostrados, también en
     candidatos, y con ellos es elegible: ve lo publicado de su talento, oferta y aparece en los selectores
     (invitar, elegir responsable). Al crear un ticket o proyecto se define primero el talento y luego a quién.
+  - **Reparto (decisiones del 2026-11-09, fase 4):** cada persona pone el precio de su requerimiento y el del
+    requerimiento compartido es la suma (como hoy). **El pago por etapas solo existe si el proyecto tiene un único
+    beneficiario** (no más de un miembro). **Ya no se cobra comisión por proyecto ni por suscripción**: la plataforma
+    cobra solo la anualidad del tier. **La comisión de PayPhone/pasarela la carga quien recibe el beneficio**: en un
+    proyecto grupal, cada requerimiento la suya al pagarse; en uno individual (etapas o pago completo), el único
+    beneficiario. **La ganancia cuenta solo al cobrarse.** **Todo miembro y candidato saca su RUC al completar un
+    servicio**: la plataforma implementa su cuenta de emisor y **guarda la firma electrónica de todos** para hacer sus
+    facturas. Orden: (1) registro de ganancias por persona sin cambiar la emisión; (2) pagos a miembros; (3) varios
+    emisores; (4) facturas automáticas por miembro tras cada cobro.
 - **«DETALLE DE SERVICIOS»: el documento INFORMATIVO de una factura (Fernando, 2026-08-20).**
   Algunos clientes piden un papel con TODOS los conceptos de la operación, incluidos los que
   Fernando **no factura ni quiere facturar** (transferencias internacionales, remesas al
