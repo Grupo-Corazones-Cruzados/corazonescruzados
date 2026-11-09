@@ -12234,3 +12234,27 @@ Fernando pidió solo guardar lo aprendido; no se construye nada todavía. Fuente
 - ✅ Cloudflare: borrados por API los 5 CNAME de productos y sus 5 `_railway-verify`; quedan 17 registros, todos
   DNS only (`www`, `app`, correo, verificaciones de Google y `_railway-verify.www`). Token de Fernando, con permiso
   solo de DNS de `grupocc.org`, en `~/.cloudflare-token` de la M4 (600); sirve para la fase 3 (túnel, activación).
+
+### P12 — Taller de personajes: del boceto a la hoja de sprites animada · 🔎 Propuesto (2026-11-08)
+**Necesidad (Fernando, 2026-11-08):** hoy dibuja la idea en Procreate a la medida (96×128 por vista)
+y le pide a Gemini las otras vistas. Quiere una herramienta en la plataforma que, a partir del
+boceto, genere la hoja de sprites con todos los movimientos del juego y permita configurar la
+separación de los fotogramas.
+**Investigado (2026-11-08):**
+- **PixelLab** (API + SDK de Python): `estimate-skeleton` saca los puntos del esqueleto de una
+  imagen y `animate-with-skeleton-v3` (beta, plan tier 1+) anima desde UNA imagen de referencia con
+  un esqueleto por fotograma. Admite bípedos y cuadrúpedos, tamaños de 16 a 256 px y 4/8
+  direcciones. Es lo más cercano a lo que pide y está hecho para pixel art.
+- **Retro Diffusion** (`rd-animation`): un preset de caminar en 4 direcciones y 4 fotogramas, pero
+  FIJO a 48×48: no sirve para 96×128.
+- **Gemini (Nano Banana Pro):** la comunidad genera tiras de 4-8 fotogramas en UNA petición con la
+  referencia fija. Coherencia irregular y sin transparencia: necesita limpieza.
+- **Imagen → video** (Veo, Wan, Kling) → extraer fotogramas: funciona con la cámara fija y un solo
+  movimiento. Los fallos típicos son pies que no coinciden entre fotogramas y una deriva de lado.
+- **Limpieza de pixel art de IA (código abierto):** Sprite Fusion Pixel Snapper (Rust/WASM, también
+  en Python), unfake.js y proper-pixel-art. Ajustan a la rejilla y reducen la paleta.
+**Conclusión:** lo que hace usable la animación con IA no es el modelo, es la **limpieza automática**
+(quitar el fondo, ajustar a la rejilla, fijar la paleta del personaje, alinear los pies en y = 119 y
+el eje en x = 48 en CADA fotograma, quitar los repetidos) más la **aprobación de Fernando por
+animación**. Propuesta y fases en `godot/Videojuego.md` §4-quater. Antes de construir la pantalla,
+hay que **probar con este personaje** (Gemini, PixelLab y video) y que Fernando elija.

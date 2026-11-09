@@ -860,6 +860,33 @@ Se sigue el flujo ya probado (§4, §4-bis, §7-bis): guion → `tools/generar_e
 | 3 | Los diálogos como **datos**: quién habla, retrato, texto y condiciones | JSON / `.tres` + `CajaDialogo.gd` | La historia crece sin tocar código |
 | 4 | Fuente Silkscreen | — | La misma de la plataforma |
 
+## 4-quater. TALLER DE PERSONAJES (propuesta del 2026-11-08, sin construir)
+
+Del boceto de Fernando a la hoja de sprites lista para Godot. Detalle e investigación en
+`Aprendizaje.md` P12.
+
+**Dos caminos según el tipo de personaje:**
+- **Marioneta** (jugador, personajes con equipo, jefes): boceto → 4 vistas → despiece en piezas →
+  pivotes automáticos. Las animaciones se definen UNA vez como plantillas por esqueleto y valen para
+  todos los personajes de ese esqueleto. No se generan fotogramas con IA.
+- **Fotograma a fotograma** (enemigos, criaturas, NPC sencillos): para cada animación y dirección se
+  genera una tira de N fotogramas a partir de las 4 vistas aprobadas.
+
+**Etapas de la herramienta:**
+1. Subir el boceto y elegir el tamaño (96×128 estándar) y el tipo de esqueleto.
+2. Generar las 4 vistas → **las aprueba Fernando**.
+3. Elegir la **plantilla de animaciones**: qué animaciones, fotogramas por animación, velocidad,
+   bucle, direcciones, tamaño de celda, separación entre celdas y orden de la hoja (fila = animación
+   × dirección, columna = fotograma).
+4. Generar animación por animación en una cola de trabajos, nunca con `after()`.
+5. **Limpieza automática de cada fotograma:** quitar el fondo, ajustar a la rejilla, fijar la paleta
+   sacada de las 4 vistas, alinear los pies en y = 119 y el eje en x = 48, y quitar los repetidos.
+6. Vista previa animada sobre un suelo con sombra → Fernando aprueba o repite UNA animación.
+7. Exportar la hoja PNG + `SpriteFrames` (`.tres`) + JSON para Godot.
+
+**Orden propuesto:** primero un script local que pruebe la calidad con un personaje real (Gemini vs.
+PixelLab vs. video) y, solo cuando Fernando apruebe el resultado, la pantalla en la plataforma.
+
 ## 5. Diseño del juego (Fase 1 y progresión)
 
 **Fase 1 (foco tras el prólogo/intro/encuentro):**
