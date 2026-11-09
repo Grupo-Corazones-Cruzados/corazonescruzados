@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { addParticipant } from '@/lib/projects/members';
 import { esGestorDelProyecto, miembroDe } from '@/lib/projects/permisos';
+import { encaja, talentosAbiertosDelProyecto, top5DeMiembro } from '@/lib/talentos/demostrados';
 
 async function ensureColumns() {
   await pool.query(`ALTER TABLE gcc_world.project_bids ADD COLUMN IF NOT EXISTS requirement_costs JSONB DEFAULT '{}'`);
@@ -41,6 +42,26 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // cuerpo y `bid_id` actualizaba cualquier propuesta de cualquier proyecto.
     const yo = await miembroDe(String(user.userId));
     if (yo == null) return NextResponse.json({ error: 'Necesitas un perfil de miembro para proponer' }, { status: 403 });
+
+    // ⭐ Se propone a lo que pide tu talento DEMOSTRADO (top 5; Fernando, 2026-11-09): cada
+    // requerimiento elegido tiene que pedir alguno de tus talentos; sin requerimientos, alguno
+    // de los que pide el proyecto. Un requerimiento sin talentos no exige nada.
+    {
+      const reqIds = (Array.isArray(body.requirement_ids) ? body.requirement_ids : []).map(String).filter((x: string) => /^\d+$/.test(x));
+      const top = await top5DeMiembro(yo);
+      if (reqIds.length) {
+        const { rows: reqs } = await pool.query(
+          `SELECT talents FROM gcc_world.project_requirements WHERE project_id = ($1)::bigint AND id = ANY($2::bigint[])`,
+          [id, reqIds],
+        );
+        if (reqs.length !== reqIds.length) return NextResponse.json({ error: 'Algún requerimiento no es de este proyecto' }, { status: 400 });
+        if (reqs.some((r: any) => !encaja(top, r.talents))) {
+          return NextResponse.json({ error: 'Solo puedes proponerte a requerimientos que pidan alguno de tus talentos demostrados (tus 5 primeros).' }, { status: 400 });
+        }
+      } else if (!encaja(top, await talentosAbiertosDelProyecto(id))) {
+        return NextResponse.json({ error: 'Este proyecto no pide ninguno de tus talentos demostrados (tus 5 primeros).' }, { status: 400 });
+      }
+    }
 
     // Update existing bid (member submitting proposal)
     if (body.bid_id) {

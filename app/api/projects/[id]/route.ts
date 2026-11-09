@@ -1,6 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
+import { encaja, misTalentos, talentosAbiertosDelProyecto } from '@/lib/talentos/demostrados';
 import { ensureProjectMembersTable, getProjectMembers } from '@/lib/projects/members';
 import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 import { columnasProyecto } from '@/lib/projects/columnas';
@@ -63,6 +64,19 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       } else if (user.role === 'client') {
         const clientRes = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = LOWER($1) LIMIT 1`, [user.email]);
         if (clientRes.rows[0] && project.client_id == clientRes.rows[0].id) hasAccess = true;
+        // El CANDIDATO también trabaja en proyectos (2026-11-09): con su ficha de miembro entra
+        // a los que lleva, a los que lo invitaron o a los que se propuso.
+        if (!hasAccess) {
+          const { rows: [dentro] } = await pool.query(
+            `SELECT 1 FROM gcc_world.users u
+              WHERE u.id = $2 AND u.member_id IS NOT NULL AND (
+                    (SELECT assigned_member_id FROM gcc_world.projects WHERE id = $1) = u.member_id
+                 OR EXISTS (SELECT 1 FROM gcc_world.project_bids pb WHERE pb.project_id = $1 AND pb.member_id = u.member_id)
+                 OR EXISTS (SELECT 1 FROM gcc_world.project_members pm WHERE pm.project_id = $1 AND pm.member_id = u.member_id))`,
+            [id, user.userId],
+          );
+          if (dentro) hasAccess = true;
+        }
       }
 
       if (!hasAccess) return NextResponse.json({ error: 'No tienes acceso a este proyecto privado' }, { status: 403 });
@@ -108,7 +122,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const incidents: any[] = [];
 
     // Miembros del proyecto (responsable + participantes) y estado de la invitación.
-    const projectMembers = await getProjectMembers(id);
+    const [projectMembers, mios, pedidos] = await Promise.all([
+      getProjectMembers(id),
+      misTalentos(user.userId),
+      talentosAbiertosDelProyecto(id),
+    ]);
+    // ¿Puede proponerse o tomarlo? Con alguno de los talentos que pide en su top 5 demostrado.
+    const mi_talento_encaja = mios.memberId != null && encaja(mios.top5, pedidos);
     const responsible = projectMembers.find((pm) => pm.role === 'responsible' && pm.status === 'active') || null;
     const pendingResponsible = projectMembers.find((pm) => pm.role === 'responsible' && pm.status === 'invited') || null;
 
@@ -116,6 +136,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       data: {
         ...rows[0], requirements: reqs.rows, bids: bids.rows, incidents,
         project_members: projectMembers, responsible, pending_responsible: pendingResponsible,
+        mi_talento_encaja, mis_talentos: mios.top5,
       },
     });
   } catch (err: any) {

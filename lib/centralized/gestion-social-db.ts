@@ -1,6 +1,6 @@
 import { pool } from '@/lib/db';
 import { VALORES_SET } from '@/lib/centralized/valores';
-import { TALENTOS_SET } from '@/lib/centralized/talentos';
+import { filtrarAlCatalogo } from '@/lib/talentos/catalogo';
 
 /**
  * Sistema "Gestión Social" (Centralizado · controlador · gestión, celda "Soluciones").
@@ -106,10 +106,11 @@ async function doEnsure(): Promise<void> {
  * las rutas de crear y editar tarea. Los valores viajan por `key`; los talentos, por su
  * string literal.
  */
-export function sanitizeTags(b: any): { values: string[]; talents: string[] } {
+export async function sanitizeTags(b: any): Promise<{ values: string[]; talents: string[] }> {
   return {
     values: Array.isArray(b?.values) ? b.values.map(String).filter((v: string) => VALORES_SET.has(v)) : [],
-    talents: Array.isArray(b?.talents) ? b.talents.map(String).filter((t: string) => TALENTOS_SET.has(t)) : [],
+    // Talentos: contra el catálogo único `gd_talentos` (2026-11-09).
+    talents: await filtrarAlCatalogo(Array.isArray(b?.talents) ? b.talents.map(String) : []),
   };
 }
 

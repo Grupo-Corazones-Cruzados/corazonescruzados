@@ -24,7 +24,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     if (b.detail !== undefined) patch.detail = String(b.detail);
     if (b.values !== undefined || b.talents !== undefined) {
-      const { values, talents } = sanitizeTags(b);
+      const { values, talents } = await sanitizeTags(b);
       if (b.values !== undefined) patch.values = values;
       if (b.talents !== undefined) patch.talents = talents;
     }

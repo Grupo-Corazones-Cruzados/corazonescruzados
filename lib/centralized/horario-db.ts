@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { ensureApoyoTables } from '@/lib/centralized/apoyo-db';
 import { ensureGeneratedTasksTable } from '@/lib/centralized/comandos-db';
 import { ensureGestionSocialTables, getSubjectSocialTasks, type SocialTask } from '@/lib/centralized/gestion-social-db';
+import { puntosDeTalento, type TalentoDemostrado } from '@/lib/talentos/demostrados';
 
 /**
  * Tablas del sistema "Horario de Vida":
@@ -298,8 +299,11 @@ export interface ProfileScores {
  * Cada tarea programada afecta a sus etiquetas según su estado EXPLÍCITO: 'completed'
  * suma (+1), 'failed' resta (−1), 'pending' no puntúa (efecto neutro).
  *
- *  - Talentos: puntos netos por talento (completadas − fallidas). El top 10 con neto
- *    positivo se reparte el 100% proporcionalmente (mayor potencial = más %).
+ *  - Talentos: los DEMOSTRADOS de `lib/talentos/demostrados.ts` (2026-11-09) — las mismas
+ *    tareas más el trabajo entregado (tickets, requerimientos y proyectos completados), sumando
+ *    la ficha de miembro y la de candidato de la misma persona. Es la misma cuenta que decide
+ *    quién ve lo publicado y quién sale en los selectores; aquí no se recalcula aparte. El top
+ *    10 con neto positivo se reparte el 100% proporcionalmente (mayor potencial = más %).
  *  - Valores: por cada valor, cuántas completadas vs no completadas (barra divergente).
  *
  * Devuelve: { [subject_id]: ProfileScores }.
@@ -340,27 +344,32 @@ export async function getSubjectsProfileScores(subjectKind: string, subjectIds: 
   const rows = [...schedRows, ...genRows, ...socialRows];
 
   type Tally = { c: number; f: number };
-  const agg = new Map<string, { talents: Map<string, Tally>; values: Map<string, Tally> }>();
-  const bump = (m: Map<string, Tally>, key: string, completed: boolean) => { const e = m.get(key) || { c: 0, f: 0 }; if (completed) e.c++; else e.f++; m.set(key, e); };
+  const agg = new Map<string, Map<string, Tally>>();
   for (const r of rows) {
     const completed = r.status === 'completed'; // 'failed' es el otro caso (pending ya se filtró)
     const sid = String(r.subject_id);
-    let a = agg.get(sid);
-    if (!a) { a = { talents: new Map(), values: new Map() }; agg.set(sid, a); }
-    for (const t of (r.talent_tags || [])) bump(a.talents, String(t), completed);
-    for (const v of (r.value_tags || [])) bump(a.values, String(v), completed);
+    let values = agg.get(sid);
+    if (!values) { values = new Map(); agg.set(sid, values); }
+    for (const v of (r.value_tags || [])) {
+      const e = values.get(String(v)) || { c: 0, f: 0 };
+      if (completed) e.c++; else e.f++;
+      values.set(String(v), e);
+    }
   }
 
-  for (const [sid, a] of agg) {
-    const nets = Array.from(a.talents.entries())
-      .map(([name, e]) => ({ name, net: e.c - e.f }))
-      .filter((x) => x.net > 0)
-      .sort((p, q) => q.net - p.net)
-      .slice(0, 10);
-    const sum = nets.reduce((s, x) => s + x.net, 0);
-    const talents = sum > 0 ? nets.map((x) => ({ name: x.name, score: Math.round((x.net / sum) * 100) })) : [];
+  // Talentos: la cuenta única de demostrados (tareas + trabajo entregado).
+  const demostrados = subjectKind === 'candidate'
+    ? (await puntosDeTalento({ candidatos: subjectIds })).candidatos
+    : subjectKind === 'member'
+      ? (await puntosDeTalento({ miembros: subjectIds })).miembros
+      : new Map<string, TalentoDemostrado[]>();
+
+  for (const sid of new Set([...agg.keys(), ...demostrados.keys()])) {
+    const nets = (demostrados.get(sid) || []).slice(0, 10);
+    const sum = nets.reduce((s, x) => s + x.points, 0);
+    const talents = sum > 0 ? nets.map((x) => ({ name: x.name, score: Math.round((x.points / sum) * 100) })) : [];
     const valuesBalance: Record<string, { completed: number; failed: number }> = {};
-    for (const [v, e] of a.values) valuesBalance[v] = { completed: e.c, failed: e.f };
+    for (const [v, e] of agg.get(sid) || []) valuesBalance[v] = { completed: e.c, failed: e.f };
     out[sid] = { talents, valuesBalance };
   }
   return out;

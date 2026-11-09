@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { encaja, top5DeMiembro } from '@/lib/talentos/demostrados';
 
 /**
  * QUIÉN PUEDE VER, EDITAR Y BORRAR UN TICKET (2026-10-07).
@@ -8,11 +9,14 @@ import { pool } from '@/lib/db';
  * memoria «"Hay sesión" no es "es tuyo"»). La regla respeta cómo trabaja el equipo hoy (los
  * miembros ven y editan todos los tickets desde la lista) y cierra el resto:
  *
- *  VER    · admin · cualquier miembro · el miembro asignado (aunque sea candidato) · quien lo
+ *  ⇒ DESDE EL 2026-11-09 un miembro ya NO ve ni edita los tickets de otros (Fernando: «los miembros no
+ *    deberían ver lo de otros usuarios»): solo los suyos y lo publicado de su talento, como el candidato.
+ *  VER    · admin · el miembro asignado (aunque sea candidato) · quien lo
  *           creó · el cliente del ticket (por su cuenta enlazada o por su correo) · quien tiene
  *           una propuesta en él · quien tiene perfil de miembro si el ticket está abierto a
- *           propuestas o por talento (para proponer o tomarlo).
- *  EDITAR · admin · miembros · el asignado. Marcarlo «completado» por aquí, solo el admin: es
+ *           propuestas o por talento (para proponer o tomarlo) Y tiene demostrado alguno de
+ *           sus talentos (top 5, `lib/talentos/demostrados.ts`; Fernando, 2026-11-09).
+ *  EDITAR · admin · el asignado · quien lo creó. Marcarlo «completado» por aquí, solo el admin: es
  *           lo que registra el ingreso en finanzas.
  *  BORRAR · admin · quien creó un BORRADOR.
  *  Un BORRADOR, además, solo existe para quien lo creó y para el admin.
@@ -22,6 +26,7 @@ type Usuario = { userId: string; role: string; email?: string };
 export type TicketParaPermiso = {
   id: number | string; status: string; user_id: string | null; member_id: number | string | null;
   client_id: number | string | null; open_for_proposals?: boolean | null; open_for_talent?: boolean | null;
+  required_talents?: string[] | null;
 };
 
 async function miMemberId(userId: string): Promise<number | null> {
@@ -32,10 +37,11 @@ async function miMemberId(userId: string): Promise<number | null> {
 export async function puedeVerTicket(user: Usuario, t: TicketParaPermiso): Promise<boolean> {
   const esCreador = t.user_id != null && String(t.user_id) === user.userId;
   if (t.status === 'draft') return esCreador || user.role === 'admin';
-  if (user.role === 'admin' || user.role === 'member' || esCreador) return true;
+  if (user.role === 'admin' || esCreador) return true;
   const mid = await miMemberId(user.userId);
   if (mid != null && t.member_id != null && Number(t.member_id) === mid) return true;
-  if (mid != null && (t.open_for_proposals || t.open_for_talent)) return true;
+  if (mid != null && (t.open_for_proposals || t.open_for_talent) && t.member_id == null
+      && encaja(await top5DeMiembro(mid), t.required_talents)) return true;
   if (t.client_id != null) {
     const { rows } = await pool.query(
       `SELECT 1 FROM gcc_world.clients c
@@ -56,7 +62,7 @@ export async function puedeVerTicket(user: Usuario, t: TicketParaPermiso): Promi
 export async function puedeEditarTicket(user: Usuario, t: TicketParaPermiso): Promise<boolean> {
   const esCreador = t.user_id != null && String(t.user_id) === user.userId;
   if (t.status === 'draft') return esCreador || user.role === 'admin';
-  if (user.role === 'admin' || user.role === 'member') return true;
+  if (user.role === 'admin' || esCreador) return true;
   const mid = await miMemberId(user.userId);
   return mid != null && t.member_id != null && Number(t.member_id) === mid;
 }
@@ -68,7 +74,7 @@ export function puedeBorrarTicket(user: Usuario, t: TicketParaPermiso): boolean 
 
 export async function cargarTicketParaPermiso(id: string | number): Promise<TicketParaPermiso | null> {
   const { rows: [t] } = await pool.query(
-    `SELECT id, status, user_id, member_id, client_id, open_for_proposals, open_for_talent
+    `SELECT id, status, user_id, member_id, client_id, open_for_proposals, open_for_talent, required_talents
        FROM gcc_world.tickets WHERE id = $1`, [id],
   );
   return t ?? null;

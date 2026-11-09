@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse, after } from 'next/server';
 import { avisarInvitacionProyecto } from '@/lib/projects/members';
 import { esGestorDelProyecto } from '@/lib/projects/permisos';
+import { encaja, talentosAbiertosDelProyecto, top5DeMiembros } from '@/lib/talentos/demostrados';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -33,6 +34,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     );
     if (Number(unassigned.cnt) === 0) {
       return NextResponse.json({ error: 'No hay requerimientos sin asignar. Crea requerimientos primero.' }, { status: 400 });
+    }
+
+    // ⭐ Solo se invita a quien tiene demostrado algún talento que el proyecto pide (top 5;
+    // Fernando, 2026-11-09). Una sola consulta para todos los invitados.
+    const pedidos = await talentosAbiertosDelProyecto(id);
+    if (pedidos.length) {
+      const tops = await top5DeMiembros(member_ids);
+      const fuera = member_ids.filter((m: any) => !encaja(tops.get(String(m)) || [], pedidos));
+      if (fuera.length) {
+        return NextResponse.json({ error: 'Alguna de las personas no tiene demostrado ninguno de los talentos que pide el proyecto.' }, { status: 400 });
+      }
     }
 
     const nuevos: (number | string)[] = [];

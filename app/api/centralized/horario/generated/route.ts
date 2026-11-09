@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { setGeneratedStatus, setGeneratedLabels } from '@/lib/centralized/horario-db';
 import { VALORES_SET } from '@/lib/centralized/valores';
-import { TALENTOS_SET } from '@/lib/centralized/talentos';
+import { filtrarAlCatalogo } from '@/lib/talentos/catalogo';
 import { NextResponse } from 'next/server';
 
 async function guard() {
@@ -30,7 +30,7 @@ export async function PATCH(req: Request) {
 
     if (Array.isArray(b.values) || Array.isArray(b.talents)) {
       const values = Array.isArray(b.values) ? b.values.map(String).filter((v: string) => VALORES_SET.has(v)) : [];
-      const talents = Array.isArray(b.talents) ? b.talents.map(String).filter((t: string) => TALENTOS_SET.has(t)) : [];
+      const talents = await filtrarAlCatalogo(Array.isArray(b.talents) ? b.talents.map(String) : []);
       await setGeneratedLabels(id, values, talents);
       return NextResponse.json({ ok: true, values, talents });
     }

@@ -648,7 +648,10 @@ export default function TicketDetailPage() {
   );
 
   const isMember = user?.role === 'member';
-  const canEdit = isAdmin || isMember;
+  // Edita el admin, el responsable o quien lo creó (`puedeEditarTicket`; desde el 2026-11-09 un
+  // miembro ya no edita los tickets de otros).
+  const canEdit = isAdmin || (!!user?.member_id && String(ticket.member_id) === String(user.member_id))
+    || (!!ticket.user_id && String(ticket.user_id) === String(user?.id));
   const isClosed = ['completed', 'cancelled'].includes(ticket.status);
   const isPending = ticket.status === 'pending';
   const timeSlots = ticket.time_slots || [];
@@ -674,7 +677,8 @@ export default function TicketDetailPage() {
   const puedeElegirEstado = canEdit && !isOpen && !isRequestForMe && ticket.status !== 'draft';
   const isOwner = !!ticket.user_id && String(ticket.user_id) === String(user?.id);
   const myBid = bids.find((b: any) => b.member_id === user?.member_id);
-  const canBid = isOpen && !isOwner && !!user?.member_id;
+  // Proponerse o tomarlo exige un talento del ticket en el top 5 demostrado (lo dice la API).
+  const canBid = isOpen && !isOwner && !!user?.member_id && !!ticket.mi_talento_encaja;
   // Completar y FACTURAR es exclusivo del admin (regla de negocio).
   const canCompleteTicket = ticket.status === 'confirmed' && isAdmin;
 
@@ -849,7 +853,7 @@ export default function TicketDetailPage() {
                     ))}
                   </div>
                 )}
-                {!isOwner && !!user?.member_id && (
+                {!isOwner && !!user?.member_id && !!ticket.mi_talento_encaja && (
                   <button onClick={takeByTalent} className="inline-flex items-center gap-1.5 text-[12px] font-medium text-white bg-accent hover:bg-accent/90 rounded-md px-3 py-1.5" style={mf}>
                     <Check className="w-3.5 h-3.5" /> Tomar este ticket
                   </button>
@@ -1243,7 +1247,8 @@ export default function TicketDetailPage() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <EditField label="Miembro">
-            <AssigneePicker label="" sinAsignar value={String(form.member_id || '')} onChange={(v) => setForm({ ...form, member_id: v })} />
+            <AssigneePicker label="" sinAsignar value={String(form.member_id || '')} onChange={(v) => setForm((f: any) => ({ ...f, member_id: v }))}
+              contexto={{ ticket: String(id) }} />
           </EditField>
           <EditField label="Cliente">
             <ClientPicker clientId={form.client_id || ''} clientEmail={form.client_email || ''} label=""

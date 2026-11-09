@@ -14,6 +14,7 @@ import PixelBadge from '@/components/ui/PixelBadge';
 import PixelModal from '@/components/ui/PixelModal';
 import { EditPanel, QuickEditDialog, EditField, EditAmount, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
+import { useTalentosCatalogo } from '@/components/talentos/useTalentosCatalogo';
 import { Check, DoorOpen, Play, Send, Receipt, LayoutList, ListChecks, Boxes, Image as ImageIcon, Plus, X, UserPlus, ListPlus, Crown, Users, Trash2, Sparkles, Share2, ChevronDown, Pencil, Clock, BadgeDollarSign, CircleCheck, Building2, DollarSign, CalendarClock, FileText, LogOut, Store, Ban } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, BTN_ICONO_ACENTO } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
@@ -112,7 +113,6 @@ export default function ProjectDetailPage() {
   // (Admin ▸ Listas), no de una copia estática, para que refleje lo que hay hoy.
   const [reqTalents, setReqTalents] = useState<string[]>([]);
   const [reqSlots, setReqSlots] = useState('1');
-  const [talentOptions, setTalentOptions] = useState<{ value: string; label: string }[]>([]);
   const [savingReq, setSavingReq] = useState(false);
   const [newItemText, setNewItemText] = useState<Record<number, string>>({});
   // Requerimiento que se va a eliminar, esperando confirmación (el «⋯ → Eliminar»).
@@ -223,7 +223,9 @@ export default function ProjectDetailPage() {
   const esCliente = user?.role === 'client';
   const isMember = user?.role === 'member';
   const memberId = user?.member_id;
-  const isMemberCreator = isMember && memberId && project?.assigned_member_id == memberId;
+  // Responsable = su ficha de miembro es la del proyecto, sea miembro o CANDIDATO (2026-11-09):
+  // es el mismo criterio que `esGestorDelProyecto` en la API.
+  const isMemberCreator = !!memberId && project?.assigned_member_id == memberId;
   const isOwner = isAdmin || isMemberCreator;
   // Alto de las tres columnas del detalle: hasta el pie de la pantalla (ver el JSX).
   const altoColumnas = useAltoHastaElPie({ minimo: 520 });
@@ -375,6 +377,21 @@ export default function ProjectDetailPage() {
     }).catch(() => {});
   }, [id, project]);
 
+  // Quién puede recibir el requerimiento abierto: solo quien tiene demostrado alguno de sus
+  // talentos (top 5). La API de asignar lo vuelve a comprobar; aquí es para no ofrecer a quien
+  // va a rechazar.
+  const [elegiblesReq, setElegiblesReq] = useState<Set<string> | null>(null);
+  useEffect(() => {
+    setElegiblesReq(null);
+    if (editingReqId == null) return;
+    let vivo = true;
+    fetch(`/api/members/list?requerimiento=${editingReqId}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (vivo && j) setElegiblesReq(new Set((j.data || []).map((m: any) => String(m.id)))); })
+      .catch(() => {});
+    return () => { vivo = false; };
+  }, [editingReqId]);
+
   // --- Guardado de los campos sueltos (se editan en ventanita centrada) ---
   const saveField = async (fields: Record<string, any>) => {
     await fetch(`/api/projects/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(fields) });
@@ -403,7 +420,7 @@ export default function ProjectDetailPage() {
   // --- Invite members ---
   const openInviteModal = async () => {
     try {
-      const res = await fetch('/api/members/list');
+      const res = await fetch(`/api/members/list?proyecto=${id}`);
       const data = await res.json();
       setAllMembers(data.data || []);
     } catch { /* */ }
@@ -675,18 +692,10 @@ export default function ProjectDetailPage() {
   };
 
 
-  // Catálogo de talentos: se pide una sola vez, al abrir por primera vez el panel de
-  // alta o el de edición de un requerimiento (ambos ofrecen el campo Talentos).
-  useEffect(() => {
-    if ((!showReqModal && editingReqId == null) || talentOptions.length) return;
-    fetch('/api/centralized/encuadre/listas?list=talentos')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        const opts = (j?.data || []).map((o: any) => ({ value: o.label, label: o.label }));
-        if (opts.length) setTalentOptions(opts);
-      })
-      .catch(() => {});
-  }, [showReqModal, editingReqId, talentOptions.length]);
+  // Catálogo de talentos (el único, `gd_talentos`): se pide al abrir por primera vez el panel
+  // de alta o el de edición de un requerimiento (ambos ofrecen el campo Talentos). Antes salía
+  // de una ruta solo para admin/miembro, y un candidato responsable se quedaba sin opciones.
+  const talentOptions = useTalentosCatalogo(showReqModal || editingReqId != null);
 
   const addRequirement = async () => {
     if (!reqTitle.trim()) return;
@@ -1035,7 +1044,7 @@ export default function ProjectDetailPage() {
   // Check if current member is assigned (accepted) to a specific requirement
   const canMemberEditReq = (reqId: number) => {
     if (isOwner) return true;
-    if (!isMember || !memberId) return false;
+    if (!memberId) return false; // miembro o candidato asignado
     const req = reqs.find((r: any) => r.id === reqId);
     if (!req) return false;
     return (req.assignments || []).some((a: any) => String(a.member_id) === String(memberId) && a.status === 'accepted');
@@ -1071,11 +1080,14 @@ export default function ProjectDetailPage() {
   // Images: visible when project is not draft; editable by owner or accepted participant
   // En 'cotizacion' se ocultan las imágenes del proyecto (aún no aprobado por el cliente).
   const showImages = project.status !== 'draft' && project.status !== 'cotizacion';
-  const isAcceptedParticipant = isMember && !isOwner && bids.some((b: any) => String(b.member_id) === String(memberId) && b.status === 'accepted');
+  const isAcceptedParticipant = !!memberId && !isOwner && bids.some((b: any) => String(b.member_id) === String(memberId) && b.status === 'accepted');
   const canEditImages = showImages && (isOwner || isAcceptedParticipant);
   const myBid = bids.find((b: any) => String(b.member_id) === String(memberId));
-  const canBidNew = isMember && !isOwner && !myBid && (project.status === 'open' || (project.status === 'draft' && !project.is_private));
-  const canBidInvited = isMember && !isOwner && myBid?.status === 'invited';
+  // Proponerse: con ficha de miembro (miembro o candidato) y alguno de los talentos que pide el
+  // proyecto en su top 5 demostrado — lo que la API exige (2026-11-09).
+  const puedeProponerse = !!memberId && !isOwner && !!project.mi_talento_encaja;
+  const canBidNew = puedeProponerse && !myBid && (project.status === 'open' || (project.status === 'draft' && !project.is_private));
+  const canBidInvited = puedeProponerse && myBid?.status === 'invited';
   const canBid = canBidNew || canBidInvited;
 
   // ── Equipo del proyecto (responsable + participantes) para el panel izquierdo ──
@@ -1433,7 +1445,7 @@ export default function ProjectDetailPage() {
               ))}
             </div>
           )}
-          {!isOwner && !!memberId && (
+          {!isOwner && !!memberId && (project.required_talents || []).some((t: string) => (project.mis_talentos || []).includes(t)) && (
             <button onClick={takeByTalent} className={BTN_PRIMARY}><Crown className="w-4 h-4" /> Hacerme responsable</button>
           )}
         </div>
@@ -2501,7 +2513,7 @@ export default function ProjectDetailPage() {
       <PixelModal open={showAddParticipant} onClose={() => setShowAddParticipant(false)} title="Agregar participante" size="md">
         <div className="space-y-3">
           <p className="text-[12px] text-digi-muted" style={mf}>Elige un miembro para sumarlo como participante del proyecto.</p>
-          <AssigneePicker value={newParticipantId} onChange={setNewParticipantId} />
+          <AssigneePicker value={newParticipantId} onChange={setNewParticipantId} contexto={{ proyecto: String(id) }} />
           <button onClick={() => addParticipant(newParticipantId)} disabled={!newParticipantId} className="pixel-btn pixel-btn-primary w-full disabled:opacity-50">
             Agregar participante
           </button>
@@ -2596,7 +2608,8 @@ export default function ProjectDetailPage() {
         const puedeSubtareas = r ? canMemberEditReq(r.id) && trabajoAbierto : false;
         const puedeAsignar = !!(isOwner && (isAdmin || project.confirmed_at || isMemberCreator)) && trabajoAbierto;
         const aceptados = (r?.assignments || []).filter((a: any) => a.status === 'accepted');
-        const candidatos = bids.filter((b: any) => b.status === 'accepted');
+        const candidatos = bids.filter((b: any) => b.status === 'accepted'
+          && !!elegiblesReq?.has(String(b.member_id)));
         const tituloSeccion = 'text-[10px] font-semibold text-digi-muted uppercase tracking-wide';
         // Intro en estos campos hace SU acción; sin esto, el panel lo tomaría como «Guardar».
         const soloAqui = (e: React.KeyboardEvent, accion: () => void) => {

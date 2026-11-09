@@ -5,6 +5,8 @@ import { addTicketIncomeToFinance, sqlSinEtapasFacturadas } from '@/lib/finance'
 import { ensureTicketSlotColumns, ensureTicketActionColumns } from '@/lib/tickets/schema';
 import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 import { puedeVerTicket, puedeEditarTicket, puedeBorrarTicket, cargarTicketParaPermiso } from '@/lib/tickets/permisos';
+import { encaja, fichaDeMiembro, misTalentos, validarTalento } from '@/lib/talentos/demostrados';
+import { filtrarAlCatalogo } from '@/lib/talentos/catalogo';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -40,7 +42,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!(await puedeVerTicket(user, rows[0]))) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
-    return NextResponse.json({ data: rows[0] });
+    // ¿Puede proponerse o tomarlo? Solo con un talento pedido en su top 5 demostrado: la
+    // pantalla no enseña el botón a quien la API se lo rechazaría.
+    const mios = await misTalentos(user.userId);
+    const mi_talento_encaja = mios.memberId != null && encaja(mios.top5, rows[0].required_talents);
+    return NextResponse.json({ data: { ...rows[0], mi_talento_encaja } });
   } catch (err: any) {
     console.error('Ticket GET error:', err.message);
     return NextResponse.json({ error: 'Error' }, { status: 500 });
@@ -66,7 +72,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
      *    después, 409 con la versión actual — lo editado sin conexión no pisa en silencio.
      */
     const { rows: [actual] } = await pool.query(
-      `SELECT id, status, user_id, member_id, client_id, open_for_proposals, open_for_talent, updated_at
+      `SELECT id, status, user_id, member_id, client_id, open_for_proposals, open_for_talent, required_talents, updated_at
          FROM gcc_world.tickets WHERE id = $1`, [id],
     );
     if (!actual) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -98,6 +104,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       const createdBy = await resolveMemberId(user.userId);
       const ph = await findOrCreatePlaceholderByEmail(String(body.client_email).trim(), createdBy);
       if (ph) body.client_id = ph.id;
+    }
+
+    // Los talentos de un borrador, contra el catálogo único (`gd_talentos`), como en el alta.
+    if (esBorrador && body.required_talents !== undefined) body.required_talents = await filtrarAlCatalogo(body.required_talents);
+
+    // ⭐ El responsable tiene que tener demostrado el talento del ticket (2026-11-09): el
+    // selector ya filtra, pero la pantalla no es la defensa. Asignarse a uno mismo vale.
+    if (body.member_id != null && body.member_id !== '' && String(body.member_id) !== String(actual.member_id ?? '')) {
+      const yo = await fichaDeMiembro(user.userId);
+      if (String(body.member_id) !== String(yo ?? '')) {
+        const talentos = esBorrador && Array.isArray(body.required_talents) ? body.required_talents : (actual.required_talents || []);
+        const error = await validarTalento(body.member_id, talentos);
+        if (error) return NextResponse.json({ error }, { status: 400 });
+      }
     }
 
     const fields: string[] = [];

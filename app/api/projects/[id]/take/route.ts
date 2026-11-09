@@ -11,7 +11,9 @@ import { createNotification } from '@/lib/notifications';
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || !['admin', 'member'].includes(user.role)) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    // Miembros, admin y candidatos (rol cliente con ficha de miembro): lo que decide es el
+    // talento demostrado, no el rol (2026-11-09).
+    if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     const { id } = await params;
     const projectId = Number(id);
 
@@ -27,7 +29,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     const mine = await memberTalents(memberId);
     const required: string[] = p.required_talents || [];
     if (!required.some((r) => mine.includes(r))) {
-      return NextResponse.json({ error: 'Necesitas al menos uno de los talentos requeridos para hacerte responsable.' }, { status: 403 });
+      return NextResponse.json({ error: 'Necesitas tener demostrado alguno de los talentos requeridos para hacerte responsable (cuentan tus 5 primeros).' }, { status: 403 });
     }
 
     await setResponsible(projectId, memberId, { invited: false });

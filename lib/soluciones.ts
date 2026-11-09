@@ -2,7 +2,7 @@
  * ÁMBITOS — acceso a datos, definición única.
  *
  * Un **solución** es un tipo de proyecto que el grupo sabe manejar (Tecnología, …). Dentro
- * lleva **talentos** del catálogo de la organización (`lib/centralized/talentos.ts`), y son
+ * lleva **talentos** del catálogo de la organización (`gd_talentos`, `lib/talentos/catalogo.ts`), y son
  * esos talentos los que enganchan con el trabajo hecho:
  *
  *     solución ──▶ talentos ──▶ proyectos  (por `project_requirements.talents`)
@@ -35,7 +35,7 @@ function captura(url: string): string {
   if (url.startsWith('/api/media/')) return `${url}?w=${ANCHO_CAPTURA}`;
   return urlRedimensionada(url, ANCHO_CAPTURA);
 }
-import { TALENTOS_SET } from '@/lib/centralized/talentos';
+import { conjuntoDeTalentos } from '@/lib/talentos/catalogo';
 
 /**
  * Un talento DENTRO de una solución.
@@ -225,8 +225,9 @@ export async function fijarTalentos(
   talentos: TalentoDeSolucion[],
 ): Promise<TalentoDeSolucion[]> {
   const vistos = new Set<string>();
+  const catalogo = await conjuntoDeTalentos(); // `gd_talentos`, el catálogo único
   const unicos = talentos.filter((t) => {
-    if (!TALENTOS_SET.has(t.talento) || vistos.has(t.talento)) return false;
+    if (!catalogo.has(t.talento) || vistos.has(t.talento)) return false;
     vistos.add(t.talento);
     return true;
   });

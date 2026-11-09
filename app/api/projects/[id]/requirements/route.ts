@@ -3,6 +3,7 @@ import { sincronizarCostoProyecto } from '@/lib/payments';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureRequirementColumns, normalizeTalents, normalizeSlots } from '@/lib/projects/requirements';
+import { filtrarAlCatalogo } from '@/lib/talentos/catalogo';
 // Quién puede tocar requerimientos: definición única, compartida con subtareas y asignaciones.
 import { esGestorDelProyecto as esGestor, requerimientoDelProyecto } from '@/lib/projects/permisos';
 
@@ -69,7 +70,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Cada requerimiento debe declarar al menos un TALENTO: es lo que permite luego
     // encontrar el proyecto desde el filtro por talentos del Marketplace y de Proyectos.
     await ensureRequirementColumns();
-    const talents = normalizeTalents(body.talents);
+    // Contra el catálogo único (`gd_talentos`), como tickets y proyectos (2026-11-09).
+    const talents = await filtrarAlCatalogo(normalizeTalents(body.talents));
     if (talents.length === 0) {
       return NextResponse.json({ error: 'Elige al menos un talento para el requerimiento.' }, { status: 400 });
     }
@@ -166,7 +168,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     if (patchBody.talents !== undefined) {
       await ensureRequirementColumns();
-      const talents = normalizeTalents(patchBody.talents);
+      const talents = await filtrarAlCatalogo(normalizeTalents(patchBody.talents));
       if (talents.length === 0) {
         return NextResponse.json({ error: 'El requerimiento debe conservar al menos un talento.' }, { status: 400 });
       }

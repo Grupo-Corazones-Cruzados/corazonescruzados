@@ -9,6 +9,8 @@ import { ensureAdminMember } from '@/lib/ensure-admin-member';
 import { ensureQuoteShareColumns } from '@/lib/cotizaciones/schema';
 import { sendProjectClientInvitationEmail } from '@/lib/integrations/email';
 import { columnasProyecto } from '@/lib/projects/columnas';
+import { misTalentos, proyectoPublicadoParaSql, validarTalento } from '@/lib/talentos/demostrados';
+import { filtrarAlCatalogo } from '@/lib/talentos/catalogo';
 
 /** `invoice_projects` para los LEFT JOIN de la lista — una vez por proceso, no en cada clic. */
 let asegurandoFacturasProyecto: Promise<void> | null = null;
@@ -29,7 +31,9 @@ export async function GET(req: NextRequest) {
      * (2026-09-28: 1,8 s por clic). Las preparaciones de esquema se hacen una vez por
      * proceso y en paralelo, y las lecturas de abajo salen todas a la vez.
      */
-    await Promise.all([
+    const [mios] = await Promise.all([
+      // Ficha de miembro y top 5 demostrado de quien pregunta (decide qué publicado ve).
+      user.role === 'admin' ? Promise.resolve({ memberId: null, top5: [] as string[] }) : misTalentos(user.userId),
       ensureProjectMembersTable(),
       ensureQuoteShareColumns(), // asegura `quote_status` para separar cotizaciones pendientes/rechazadas
       ensureRequirementColumns(),
@@ -45,23 +49,41 @@ export async function GET(req: NextRequest) {
 
     // Access control + search (base for list, count, and per-tab counts).
     // Private projects only visible to owner, invited members, or admin.
+    /**
+     * ⭐ LO PUBLICADO SE VE SOLO CON EL TALENTO DEMOSTRADO (Fernando, 2026-11-09).
+     *
+     * De lo ajeno, un miembro —y un candidato— ve solo los proyectos públicos que piden alguno
+     * de los talentos de su top 5 demostrado (`proyectoPublicadoParaSql`). Lo SUYO lo ve
+     * siempre: lo lleva, lo creó, está en el equipo o tiene una propuesta. El admin, todo.
+     */
     let accessWhere = 'WHERE 1=1';
     const accessParams: any[] = [];
-    let mId: number | null = null;
+    const mId: number | null = mios.memberId;
+    const suyoSql = (m: string, u: string) => `(p.assigned_member_id = ${m}
+      OR p.created_by_user_id = ${u}
+      OR EXISTS (SELECT 1 FROM gcc_world.project_bids pb WHERE pb.project_id = p.id AND pb.member_id = ${m})
+      OR EXISTS (SELECT 1 FROM gcc_world.project_members pm WHERE pm.project_id = p.id AND pm.member_id = ${m}))`;
     if (user.role === 'member') {
-      const memberRes = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId]);
-      mId = memberRes.rows[0]?.member_id ?? null;
       if (mId) {
-        accessParams.push(mId);
-        const mIdx = accessParams.length;
-        accessWhere += ` AND ((p.is_private = false AND p.status NOT IN ('draft','cotizacion')) OR p.assigned_member_id = $${mIdx} OR EXISTS (SELECT 1 FROM gcc_world.project_bids pb WHERE pb.project_id = p.id AND pb.member_id = $${mIdx}) OR EXISTS (SELECT 1 FROM gcc_world.project_members pm WHERE pm.project_id = p.id AND pm.member_id = $${mIdx}))`;
+        accessParams.push(mId, user.userId, mios.top5);
+        const n = accessParams.length;
+        accessWhere += ` AND (${proyectoPublicadoParaSql('p', `$${n}::text[]`)} OR ${suyoSql(`$${n - 2}::bigint`, `$${n - 1}::text`)})`;
       }
     } else if (user.role === 'client') {
       const clientRes = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = LOWER($1) LIMIT 1`, [user.email]);
+      const conds: string[] = [];
       if (clientRes.rows[0]) {
         accessParams.push(clientRes.rows[0].id);
-        accessWhere += ` AND p.client_id = $${accessParams.length}`;
+        conds.push(`p.client_id = $${accessParams.length}`);
       }
+      // El CANDIDATO (cliente con ficha de miembro) además trabaja: ve lo suyo y lo publicado
+      // de su talento, como un miembro.
+      if (mId) {
+        accessParams.push(mId, user.userId, mios.top5);
+        const n = accessParams.length;
+        conds.push(proyectoPublicadoParaSql('p', `$${n}::text[]`), suyoSql(`$${n - 2}::bigint`, `$${n - 1}::text`));
+      }
+      if (conds.length) accessWhere += ` AND (${conds.join(' OR ')})`;
     }
     /**
      * ⚠️ SOLO EL ADMIN VE TODO — y se decide por DEFECTO, no por omisión (2026-09-28).
@@ -72,7 +94,8 @@ export async function GET(req: NextRequest) {
      * ajeno) y el cliente sin ficha, nada — no tiene proyectos.
      */
     if (user.role === 'member' && !mId) {
-      accessWhere += ` AND p.is_private = false AND p.status NOT IN ('draft','cotizacion')`;
+      accessParams.push(mios.top5);
+      accessWhere += ` AND ${proyectoPublicadoParaSql('p', `$${accessParams.length}::text[]`)}`;
     } else if (user.role !== 'admin' && user.role !== 'member' && accessParams.length === 0) {
       accessWhere += ` AND false`;
     }
@@ -284,10 +307,20 @@ export async function POST(req: NextRequest) {
 
     const mode: 'create' | 'request' = body.mode === 'request' ? 'request' : 'create';
     const openForTalent = mode === 'request' && body.open_for_talent === true;
-    const requiredTalents: string[] = openForTalent && Array.isArray(body.required_talents)
-      ? body.required_talents.filter((t: any) => typeof t === 'string' && t.trim()) : [];
-    if (openForTalent && requiredTalents.length === 0) {
-      return NextResponse.json({ error: 'Selecciona al menos un talento requerido.' }, { status: 400 });
+    /**
+     * ⭐ AL SOLICITAR, PRIMERO EL TALENTO (Fernando, 2026-11-09). Antes solo se pedía en «abierto
+     * por talento»; ahora en las tres opciones, porque decide a quién se puede invitar como
+     * responsable y quién ve el proyecto publicado (los que lo tienen en su top 5 demostrado).
+     * Se valida contra el catálogo `gd_talentos`. «Nuevo proyecto» (el responsable es quien lo
+     * crea y nace privado) no lo pide: los talentos llegan con los requerimientos.
+     */
+    const requiredTalents: string[] = mode === 'request' ? await filtrarAlCatalogo(body.required_talents) : [];
+    if (mode === 'request' && requiredTalents.length === 0) {
+      return NextResponse.json({
+        error: Array.isArray(body.required_talents) && body.required_talents.length
+          ? 'Ninguno de los talentos enviados existe en el catálogo de la organización.'
+          : 'Selecciona al menos un talento requerido.',
+      }, { status: 400 });
     }
 
     // Datos del usuario (member_id, nombre) + flags de rol.
@@ -346,6 +379,11 @@ export async function POST(req: NextRequest) {
       } else if (body.open_for_proposals) {
         status = 'open'; isPrivate = false; // abierto a propuestas: visible para que miembros oferten
       } else if (body.member_id) {
+        // El sugerido tiene que tener demostrado alguno de los talentos (uno mismo, siempre).
+        if (String(body.member_id) !== String(uRow.member_id ?? '')) {
+          const error = await validarTalento(body.member_id, requiredTalents);
+          if (error) return NextResponse.json({ error }, { status: 400 });
+        }
         responsibleInviteMemberId = Number(body.member_id); // sugerido: queda INVITADO a aceptar
         status = 'open'; isPrivate = true;                  // privado: solo el invitado + admin
       } else {

@@ -3,7 +3,9 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { ensureUserClientAccount } from '@/lib/tickets/clientAccount';
 import { findOrCreatePlaceholderByEmail, resolveMemberId } from '@/lib/clients/account';
 import { NextRequest, NextResponse } from 'next/server';
-import { TALENTOS_SET } from '@/lib/centralized/talentos';
+import { filtrarAlCatalogo } from '@/lib/talentos/catalogo';
+import { fichaDeMiembro, misTalentos, validarTalento } from '@/lib/talentos/demostrados';
+import { ensureTicketBidsTable } from '@/lib/tickets/bids';
 import { anunciarTicket } from '@/lib/tickets/alta';
 
 
@@ -21,6 +23,7 @@ function asegurarColumnasLista(): Promise<void> {
       ALTER TABLE gcc_world.tickets ADD COLUMN IF NOT EXISTS open_for_talent BOOLEAN DEFAULT false;
       ALTER TABLE gcc_world.tickets ADD COLUMN IF NOT EXISTS required_talents TEXT[] DEFAULT '{}';
     `);
+    await ensureTicketBidsTable(); // el filtro de lo publicado mira las propuestas
   })().catch((e) => { asegurandoColumnas = null; throw e; });
   asegurandoColumnas = enCurso;
   return enCurso;
@@ -46,21 +49,49 @@ export async function GET(req: NextRequest) {
       baseParams.push(`%${search}%`);
       baseWhere += ` AND (t.title ILIKE $${baseParams.length} OR t.titulo_original ILIKE $${baseParams.length})`;
     }
-    // En la pestaña "Abiertos" el scoping por cliente NO aplica (candidatos/miembros ven todos).
-    if (user.role === 'client' && !openMode) {
+
+    /**
+     * ⭐ LO PUBLICADO SE VE SOLO CON EL TALENTO DEMOSTRADO (Fernando, 2026-11-09).
+     *
+     * Un ticket abierto (a propuestas o por talento) y aún sin responsable solo lo ve quien
+     * tiene alguno de sus talentos en su top 5 demostrado (`lib/talentos/demostrados.ts`), o
+     * quien ya está en él: lo creó, es su cliente, es su responsable o tiene una propuesta.
+     * Un ticket que no pide ningún talento (los de antes del 2026-08-18) no exige nada: lo ve
+     * cualquiera, igual que `encaja()`. El admin lo ve todo. Lo NO publicado: cada cuenta ve solo lo
+     * suyo, también los miembros (Fernando, 2026-11-09: «no deberían ver lo de otros usuarios»).
+     */
+    const [mios] = await Promise.all([
+      user.role === 'admin' ? Promise.resolve({ memberId: null, top5: [] as string[] }) : misTalentos(user.userId),
+      asegurarColumnasLista(),
+    ]);
+    let propioSql = 'false';
+    if (user.role !== 'admin') {
       baseParams.push(user.userId);
-      baseWhere += ` AND t.client_id IN (SELECT id FROM gcc_world.clients WHERE user_id = $${baseParams.length})`;
+      const u = `$${baseParams.length}::uuid`;
+      baseParams.push(mios.memberId);
+      const m = `$${baseParams.length}::bigint`;
+      baseParams.push(mios.top5);
+      const tal = `$${baseParams.length}::text[]`;
+      propioSql = `(t.user_id = ${u} OR t.member_id = ${m}
+        OR t.client_id IN (SELECT id FROM gcc_world.clients WHERE user_id = ${u})
+        OR EXISTS (SELECT 1 FROM gcc_world.ticket_bids b WHERE b.ticket_id = t.id AND b.member_id = ${m}))`;
+      baseWhere += ` AND (NOT ((t.open_for_proposals = true OR t.open_for_talent = true) AND t.member_id IS NULL)
+                          OR ${propioSql} OR COALESCE(t.required_talents, '{}') && ${tal}
+                          OR cardinality(COALESCE(t.required_talents, '{}')) = 0)`;
     }
+    // Fuera de «Abiertos», todo el que no es admin ve lo suyo: lo que pidió y, si tiene ficha de
+    // miembro, lo que atiende o a lo que se propuso. Los conteos por estado del raíl, también
+    // (antes contaban los de toda la organización aunque la lista saliera vacía).
+    const soloLoMio = user.role !== 'admin' ? ` AND ${propioSql}` : '';
 
     // ⭐ BORRADORES (2026-10-07): solo los ve quien los creó, y no cuentan en «Todos» ni en
     // «Abiertos»: tienen su propia pestaña.
     baseParams.push(user.userId);
     baseWhere += ` AND (t.status <> 'draft' OR t.user_id = $${baseParams.length}::uuid)`;
 
-    // "Abierto" = a propuestas (todos) o por talento (solo miembro/admin, sin params → seguro inline).
-    const openCond = (user.role === 'admin' || user.role === 'member')
-      ? `(t.open_for_proposals = true OR t.open_for_talent = true)`
-      : `t.open_for_proposals = true`;
+    // "Abierto" = a propuestas o por talento. Quién ve cuál lo decide el filtro de talento de
+    // arriba (antes el cliente solo veía «a propuestas»: el candidato no podía tomar nada).
+    const openCond = `(t.open_for_proposals = true OR t.open_for_talent = true)`;
 
     // Status-filtered where extends the base.
     let where = baseWhere;
@@ -69,19 +100,17 @@ export async function GET(req: NextRequest) {
       where += ` AND ${openCond} AND t.status <> 'draft'`;
     } else if (status && status !== 'all') {
       params.push(status);
-      where += ` AND t.status = $${params.length}`;
+      where += `${soloLoMio} AND t.status = $${params.length}`;
     } else {
-      where += ` AND t.status <> 'draft'`;
+      where += `${soloLoMio} AND t.status <> 'draft'`;
     }
-
-    await asegurarColumnasLista();
 
     // Las cuatro lecturas son independientes: salen A LA VEZ, no una tras otra.
     const pagina = [...params, limit, offset];
     const [countsQ, openCountQ, countQ, dataQ] = await Promise.all([
     // Per-status counts (respect base filters, ignore the status filter) for the rail.
     pool.query(
-      `SELECT t.status, COUNT(*)::int AS n FROM gcc_world.tickets t ${baseWhere} GROUP BY t.status`,
+      `SELECT t.status, COUNT(*)::int AS n FROM gcc_world.tickets t ${baseWhere}${soloLoMio} GROUP BY t.status`,
       baseParams,
     ),
     // Conteo de la pestaña "Abiertos".
@@ -165,14 +194,15 @@ export async function POST(req: NextRequest) {
      *   · decide **quién puede tomar** el ticket, si está abierto por talento;
      *   · **clasifica** el ticket, que es lo que lo coloca bajo una solución en la web.
      *
-     * Se filtra contra el catálogo (`TALENTOS_SET`) por el mismo motivo que en los soluciones:
-     * un talento inventado no casaría nunca con nada y dejaría el ticket fuera de toda
-     * carpeta, sin que nadie supiera por qué.
+     * Se filtra contra el catálogo por el mismo motivo que en los soluciones: un talento
+     * inventado no casaría nunca con nada y dejaría el ticket fuera de toda carpeta, sin que
+     * nadie supiera por qué. El catálogo es la tabla `gd_talentos` (2026-11-09), la que se
+     * edita en Admin; la lista en código solo la siembra.
      */
     const talentosPedidos: string[] = Array.isArray(body.required_talents)
       ? body.required_talents.filter((t: any) => typeof t === 'string' && t.trim())
       : [];
-    const requiredTalents = [...new Set(talentosPedidos.filter((t) => TALENTOS_SET.has(t)))];
+    const requiredTalents = await filtrarAlCatalogo(talentosPedidos);
 
     if (!title?.trim()) {
       return NextResponse.json({ error: 'El titulo es requerido' }, { status: 400 });
@@ -196,6 +226,16 @@ export async function POST(req: NextRequest) {
 
     // Miembro asignado: en 'request' abierto (propuestas o talento) no hay miembro (queda null).
     const resolvedMemberId = (openForProposals || openForTalent) ? null : (member_id || null);
+
+    // ⭐ A quien se elige tiene que tener demostrado alguno de los talentos del ticket
+    // (Fernando, 2026-11-09). Elegirse a uno mismo siempre vale.
+    if (resolvedMemberId) {
+      const yo = await fichaDeMiembro(user.userId);
+      if (String(resolvedMemberId) !== String(yo ?? '')) {
+        const error = await validarTalento(resolvedMemberId, requiredTalents);
+        if (error) return NextResponse.json({ error }, { status: 400 });
+      }
+    }
 
     // Resolve client: by ID, by email (find or create), or auto for client role
     let resolvedClientId = client_id || null;

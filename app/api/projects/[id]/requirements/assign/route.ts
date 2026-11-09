@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // ⚠️ Antes ninguna de estas llamadas miraba quién pedía: cualquiera con sesión podía crear
 // y ACEPTAR asignaciones, que es lo que fija cuánto se le paga a un miembro (2026-09-28).
 import { esGestorDelProyecto, miembroDe, requerimientoDelProyecto, ESTADOS_CERRADOS } from '@/lib/projects/permisos';
+import { talentosDelRequerimiento, validarTalento } from '@/lib/talentos/demostrados';
 
 async function proyectoCerrado(projectId: string): Promise<boolean> {
   const { rows: [p] } = await pool.query(`SELECT status FROM gcc_world.projects WHERE id = $1`, [projectId]);
@@ -55,6 +56,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const userRes = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId]);
     const callerMemberId = userRes.rows[0]?.member_id;
     const isSelfAssign = callerMemberId != null && Number(callerMemberId) === Number(member_id);
+    // ⭐ A otro solo se le asigna si tiene demostrado alguno de los talentos del requerimiento
+    // (top 5; Fernando, 2026-11-09). Asignarse a uno mismo vale siempre.
+    if (!isSelfAssign) {
+      const error = await validarTalento(member_id, await talentosDelRequerimiento(requirement_id));
+      if (error) return NextResponse.json({ error }, { status: 400 });
+    }
 
     const { rows } = await pool.query(
       `INSERT INTO gcc_world.requirement_assignments (project_id, requirement_id, member_id, proposed_cost, member_cost, status)

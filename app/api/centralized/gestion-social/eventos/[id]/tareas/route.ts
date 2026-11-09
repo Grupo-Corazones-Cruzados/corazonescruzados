@@ -22,7 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!Number.isFinite(plazas) || plazas < 1) {
       return NextResponse.json({ error: 'Las plazas deben ser al menos 1.' }, { status: 400 });
     }
-    const { values, talents } = sanitizeTags(b);
+    const { values, talents } = await sanitizeTags(b);
     const data = await createTask(Number(id), {
       title: String(b.title),
       detail: b.detail ? String(b.detail) : '',

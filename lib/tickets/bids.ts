@@ -2,6 +2,7 @@
 // open_for_proposals=true recibe propuestas de miembros/candidatos; el creador acepta una,
 // que asigna el miembro y cierra el ticket a propuestas.
 import { pool } from '@/lib/db';
+import { top5DeMiembro, validarTalento } from '@/lib/talentos/demostrados';
 
 let ready = false;
 
@@ -36,9 +37,12 @@ export async function listTicketBids(ticketId: number) {
 export async function createTicketBid(ticketId: number, memberId: number, proposal: string) {
   await ensureTicketBidsTable();
   // Guard: el ticket debe estar abierto a propuestas.
-  const { rows: [t] } = await pool.query(`SELECT open_for_proposals, member_id FROM gcc_world.tickets WHERE id = $1`, [ticketId]);
+  const { rows: [t] } = await pool.query(`SELECT open_for_proposals, member_id, required_talents FROM gcc_world.tickets WHERE id = $1`, [ticketId]);
   if (!t) throw new Error('Ticket inexistente.');
   if (!t.open_for_proposals || t.member_id) throw new Error('Este ticket ya no está abierto a propuestas.');
+  // Proponerse exige tener demostrado alguno de los talentos del ticket (2026-11-09).
+  const sinTalento = await validarTalento(memberId, t.required_talents || []);
+  if (sinTalento) throw new Error('Necesitas tener demostrado alguno de los talentos que pide este ticket (cuentan tus 5 primeros).');
   const { rows } = await pool.query(
     `INSERT INTO gcc_world.ticket_bids (ticket_id, member_id, proposal) VALUES ($1, $2, $3)
      ON CONFLICT (ticket_id, member_id) DO UPDATE SET proposal = EXCLUDED.proposal, status = 'pending', created_at = NOW()
@@ -66,13 +70,13 @@ export async function deleteTicketBid(ticketId: number, memberId: number) {
   await pool.query(`DELETE FROM gcc_world.ticket_bids WHERE ticket_id = $1 AND member_id = $2`, [ticketId, memberId]);
 }
 
-/** Talentos activos del miembro (de sus servicios). */
+/**
+ * Talentos con los que el miembro es ELEGIBLE: su top 5 DEMOSTRADO (`lib/talentos/demostrados.ts`).
+ * Hasta el 2026-11-09 salían de sus servicios activos (`services.talent`), que son declarados:
+ * Fernando decidió que solo cuenta lo demostrado.
+ */
 export async function memberTalents(memberId: number): Promise<string[]> {
-  const { rows } = await pool.query(
-    `SELECT DISTINCT talent FROM gcc_world.services WHERE member_id = $1 AND is_active = true AND talent IS NOT NULL`,
-    [memberId],
-  );
-  return rows.map((r: any) => r.talent);
+  return top5DeMiembro(memberId);
 }
 
 /** Toma INMEDIATA de un ticket "abierto por talento": el miembro con ≥1 talento requerido
@@ -87,7 +91,7 @@ export async function takeTicketByTalent(ticketId: number, userId: string) {
   const mine = await memberTalents(memberId);
   const required: string[] = t.required_talents || [];
   if (!required.some((r) => mine.includes(r))) {
-    throw new Error('Necesitas al menos uno de los talentos requeridos para tomar este ticket.');
+    throw new Error('Necesitas tener demostrado alguno de los talentos requeridos para tomar este ticket (cuentan tus 5 primeros).');
   }
   await pool.query(`UPDATE gcc_world.tickets SET member_id = $1, open_for_talent = false, updated_at = NOW() WHERE id = $2`, [memberId, ticketId]);
   return { member_id: memberId, creator_user_id: t.user_id, title: t.title };

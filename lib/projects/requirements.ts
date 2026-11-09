@@ -11,7 +11,11 @@ import { pool } from '@/lib/db';
  * **alguno de sus requerimientos** pide alguno de los talentos buscados.
  *
  * Los talentos válidos son los de la lista global `gd_talentos` (Admin ▸ Listas y sistema
- * Encuadre Condiciológico), la misma que usan tickets y proyectos.
+ * Encuadre Condiciológico). Desde el 2026-11-09 es de verdad la misma para todo: las rutas de
+ * requerimientos, tickets, proyectos y tareas filtran con `filtrarAlCatalogo`
+ * (`lib/talentos/catalogo.ts`); hasta entonces los tickets validaban contra la lista en código
+ * y los requerimientos no validaban. `normalizeTalents` solo limpia (texto, sin repetidos, 20
+ * como mucho): no comprueba el catálogo.
  */
 
 let ready = false;

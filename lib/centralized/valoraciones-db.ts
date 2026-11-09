@@ -1,6 +1,6 @@
 import { pool } from '@/lib/db';
 import { VALORES_SET } from '@/lib/centralized/valores';
-import { TALENTOS_SET } from '@/lib/centralized/talentos';
+import { conjuntoDeTalentos } from '@/lib/talentos/catalogo';
 
 /**
  * VALORACIÓN GLOBAL de un sujeto (candidato o miembro), asignada a mano desde
@@ -125,12 +125,13 @@ export async function saveAssessment(
   // Sanea: tipo válido, ítem dentro de la lista canónica, puntos en rango y sin duplicados.
   const seen = new Set<string>();
   const clean: AssessmentItem[] = [];
+  const catalogo = await conjuntoDeTalentos(); // `gd_talentos`, el catálogo único
   for (const it of items) {
     const kind = it?.kind === 'value' ? 'value' : it?.kind === 'talent' ? 'talent' : null;
     if (!kind) continue;
     const key = String(it.itemKey ?? '').trim();
     if (!key) continue;
-    if (kind === 'talent' && !TALENTOS_SET.has(key)) continue;
+    if (kind === 'talent' && !catalogo.has(key)) continue;
     if (kind === 'value' && !VALORES_SET.has(key)) continue;
     const dedup = `${kind}:${key}`;
     if (seen.has(dedup)) continue;

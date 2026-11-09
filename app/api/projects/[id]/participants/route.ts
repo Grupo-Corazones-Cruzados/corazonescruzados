@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { addParticipant, getProjectMembers, ensureProjectMembersTable } from '@/lib/projects/members';
+import { talentosAbiertosDelProyecto, validarTalento } from '@/lib/talentos/demostrados';
 
 /** ¿El usuario puede gestionar participantes? Admin o el responsable activo del proyecto. */
 async function canManage(user: any, projectId: string): Promise<boolean> {
@@ -34,6 +35,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (!(await canManage(user, id))) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     const { member_id } = await req.json();
     if (!member_id) return NextResponse.json({ error: 'member_id requerido' }, { status: 400 });
+    // ⭐ Solo quien tiene demostrado algún talento que el proyecto pide (2026-11-09); uno mismo, siempre.
+    const yo = (await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId])).rows[0]?.member_id;
+    if (String(member_id) !== String(yo ?? '')) {
+      const error = await validarTalento(member_id, await talentosAbiertosDelProyecto(id));
+      if (error) return NextResponse.json({ error }, { status: 400 });
+    }
     await addParticipant(id, member_id);
     return NextResponse.json({ data: await getProjectMembers(id) });
   } catch (err: any) {

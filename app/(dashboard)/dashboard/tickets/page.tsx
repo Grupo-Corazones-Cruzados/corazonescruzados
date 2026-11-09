@@ -22,7 +22,7 @@ import FilterRail, { type FilterRailItem } from '@/components/ui/FilterRail';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PanelDetalle from '@/components/ui/PanelDetalle';
 import TablaVaciaHastaElPie from '@/components/ui/TablaVaciaHastaElPie';
-import { TALENTOS } from '@/lib/centralized/talentos';
+import { useTalentosCatalogo } from '@/components/talentos/useTalentosCatalogo';
 import {
   Inbox, Clock, CheckCircle2, CircleCheck, XCircle, Send, Plus, FileText, ChevronLeft, ChevronRight,
   ArrowRight, Ticket as TicketIcon, DoorOpen, FilePen, CloudOff,
@@ -75,7 +75,6 @@ const emptyForm = {
   // Solicitar: casilla OBLIGATORIA para crear/usar la cuenta de cliente del solicitante.
 };
 
-const TALENT_OPTIONS = TALENTOS.map((t) => ({ value: t, label: t }));
 
 const REQUEST_OPTIONS: { value: 'proposals' | 'talent' | 'invite'; label: string; hint: string }[] = [
   { value: 'proposals', label: 'Dejar abierto a propuestas', hint: 'Cualquier miembro propone; tú eliges a quién aceptar.' },
@@ -130,6 +129,8 @@ export default function TicketsPage() {
   const [modal, setModal] = useState(false);
   const [createMode, setCreateMode] = useState<'create' | 'request'>('create');
   const [form, setForm] = useState(emptyForm);
+  // Opciones de talento: del catálogo único (`gd_talentos`), el mismo con el que valida la API.
+  const talentOptions = useTalentosCatalogo(modal);
   const [selectedDates, setSelectedDates] = useState<SelectedDates>([]);
   const [slotsModal, setSlotsModal] = useState(false);
   const [calMonth, setCalMonth] = useState(() => { const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() }; });
@@ -526,7 +527,7 @@ export default function TicketsPage() {
               además decida quién puede tomarlo es una consecuencia, no su definición. */}
           <div className="flex flex-col gap-1">
             <label className="field-label text-[10px] text-accent-glow opacity-70" style={df}>Talento *</label>
-            <MultiSelectSearch options={TALENT_OPTIONS} selected={form.required_talents}
+            <MultiSelectSearch options={talentOptions} selected={form.required_talents}
               onChange={(vals) => setForm({ ...form, required_talents: vals })}
               placeholder="Talentos que requiere la tarea…" />
           </div>
@@ -563,7 +564,8 @@ export default function TicketsPage() {
                   })}
                   {form.request_option === 'invite' && (
                     <div className="pt-1">
-                      <AssigneePicker value={form.member_id} onChange={(id) => setForm({ ...form, member_id: id })} />
+                      <AssigneePicker value={form.member_id} onChange={(id) => setForm((f) => ({ ...f, member_id: id }))}
+                        contexto={{ talentos: form.required_talents }} />
                     </div>
                   )}
                   {/* El selector de talentos ya NO vive aquí: subió a campo propio del
