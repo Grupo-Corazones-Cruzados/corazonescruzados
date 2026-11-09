@@ -40,7 +40,16 @@ export type Parte = {
   gross: number;
   commission: number;
   amount: number;
+  /** La factura de la parte (paso 4): la propia del miembro si factura él; si no, la del cobro. */
+  invoiceId?: number;
 };
+
+/**
+ * Las facturas de un cobro que dio más de una (paso 4: cada miembro con cuenta de emisor factura lo suyo).
+ * `ids`: todas; `deMiembro`: la de cada miembro que factura él (ficha → factura). La parte de un miembro que no
+ * está aquí, y la de GCC, van a la factura principal (la que se pasa a `repartirCobro`).
+ */
+export type FacturasDelCobro = { ids: number[]; deMiembro: Record<number, number> };
 
 export type Reparto = {
   invoiceId: number;
@@ -112,15 +121,117 @@ function prorratear(total: number, pesos: number[]): number[] {
   return out;
 }
 
+/** Lo que mueve un cobro: lo que pagó el cliente, el recargo, la base repartible y la comisión de la pasarela. */
+export type ImportesCobro = { cobro: number; recargo: number; base: number; comision: number; comisionACargo: number };
+
+/**
+ * Los importes de un cobro. Con intento, los del intento (lo cobrado entero, aunque dé varias facturas); sin él, el
+ * total de la factura. Es la misma cuenta que hacía `repartirCobro`, sacada para que la planificación de las
+ * facturas de un cobro (`lib/pagos/facturas-del-cobro.ts`) reparta EXACTAMENTE igual.
+ */
+export function importesDelCobro(intento: any | null | undefined, totalFactura: number): ImportesCobro {
+  const cobro = centavos(intento ? Number(intento.charge_amount) || 0 : Number(totalFactura) || 0);
+  const recargo = intento ? centavos(Number(intento.fee_amount) || 0) : 0;
+  const base = centavos(cobro - recargo);
+  const metodo = intento ? (intento.provider_method || 'card') : 'manual';
+  const comision = intento && metodo === 'card' && intento.provider !== 'manual'
+    ? centavos(cobro - netoRecibido(cobro, tarifaDe(intento.provider)))
+    : 0;
+  // Si el cliente pagó un recargo (antes del 2026-09-30), ese recargo ya cubre la comisión.
+  const comisionACargo = Math.max(0, centavos(comision - recargo));
+  return { cobro, recargo, base, comision, comisionACargo };
+}
+
+/** ¿Es un cobro de ensayo? (el proveedor simulado o el modo sin factura): no crea ganancias de nadie. */
+export function esCobroDeEnsayo(intento: any | null | undefined): boolean {
+  return intento?.provider === 'simulado' || process.env.PAGOS_EMITIR_FACTURA === '0';
+}
+
+/**
+ * ⭐ LAS PARTES DE CADA PERSONA EN UN COBRO (sin la de GCC). Una sola definición: la usan `repartirCobro` (al
+ * anotar las ganancias) y la planificación de las facturas del cobro (para saber qué líneas factura cada miembro).
+ * `requirementIds`: los requerimientos que cubre el cobro (proyecto sin etapas), en cualquier orden.
+ */
+export async function partesDeTerceros(
+  c: { sourceType: string; sourceId: string; stageId: number | null; requirementIds: (number | string)[]; base: number; comisionACargo: number; invoiceId?: number },
+  db: Consulta,
+): Promise<Parte[]> {
+  const { sourceType, sourceId, stageId, base, comisionACargo } = c;
+  const id = c.invoiceId ?? 0;
+  const partes: Parte[] = [];
+  if (!(base > 0)) return partes;
+  if (sourceType === 'ticket') {
+    const { rows: [t] } = await db.query(`SELECT member_id FROM gcc_world.tickets WHERE id = ($1)::bigint`, [sourceId]);
+    const memberId = t?.member_id != null ? Number(t.member_id) : null;
+    const userId = await usuarioDelMiembro(memberId, db);
+    if (userId) partes.push({ userId, memberId, role: 'ticket', shareKey: 'ticket', stageId, gross: base, commission: comisionACargo, amount: centavos(base - comisionACargo) });
+  } else if (sourceType === 'subscription') {
+    const subId = /^(\d+)-/.exec(sourceId)?.[1];
+    const { rows: [s] } = subId
+      ? await db.query(`SELECT owner_member_id FROM gcc_world.subscriptions WHERE id = ($1)::int`, [subId])
+      : { rows: [] as any[] };
+    const memberId = s?.owner_member_id != null ? Number(s.owner_member_id) : null;
+    const userId = await usuarioDelMiembro(memberId, db);
+    if (userId) partes.push({ userId, memberId, role: 'subscription', shareKey: 'subscription', gross: base, commission: comisionACargo, amount: centavos(base - comisionACargo) });
+  } else if (sourceType === 'project') {
+    const beneficiarios = await beneficiariosDelProyecto(sourceId, db);
+    if (stageId != null) {
+      // Etapa: entera al único beneficiario. Con varios (un plan anterior a la regla) no se adivina el
+      // reparto: queda de GCC y se avisa para hacerlo a mano.
+      if (beneficiarios.length === 1) {
+        const userId = await usuarioDelMiembro(beneficiarios[0], db);
+        if (userId) partes.push({ userId, memberId: beneficiarios[0], role: 'stage', shareKey: 'stage', stageId, gross: base, commission: comisionACargo, amount: centavos(base - comisionACargo) });
+      } else if (beneficiarios.length > 1) {
+        console.error(`[ganancias] la factura ${id} es de una etapa del proyecto ${sourceId}, que tiene ${beneficiarios.length} beneficiarios: queda de GCC.`);
+      }
+    } else {
+      // Las asignaciones aceptadas de los requerimientos que cubre el cobro, en el orden de siempre
+      // (requerimiento, asignación): del orden depende a quién le toca el redondeo del prorrateo.
+      const { rows: asignaciones } = await db.query(
+        `SELECT ra.requirement_id, ra.id AS assignment_id, ra.member_id, ${PRECIO_ASIGNACION} AS precio
+           FROM gcc_world.requirement_assignments ra
+          WHERE ra.requirement_id = ANY(($1)::bigint[]) AND ra.status = 'accepted'
+          ORDER BY ra.requirement_id, ra.id`,
+        [c.requirementIds.map(String)],
+      );
+      const conUsuario: { a: any; userId: string }[] = [];
+      for (const a of asignaciones) {
+        if (!(Number(a.precio) > 0)) continue;
+        const userId = await usuarioDelMiembro(a.member_id != null ? Number(a.member_id) : null, db);
+        if (userId) conUsuario.push({ a, userId });
+      }
+      // Lo asignado nunca puede pasar de lo cobrado (un precio cambiado entre la cotización y el pago).
+      const suma = conUsuario.reduce((s, x) => s + Number(x.a.precio), 0);
+      const brutos = suma > base ? prorratear(base, conUsuario.map((x) => Number(x.a.precio))) : conUsuario.map((x) => centavos(Number(x.a.precio)));
+      const individual = beneficiarios.length <= 1;
+      const comisiones = individual
+        // Individual: el beneficiario carga la comisión entera (repartida entre sus asignaciones).
+        ? prorratear(comisionACargo, brutos)
+        // Grupal: cada parte la suya, por lo que pesa en el cobro; el resto de la comisión es de GCC.
+        : brutos.map((b) => (base > 0 ? centavos(comisionACargo * b / base) : 0));
+      conUsuario.forEach((x, i) => partes.push({
+        userId: x.userId, memberId: Number(x.a.member_id), role: 'assignment', shareKey: `a:${x.a.assignment_id}`,
+        requirementId: Number(x.a.requirement_id), assignmentId: Number(x.a.assignment_id),
+        gross: brutos[i], commission: comisiones[i], amount: centavos(brutos[i] - comisiones[i]),
+      }));
+    }
+  }
+  return partes;
+}
+
 /**
  * REPARTE EL COBRO DE UNA FACTURA. Corre dentro de la transacción de quien llama (`db` es su cliente: ver
  * gcc-pool-transaccion-un-cliente) y escribe el libro y los ingresos de cada persona a la vez, o nada.
  * Quien llama tiene que haber llamado antes a `ensureFinanceTables()` (hace DDL).
+ *
+ * ⭐ Con `opts.facturas` (paso 4: el cobro dio varias facturas), `invoiceId` es la PRINCIPAL —la de GCC, o la
+ * primera si no hay de GCC— y el reparto es el del cobro entero, igual que con una sola: cada parte va a la
+ * factura del miembro que la factura él, y las demás y la de GCC a la principal.
  */
 export async function repartirCobro(
   invoiceId: number | string,
   db: Consulta,
-  opts: { descripcion?: string; fecha?: Date } = {},
+  opts: { descripcion?: string; fecha?: Date; facturas?: FacturasDelCobro } = {},
 ): Promise<Reparto> {
   const { rows: [inv] } = await db.query(
     `SELECT id, total, status, payment_intent_id, source_type, source_id, ticket_id, project_id
@@ -129,6 +240,9 @@ export async function repartirCobro(
   );
   if (!inv) throw new Error(`La factura ${invoiceId} no existe.`);
   const id = Number(inv.id);
+  const ids = opts.facturas ? Array.from(new Set([id, ...opts.facturas.ids.map(Number)])) : [id];
+  const deMiembro = opts.facturas?.deMiembro ?? {};
+  const facturaDe = (memberId: number | null) => (memberId != null && deMiembro[memberId] != null ? Number(deMiembro[memberId]) : id);
 
   const { rows: [intento] } = await db.query(
     `SELECT id, provider, provider_method, source_type, source_id, stage_id, net_amount, fee_amount, charge_amount, paid_at
@@ -166,23 +280,15 @@ export async function repartirCobro(
   }
 
   // ── Los importes ─────────────────────────────────────────────────────────────────────────────────
-  const cobro = centavos(intento ? Number(intento.charge_amount) || 0 : Number(inv.total) || 0);
-  const recargo = intento ? centavos(Number(intento.fee_amount) || 0) : 0;
-  const base = centavos(cobro - recargo);
-  const metodo = intento ? (intento.provider_method || 'card') : 'manual';
-  const comision = intento && metodo === 'card' && intento.provider !== 'manual'
-    ? centavos(cobro - netoRecibido(cobro, tarifaDe(intento.provider)))
-    : 0;
-  // Si el cliente pagó un recargo (antes del 2026-09-30), ese recargo ya cubre la comisión.
-  const comisionACargo = Math.max(0, centavos(comision - recargo));
+  const { cobro, base, comision, comisionACargo } = importesDelCobro(intento, Number(inv.total) || 0);
 
   const base0: Omit<Reparto, 'partes' | 'ingresoGcc' | 'yaEstaba' | 'ensayo'> = { invoiceId: id, sourceType, sourceId, cobro, comision };
 
   // ── Idempotencia: si ya se repartió, se devuelve lo que hay ──────────────────────────────────────
   const { rows: previas } = await db.query(
-    `SELECT user_id, member_id, role, share_key, requirement_id, assignment_id, stage_id, gross, commission, amount
-       FROM gcc_world.member_earnings WHERE invoice_id = $1 AND status = 'accrued' ORDER BY id`,
-    [id],
+    `SELECT user_id, member_id, role, share_key, requirement_id, assignment_id, stage_id, gross, commission, amount, invoice_id
+       FROM gcc_world.member_earnings WHERE invoice_id = ANY(($1)::int[]) AND status = 'accrued' ORDER BY id`,
+    [ids.map(String)],
   );
   if (previas.length > 0) {
     const partes: Parte[] = previas.map((r: any) => ({
@@ -190,79 +296,30 @@ export async function repartirCobro(
       requirementId: r.requirement_id != null ? Number(r.requirement_id) : null,
       assignmentId: r.assignment_id != null ? Number(r.assignment_id) : null,
       stageId: r.stage_id != null ? Number(r.stage_id) : null,
-      gross: Number(r.gross), commission: Number(r.commission), amount: Number(r.amount),
+      gross: Number(r.gross), commission: Number(r.commission), amount: Number(r.amount), invoiceId: Number(r.invoice_id),
     }));
     return { ...base0, partes, ingresoGcc: ingresoDeGcc(cobro, partes), yaEstaba: true, ensayo: false };
   }
   if (inv.status === 'cancelled') throw new Error(`La factura ${id} está anulada: no se reparte.`);
 
   // ⚠️ UN COBRO DE ENSAYO NO CREA GANANCIAS: el proveedor simulado o el modo sin factura (`PAGOS_EMITIR_FACTURA=0`).
-  const ensayo = intento?.provider === 'simulado' || process.env.PAGOS_EMITIR_FACTURA === '0';
+  const ensayo = esCobroDeEnsayo(intento);
 
   // ── Las partes de cada persona ───────────────────────────────────────────────────────────────────
-  const partes: Parte[] = [];
-  if (!ensayo && base > 0) {
-    if (sourceType === 'ticket') {
-      const { rows: [t] } = await db.query(`SELECT member_id FROM gcc_world.tickets WHERE id = ($1)::bigint`, [sourceId]);
-      const memberId = t?.member_id != null ? Number(t.member_id) : null;
-      const userId = await usuarioDelMiembro(memberId, db);
-      if (userId) partes.push({ userId, memberId, role: 'ticket', shareKey: 'ticket', stageId, gross: base, commission: comisionACargo, amount: centavos(base - comisionACargo) });
-    } else if (sourceType === 'subscription') {
-      const subId = /^(\d+)-/.exec(sourceId)?.[1];
-      const { rows: [s] } = subId
-        ? await db.query(`SELECT owner_member_id FROM gcc_world.subscriptions WHERE id = ($1)::int`, [subId])
-        : { rows: [] as any[] };
-      const memberId = s?.owner_member_id != null ? Number(s.owner_member_id) : null;
-      const userId = await usuarioDelMiembro(memberId, db);
-      if (userId) partes.push({ userId, memberId, role: 'subscription', shareKey: 'subscription', gross: base, commission: comisionACargo, amount: centavos(base - comisionACargo) });
-    } else if (sourceType === 'project') {
-      const beneficiarios = await beneficiariosDelProyecto(sourceId, db);
-      if (stageId != null) {
-        // Etapa: entera al único beneficiario. Con varios (un plan anterior a la regla) no se adivina el
-        // reparto: queda de GCC y se avisa para hacerlo a mano.
-        if (beneficiarios.length === 1) {
-          const userId = await usuarioDelMiembro(beneficiarios[0], db);
-          if (userId) partes.push({ userId, memberId: beneficiarios[0], role: 'stage', shareKey: 'stage', stageId, gross: base, commission: comisionACargo, amount: centavos(base - comisionACargo) });
-        } else if (beneficiarios.length > 1) {
-          console.error(`[ganancias] la factura ${id} es de una etapa del proyecto ${sourceId}, que tiene ${beneficiarios.length} beneficiarios: queda de GCC.`);
-        }
-      } else {
-        const { rows: asignaciones } = await db.query(
-          `SELECT ir.requirement_id, ra.id AS assignment_id, ra.member_id, ${PRECIO_ASIGNACION} AS precio
-             FROM gcc_world.invoice_requirements ir
-             JOIN gcc_world.requirement_assignments ra ON ra.requirement_id = ir.requirement_id AND ra.status = 'accepted'
-            WHERE ir.invoice_id = $1
-            ORDER BY ir.requirement_id, ra.id`,
-          [id],
-        );
-        const conUsuario: { a: any; userId: string }[] = [];
-        for (const a of asignaciones) {
-          if (!(Number(a.precio) > 0)) continue;
-          const userId = await usuarioDelMiembro(a.member_id != null ? Number(a.member_id) : null, db);
-          if (userId) conUsuario.push({ a, userId });
-        }
-        // Lo asignado nunca puede pasar de lo cobrado (un precio cambiado entre la cotización y el pago).
-        const suma = conUsuario.reduce((s, x) => s + Number(x.a.precio), 0);
-        const brutos = suma > base ? prorratear(base, conUsuario.map((x) => Number(x.a.precio))) : conUsuario.map((x) => centavos(Number(x.a.precio)));
-        const individual = beneficiarios.length <= 1;
-        const comisiones = individual
-          // Individual: el beneficiario carga la comisión entera (repartida entre sus asignaciones).
-          ? prorratear(comisionACargo, brutos)
-          // Grupal: cada parte la suya, por lo que pesa en el cobro; el resto de la comisión es de GCC.
-          : brutos.map((b) => (base > 0 ? centavos(comisionACargo * b / base) : 0));
-        conUsuario.forEach((x, i) => partes.push({
-          userId: x.userId, memberId: Number(x.a.member_id), role: 'assignment', shareKey: `a:${x.a.assignment_id}`,
-          requirementId: Number(x.a.requirement_id), assignmentId: Number(x.a.assignment_id),
-          gross: brutos[i], commission: comisiones[i], amount: centavos(brutos[i] - comisiones[i]),
-        }));
-      }
-    }
+  let requirementIds: number[] = [];
+  if (!ensayo && base > 0 && sourceType === 'project' && stageId == null) {
+    const { rows } = await db.query(
+      `SELECT DISTINCT requirement_id FROM gcc_world.invoice_requirements WHERE invoice_id = ANY(($1)::int[])`, [ids.map(String)],
+    );
+    requirementIds = rows.map((r: any) => Number(r.requirement_id));
   }
+  const partes: Parte[] = ensayo ? [] : await partesDeTerceros({ sourceType, sourceId, stageId, requirementIds, base, comisionACargo, invoiceId: id }, db);
+  for (const p of partes) p.invoiceId = facturaDe(p.memberId);
 
   // ── Lo de GCC: lo no atribuido y la comisión que nadie más carga ─────────────────────────────────
   const brutoGcc = centavos(cobro - partes.reduce((s, p) => s + p.gross, 0));
   const comisionGcc = centavos(comision - partes.reduce((s, p) => s + p.commission, 0));
-  partes.push({ userId: DUENO_FINANZAS_GCC, memberId: null, role: 'gcc', shareKey: 'gcc', stageId, gross: brutoGcc, commission: comisionGcc, amount: centavos(brutoGcc - comisionGcc) });
+  partes.push({ userId: DUENO_FINANZAS_GCC, memberId: null, role: 'gcc', shareKey: 'gcc', stageId, gross: brutoGcc, commission: comisionGcc, amount: centavos(brutoGcc - comisionGcc), invoiceId: id });
 
   for (const p of partes) {
     await db.query(
@@ -271,7 +328,7 @@ export async function repartirCobro(
           requirement_id, assignment_id, stage_id, gross, commission, amount)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        ON CONFLICT (invoice_id, share_key) DO NOTHING`,
-      [p.userId, p.memberId, sourceType, sourceId, id, intento?.id ?? null, p.role, p.shareKey,
+      [p.userId, p.memberId, sourceType, sourceId, p.invoiceId ?? id, intento?.id ?? null, p.role, p.shareKey,
        p.requirementId ?? null, p.assignmentId ?? null, p.stageId ?? null, p.gross.toFixed(2), p.commission.toFixed(2), p.amount.toFixed(2)],
     );
   }
@@ -292,13 +349,18 @@ async function anotarIngresos(
   db: Consulta, invoiceId: number, sourceType: string, sourceId: string, partes: Parte[], ingresoGcc: number,
   descripcion: string, fecha: Date,
 ) {
-  const porUsuario = new Map<string, number>();
+  // Por persona Y factura: el renglón cuelga de la factura que respalda esa parte (la del miembro, si factura él),
+  // y así cuenta como facturado cuando ESA factura está autorizada (`SQL_INGRESO_FACTURADO › earning`).
+  const porUsuario = new Map<string, { invoiceId: number; userId: string; monto: number }>();
   for (const p of partes) {
     if (p.userId === DUENO_FINANZAS_GCC) continue;
-    porUsuario.set(p.userId, centavos((porUsuario.get(p.userId) || 0) + p.amount));
+    const fid = p.invoiceId ?? invoiceId;
+    const k = `${fid}:${p.userId}`;
+    const previo = porUsuario.get(k);
+    porUsuario.set(k, { invoiceId: fid, userId: p.userId, monto: centavos((previo?.monto || 0) + p.amount) });
   }
-  for (const [userId, monto] of porUsuario) {
-    if (monto > 0) await anotarIngreso(db, userId, 'earning', `${invoiceId}:${userId}`, descripcion, monto, fecha);
+  for (const [k, { userId, monto }] of porUsuario) {
+    if (monto > 0) await anotarIngreso(db, userId, 'earning', k, descripcion, monto, fecha);
   }
 
   // El de GCC conserva el origen que tenía (la suscripción por su mes, lo demás por la factura): es el que
@@ -336,7 +398,7 @@ async function enTransaccion<T>(trabajo: (db: Consulta) => Promise<T>): Promise<
 }
 
 /** `repartirCobro` en su propia transacción: lo que llama el cobro confirmado (`lib/pagos/intentos.ts`). */
-export function registrarCobro(invoiceId: number | string, opts: { descripcion?: string; fecha?: Date } = {}): Promise<Reparto> {
+export function registrarCobro(invoiceId: number | string, opts: { descripcion?: string; fecha?: Date; facturas?: FacturasDelCobro } = {}): Promise<Reparto> {
   return enTransaccion((db) => repartirCobro(invoiceId, db, opts));
 }
 
@@ -390,7 +452,10 @@ export async function heredarGananciasEn(db: Consulta, anuladaId: number | strin
   const gcc = viejas.find((r: any) => r.role === 'gcc');
   const brutoGcc = centavos(total - ajenas.reduce((s: number, r: any) => s + Number(r.gross), 0));
   const comisionGcc = gcc ? Number(gcc.commission) : 0;
-  const filas = [
+  // ⚠️ La factura PROPIA de un miembro (paso 4) no lleva parte de GCC: la de GCC está en la factura de GCC del
+  // mismo cobro. Su refactura tampoco la lleva; inventarle una sumaría a GCC lo que no facturó.
+  const facturaDeMiembro = !gcc;
+  const filas = facturaDeMiembro ? [...ajenas] : [
     ...ajenas,
     { ...(gcc || { user_id: DUENO_FINANZAS_GCC, member_id: null, role: 'gcc', share_key: 'gcc' }), gross: brutoGcc, commission: comisionGcc, amount: centavos(brutoGcc - comisionGcc) },
   ];

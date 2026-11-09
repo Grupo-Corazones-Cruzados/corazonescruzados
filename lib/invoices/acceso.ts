@@ -12,7 +12,8 @@ import { sqlFacturaMia } from '@/lib/pertenencia';
  *               usuarios»), por todos los caminos de `sqlFacturaMia`. Una suscripción o una factura
  *               manual sin enlace no es de nadie más que del administrador.
  *   · candidato o cliente — solo si es SUYA: por `client_id`, o por un ticket o proyecto creado por él
- *               o de su cliente.
+ *               o de su cliente, o porque la emitió él con su cuenta de emisor (`member_id`, paso 4).
+ *   Un miembro ve también las que emitió él (`invoices.member_id`, dentro de `sqlFacturaMia`).
  */
 export async function puedeVerFactura(user: { userId: string | number; role: string }, id: string | number): Promise<boolean> {
   if (user.role === 'admin') return true;
@@ -33,6 +34,7 @@ export async function puedeVerFactura(user: { userId: string | number; role: str
         i.client_id = $2
         OR i.ticket_id IN (SELECT id FROM gcc_world.tickets WHERE user_id = $3::uuid OR client_id = $2)
         OR i.project_id IN (SELECT id FROM gcc_world.projects WHERE created_by_user_id = $3::text OR client_id = $2)
+        OR i.member_id = (SELECT member_id FROM gcc_world.users WHERE id = $3::uuid)
       ) LIMIT 1`,
     [id, ownClientId, user.userId],
   );

@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { buildCreditNoteXml } from '@/lib/integrations/sri/credit-note-builder';
 import { firmarNotaCredito } from '@/lib/integrations/sri/xades-signer';
 import { emisorDeFactura, siguienteSecuencial, anotarSecuencialUsado } from '@/lib/integrations/sri/emisor';
+import { ecuadorDateParts } from '@/lib/integrations/sri/access-key';
 import { enviarComprobante, consultarAutorizacion } from '@/lib/integrations/sri/soap-client';
 import { revertSubscriptionPaymentForVoidedInvoice } from '@/lib/subscriptions';
 import { removeIncomeFromFinance, quitarIngresosDeFacturaAnulada } from '@/lib/finance';
@@ -36,9 +37,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // invoices.sri_response.credit_note.numero ("NC-001-001-000000001"), no como filas propias.
     const secuencial = await siguienteSecuencial(emisor, '04');
 
-    // Format original invoice date
-    const invDate = new Date(inv.created_at);
-    const facturaFecha = `${String(invDate.getDate()).padStart(2, '0')}/${String(invDate.getMonth() + 1).padStart(2, '0')}/${invDate.getFullYear()}`;
+    // La fecha de la factura que se anula es la que viajó en SU XML (`<fechaEmision>`, hora de Ecuador). Sin XML,
+    // la de creación pasada a Ecuador: con `getDate()` en el servidor (UTC) una factura emitida después de las
+    // 19:00 de Ecuador salía con el día siguiente y no casaba con el comprobante de sustento.
+    const fechaDelXml = /<fechaEmision>(\d{2}\/\d{2}\/\d{4})<\/fechaEmision>/.exec(inv.xml_signed || '')?.[1];
+    const fe = ecuadorDateParts(new Date(inv.created_at));
+    const facturaFecha = fechaDelXml || `${fe.dd}/${fe.mm}/${fe.aaaa}`;
 
     if (!inv.client_id_type) {
       return NextResponse.json({ error: 'La factura no tiene tipo de identificación registrado. Actualiza el registro en BD antes de anular.' }, { status: 400 });

@@ -485,6 +485,8 @@ function InvoicesPageInner() {
     ['Total', <span key="t" className="text-accent font-semibold tabular-nums" style={mf}>${fmt2(Number(selected.total || 0))}</span>],
     ['SRI', selected.sri_status ? <PixelBadge key="sri" variant={SRI_STATUS_V[selected.sri_status] || 'default'}>{SRI_STATUS_LABEL[selected.sri_status] || selected.sri_status}</PixelBadge> : '—'],
     ['Estado', <PixelBadge key="s" variant={STATUS_V[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>],
+    // Quién la emitió: GCC o el miembro que factura lo suyo (paso 4).
+    ['Emisor', selected.razon_social_emisor ? `${selected.razon_social_emisor} · ${selected.ruc_emisor}` : '—'],
     ['Fecha', selected.created_at ? new Date(selected.created_at).toLocaleDateString('es-EC') : '—'],
   ].map(([k, v]) => (
     <div key={k as string} className="flex items-center justify-between gap-3 text-[12px]">

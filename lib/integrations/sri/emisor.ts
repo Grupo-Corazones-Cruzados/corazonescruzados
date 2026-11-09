@@ -154,14 +154,68 @@ export async function cargarEmisor(id: number | 'gcc', db?: Consulta): Promise<E
   return emisor;
 }
 
-/** El emisor de una factura ya guardada: el suyo, o GCC si no tiene (todas las anteriores a la migración 089). */
-export function emisorDeFactura(factura: { emisor_id?: number | string | null }, db?: Consulta): Promise<Emisor> {
-  return factura.emisor_id != null ? cargarEmisor(Number(factura.emisor_id), db) : cargarEmisor('gcc', db);
+/**
+ * El emisor de una factura ya guardada: el suyo, o GCC si no tiene (todas las anteriores a la migración 089).
+ *
+ * ⚠️ CON EL AMBIENTE DE LA FACTURA, no el que tenga hoy el emisor (paso 4). Una factura emitida mientras el miembro
+ * estaba `en_pruebas` se firmó para el ambiente 1, y así se reenvía, se consulta y se anula aunque el emisor ya
+ * esté `activo` (ambiente 2). `sri_ambiente` NULL = producción, que es lo que son todas las anteriores.
+ */
+export async function emisorDeFactura(
+  factura: { emisor_id?: number | string | null; sri_ambiente?: string | null },
+  db?: Consulta,
+): Promise<Emisor> {
+  const e = factura.emisor_id != null ? await cargarEmisor(Number(factura.emisor_id), db) : await cargarEmisor('gcc', db);
+  const amb = factura.sri_ambiente != null ? String(factura.sri_ambiente).trim() : null;
+  return amb === '1' || amb === '2' ? (amb === e.ambiente ? e : { ...e, ambiente: amb }) : e;
+}
+
+/** El ambiente en el que emite un emisor: el de pruebas mientras está `en_pruebas`, el suyo si está `activo`. */
+export function ambienteDeEmision(e: Emisor): Ambiente {
+  return e.estado === 'en_pruebas' ? '1' : e.ambiente;
+}
+
+/**
+ * ⭐ LA CUENTA DE EMISOR CON LA QUE FACTURA UN USUARIO (paso 4), o `null` si todavía factura GCC por él.
+ *
+ * Solo una cuenta `activo` (producción), con firma registrada y sin vencer, y que no sea de GCC. Una `en_pruebas`
+ * NO se lleva la factura de un cobro real (2026-11-09): saldría en el ambiente 1 del SRI y el cliente, que pagó de
+ * verdad, se quedaría sin comprobante válido de esa parte; mientras tanto la factura GCC por él.
+ */
+export async function emisorHabilitadoDe(userId: string, db: Consulta = pool): Promise<Emisor | null> {
+  if (!(await hayTabla(db))) return null;
+  const { rows: [r] } = await db.query(
+    `SELECT ${COLUMNAS_EMISOR} FROM gcc_world.sri_emisores
+      WHERE user_id = $1::uuid AND estado = 'activo' AND NOT firma_desde_entorno
+        AND p12_enc IS NOT NULL AND p12_ruc_coincide IS DISTINCT FROM false
+        AND (p12_vence IS NULL OR p12_vence > (NOW() AT TIME ZONE 'America/Guayaquil')::date)
+      LIMIT 1`,
+    [userId],
+  );
+  if (!r) return null;
+  const e = filaAEmisor(r);
+  const amb = ambienteDeEmision(e);
+  return amb === e.ambiente ? e : { ...e, ambiente: amb };
 }
 
 export const esGcc = (e: Emisor) => e.userId === null;
 
 // ── La numeración ────────────────────────────────────────────────────────────────────────────────────────────
+
+/**
+ * ¿Ya se aplicó la migración 090 (numeración por ambiente)? Hasta entonces el contador y el MAX no miran el
+ * ambiente, exactamente como antes, y nadie emite en pruebas (el reparto en facturas de miembros la exige).
+ */
+let hay090: boolean | null = null;
+export async function numeracionPorAmbiente(db: Consulta = pool): Promise<boolean> {
+  if (hay090) return true;
+  const { rows: [r] } = await db.query(
+    `SELECT EXISTS (SELECT 1 FROM information_schema.columns
+                     WHERE table_schema = 'gcc_world' AND table_name = 'sri_secuenciales' AND column_name = 'ambiente') AS hay`,
+  );
+  if (r?.hay) hay090 = true;
+  return !!r?.hay;
+}
 
 /**
  * El número más alto YA USADO por el emisor en su serie, mirando lo guardado. Las facturas de GCC anteriores a la
@@ -171,16 +225,35 @@ export const esGcc = (e: Emisor) => e.userId === null;
 async function maximoUsado(db: Consulta, e: Emisor, tipo: TipoDoc): Promise<number> {
   const serie = `${e.establecimiento}-${e.puntoEmision}-`;
   const delEmisor = esGcc(e) ? `(emisor_id IS NULL OR emisor_id = $2)` : `emisor_id = $2`;
+  // Con la 090, solo lo del MISMO ambiente: las de pruebas no empujan la numeración de producción ni al revés.
+  // Todas las facturas anteriores tienen `sri_ambiente` NULL (= producción): para GCC el MAX es el de siempre.
+  const porAmbiente = await numeracionPorAmbiente(db);
+  const delAmbiente = porAmbiente ? ` AND COALESCE(sri_ambiente, '2') = $3` : '';
+  const params = porAmbiente ? [e.id, e.ambiente] : [e.id];
   const { rows: [r] } = tipo === '01'
     ? await db.query(
         `SELECT COALESCE(MAX(CAST(SPLIT_PART(invoice_number, '-', 3) AS INTEGER)), 0) AS m
-           FROM gcc_world.invoices WHERE invoice_number LIKE $1 || '%' AND ${delEmisor}`, [serie, e.id])
+           FROM gcc_world.invoices WHERE invoice_number LIKE $1 || '%' AND ${delEmisor}${delAmbiente}`, [serie, ...params])
     : await db.query(
         `SELECT COALESCE(MAX(CAST(SPLIT_PART((sri_response::json->'credit_note'->>'numero'), '-', 4) AS INTEGER)), 0) AS m
            FROM gcc_world.invoices
           WHERE sri_response IS NOT NULL AND sri_response::text LIKE '%credit_note%'
-            AND sri_response::text LIKE '%' || $1 || '%' AND ${delEmisor}`, [`NC-${serie}`, e.id]);
+            AND sri_response::text LIKE '%' || $1 || '%' AND ${delEmisor}${delAmbiente}`, [`NC-${serie}`, ...params]);
   return Number(r?.m) || 0;
+}
+
+/** La clave de la fila del contador: con la 090 lleva el ambiente. */
+async function claveContador(db: Consulta, emisor: Emisor, tipo: TipoDoc) {
+  const porAmbiente = await numeracionPorAmbiente(db);
+  const valores: any[] = [emisor.id, emisor.establecimiento, emisor.puntoEmision, tipo];
+  if (porAmbiente) valores.push(emisor.ambiente);
+  return {
+    valores,
+    columnas: porAmbiente ? 'emisor_id, estab, pto_emi, tipo_doc, ambiente' : 'emisor_id, estab, pto_emi, tipo_doc',
+    marcadores: porAmbiente ? '$1, $2, $3, $4, $5' : '$1, $2, $3, $4',
+    donde: `emisor_id = $1 AND estab = $2 AND pto_emi = $3 AND tipo_doc = $4${porAmbiente ? ' AND ambiente = $5' : ''}`,
+    n: valores.length,
+  };
 }
 
 /** Lo de antes de la migración 089, tal cual: la factura sigue al MAX global con mínimo 23; la nota de crédito, al suyo. */
@@ -232,20 +305,19 @@ export async function conSecuencial<T>(
   const deshacer = propio ? 'ROLLBACK' : 'ROLLBACK TO SAVEPOINT secuencial';
   try {
     await cli.query(abrir);
-    const clave = [emisor.id, emisor.establecimiento, emisor.puntoEmision, tipo];
+    const k = await claveContador(cli, emisor, tipo);
     await cli.query(
-      `INSERT INTO gcc_world.sri_secuenciales (emisor_id, estab, pto_emi, tipo_doc, ultimo)
-       VALUES ($1, $2, $3, $4, 0) ON CONFLICT DO NOTHING`, clave,
+      `INSERT INTO gcc_world.sri_secuenciales (${k.columnas}, ultimo)
+       VALUES (${k.marcadores}, 0) ON CONFLICT DO NOTHING`, k.valores,
     );
     const { rows: [fila] } = await cli.query(
-      `SELECT ultimo FROM gcc_world.sri_secuenciales
-        WHERE emisor_id = $1 AND estab = $2 AND pto_emi = $3 AND tipo_doc = $4 FOR UPDATE`, clave,
+      `SELECT ultimo FROM gcc_world.sri_secuenciales WHERE ${k.donde} FOR UPDATE`, k.valores,
     );
     const siguiente = Math.max(Number(fila.ultimo) || 0, await maximoUsado(cli, emisor, tipo)) + 1;
     const resultado = await usar(siguiente, cli);
     await cli.query(
-      `UPDATE gcc_world.sri_secuenciales SET ultimo = GREATEST(ultimo, $5), updated_at = NOW()
-        WHERE emisor_id = $1 AND estab = $2 AND pto_emi = $3 AND tipo_doc = $4`, [...clave, siguiente],
+      `UPDATE gcc_world.sri_secuenciales SET ultimo = GREATEST(ultimo, $${k.n + 1}), updated_at = NOW()
+        WHERE ${k.donde}`, [...k.valores, siguiente],
     );
     await cli.query(cerrar);
     return resultado;
@@ -264,20 +336,30 @@ export async function conSecuencial<T>(
  */
 export async function siguienteSecuencial(emisor: Emisor, tipo: TipoDoc, db: Consulta = pool): Promise<number> {
   if (emisor.id === null) return siguienteSinTabla(db, tipo);
-  const { rows: [fila] } = await db.query(
-    `SELECT ultimo FROM gcc_world.sri_secuenciales
-      WHERE emisor_id = $1 AND estab = $2 AND pto_emi = $3 AND tipo_doc = $4`,
-    [emisor.id, emisor.establecimiento, emisor.puntoEmision, tipo],
-  );
+  const k = await claveContador(db, emisor, tipo);
+  const { rows: [fila] } = await db.query(`SELECT ultimo FROM gcc_world.sri_secuenciales WHERE ${k.donde}`, k.valores);
   return Math.max(Number(fila?.ultimo) || 0, await maximoUsado(db, emisor, tipo)) + 1;
 }
 
 /** Deja constancia de que `numero` ya se usó (nunca baja el contador). */
 export async function anotarSecuencialUsado(emisor: Emisor, tipo: TipoDoc, numero: number, db: Consulta = pool): Promise<void> {
   if (emisor.id === null) return;
+  const k = await claveContador(db, emisor, tipo);
   await db.query(
-    `INSERT INTO gcc_world.sri_secuenciales (emisor_id, estab, pto_emi, tipo_doc, ultimo) VALUES ($1, $2, $3, $4, $5)
-     ON CONFLICT (emisor_id, estab, pto_emi, tipo_doc) DO UPDATE SET ultimo = GREATEST(gcc_world.sri_secuenciales.ultimo, EXCLUDED.ultimo), updated_at = NOW()`,
-    [emisor.id, emisor.establecimiento, emisor.puntoEmision, tipo, numero],
+    `INSERT INTO gcc_world.sri_secuenciales (${k.columnas}, ultimo) VALUES (${k.marcadores}, $${k.n + 1})
+     ON CONFLICT (${k.columnas}) DO UPDATE SET ultimo = GREATEST(gcc_world.sri_secuenciales.ultimo, EXCLUDED.ultimo), updated_at = NOW()`,
+    [...k.valores, numero],
   );
+}
+
+/**
+ * Quién emitió una factura, para enseñarlo (correo, pantalla): lo que la factura guardó al emitirse
+ * (`ruc_emisor`, `razon_social_emisor`) y, si no lo guardó, GCC. Escapado para HTML.
+ */
+export function emisorVisibleHtml(factura: { ruc_emisor?: string | null; razon_social_emisor?: string | null }): { ruc: string; razonSocial: string } {
+  const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return {
+    ruc: esc(factura.ruc_emisor || EMISOR_GCC_RESPALDO.ruc),
+    razonSocial: esc(factura.razon_social_emisor || EMISOR_GCC_RESPALDO.razonSocial),
+  };
 }

@@ -23,17 +23,19 @@ import { pool } from '@/lib/db';
 import { getProjectBilling, getTicketBilling } from '@/lib/payments';
 import { computePeriods } from '@/lib/subscriptions';
 import { createManualInvoice, createManualInvoiceFromTicket, createManualInvoiceFromSubscription, sendInvoiceToSri } from '@/lib/integrations/sri';
-import { marcarRegistrosFacturados } from '@/lib/tickets/facturacion';
 import { completarOrigenCobrado } from '@/lib/pagos/completar-origen';
 import { nombrarTrasPago } from '@/lib/pagos/nombre-estandar';
 import { addInvoiceIncomeToFinance, addSubscriptionIncomeToFinance } from '@/lib/finance';
 import { registrarCobro } from '@/lib/ganancias';
 import { upsertBillingForClient } from '@/lib/billing-clients';
-import { sendPaidInvoiceEmail } from '@/lib/integrations/email';
 import { calcularRecargo, tarifaAlCliente, CONCEPTO_RECARGO } from './comision';
 import { TARIFA_TRANSFERENCIA } from './cuentas';
 import { FORMA_PAGO_SRI, FORMA_PAGO_DEBITO, type MetodoPago } from './tipos';
 import { PUBLICAR_AL_COMPLETAR_SQL } from '@/lib/projects/permisos';
+import {
+  planificarFacturasDelCobro, emitirFacturasRepartidas, anotarFacturaUnica, marcarTicketCobrado, marcarMesPagado,
+  enviarCorreoDeFactura, type ContextoCobro, type LineaDelCobro, type PlanFacturas,
+} from './facturas-del-cobro';
 
 export type CanalCobro = 'manual' | 'client' | 'link';
 
@@ -925,6 +927,31 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   const metodo = (intento.provider_method as MetodoPago) || 'card';
   const paymentCode = metodo === 'card' && esDebito ? FORMA_PAGO_DEBITO : FORMA_PAGO_SRI[metodo];
 
+  // ⭐ ¿FACTURA ALGÚN MIEMBRO LO SUYO? (fase 4, paso 4, 2026-11-09). Las líneas se agrupan por beneficiario con el
+  // mismo reparto que las ganancias: lo de un miembro con cuenta de emisor habilitada sale en SU factura, y lo
+  // demás en la de GCC. Si todo es de GCC (`null`), el cobro sigue exactamente el camino de siempre, aquí abajo.
+  // Ver `lib/pagos/facturas-del-cobro.ts`.
+  const lineas: LineaDelCobro[] = items.map((it, i) => ({
+    ...it,
+    requirementId: i < requerimientos.length ? requerimientos[i].id : null,
+    servicio: !(recargo > 0 && i === items.length - 1),
+  }));
+  const contextoCobro: ContextoCobro = {
+    intentId: Number(intento.id),
+    tipo: esSuscripcion ? 'subscription' : esTicket ? 'ticket' : 'project',
+    sourceType, sourceId, stageId, subId, periodo, titulo, nombreEtapa,
+    descripcionIngreso: esSuscripcion ? nombreEtapa : `${nombreEtapa} — ${titulo}`,
+    neto, paymentCode, facturacion,
+  };
+  let plan: PlanFacturas | null = null;
+  try {
+    plan = await planificarFacturasDelCobro(contextoCobro, intento, lineas);
+  } catch (e: any) {
+    // Planificar no puede tumbar el cobro: si falla, factura GCC como siempre, y queda escrito.
+    console.error('[pagos] cobro', intento.id, 'no se pudo planificar por miembros; factura GCC:', e.message);
+  }
+  if (plan) return emitirFacturasRepartidas(contextoCobro, plan);
+
   // ⚠️ Cada origen usa SU emisor, y no es intercambiable: el de ticket enlaza la factura
   // por `source_type`/`source_id` —que es lo que hace que anular la factura devuelva el
   // ticket a facturable— y el de proyecto marca la etapa del plan. Emitir un ticket con el
@@ -990,38 +1017,8 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     [invoiceId, intento.id],
   );
 
-  // ⇒ LAS ETAPAS DEL TICKET QUEDAN FACTURADAS (2026-09-30), con su importe CONGELADO: la última
-  // no guarda importe mientras está abierta (es el resto de lo consumido), así que al cobrarse
-  // se escribe lo que se cobró. Sin esto la etapa seguiría «pendiente» y se podría cobrar otra vez.
-  //  · Cobro de una etapa → esa etapa, por lo cobrado sin recargo.
-  //  · Cobro de TODO lo pendiente → todas las etapas abiertas, cada una por su importe de ese
-  //    momento (el de la última, calculado como el resto).
-  if (esTicket) {
-    try {
-      if (stageId != null) {
-        await pool.query(
-          `UPDATE gcc_world.project_stages SET invoice_id = $1, amount = $2, updated_at = NOW()
-            WHERE id = $3 AND ticket_id = ($4)::bigint`,
-          [invoiceId, neto.toFixed(2), stageId, sourceId],
-        );
-      } else {
-        const tb = await getTicketBilling(sourceId);
-        for (const e of (tb?.etapas || []).filter((x) => !x.invoiceId && !x.cobro)) {
-          await pool.query(
-            `UPDATE gcc_world.project_stages SET invoice_id = $1, amount = $2, updated_at = NOW()
-              WHERE id = $3 AND ticket_id = ($4)::bigint`,
-            [invoiceId, e.amount.toFixed(2), e.id, sourceId],
-          );
-        }
-      }
-    } catch (e: any) {
-      console.error('[pagos] cobro', intento.id, 'no pudo marcar las etapas del ticket:', e.message);
-    }
-    // ⇒ Y LOS REGISTROS DE TRABAJO (Fernando, 2026-10-16): el cobro —de todo o de una etapa—
-    // consume todos los que había sin facturar. Ver lib/tickets/facturacion.ts.
-    try { await marcarRegistrosFacturados(sourceId, invoiceId); }
-    catch (e: any) { console.error('[pagos] cobro', intento.id, 'no pudo marcar los registros del ticket:', e.message); }
-  }
+  // ⇒ LAS ETAPAS Y LOS REGISTROS DEL TICKET QUEDAN FACTURADOS (ver `marcarTicketCobrado`).
+  if (esTicket) await marcarTicketCobrado(intento.id, sourceId, stageId, neto, invoiceId);
 
   // Enlaza la factura con el cliente del proyecto y guarda los datos con los que pagó, igual
   // que hace el canal manual: actualiza el juego con esa identificación o, si es nueva, lo
@@ -1044,6 +1041,9 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   }
 
   const sri = await sendInvoiceToSri(invoiceId);
+  // La factura única del cobro, también en la tabla de enlaces (paso 4). Sin la migración 090 no hace nada.
+  try { await anotarFacturaUnica(Number(intento.id), invoiceId, Boolean(sri?.authorized)); }
+  catch (e: any) { console.error('[pagos] cobro', intento.id, 'no anotó su factura en payment_intent_invoices:', e.message); }
 
   // ⚠️ La factura nace PAGADA, y va después del SRI a propósito: `sendInvoiceToSri` mueve
   // el estado a 'failed' si el SRI rechaza, y hacerlo antes lo pisaría. El cobro ya
@@ -1063,31 +1063,8 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     }
   }
 
-  // ⚠️ UNA SUSCRIPCIÓN TIENE QUE QUEDAR MARCADA COMO PAGADA EN SU PROPIA TABLA.
-  //
-  // El resto del módulo —el aviso de vencimiento, el color del mes, el «desmarcar»— no mira
-  // `payment_intents`: mira `subscription_payments`. Sin esta fila, el cliente pagaría y su
-  // mes seguiría saliendo en rojo como impago. Es la misma escritura que hace «Marcar
-  // pagado», y por eso el `ON CONFLICT` respeta la clave (subscription_id, period).
-  if (esSuscripcion && sri?.authorized) {
-    try {
-      await pool.query(
-        `INSERT INTO gcc_world.subscription_payments
-           (subscription_id, period, paid, paid_at, paid_by, invoice_id, amount)
-         VALUES ($1, $2, true, NOW(), $3, $4, $5)
-         ON CONFLICT (subscription_id, period)
-         DO UPDATE SET paid = true, paid_at = NOW(), paid_by = EXCLUDED.paid_by,
-                       invoice_id = EXCLUDED.invoice_id, amount = EXCLUDED.amount`,
-        [subId, `${periodo}-01`, facturacion.email, invoiceId, neto],
-      );
-    } catch (e: any) {
-      console.error(`[pagos] el mes ${periodo} se cobró pero no se marcó pagado:`, e.message);
-      await pool.query(
-        `UPDATE gcc_world.payment_intents SET failure_reason = $2 WHERE id = $1`,
-        [intento.id, `Cobrado y facturado, pero el mes no quedó marcado: ${e.message}`],
-      ).catch(() => {});
-    }
-  }
+  // ⚠️ UNA SUSCRIPCIÓN TIENE QUE QUEDAR MARCADA COMO PAGADA EN SU PROPIA TABLA (ver `marcarMesPagado`).
+  if (esSuscripcion && sri?.authorized) await marcarMesPagado(intento.id, subId, periodo, facturacion.email, invoiceId, neto);
 
   // El ingreso se registra POR FACTURA, nunca por proyecto: con facturación parcial,
   // apuntar el costo entero haría que las etapas siguientes no sumaran nada, porque el
@@ -1118,53 +1095,14 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
     }
   }
 
-  // ⚠️ Y SE LE MANDA LA FACTURA, porque la pantalla se lo prometió.
-  //
-  // «La factura electrónica se emite con estos datos y te llega al correo en cuanto el pago
-  // se confirme» — eso dice el formulario de pago. Este envío faltaba, y el hueco se vio en
-  // el PRIMER cobro real: el comprobante se emitió y se autorizó, pero nadie se lo mandó al
-  // cliente. Una promesa en pantalla es parte del trabajo, no decoración.
-  //
-  // Va en su propio `try`: si el correo falla, el cobro y la factura siguen siendo válidos.
-  // Lo que no se puede es callarlo, así que queda en el registro.
+  // ⚠️ Y SE LE MANDA LA FACTURA, porque la pantalla se lo prometió. Faltaba, y el hueco se vio en el PRIMER cobro
+  // real: el comprobante se emitió y se autorizó, pero nadie se lo mandó al cliente. Ver `enviarCorreoDeFactura`.
   if (sri?.authorized) {
-    try {
-      const { rows: [inv] } = await pool.query(
-        `SELECT invoice_number, authorization_number, total, pdf_data
-           FROM gcc_world.invoices WHERE id = $1`,
-        [invoiceId],
-      );
-      const pdf = inv?.pdf_data
-        ? (Buffer.isBuffer(inv.pdf_data) ? inv.pdf_data : Buffer.from(inv.pdf_data))
-        : null;
-      const base = process.env.NEXT_PUBLIC_APP_URL || 'https://app.grupocc.org';
-      // La página del detalle necesita una llave: sin ella el ticket contestaba «Token
-      // requerido». Si se pagó con un enlace de pago, ese enlace la abre (`enlaceVeDetalle`).
-      const { rows: [enlacePagado] } = await pool.query(
-        `SELECT token FROM gcc_world.payment_links WHERE intent_id = $1 LIMIT 1`, [intento.id],
-      ).catch(() => ({ rows: [] as any[] }));
-      const llave = enlacePagado?.token ? `?link=${encodeURIComponent(enlacePagado.token)}` : '';
-      await sendPaidInvoiceEmail({
-        email: facturacion.email,
-        projectTitle: titulo,
-        stageName: nombreEtapa,
-        invoiceNumber: inv?.invoice_number || `#${invoiceId}`,
-        authorization: inv?.authorization_number || null,
-        total: Number(inv?.total) || Number(intento.charge_amount) || 0,
-        pdf,
-        projectUrl: esSuscripcion ? null
-          : esTicket ? `${base}/ticket/${sourceId}${llave}`
-          : `${base}/proyecto/${sourceId}${llave}`,
-      });
-    } catch (e: any) {
-      console.error(`[pagos] la factura ${invoiceId} se emitió pero el correo no salió:`, e.message);
-      await pool.query(
-        `UPDATE gcc_world.payment_intents
-            SET failure_reason = 'Factura emitida, pero el correo al cliente no salió: ' || $2
-          WHERE id = $1`,
-        [intento.id, e.message],
-      ).catch(() => {});
-    }
+    await enviarCorreoDeFactura({
+      intentId: intento.id, invoiceId, email: facturacion.email, titulo, nombreEtapa,
+      tipo: esSuscripcion ? 'subscription' : esTicket ? 'ticket' : 'project', sourceId,
+      totalRespaldo: Number(intento.charge_amount) || 0,
+    });
   }
 
   return { invoiceId, autorizada: Boolean(sri?.authorized) };

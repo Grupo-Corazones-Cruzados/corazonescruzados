@@ -1,6 +1,6 @@
 import { getTipoIdentificacion } from './config';
 import type { Emisor } from './emisor';
-import { generateAccessKey, formatInvoiceNumber } from './access-key';
+import { generateAccessKey, formatInvoiceNumber, ecuadorDateParts } from './access-key';
 import { sriText, SRI_MAX } from './text';
 
 interface CreditNoteItem {
@@ -37,9 +37,10 @@ export function buildCreditNoteXml(data: CreditNoteData, emisor: Emisor): { xml:
 
   const numero = formatInvoiceNumber(data.secuencial, emisor);
 
-  const dd = String(data.fecha.getDate()).padStart(2, '0');
-  const mm = String(data.fecha.getMonth() + 1).padStart(2, '0');
-  const aaaa = String(data.fecha.getFullYear());
+  // ⚠️ La fecha de emisión en hora de ECUADOR, la misma que lleva la clave de acceso (`generateAccessKey`). Con
+  // `getDate()` el servidor (UTC en Railway) ponía el día siguiente entre las 19:00 y la medianoche de Ecuador: la
+  // fecha del XML no coincidía con la de la clave y el SRI la rechaza como extemporánea.
+  const { dd, mm, aaaa } = ecuadorDateParts(data.fecha);
   const fechaEmision = `${dd}/${mm}/${aaaa}`;
 
   const tipoIdComprador = data.clienteIdTipo || getTipoIdentificacion(data.clienteRuc);

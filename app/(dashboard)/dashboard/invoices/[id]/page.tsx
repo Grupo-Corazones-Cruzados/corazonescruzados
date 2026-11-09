@@ -378,6 +378,8 @@ export default function InvoiceDetailPage() {
               <DetailRow label="Cliente" value={invoice.client_name_sri || invoice.client_name || '-'} />
               <DetailRow label="RUC/CI" value={invoice.client_ruc || '-'} />
               <DetailRow label="Email" value={invoice.client_email_sri || '-'} />
+              {invoice.razon_social_emisor && <DetailRow label="Emisor" value={invoice.razon_social_emisor} />}
+              {invoice.ruc_emisor && <DetailRow label="RUC emisor" value={invoice.ruc_emisor} />}
               <DetailRow label="Creado" value={new Date(invoice.created_at).toLocaleDateString()} />
               {invoice.authorization_date && <DetailRow label="Autorizado" value={new Date(invoice.authorization_date).toLocaleDateString()} />}
             </div>

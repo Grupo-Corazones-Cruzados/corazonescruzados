@@ -147,9 +147,26 @@ async function linkInvoiceStages(invoiceId: number, stageIds?: (string | number)
  *
  * Tras insertar, la factura queda marcada con su emisor (`emisor_id`); sin migración 089 no hay columna y se omite.
  */
-async function marcarEmisor(db: { query: (sql: string, params?: any[]) => Promise<any> }, invoiceId: number, emisor: Emisor) {
+async function marcarEmisor(db: { query: (sql: string, params?: any[]) => Promise<any> }, invoiceId: number, emisor: Emisor, memberId?: number | null) {
   if (emisor.id === null) return;
+  // La factura PROPIA de un miembro (paso 4) lleva su ficha: es la que se la enseña en Facturas (`sqlFacturaMia`).
+  if (memberId != null) {
+    await db.query(`UPDATE gcc_world.invoices SET emisor_id = $1, member_id = $3 WHERE id = $2`, [emisor.id, invoiceId, memberId]);
+    return;
+  }
   await db.query(`UPDATE gcc_world.invoices SET emisor_id = $1 WHERE id = $2`, [emisor.id, invoiceId]);
+}
+
+/**
+ * El ambiente de la factura, EN EL MISMO INSERT (paso 4). Solo se escribe el de pruebas ('1'): producción es NULL,
+ * como todas las anteriores, así que para GCC el INSERT es exactamente el de siempre. Va en el INSERT y no después
+ * porque la unicidad del número es por (emisor, número, ambiente): insertada como producción, una 000000001 de
+ * pruebas chocaría con la 000000001 de producción del mismo miembro.
+ */
+function columnaAmbiente(emisor: Emisor, siguiente: number): { col: string; val: string; params: any[] } {
+  return emisor.ambiente === '1'
+    ? { col: ', sri_ambiente', val: `, $${siguiente}`, params: ['1'] }
+    : { col: '', val: '', params: [] };
 }
 
 /**
@@ -175,6 +192,8 @@ interface InvoiceOptions {
   comprador?: { idType: string; ruc: string; name: string; address?: string | null; email?: string | null; phone?: string | null };
   /** Quién emite. Por omisión GCC (paso 4: las facturas automáticas de cada miembro). */
   emisor?: Emisor;
+  /** La ficha del miembro que factura con su emisor (paso 4); se guarda en `invoices.member_id`. */
+  memberId?: number | null;
 }
 
 export async function createInvoiceFromProject(projectId: string, options?: InvoiceOptions): Promise<number> {
@@ -272,21 +291,22 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
 
     // Build XML — amounts always in USD
     const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData, emisor);
+    const amb = columnaAmbiente(emisor, 22);
 
     // Calculate totals in USD
     const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
 
     // Insert invoice — all amounts in USD, currency/rate stored for reference
     const { rows: [invoice] } = await db.query(
-      `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, currency, exchange_rate, original_total_usd)
-       VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'generated', $18, $19, $20, $21) RETURNING id`,
+      `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, currency, exchange_rate, original_total_usd${amb.col})
+       VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'generated', $18, $19, $20, $21${amb.val}) RETURNING id`,
       [projectId, project.client_id, (subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
        emisor.ruc, emisor.razonSocial,
        invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
        subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
-       currency, exchangeRate, (subtotal0 + subtotalIva + ivaMonto).toFixed(2)]
+       currency, exchangeRate, (subtotal0 + subtotalIva + ivaMonto).toFixed(2), ...amb.params]
     );
-    await marcarEmisor(db, invoice.id, emisor);
+    await marcarEmisor(db, invoice.id, emisor, options?.memberId);
     return invoice;
   });
 
@@ -324,6 +344,8 @@ export async function projectHasInvoice(projectId: string): Promise<{ hasInvoice
 interface ManualInvoiceOptions {
   /** Quién emite. Por omisión GCC. */
   emisor?: Emisor;
+  /** La ficha del miembro que factura con su emisor (paso 4); se guarda en `invoices.member_id`. */
+  memberId?: number | null;
   projectIds: string[];
   clientIdType?: string;
   clientName: string;
@@ -443,21 +465,22 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
     };
 
     const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData, emisor);
+    const amb = columnaAmbiente(emisor, 20);
 
     // Totals always in USD
     const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
 
     // Insert invoice with is_manual = true, project_id = null
     const { rows: [invoice] } = await db.query(
-      `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd)
-       VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19) RETURNING id`,
+      `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd${amb.col})
+       VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19${amb.val}) RETURNING id`,
       [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
        emisor.ruc, emisor.razonSocial,
        invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
        subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
-       currency, exchangeRate, (subtotal0 + subtotalIva + ivaMonto).toFixed(2)]
+       currency, exchangeRate, (subtotal0 + subtotalIva + ivaMonto).toFixed(2), ...amb.params]
     );
-    await marcarEmisor(db, invoice.id, emisor);
+    await marcarEmisor(db, invoice.id, emisor, options.memberId);
     return invoice;
   });
 
@@ -484,6 +507,8 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
 interface TicketInvoiceOptions {
   /** Quién emite. Por omisión GCC. */
   emisor?: Emisor;
+  /** La ficha del miembro que factura con su emisor (paso 4); se guarda en `invoices.member_id`. */
+  memberId?: number | null;
   ticketId: string;
   ticketTitle: string;
   clientIdType?: string;
@@ -551,20 +576,21 @@ export async function createManualInvoiceFromTicket(options: TicketInvoiceOption
     };
 
     const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData, emisor);
+    const amb = columnaAmbiente(emisor, 21);
 
     const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
     const totalUsd = subtotal0 + subtotalIva + ivaMonto;
 
     const { rows: [invoice] } = await db.query(
-      `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd, source_type, source_id)
-       VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19, 'ticket', $20) RETURNING id`,
+      `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd, source_type, source_id${amb.col})
+       VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19, 'ticket', $20${amb.val}) RETURNING id`,
       [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
        emisor.ruc, emisor.razonSocial,
        invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
        subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
-       currency, exchangeRate, totalUsd.toFixed(2), options.ticketId]
+       currency, exchangeRate, totalUsd.toFixed(2), options.ticketId, ...amb.params]
     );
-    await marcarEmisor(db, invoice.id, emisor);
+    await marcarEmisor(db, invoice.id, emisor, options.memberId);
     return { id: invoice.id as number, totalUsd };
   });
 
@@ -576,6 +602,8 @@ export async function createManualInvoiceFromTicket(options: TicketInvoiceOption
 interface SubscriptionInvoiceOptions {
   /** Quién emite. Por omisión GCC. */
   emisor?: Emisor;
+  /** La ficha del miembro que factura con su emisor (paso 4); se guarda en `invoices.member_id`. */
+  memberId?: number | null;
   subscriptionId: string;
   period: string; // 'YYYY-MM' — billed month, used as source_id suffix
   title: string;
@@ -650,6 +678,7 @@ export async function createManualInvoiceFromSubscription(options: SubscriptionI
     };
 
     const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData, emisor);
+    const amb = columnaAmbiente(emisor, 21);
 
     const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
     const totalUsd = subtotal0 + subtotalIva + ivaMonto;
@@ -657,15 +686,15 @@ export async function createManualInvoiceFromSubscription(options: SubscriptionI
     const sourceId = `${options.subscriptionId}-${options.period}`;
 
     const { rows: [invoice] } = await db.query(
-      `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd, source_type, source_id)
-       VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19, 'subscription', $20) RETURNING id`,
+      `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd, source_type, source_id${amb.col})
+       VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19, 'subscription', $20${amb.val}) RETURNING id`,
       [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
        emisor.ruc, emisor.razonSocial,
        invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
        subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
-       currency, exchangeRate, totalUsd.toFixed(2), sourceId]
+       currency, exchangeRate, totalUsd.toFixed(2), sourceId, ...amb.params]
     );
-    await marcarEmisor(db, invoice.id, emisor);
+    await marcarEmisor(db, invoice.id, emisor, options.memberId);
     return { id: invoice.id as number, totalUsd };
   });
 
@@ -945,4 +974,64 @@ export async function regenerateRejectedInvoice(invoiceId: number, options: Rege
 
   await pool.query(`DELETE FROM gcc_world.invoice_items_sri WHERE invoice_id = $1`, [invoiceId]);
   await insertInvoiceItems(invoiceId, items);
+}
+
+/**
+ * ⭐ TERMINA LA EMISIÓN DE UNA FACTURA QUE QUEDÓ A MEDIAS (paso 4: el reintento de las facturas de un cobro).
+ *
+ * Reenviar a ciegas no sirve: si el SRI ya recibió el comprobante y lo que falló fue la consulta, reenviarlo
+ * contesta «CLAVE ACCESO REGISTRADA» y la factura quedaría rechazada estando autorizada. Por eso primero se
+ * PREGUNTA por la clave de acceso, y solo se envía si el SRI no la conoce.
+ *
+ *  · `autorizada`: el SRI la autorizó (ahora o antes); queda con su autorización y su RIDE.
+ *  · `definitivo`: el SRI dio un veredicto en contra (DEVUELTA por estructura, NO AUTORIZADO): reenviar no lo
+ *    arregla, hay que corregirla (Regenerar) y reenviarla a mano.
+ *  · ni lo uno ni lo otro: no hubo respuesta útil (red, «EN PROCESO»): se reintenta más tarde.
+ */
+export async function completarEmisionSri(invoiceId: number): Promise<{ autorizada: boolean; definitivo: boolean; error?: string }> {
+  const { rows: [inv] } = await pool.query(
+    `SELECT id, status, sri_status, access_key, emisor_id, sri_ambiente FROM gcc_world.invoices WHERE id = $1`,
+    [invoiceId],
+  );
+  if (!inv) return { autorizada: false, definitivo: true, error: 'La factura no existe' };
+  if (inv.status === 'cancelled') return { autorizada: false, definitivo: true, error: 'La factura está anulada' };
+  if (inv.sri_status === 'authorized') return { autorizada: true, definitivo: true };
+
+  if (inv.sri_status !== 'generated' && inv.access_key) {
+    try {
+      const emisor = await emisorDeFactura(inv);
+      const auth = await consultarAutorizacion(inv.access_key, emisor.ambiente);
+      if (auth.autorizado) {
+        await pool.query(
+          `UPDATE gcc_world.invoices SET authorization_number = $1, authorization_date = $2, sri_status = 'authorized',
+                  status = CASE WHEN status = 'failed' THEN 'pending' ELSE status END, updated_at = NOW() WHERE id = $3`,
+          [auth.numeroAutorizacion, auth.fechaAutorizacion || new Date().toISOString(), invoiceId],
+        );
+        await regenerateRidePdf(invoiceId, true);
+        return { autorizada: true, definitivo: true };
+      }
+      if (auth.estado === 'NO AUTORIZADO') {
+        return { autorizada: false, definitivo: true, error: auth.mensajes?.map(m => m.mensaje).join('; ') || 'No autorizado' };
+      }
+      // El SRI no la conoce (o la está procesando).
+      if (inv.sri_status === 'sent') return { autorizada: false, definitivo: false, error: `SRI: ${auth.estado}` };
+      if (inv.sri_status === 'rejected') {
+        // Rechazada en la recepción y desconocida para la autorización: el rechazo fue de verdad.
+        return { autorizada: false, definitivo: true, error: 'Rechazada por el SRI en la recepción' };
+      }
+    } catch (e: any) {
+      return { autorizada: false, definitivo: false, error: e.message };
+    }
+  }
+
+  const r = await sendInvoiceToSri(invoiceId);
+  if (r.authorized) return { autorizada: true, definitivo: true };
+  const { rows: [despues] } = await pool.query(`SELECT sri_status, sri_response FROM gcc_world.invoices WHERE id = $1`, [invoiceId]);
+  let estado = '';
+  try { estado = String(JSON.parse(despues?.sri_response || '{}')?.estado || ''); } catch { /* texto de un error */ }
+  const repetida = /CLAVE ACCESO REGISTRADA|EN PROCESAMIENTO/i.test(r.error || '');
+  // 'rejected' es un veredicto del SRI (DEVUELTA en la recepción, NO AUTORIZADO en la autorización) salvo que sea
+  // por haberla recibido ya; «EN PROCESO», 'error' y 'sent' no lo son.
+  const definitivo = despues?.sri_status === 'rejected' && !repetida && (estado === 'DEVUELTA' || estado === 'NO AUTORIZADO');
+  return { autorizada: false, definitivo, error: r.error };
 }

@@ -45,10 +45,12 @@ export async function GET(req: NextRequest) {
       }
       p.push(user.userId, ownClientId);
       const uP = p.length - 1, cP = p.length;
+      // …y las que emitió él mismo con su cuenta de emisor (paso 4: un candidato también factura lo suyo).
       return ` AND (
           i.client_id = $${cP}
           OR i.ticket_id IN (SELECT id FROM gcc_world.tickets WHERE user_id = $${uP}::uuid OR client_id = $${cP})
           OR i.project_id IN (SELECT id FROM gcc_world.projects WHERE created_by_user_id = $${uP}::text OR client_id = $${cP})
+          OR i.member_id = (SELECT member_id FROM gcc_world.users WHERE id = $${uP}::uuid)
         )`;
     };
 
@@ -66,7 +68,7 @@ export async function GET(req: NextRequest) {
     const [{ rows }, { rows: countRows }] = await Promise.all([pool.query(
       `SELECT i.id, i.invoice_number, i.access_key, i.authorization_number, i.authorization_date,
               i.client_ruc, i.client_name_sri, i.subtotal, i.tax, i.total, i.status, i.sri_status,
-              i.created_at, i.project_id, i.is_manual, c.name as client_name
+              i.created_at, i.project_id, i.is_manual, i.ruc_emisor, i.razon_social_emisor, c.name as client_name
        FROM gcc_world.invoices i
        LEFT JOIN gcc_world.clients c ON c.id = i.client_id
        ${where}

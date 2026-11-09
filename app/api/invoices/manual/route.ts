@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { emisorVisibleHtml, emisorDeFactura, esGcc, type Emisor } from '@/lib/integrations/sri/emisor';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoice, sendInvoiceToSri } from '@/lib/integrations/sri';
@@ -54,8 +55,29 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // ⭐ REFACTURA DE LA FACTURA PROPIA DE UN MIEMBRO (paso 4): la nueva la emite el MISMO emisor, en su serie y
+    // su ambiente, y sigue siendo suya (`member_id`). Si su cuenta ya no está habilitada, la emite GCC. Su ingreso
+    // es del miembro (lo hereda `heredarGanancias`), así que no se anota a GCC.
+    let emisorRefactura: Emisor | undefined;
+    let miembroRefactura: number | null = null;
+    if (refactura_de) {
+      const { rows: [anulada] } = await pool.query(
+        `SELECT * FROM gcc_world.invoices WHERE id = $1`, [refactura_de],
+      ).catch(() => ({ rows: [] as any[] }));
+      if (anulada?.member_id != null && anulada.emisor_id != null) {
+        const e = await emisorDeFactura(anulada).catch(() => null);
+        if (e && !esGcc(e) && (e.estado === 'activo' || e.estado === 'en_pruebas')) {
+          emisorRefactura = e;
+          miembroRefactura = Number(anulada.member_id);
+        }
+      }
+    }
+    const deMiembro = miembroRefactura != null;
+
     // Create manual invoice
     const { invoiceId, projectsData } = await createManualInvoice({
+      emisor: emisorRefactura,
+      memberId: miembroRefactura,
       projectIds: project_ids || [],
       clientIdType: client_id_type,
       clientName: client_name,
@@ -77,7 +99,9 @@ export async function POST(req: NextRequest) {
     // haría que la primera etapa se llevara el proyecto entero y las siguientes no
     // sumaran nada, porque el registro es único por origen.
     try {
-      if (invoiceId && (etapas.length > 0 || etapasPlan.length > 0)) {
+      if (deMiembro) {
+        // La factura es del miembro: su ingreso no es de GCC.
+      } else if (invoiceId && (etapas.length > 0 || etapasPlan.length > 0)) {
         const { rows: [inv] } = await pool.query(`SELECT total FROM gcc_world.invoices WHERE id = $1`, [invoiceId]);
         const titulo = projectsData[0]?.title || 'Proyecto';
         await addInvoiceIncomeToFinance(String(invoiceId), `Etapas — ${titulo}`, Number(inv?.total) || 0);
@@ -120,7 +144,7 @@ export async function POST(req: NextRequest) {
           refacturados = await heredarDeFacturaAnulada(refactura_de, invoiceId);
           if (clientId) await pool.query(`UPDATE gcc_world.invoices SET client_id = $1 WHERE id = $2`, [clientId, invoiceId]);
           const { rows: [nueva] } = await pool.query(`SELECT total FROM gcc_world.invoices WHERE id = $1`, [invoiceId]);
-          await addInvoiceIncomeToFinance(String(invoiceId), `Refactura — ${refacturados[0]?.titulo || client_name}`, Number(nueva?.total) || 0);
+          if (!deMiembro) await addInvoiceIncomeToFinance(String(invoiceId), `Refactura — ${refacturados[0]?.titulo || client_name}`, Number(nueva?.total) || 0);
           // Las ganancias de la anulada pasan a la nueva (y el renglón de GCC baja en lo suyo): ni se pierden ni
           // se cuentan dos veces. Ver `heredarGanancias`.
           try { await heredarGanancias(refactura_de, invoiceId, `Refactura — ${refacturados[0]?.titulo || client_name}`); }
@@ -141,7 +165,7 @@ export async function POST(req: NextRequest) {
       if (send_email && client_email && sriResult?.authorized) {
         try {
           const { rows: [inv] } = await pool.query(
-            `SELECT invoice_number, total, pdf_data, access_key, authorization_number, currency, exchange_rate FROM gcc_world.invoices WHERE id = $1`, [invoiceId]
+            `SELECT invoice_number, total, pdf_data, access_key, authorization_number, currency, exchange_rate, ruc_emisor, razon_social_emisor FROM gcc_world.invoices WHERE id = $1`, [invoiceId]
           );
 
           const attachments: any[] = [];
@@ -224,8 +248,8 @@ export async function POST(req: NextRequest) {
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;width:40%"><strong>Tipo Doc:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">Factura Electronica</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>No. Doc:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${inv.invoice_number}</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Autorizacion:</strong></td><td style="padding:10px 16px;font-size:11px;border-bottom:1px solid #f0f0f0;word-break:break-all;">${inv.authorization_number || 'Pendiente'}</td></tr>
-      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>RUC Emisor:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">0930095922001</td></tr>
-      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Razon Social:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">GONZALEZ MUYULEMA LUIS FERNANDO</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>RUC Emisor:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${emisorVisibleHtml(inv).ruc}</td></tr>
+      <tr><td style="padding:10px 16px;color:#666;font-size:13px;border-bottom:1px solid #f0f0f0;"><strong>Razon Social:</strong></td><td style="padding:10px 16px;font-size:13px;border-bottom:1px solid #f0f0f0;">${emisorVisibleHtml(inv).razonSocial}</td></tr>
       <tr><td style="padding:10px 16px;color:#666;font-size:13px;${inv.currency && inv.currency !== 'USD' ? 'border-bottom:1px solid #f0f0f0;' : ''}"><strong>Valor Total:</strong></td><td style="padding:10px 16px;font-size:18px;font-weight:bold;color:#1a1a2e;${inv.currency && inv.currency !== 'USD' ? 'border-bottom:1px solid #f0f0f0;' : ''}">$${Number(inv.total).toFixed(2)} USD</td></tr>
       ${inv.currency && inv.currency !== 'USD' ? `<tr><td style="padding:10px 16px;color:#666;font-size:13px;"><strong>Equivalente ${inv.currency}:</strong></td><td style="padding:10px 16px;font-size:14px;font-weight:bold;color:#4B2D8E;">${(Number(inv.total) * Number(inv.exchange_rate)).toFixed(2)} ${inv.currency} (tasa: 1 USD = ${Number(inv.exchange_rate)} ${inv.currency})</td></tr>` : ''}
     </table>

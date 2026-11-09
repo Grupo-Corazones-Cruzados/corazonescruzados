@@ -43,6 +43,9 @@ const FREQUENT_JOBS = [
   { name: 'Suscripciones · avisos por vencer',   path: '/api/subscriptions/cron/avisos' },
   // Respaldo: el servidor web ya lo corre cada minuto (instrumentation.ts). Idempotente (2026-10-19).
   { name: 'Mi día · push de reuniones',        path: '/api/calendar/cron/avisos' },
+  // Las facturas de un cobro (la de GCC y la de cada miembro con emisor) que quedaron sin crear o sin respuesta
+  // del SRI. Consulta antes de reenviar; las rechazadas no se reintentan (2026-11-09, fase 4 paso 4).
+  { name: 'Pagos · reintentar facturas',       path: '/api/pagos/cron/facturas' },
 ];
 
 const NIGHTLY_JOBS = [

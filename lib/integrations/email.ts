@@ -735,15 +735,20 @@ export async function sendPaidInvoiceEmail(params: {
   total: number;
   pdf?: Buffer | null;
   projectUrl?: string | null;
+  /** Quién emitió la factura (paso 4: puede ser un miembro, no siempre GCC). */
+  emisor?: { ruc: string; razonSocial: string } | null;
 }) {
   const dinero = `$${Number(params.total).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const detalle = [
+    params.emisor ? `Emisor: ${escapeHtml(params.emisor.razonSocial)} · RUC ${escapeHtml(params.emisor.ruc)}` : '',
+    params.authorization ? `Autorización SRI: ${escapeHtml(params.authorization)}` : '',
+  ].filter(Boolean).join('<br>');
 
   const html = emailShell(
     emailBadge('PAGO RECIBIDO', CORP.success) +
     emailHeading('¡Gracias por tu pago!', escapeHtml(params.projectTitle)) +
     emailParagraph(`Registramos tu pago de ${accentStrong(dinero)} por ${accentStrong(escapeHtml(params.stageName))}. Adjuntamos tu factura electrónica en PDF.`) +
-    emailInfoBox('FACTURA', escapeHtml(params.invoiceNumber),
-      params.authorization ? `Autorización SRI: ${escapeHtml(params.authorization)}` : undefined) +
+    emailInfoBox('FACTURA', escapeHtml(params.invoiceNumber), detalle || undefined) +
     (params.projectUrl ? emailButton(params.projectUrl, 'Ver el proyecto') : '') +
     emailNote('Este documento fue generado electrónicamente y es válido sin firma ni sello, según la normativa del SRI de Ecuador.'),
   );
