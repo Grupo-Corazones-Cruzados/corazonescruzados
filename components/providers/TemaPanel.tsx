@@ -17,24 +17,32 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { useAuth } from '@/components/providers/AuthProvider';
 import { TEMA_POR_DEFECTO, definicionTema, type TemaId } from '@/lib/temas';
 import { usePathname } from 'next/navigation';
-import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
+import { appDeTelefono, appInstalada, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
+import { accessRoleOf, type AccessRole } from '@/lib/dashboard/access';
 import { RUTAS_HERRAMIENTA } from '@/lib/herramientas/catalogo';
 
 /**
- * EL TEMA SEGÚN LA APP Y LA SECCIÓN (Fernando, 2026-11-08). En el navegador manda el que elige la
- * cuenta. En las apps:
- *   · Accesos y las herramientas: GCC World en «Mixto», GCC Miembros en «Corazón».
+ * EL TEMA SEGÚN LA APP Y LA SECCIÓN (Fernando, 2026-11-08). Desde el 2026-11-09, en la web y en GCC World
+ * lo da el TIPO DE CUENTA (abajo). En GCC Miembros:
+ *   · Accesos, productos y herramientas: «Corazón».
  *   · Centralizado: «Orquídea».
  *   · Progreso: «Claro».
  *   · Aventura: «Próximamente» desde que el videojuego se reinició (2026-11-08).
  * En las apps el tema no se cambia (no hay selector). El cambio entre secciones se anima en el
  * layout del panel.
  */
-function temaDeSeccion(app: AppDeTelefono | null, ruta: string, elegido: TemaId): TemaId {
+function temaDeSeccion(app: AppDeTelefono | null, ruta: string, elegido: TemaId, instalada: AppDeTelefono | null, rol: AccessRole | null): TemaId {
   if (!app) return elegido;
   const en = (r: string) => ruta === r || ruta.startsWith(r + '/');
   if (en('/dashboard/centralized')) return 'orquidea';
-  if (en('/dashboard/accesos') || en('/dashboard/producto') || RUTAS_HERRAMIENTA.some(en)) return app === 'centralizado' ? 'corazon' : 'mixto';
+  // ⇒ EN LA WEB Y EN GCC WORLD, EL TEMA LO DA EL TIPO DE CUENTA (Fernando, 2026-11-09): miembro (y el
+  // administrador) en «Corazón», candidato en «Mixto», cliente en «Eléctrico», en toda la interfaz. GCC
+  // Miembros sigue como estaba: allí solo entran miembros. Sin cuenta aún, el elegido (no salta de color).
+  if (instalada !== 'centralizado') {
+    if (!rol) return elegido;
+    return rol === 'admin' || rol === 'member' ? 'corazon' : rol === 'candidate' ? 'mixto' : 'electrico';
+  }
+  if (en('/dashboard/accesos') || en('/dashboard/producto') || RUTAS_HERRAMIENTA.some(en)) return 'corazon';
   return 'claro';
 }
 
@@ -95,8 +103,9 @@ export function ProveedorTemaPanel({ children }: { children: React.ReactNode }) 
   // El que se ve: en las apps lo decide la sección (`temaDeSeccion`); `tema` es el que eligió la cuenta.
   const ruta = usePathname() ?? '';
   const [app, setApp] = useState<AppDeTelefono | null>(null);
-  useEffect(() => { setApp(appDeTelefono()); }, []);
-  const visto = temaDeSeccion(app, ruta, tema);
+  const [instalada, setInstalada] = useState<AppDeTelefono | null>(null);
+  useEffect(() => { setApp(appDeTelefono()); setInstalada(appInstalada()); }, []);
+  const visto = temaDeSeccion(app, ruta, tema, instalada, user ? accessRoleOf(user) : null);
   // La pantalla de carga (`CargaPanel`) se pinta con el último que se vio.
   useEffect(() => {
     if (!app) return;
