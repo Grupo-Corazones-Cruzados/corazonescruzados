@@ -75,10 +75,10 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta, on
   };
 
   return (
-    <div className="corp app-inicio">
+    <div className={`corp app-inicio ${onVolver ? 'app-inicio-web' : ''}`}>
       {/* EL PENSAMIENTO, SOLO AQUÍ (Fernando, 2026-11-08): aparece y desaparece justo encima del formulario,
           bajo el corazón-mundo de la portada. Igual en la web y en las apps: es la misma pantalla. */}
-      <div className="app-pensamiento"><PensamientosCielo lugar="pie" visible /></div>
+      <div className="app-pensamiento"><PensamientosCielo lugar="acceso" tono={app === 'progreso' ? 'dia' : 'noche'} visible /></div>
       <main className="app-hoja">
         <div className="app-hoja-marca">
           {onVolver && (
@@ -111,7 +111,8 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta, on
         </div>
         </>)}
 
-        <button type="button" className="app-legal" onClick={verLegal}>Legal y privacidad</button>
+        {/* En la web ya está en el pie de la portada (Fernando, 2026-11-08): solo en las apps. */}
+        {!onVolver && <button type="button" className="app-legal" onClick={verLegal}>Legal y privacidad</button>}
       </main>
 
       {/* Al entrar a la plataforma la página se va: el color de la app con el cargador de la web cubre esa espera. */}

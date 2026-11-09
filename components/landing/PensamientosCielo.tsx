@@ -172,9 +172,12 @@ function colocarTexto(e: Estrella, largo: number, mapa: ReturnType<typeof medirM
 }
 
 export default function PensamientosCielo({
-  lugar, visible,
+  lugar, visible, tono = 'noche',
 }: {
-  lugar: 'cielo' | 'pie';
+  /** `acceso`: en la pantalla de inicio de sesión, uno solo y centrado, como una estrella de la constelación. */
+  lugar: 'cielo' | 'pie' | 'acceso';
+  /** Solo en `acceso`: `dia` sobre la portada clara de Progreso, `noche` sobre los fondos oscuros. */
+  tono?: 'dia' | 'noche';
   /** Falso con un mundo elegido: no aparece nada. */
   visible: boolean;
 }) {
@@ -223,7 +226,7 @@ export default function PensamientosCielo({
       window.removeEventListener('keydown', despertar, true);
     };
   }, [lugar]);
-  const modo = lugar === 'pie' ? 'pie' : amplio ? 'constelacion' : 'cielo';
+  const modo = lugar !== 'cielo' ? 'pie' : amplio ? 'constelacion' : 'cielo';
 
   // ── El turno: aparece, se queda (más cuanto más larga), se va, pausa, el siguiente ──
   const limpiar = () => { timers.current.forEach((t) => window.clearTimeout(t)); timers.current = []; };
@@ -324,6 +327,22 @@ export default function PensamientosCielo({
       <p className="fugaz-firma" aria-hidden="true" style={{ ['--i' as string]: palabras.length }}>{fechaDe(p.createdAt)}</p>
     </>
   );
+
+  // ── En el inicio de sesión (Fernando, 2026-11-08): igual que una estrella de la constelación de la
+  //    portada —los corazones cruzados se dibujan y luego llegan el texto y la fecha—, sin fondo. ──
+  if (lugar === 'acceso') {
+    return (
+      <div ref={ref} className={`pensamiento-acceso tono-${tono}`}>
+        <span className="acceso-corazones" aria-hidden="true">
+          {fase !== 'oculta' && <CorazonesCruzados key={vuelta} apagandose={fase === 'saliendo'} />}
+        </span>
+        <div key={vuelta} className={`pensamiento-fugaz pensamiento-fugaz-estrella pensamiento-fugaz-acceso tono-${tono}`}
+          data-fase={fase} role="note" aria-label="Pensamiento">
+          {fase !== 'oculta' && texto}
+        </div>
+      </div>
+    );
+  }
 
   // ── Teléfono y ventanas menores: se turnan en un sitio fijo ──
   if (modo !== 'constelacion' || !estrellas.length || !mapaRef.current) {
