@@ -1,5 +1,5 @@
 import {
-  Repeat2, Captions, Printer, QrCode, Link2, MonitorDown, PackageOpen, SquareTerminal, AudioLines, type LucideIcon,
+  Repeat2, Captions, Printer, QrCode, Link2, MonitorDown, PackageOpen, SquareTerminal, AudioLines, Scissors, type LucideIcon,
 } from 'lucide-react';
 import type { AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 
@@ -15,6 +15,8 @@ import type { AppDeTelefono } from '@/lib/sitio/appDeTelefono';
  * no se ofrecen; en GCC Miembros y en el navegador, sí (Fernando, 2026-11-08).
  * `soloAdmin` + `abre`: el Espacio de trabajo y Gumdramon, que eran pestañas del módulo Admin. No
  * tienen pantalla aquí: llevan a su ruta (`useRutasEspacio`), y donde no existe no se ofrecen.
+ * `soloEnLaMac`: escribe en el disco de la Mac (el Cortador de sprites guarda en la carpeta del juego), así que
+ * solo se ofrece en la instancia local, no en la web ni en el marco de las apps.
  * GCC Miembros NO está: se instala en persona en el onboarding, nunca la descarga el usuario.
  */
 export type Herramienta = {
@@ -28,6 +30,7 @@ export type Herramienta = {
   soloMiembrosApp?: boolean;
   soloAdmin?: boolean;
   abre?: 'espacio' | 'gumdramon';
+  soloEnLaMac?: boolean;
 };
 
 export const HERRAMIENTAS: Herramienta[] = [
@@ -39,16 +42,17 @@ export const HERRAMIENTAS: Herramienta[] = [
   { id: 'descargador-video', name: 'Descargador de video', Icon: MonitorDown, category: 'app', soloMiembrosApp: true, description: 'App para Android que guarda en el teléfono videos o audio a partir de un enlace.' },
   { id: 'entrega-unica', name: 'Entrega de un solo uso', Icon: PackageOpen, category: 'gestion', soloEquipo: true, description: 'Envía un mensaje y hasta 10 archivos con un enlace que se cierra cuando lo descargan.' },
   { id: 'entorno', name: 'Espacio de trabajo', Icon: SquareTerminal, category: 'gestion', soloEquipo: true, soloAdmin: true, soloMiembrosApp: true, abre: 'espacio', description: 'Las sesiones de Claude Code y de desarrollo del servidor local.' },
+  { id: 'sprites', name: 'Cortador de sprites', Icon: Scissors, category: 'edicion', soloEquipo: true, soloAdmin: true, soloMiembrosApp: true, soloEnLaMac: true, description: 'Corta las poses de un personaje en fotogramas, agrúpalos en animaciones, míralas en movimiento y guárdalas en la carpeta del videojuego.' },
   { id: 'gumdramon', name: 'Gumdramon', Icon: AudioLines, category: 'gestion', soloEquipo: true, soloAdmin: true, soloMiembrosApp: true, abre: 'gumdramon', description: 'Copiloto de reuniones: escucha la conversación y te sugiere qué responder.' },
 ];
 
 /** Las que ve esta cuenta en este sitio. `app` = `appDeTelefono()` (null en el navegador). */
 export function herramientasPara(
-  { esEquipo, esAdmin, app, conEspacio }: { esEquipo: boolean; esAdmin: boolean; app: AppDeTelefono | null; conEspacio: boolean },
+  { esEquipo, esAdmin, app, conEspacio, enLaMac = false }: { esEquipo: boolean; esAdmin: boolean; app: AppDeTelefono | null; conEspacio: boolean; enLaMac?: boolean },
 ): Herramienta[] {
   return HERRAMIENTAS.filter((h) => (!h.soloEquipo || esEquipo) && (!h.soloAdmin || esAdmin)
-    && !(h.soloMiembrosApp && app === 'progreso') && (!h.abre || conEspacio));
+    && !(h.soloMiembrosApp && app === 'progreso') && (!h.abre || conEspacio) && (!h.soloEnLaMac || enLaMac));
 }
 
 /** Rutas que en las apps son una herramienta (sección aparte de Progreso, tema de Accesos). */
-export const RUTAS_HERRAMIENTA = ['/dashboard/tools', '/dashboard/admin/espacio', '/dashboard/admin/espacio-app', '/dashboard/admin/gumdramon-app'];
+export const RUTAS_HERRAMIENTA = ['/dashboard/tools', '/dashboard/tools/sprites', '/dashboard/admin/espacio', '/dashboard/admin/espacio-app', '/dashboard/admin/gumdramon-app'];

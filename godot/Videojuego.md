@@ -887,6 +887,47 @@ Del boceto de Fernando a la hoja de sprites lista para Godot. Detalle e investig
 **Orden propuesto:** primero un script local que pruebe la calidad con un personaje real (Gemini vs.
 PixelLab vs. video) y, solo cuando Fernando apruebe el resultado, la pantalla en la plataforma.
 
+## 4-quinquies. ⭐ CORTADOR DE SPRITES — el flujo elegido por Fernando (construido el 2026-11-08)
+
+**Decisión de Fernando (2026-11-08):** nada de generar por API (cuesta). Él mantiene una sesión de
+chat con Gemini, saca la versión del personaje, le pide los fotogramas que necesita y **él mismo los
+corta** en la plataforma: así se asegura de que cada corte es preciso. Deroga para este caso la cola
+automática de §4-quater, que queda solo como idea.
+
+**Dónde:** Herramientas → Edición → **Cortador de sprites** (`/dashboard/tools/sprites`). Solo
+aparece **en la Mac** (la instancia local del Espacio de trabajo, `localhost:3792`), porque escribe
+en el disco; en la web y en el marco de las apps no se ofrece y su API responde 404.
+
+**Cómo se usa:**
+1. Nombre del personaje (se sugieren los ya guardados) y **subir la imagen** de Gemini.
+2. **Rejilla:** columnas, filas, margen y hueco, dibujada en rojo sobre la imagen; zoom.
+3. **Tocar los cuadros en el orden de la animación** (salen numerados). En la tira de abajo se
+   reordenan (‹ ›) o se quitan (×).
+4. **Limpieza automática de cada cuadro:**
+   - quita el fondo por color: se toma de la esquina, o con el cuentagotas tocando la imagen, con
+     tolerancia ajustable;
+   - reduce al píxel real («tamaño de cada píxel en la imagen»; se propone alto del cuadro / 128).
+     La reducción se queda con el color MÁS REPETIDO de cada bloque, no con el promedio: promediar
+     inventa colores en los bordes;
+   - coloca el cuadro en la celda de **96×128 con los pies en y = 119 y el eje en x = 48**, más un
+     ajuste fino («Mover derecha / abajo»). Avisa en rojo si un cuadro se sale de la celda.
+5. **Vista previa animada** a ×3 sobre el suelo con su sombra y las guías, con velocidad (fps) y
+   «Repetir».
+6. **Agrupar y guardar:** se elige la animación (quieto, caminar, correr, atacar, cubrirse,
+   esquivar, saltar, recibir daño, morir, hablar, especial u otra con nombre libre) y la dirección
+   (abajo, arriba, izquierda, derecha o ninguna). Golpes, saltos y morir se proponen sin bucle.
+
+**Lo que escribe** en `godot/assets/personajes/<personaje>/` (`lib/herramientas/sprites.ts`):
+- `<animacion>_<direccion>.png`: los fotogramas en fila, en celdas de 96×128;
+- `<personaje>.json`: las animaciones con fotogramas, fps y bucle;
+- `<personaje>.tres`: el **SpriteFrames de Godot 4**, rehecho en cada guardado. Se arrastra a un
+  `AnimatedSprite2D` y ya funciona. Verificado cargándolo con Godot 4.7 sin interfaz.
+
+Reemplazar pide confirmación. Borrar quita el PNG, su `.import` y la entrada. La raíz del juego sale
+del `.git` común, porque la web local corre en un `git worktree` (`~/.gcc-espacio/app`) y escribir en
+su propio `godot/` dejaría los archivos en una copia que se pisa al reinstalar. Los archivos quedan
+en el repositorio de trabajo **sin commit**: se publican cuando Fernando lo pida.
+
 ## 5. Diseño del juego (Fase 1 y progresión)
 
 **Fase 1 (foco tras el prólogo/intro/encuentro):**
