@@ -4959,11 +4959,12 @@ html[data-gcc-app='centralizado'], html[data-gcc-app='centralizado'] body { back
 .con-tope .app-pensamiento { flex: 1 1 0; min-height: 0; overflow: hidden; align-items: center; padding-bottom: 12px; }
 .con-tope .app-hoja { flex: none; }
 .corp.app-inicio.app-inicio-web { bottom: calc(var(--alto-pie) - 28px); z-index: 40; }
-.app-inicio-web .app-hoja { margin-bottom: 0 !important; padding-bottom: 48px; }
+/* 48 px abajo: los 28 que tapa el pie y 20 de aire. Más específica que la de pantallas bajas, que la pisaba. */
+.corp.app-inicio.app-inicio-web .app-hoja { margin-bottom: 0 !important; padding-bottom: 48px; }
 .pensamiento-acceso.no-cabe { visibility: hidden; }
-/* Con mucha pantalla, la hoja crece (Fernando: «escalar el formulario»). */
-@media (min-width: 600px) and (min-height: 980px) { .app-inicio-web .app-hoja { zoom: 1.12; } }
-@media (min-width: 600px) and (min-height: 1150px) { .app-inicio-web .app-hoja { zoom: 1.25; } }
+/* Con mucha pantalla la hoja crece, pero solo hasta llenar su hueco (`escala` en `InicioApp`). Si ni a su
+   tamaño normal cabe, se desplaza en vez de quedar cortada por el pie. */
+.corp.app-inicio.con-tope.sin-sitio { overflow-y: auto; }
 /* El pensamiento sobre la hoja de acceso: centrado y del ancho de la hoja (440 px en pantallas anchas). */
 .app-pensamiento { flex: none; display: flex; justify-content: center; padding: 0 16px 10px; pointer-events: none; }
 /* El pensamiento del inicio de sesión: como una estrella de la constelación de la portada (Fernando,

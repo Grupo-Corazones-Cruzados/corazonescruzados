@@ -11,7 +11,7 @@
  * registro cada 24 h por equipo), presentados como hoja inferior desde `app/globals.css`.
  */
 
-import { useEffect, useState, type ComponentType } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from 'react';
 import { ChevronRight, FileText, UserPlus, X } from 'lucide-react';
 import BrandLoader from '@/components/ui/BrandLoader';
 import PensamientosCielo from './PensamientosCielo';
@@ -77,6 +77,40 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta, on
     return () => { window.clearTimeout(t); window.removeEventListener('resize', medir); };
   }, []);
 
+  /**
+   * EL TAMAÑO DE LA HOJA EN LA WEB (Fernando, 2026-11-09): con pantalla de sobra crece (hasta ×1,25), y en
+   * una ancha pero baja encoge (hasta ×0,88), siempre para llenar el hueco entre el eslogan y el pie: antes crecía por el alto de la ventana
+   * y el pie cortaba «Miembro». Se mide su alto natural (a ×1) y el hueco; el pensamiento ocupa lo que
+   * sobre y, si no cabe, no sale. Si ni a ×1 cabe, el contenedor se desplaza en vez de cortar.
+   */
+  const contRef = useRef<HTMLDivElement | null>(null);
+  const hojaRef = useRef<HTMLElement | null>(null);
+  const [escala, setEscala] = useState(1);
+  const [sinSitio, setSinSitio] = useState(false);
+  useLayoutEffect(() => {
+    const cont = contRef.current, hoja = hojaRef.current;
+    if (!onVolver || tope === null || !cont || !hoja) return;
+    const medir = () => {
+      const previa = hoja.style.zoom;
+      hoja.style.zoom = '1';
+      const natural = hoja.offsetHeight;
+      hoja.style.zoom = previa;
+      const disponible = cont.clientHeight;
+      const ancho = window.innerWidth >= 600;
+      const maxima = !ancho ? 1 : window.innerHeight >= 1150 ? 1.25 : window.innerHeight >= 980 ? 1.12 : 1;
+      // Con poco alto también se reduce un poco (hasta el 88 %) antes que quedar cortada.
+      const minima = 0.88;
+      const e = Math.max(minima, Math.min(maxima, (disponible - 8) / natural));
+      setEscala(e);
+      setSinSitio(natural * e > disponible);
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(cont);
+    window.addEventListener('resize', medir);
+    return () => { ro.disconnect(); window.removeEventListener('resize', medir); };
+  }, [onVolver, tope]);
+
   const [saliendo, setSaliendo] = useState(false);
   useEffect(() => {
     const irse = () => setSaliendo(true);
@@ -92,11 +126,11 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta, on
   };
 
   return (
-    <div className={`corp app-inicio ${onVolver ? 'app-inicio-web' : ''} ${tope !== null ? 'con-tope' : ''}`} style={tope !== null ? { top: tope } : undefined}>
+    <div ref={contRef} className={`corp app-inicio ${onVolver ? 'app-inicio-web' : ''} ${tope !== null ? 'con-tope' : ''} ${sinSitio ? 'sin-sitio' : ''}`} style={tope !== null ? { top: tope } : undefined}>
       {/* EL PENSAMIENTO, SOLO AQUÍ (Fernando, 2026-11-08): aparece y desaparece justo encima del formulario,
           bajo el corazón-mundo de la portada. Igual en la web y en las apps: es la misma pantalla. */}
       <div className="app-pensamiento"><PensamientosCielo lugar="acceso" tono={app === 'progreso' ? 'dia' : 'noche'} visible /></div>
-      <main className="app-hoja">
+      <main ref={hojaRef} className="app-hoja" style={escala !== 1 ? { zoom: escala } : undefined}>
         <div className="app-hoja-marca">
           {onVolver && (
             <button type="button" className="app-volver" onClick={onVolver} aria-label="Cerrar y elegir otro mundo" title="Elegir otro mundo">
