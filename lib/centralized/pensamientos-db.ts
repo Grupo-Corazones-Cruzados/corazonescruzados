@@ -362,7 +362,14 @@ export interface FeaturedThought {
   createdAt: string;
 }
 
-export type ResultadoPublicar = 'ok' | 'no-es-tuyo' | 'tope';
+/**
+ * LARGO MÁXIMO DE UN PENSAMIENTO DESTACADO (Fernando, 2026-11-09: «establecer un rango más pequeño de
+ * caracteres»): sale en la pantalla de inicio de sesión, entre el eslogan y el formulario, y en el
+ * teléfono uno más largo no cabe. Más largos no se publican, y los ya publicados no se muestran.
+ */
+export const DESTACADO_MAX_CARACTERES = 130;
+
+export type ResultadoPublicar = 'ok' | 'no-es-tuyo' | 'tope' | 'largo';
 
 /**
  * Publica (`publicar = true`) o retira un pensamiento del sujeto. Verifica la pertenencia:
@@ -378,11 +385,12 @@ export async function setThoughtPublished(s: Subject, id: number, publicar: bool
     // de abajo no se queda viejo.
     await client.query(`SELECT pg_advisory_xact_lock(hashtext('pn_thoughts_publicados'))`);
     const propio = await client.query(
-      `SELECT featured_at FROM gcc_world.pn_thoughts WHERE id = $3 AND subject_kind = $1 AND subject_id = $2`,
+      `SELECT featured_at, char_length(btrim(coalesce(content, ''))) AS largo FROM gcc_world.pn_thoughts WHERE id = $3 AND subject_kind = $1 AND subject_id = $2`,
       [s.kind, s.id, id],
     );
     if (!propio.rowCount) { await client.query('ROLLBACK'); return 'no-es-tuyo'; }
     if (publicar && propio.rows[0].featured_at === null) {
+      if (propio.rows[0].largo > DESTACADO_MAX_CARACTERES) { await client.query('ROLLBACK'); return 'largo'; }
       const { rows } = await client.query(`SELECT COUNT(*)::int AS n FROM gcc_world.pn_thoughts WHERE featured_at IS NOT NULL`);
       if (rows[0].n >= PUBLICADOS_MAX) { await client.query('ROLLBACK'); return 'tope'; }
       await client.query(`UPDATE gcc_world.pn_thoughts SET featured_at = NOW() WHERE id = $1`, [id]);
@@ -412,7 +420,8 @@ export async function getPublishedThoughts(): Promise<FeaturedThought[]> {
   await ensurePensamientosTables();
   const { rows } = await pool.query(
     `SELECT content, created_at FROM gcc_world.pn_thoughts
-      WHERE featured_at IS NOT NULL ORDER BY featured_at DESC LIMIT $1`, [PUBLICADOS_MAX]);
+      WHERE featured_at IS NOT NULL AND char_length(btrim(coalesce(content, ''))) <= $2
+      ORDER BY featured_at DESC LIMIT $1`, [PUBLICADOS_MAX, DESTACADO_MAX_CARACTERES]);
   return rows.map((r: { content: string | null; created_at: string }) => {
     const full = String(r.content ?? '').trim();
     const content = full.length > FEATURED_MAX_LEN ? `${full.slice(0, FEATURED_MAX_LEN).trimEnd()}…` : full;

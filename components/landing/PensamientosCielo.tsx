@@ -310,6 +310,21 @@ export default function PensamientosCielo({
     if (alto && (altoTexto?.vuelta !== vuelta || Math.abs(altoTexto.alto - alto) > 2)) setAltoTexto({ vuelta, alto });
   });
 
+  // En el inicio de sesión: si el pensamiento no cabe ENTERO en su hueco (entre el eslogan y el formulario),
+  // no se ve; el siguiente puede caber (Fernando, 2026-11-08: «cuando no hay suficiente espacio no debería verse»).
+  const [noCabe, setNoCabe] = useState(false);
+  useLayoutEffect(() => {
+    if (lugar !== 'acceso') return;
+    const el = ref.current;
+    const hueco = el?.parentElement;
+    if (!el || !hueco || fase === 'oculta') return;
+    const medir = () => setNoCabe(el.offsetHeight > hueco.clientHeight - 4);
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(hueco);
+    return () => ro.disconnect();
+  }, [lugar, vuelta, fase]);
+
   if (!lista.length) return <div ref={ref} hidden />;
   const p = lista[Math.min(actual, lista.length - 1)];
 
@@ -332,7 +347,7 @@ export default function PensamientosCielo({
   //    portada —los corazones cruzados se dibujan y luego llegan el texto y la fecha—, sin fondo. ──
   if (lugar === 'acceso') {
     return (
-      <div ref={ref} className={`pensamiento-acceso tono-${tono}`}>
+      <div ref={ref} className={`pensamiento-acceso tono-${tono} ${noCabe ? 'no-cabe' : ''}`}>
         <span className="acceso-corazones" aria-hidden="true">
           {fase !== 'oculta' && <CorazonesCruzados key={vuelta} apagandose={fase === 'saliendo'} />}
         </span>

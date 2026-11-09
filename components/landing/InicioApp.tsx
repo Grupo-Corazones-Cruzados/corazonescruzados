@@ -60,6 +60,23 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta, on
   const registro = useEstadoRegistro();
   const pausa = registro?.bloqueado ? `En pausa hasta el ${horaDeReanudacion(registro.hasta)}` : null;
 
+  /**
+   * LA HOJA OCUPA DEL ESLOGAN HACIA ABAJO (Fernando, 2026-11-08/09), en la web y en las apps: arriba, el
+   * hueco donde se centra el pensamiento (si no cabe entero, no sale); abajo, la hoja. En la web termina
+   * bajo el pie, del que parece salir. Se mide dónde acaba el eslogan.
+   */
+  const [tope, setTope] = useState<number | null>(null);
+  useEffect(() => {
+    const medir = () => {
+      const e = document.querySelector('.eslogan-linea');
+      if (e) setTope(Math.round(e.getBoundingClientRect().bottom + 12));
+    };
+    medir();
+    const t = window.setTimeout(medir, 700);
+    window.addEventListener('resize', medir);
+    return () => { window.clearTimeout(t); window.removeEventListener('resize', medir); };
+  }, []);
+
   const [saliendo, setSaliendo] = useState(false);
   useEffect(() => {
     const irse = () => setSaliendo(true);
@@ -75,7 +92,7 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta, on
   };
 
   return (
-    <div className={`corp app-inicio ${onVolver ? 'app-inicio-web' : ''}`}>
+    <div className={`corp app-inicio ${onVolver ? 'app-inicio-web' : ''} ${tope !== null ? 'con-tope' : ''}`} style={tope !== null ? { top: tope } : undefined}>
       {/* EL PENSAMIENTO, SOLO AQUÍ (Fernando, 2026-11-08): aparece y desaparece justo encima del formulario,
           bajo el corazón-mundo de la portada. Igual en la web y en las apps: es la misma pantalla. */}
       <div className="app-pensamiento"><PensamientosCielo lugar="acceso" tono={app === 'progreso' ? 'dia' : 'noche'} visible /></div>

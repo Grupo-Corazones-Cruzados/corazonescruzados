@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { resolveSubject } from '@/lib/centralized/subject';
-import { getPublishedThoughts, setThoughtPublished, PUBLICADOS_MAX } from '@/lib/centralized/pensamientos-db';
+import { getPublishedThoughts, setThoughtPublished, PUBLICADOS_MAX, DESTACADO_MAX_CARACTERES } from '@/lib/centralized/pensamientos-db';
 
 export const dynamic = 'force-dynamic';
 
@@ -50,6 +50,12 @@ export async function POST(req: NextRequest) {
     if (r === 'tope') {
       return NextResponse.json(
         { error: `Ya hay ${PUBLICADOS_MAX} pensamientos en la página de inicio. Retira uno para publicar este.` },
+        { status: 409 },
+      );
+    }
+    if (r === 'largo') {
+      return NextResponse.json(
+        { error: `Para la página de inicio, un pensamiento puede tener hasta ${DESTACADO_MAX_CARACTERES} caracteres.` },
         { status: 409 },
       );
     }

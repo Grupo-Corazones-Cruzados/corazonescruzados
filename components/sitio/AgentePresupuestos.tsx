@@ -12,7 +12,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { usePathname } from 'next/navigation';
-import { ArrowUp, Bot, Calculator, LogIn, MessageCircle, X } from 'lucide-react';
+import { ArrowUp, Bot, Calculator, LogIn, X } from 'lucide-react';
 import { EnElPie, BotonPie } from '@/components/dashboard/PieAcciones';
 import Captcha from '@/components/landing/Captcha';
 import { fmt2 } from '@/lib/format';
@@ -222,7 +222,7 @@ export default function AgentePresupuestos({ solucion = 'tecnologia', enPie = fa
       {!enPie && fase !== 'abierto' && fase !== 'abriendo' && (
         <button type="button" className={`presu-burbuja${fase === 'cerrado' ? ' es-visible' : ''}`} onClick={abrir}
           aria-label="Abrir el agente de GCC" title="Consultas y presupuestos">
-          <MessageCircle aria-hidden />
+          <Calculator aria-hidden />
         </button>
       )}
       {fase !== 'cerrado' && (

@@ -4955,7 +4955,9 @@ html[data-gcc-app='centralizado'], html[data-gcc-app='centralizado'] body { back
 .landing-page[data-app='progreso'] .escena-aventura { display: none; }
 .landing-page[data-app]:not([data-app='progreso']) .escena-progreso { display: none; }
 .corp.app-inicio {
-  position: fixed; inset: auto 0 0 0; z-index: 100; min-height: 0; display: flex; flex-direction: column; max-height: 72dvh; overflow-y: auto; overscroll-behavior: none;
+  /* z-50: por debajo de la cabecera del sitio y de su menú del teléfono (z-59/60), que ahora también salen
+     en las apps; si no, el pensamiento flotaba encima del menú abierto (Fernando, 2026-11-09). */
+  position: fixed; inset: auto 0 0 0; z-index: 50; min-height: 0; display: flex; flex-direction: column; max-height: 72dvh; overflow-y: auto; overscroll-behavior: none;
   background: transparent; font-family: var(--font-body); -webkit-tap-highlight-color: transparent;
 }
 .app-hoja {
@@ -4964,8 +4966,18 @@ html[data-gcc-app='centralizado'], html[data-gcc-app='centralizado'] body { back
   animation: appHoja 460ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
 }
 .app-hoja-marca { position: relative; }
-/* En la web la portada tiene pie (`PieSitio`): la hoja se apoya encima de él, no lo tapa (2026-11-08). */
-.corp.app-inicio.app-inicio-web { bottom: var(--alto-pie); max-height: calc(100dvh - var(--alto-pie) - 72px); }
+/* EN LA WEB (Fernando, 2026-11-08): del eslogan (`top`, medido en `InicioApp`) hasta un poco por DEBAJO
+   del borde del pie, y en una capa por debajo de él (el pie es z-50): la hoja parece salir de debajo del
+   pie. Arriba, el hueco donde se centra el pensamiento; si no cabe entero, no se ve (`.no-cabe`). */
+.corp.app-inicio.con-tope { max-height: none; overflow: hidden; }
+.con-tope .app-pensamiento { flex: 1 1 0; min-height: 0; overflow: hidden; align-items: center; padding-bottom: 12px; }
+.con-tope .app-hoja { flex: none; }
+.corp.app-inicio.app-inicio-web { bottom: calc(var(--alto-pie) - 28px); z-index: 40; }
+.app-inicio-web .app-hoja { margin-bottom: 0 !important; padding-bottom: 48px; }
+.pensamiento-acceso.no-cabe { visibility: hidden; }
+/* Con mucha pantalla, la hoja crece (Fernando: «escalar el formulario»). */
+@media (min-width: 600px) and (min-height: 980px) { .app-inicio-web .app-hoja { zoom: 1.12; } }
+@media (min-width: 600px) and (min-height: 1150px) { .app-inicio-web .app-hoja { zoom: 1.25; } }
 /* El pensamiento sobre la hoja de acceso: centrado y del ancho de la hoja (440 px en pantallas anchas). */
 .app-pensamiento { flex: none; display: flex; justify-content: center; padding: 0 16px 10px; pointer-events: none; }
 /* El pensamiento del inicio de sesión: como una estrella de la constelación de la portada (Fernando,
@@ -4986,8 +4998,7 @@ html[data-gcc-app='centralizado'], html[data-gcc-app='centralizado'] body { back
   .app-inicio .app-fila { padding: 9px 14px; }
   .app-inicio .app-legal { padding-top: 8px; }
 }
-/* Más baja aún (≤ 810 px) el pensamiento no cabe entre el eslogan y la hoja: antes que taparlo, no sale. */
-@media (min-width: 600px) and (max-height: 810px) { .app-pensamiento { display: none; } }
+
 /* Cerrar la hoja y volver a elegir mundo: solo en la web (`onVolver`), arriba a la derecha. */
 .app-volver {
   position: absolute; top: -4px; right: -6px; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 10px;
