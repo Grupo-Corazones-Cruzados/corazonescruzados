@@ -4,10 +4,29 @@
  */
 export type AppDeTelefono = 'progreso' | 'aventura' | 'centralizado';
 
-/** La app instalada de verdad (su cookie), o `null` en el navegador. Para lo que SOLO pasa en una app. */
+/**
+ * ¿Estamos DENTRO de una app? La del teléfono (Capacitor), la nativa de la Mac (puente `gccEscritorio`) o la
+ * web instalada (sin barra del navegador). Lo mismo que `esAppInstalada` (components/espacio/api.ts).
+ */
+function dentroDeUnaApp(): boolean {
+  const w = window as any;
+  return !!w.Capacitor?.isNativePlatform?.() || !!w.webkit?.messageHandlers?.gccEscritorio
+    || window.matchMedia?.('(display-mode: standalone)').matches || (navigator as any).standalone === true;
+}
+
+/**
+ * La app instalada de verdad (su cookie), o `null` en el navegador. Para lo que SOLO pasa en una app.
+ * ⚠️ La cookie dura un año: si llegó a una pestaña normal (p. ej. abriendo `/app/miembros`), esa pestaña se
+ * comportaba como la app y no enseñaba la portada (Fernando, 2026-11-09, en Arc). Fuera de una app no
+ * cuenta y se borra.
+ */
 export function appInstalada(): AppDeTelefono | null {
   if (typeof document === 'undefined') return null;
   const m = document.cookie.match(/(?:^|;\s*)gcc_app=(progreso|aventura|centralizado)(?:;|$)/);
+  if (m && !dentroDeUnaApp()) {
+    document.cookie = 'gcc_app=; Path=/; Max-Age=0; Secure; SameSite=Lax';
+    return null;
+  }
   return (m?.[1] as AppDeTelefono) ?? null;
 }
 
