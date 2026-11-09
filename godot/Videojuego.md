@@ -902,7 +902,9 @@ marco la sesión viaja en la cabecera `x-espacio-token` (`firmarPeticionesDeLaPa
 `components/espacio/api.ts`), por eso la tira guardada se pide por `fetch` y no con un `<img>`.
 
 **Cómo se usa:**
-1. Nombre del personaje (se sugieren los ya guardados) y **subir la imagen** de Gemini.
+1. Nombre del personaje (se sugieren los ya guardados) y **subir la imagen** de Gemini, o
+   **pegarla**: ⌘V / Ctrl+V en cualquier parte de la pantalla, o el botón «Pegar imagen» en el teléfono
+   (lee el portapapeles; el marco de las apps lleva `allow="clipboard-read"`).
 2. **Rejilla:** columnas, filas, margen y hueco, dibujada en rojo sobre la imagen; zoom.
 3. **Tocar los cuadros en el orden de la animación** (salen numerados). En la tira de abajo se
    reordenan (‹ ›) o se quitan (×).

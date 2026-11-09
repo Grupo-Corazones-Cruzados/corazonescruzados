@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   Upload, Play, Pause, Save, Trash2, ChevronLeft, ChevronRight, X, Pipette, ZoomIn, ZoomOut, Lock, Loader2,
-  Eraser, Film,
+  Eraser, Film, ClipboardPaste,
 } from 'lucide-react';
 import { EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import PixelSelect from '@/components/ui/PixelSelect';
@@ -498,7 +498,7 @@ export function Cortador() {
     const i = new Image();
     i.onload = () => {
       setImg(i);
-      setNombreImagen(archivo.name);
+      setNombreImagen(archivo.name && archivo.name !== 'image.png' ? archivo.name : 'Imagen pegada');
       setSeleccion([]);
       const c = document.createElement('canvas');
       c.width = 1; c.height = 1;
@@ -521,6 +521,35 @@ export function Cortador() {
       setZoom(Math.min(1, ancho / i.naturalWidth));
     };
     i.src = url;
+  };
+
+  // Pegar con ⌘V o Ctrl+V (Fernando, 2026-11-09): si el portapapeles trae una imagen, se abre como si se subiera.
+  // Un texto pegado en un campo sigue su camino normal: solo se intercepta cuando hay imagen.
+  const abrirRef = useRef(abrirImagen);
+  abrirRef.current = abrirImagen;
+  useEffect(() => {
+    const alPegar = (e: ClipboardEvent) => {
+      const item = [...(e.clipboardData?.items ?? [])].find((it) => it.kind === 'file' && it.type.startsWith('image/'));
+      const archivo = item?.getAsFile();
+      if (!archivo) return;
+      e.preventDefault();
+      abrirRef.current(archivo);
+    };
+    window.addEventListener('paste', alPegar);
+    return () => window.removeEventListener('paste', alPegar);
+  }, []);
+  /** En el teléfono no hay teclas: el botón «Pegar» lee la imagen copiada (el sistema pide permiso). */
+  const pegarDelPortapapeles = async () => {
+    try {
+      if (!navigator.clipboard?.read) throw new Error('Este navegador no deja leer el portapapeles: usa «Subir imagen».');
+      for (const item of await navigator.clipboard.read()) {
+        const tipo = item.types.find((t) => t.startsWith('image/'));
+        if (tipo) { const b = await item.getType(tipo); abrirImagen(new File([b], 'Imagen pegada', { type: tipo })); return; }
+      }
+      toast.error('No hay ninguna imagen copiada');
+    } catch (e: any) {
+      toast.error(e?.name === 'NotAllowedError' ? 'No se dio permiso para leer el portapapeles' : e?.message || 'No se pudo pegar');
+    }
   };
 
   // Rejilla dibujada sobre la imagen, con los cuadros elegidos numerados en su orden.
@@ -849,6 +878,9 @@ export function Cortador() {
         <button type="button" onClick={() => entrada.current?.click()} className={`${BTN_SECONDARY} w-full`}>
           <Upload className="w-4 h-4" /> {img ? 'Cambiar imagen' : 'Subir imagen'}
         </button>
+        <button type="button" onClick={pegarDelPortapapeles} className={`${BTN_SECONDARY} w-full`} title="Pegar la imagen copiada (⌘V o Ctrl+V)">
+          <ClipboardPaste className="w-4 h-4" /> Pegar imagen
+        </button>
         {img && <p className="text-[11px] text-digi-muted truncate tabular-nums" style={mf} title={nombreImagen}>{nombreImagen} · {img.naturalWidth}×{img.naturalHeight}</p>}
 
         <div className="pt-3 border-t border-digi-border space-y-3">
@@ -929,7 +961,7 @@ export function Cortador() {
       <section className="bg-digi-card border border-digi-border rounded-lg min-w-0">
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-digi-border">
           <p className="text-[12px] font-semibold text-digi-text flex-1 min-w-0 truncate" style={mf}>
-            {!img ? 'Sube la imagen con las poses' : gotero ? 'Toca el fondo de la imagen'
+            {!img ? 'Sube la imagen con las poses o pégala con ⌘V o Ctrl+V' : gotero ? 'Toca el fondo de la imagen'
               : modo === 'rejilla' ? `Toca los cuadros en el orden de la animación · ${seleccion.length} elegidos`
               : !banda ? 'Toca una fila para elegirla, o arrastra para marcar la franja'
               : `Toca dentro para cortar o para usar un trozo apagado · arrastra un corte fuera para quitarlo · ${seleccion.length} fotogramas`}
@@ -954,7 +986,7 @@ export function Cortador() {
             <button type="button" onClick={() => entrada.current?.click()}
               className="w-full py-20 flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-digi-border text-digi-muted hover:border-accent hover:text-accent transition-colors">
               <Upload className="w-6 h-6" />
-              <span className="text-[13px]" style={mf}>Subir imagen</span>
+              <span className="text-[13px]" style={mf}>Subir imagen o pegarla con ⌘V o Ctrl+V</span>
             </button>
           )}
         </div>
