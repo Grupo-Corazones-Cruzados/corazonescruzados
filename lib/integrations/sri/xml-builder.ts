@@ -1,4 +1,5 @@
-import { SRI_CONFIG, getTipoIdentificacion } from './config';
+import { getTipoIdentificacion } from './config';
+import type { Emisor } from './emisor';
 import { generateAccessKey, formatInvoiceNumber, ecuadorDateParts } from './access-key';
 import { sriText, sriAttr, SRI_MAX } from './text';
 import { cedulaValida, errorRazonSocial } from '../../pagos/identificacion';
@@ -80,11 +81,12 @@ export function parseAdditionalFieldsFromXml(xml: string | null | undefined): Ad
 }
 
 /**
- * Construye el XML de la factura electrónica según esquema del SRI
+ * Construye el XML de la factura electrónica según esquema del SRI, a nombre de `emisor`
+ * (ver `emisor.ts`; para GCC sale idéntico a cuando el emisor era la constante `SRI_CONFIG`).
  */
-export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: string; numeroFactura: string } {
-  const claveAcceso = generateAccessKey(data.fecha, data.secuencial);
-  const numeroFactura = formatInvoiceNumber(data.secuencial);
+export function buildFacturaXml(data: InvoiceData, emisor: Emisor): { xml: string; claveAcceso: string; numeroFactura: string } {
+  const claveAcceso = generateAccessKey(data.fecha, data.secuencial, emisor, '01');
+  const numeroFactura = formatInvoiceNumber(data.secuencial, emisor);
 
   const { dd, mm, aaaa } = ecuadorDateParts(data.fecha);
   const fechaEmision = `${dd}/${mm}/${aaaa}`;
@@ -194,7 +196,7 @@ export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: 
   // (entre <dirMatriz>/<agenteRetencion> y </infoTributaria>, y subiendo esta factura
   // a version="1.1.0", porque en 1.0.0 la etiqueta no existe).
   const additionalFields = [
-    ...(SRI_CONFIG.contribuyenteRimpe ? [{ name: 'regimen', value: SRI_CONFIG.contribuyenteRimpe }] : []),
+    ...(emisor.contribuyenteRimpe ? [{ name: 'regimen', value: emisor.contribuyenteRimpe }] : []),
     ...(data.clienteEmail ? [{ name: 'email', value: data.clienteEmail }] : []),
     ...(data.clienteTelefono ? [{ name: 'telefono', value: data.clienteTelefono }] : []),
     ...(data.clienteDireccion ? [{ name: 'direccion', value: data.clienteDireccion }] : []),
@@ -211,23 +213,22 @@ export function buildFacturaXml(data: InvoiceData): { xml: string; claveAcceso: 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <factura id="comprobante" version="1.0.0">
   <infoTributaria>
-    <ambiente>${SRI_CONFIG.ambiente}</ambiente>
-    <tipoEmision>${SRI_CONFIG.tipoEmision}</tipoEmision>
-    <razonSocial>${sriText(SRI_CONFIG.razonSocial, SRI_MAX.razonSocial)}</razonSocial>
-    <nombreComercial>${sriText(SRI_CONFIG.nombreComercial, SRI_MAX.nombreComercial)}</nombreComercial>
-    <ruc>${SRI_CONFIG.ruc}</ruc>
+    <ambiente>${emisor.ambiente}</ambiente>
+    <tipoEmision>${emisor.tipoEmision}</tipoEmision>
+    <razonSocial>${sriText(emisor.razonSocial, SRI_MAX.razonSocial)}</razonSocial>
+${emisor.nombreComercial ? `    <nombreComercial>${sriText(emisor.nombreComercial, SRI_MAX.nombreComercial)}</nombreComercial>\n` : ''}    <ruc>${emisor.ruc}</ruc>
     <claveAcceso>${claveAcceso}</claveAcceso>
-    <codDoc>${SRI_CONFIG.tipoComprobante}</codDoc>
-    <estab>${SRI_CONFIG.establecimiento}</estab>
-    <ptoEmi>${SRI_CONFIG.puntoEmision}</ptoEmi>
+    <codDoc>01</codDoc>
+    <estab>${emisor.establecimiento}</estab>
+    <ptoEmi>${emisor.puntoEmision}</ptoEmi>
     <secuencial>${String(data.secuencial).padStart(9, '0')}</secuencial>
-    <dirMatriz>${sriText(SRI_CONFIG.dirMatriz, SRI_MAX.dirMatriz)}</dirMatriz>
-${SRI_CONFIG.regimenMicroempresas ? `    <regimenMicroempresas>${sriText(SRI_CONFIG.regimenMicroempresas, 300)}</regimenMicroempresas>\n` : ''}${SRI_CONFIG.agenteRetencion ? `    <agenteRetencion>${SRI_CONFIG.agenteRetencion}</agenteRetencion>` : ''}
+    <dirMatriz>${sriText(emisor.dirMatriz, SRI_MAX.dirMatriz)}</dirMatriz>
+${emisor.regimenMicroempresas ? `    <regimenMicroempresas>${sriText(emisor.regimenMicroempresas, 300)}</regimenMicroempresas>\n` : ''}${emisor.agenteRetencion ? `    <agenteRetencion>${emisor.agenteRetencion}</agenteRetencion>` : ''}
   </infoTributaria>
   <infoFactura>
     <fechaEmision>${fechaEmision}</fechaEmision>
-    <dirEstablecimiento>${sriText(SRI_CONFIG.dirEstablecimiento, SRI_MAX.dirEstablecimiento)}</dirEstablecimiento>
-    <obligadoContabilidad>${SRI_CONFIG.obligadoContabilidad}</obligadoContabilidad>
+    <dirEstablecimiento>${sriText(emisor.dirEstablecimiento, SRI_MAX.dirEstablecimiento)}</dirEstablecimiento>
+${emisor.contribuyenteEspecial ? `    <contribuyenteEspecial>${emisor.contribuyenteEspecial}</contribuyenteEspecial>\n` : ''}    <obligadoContabilidad>${emisor.obligadoContabilidad}</obligadoContabilidad>
     <tipoIdentificacionComprador>${tipoIdComprador}</tipoIdentificacionComprador>
     <razonSocialComprador>${sriText(data.clienteNombre, SRI_MAX.razonSocialComprador)}</razonSocialComprador>
     <identificacionComprador>${idCompradorSri}</identificacionComprador>
@@ -238,7 +239,7 @@ ${SRI_CONFIG.regimenMicroempresas ? `    <regimenMicroempresas>${sriText(SRI_CON
     </totalConImpuestos>
     <propina>0.00</propina>
     <importeTotal>${importeTotal.toFixed(2)}</importeTotal>
-    <moneda>${SRI_CONFIG.moneda}</moneda>
+    <moneda>${emisor.moneda}</moneda>
     <pagos>${pagosXml}
     </pagos>
   </infoFactura>

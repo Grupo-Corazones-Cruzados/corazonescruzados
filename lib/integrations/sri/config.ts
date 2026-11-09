@@ -1,37 +1,8 @@
-// Configuración del emisor y SRI para facturación electrónica Ecuador
-
-export const SRI_CONFIG = {
-  // Emisor
-  ruc: '0930095922001',
-  razonSocial: 'GONZALEZ MUYULEMA LUIS FERNANDO',
-  nombreComercial: 'GRUPO CORAZONES CRUZADOS',
-  dirMatriz: 'Barrio 7 Lagos, Calle Tabacundo #12, Guasmo Central',
-  dirEstablecimiento: 'Barrio 7 Lagos, Calle Tabacundo #12, Guasmo Central',
-  obligadoContabilidad: 'NO',
-  contribuyenteEspecial: '',
-  agenteRetencion: '',
-  regimenMicroempresas: '', // Régimen de microempresas (derogado por el RIMPE): no aplica
-
-  // Leyenda RIMPE obligatoria — Ficha Técnica del SRI, ANEXO 22.
-  // GCC (GONZALEZ MUYULEMA LUIS FERNANDO) está catalogado como RIMPE NEGOCIO POPULAR,
-  // por lo que el texto literal de la ficha es el de 45 caracteres. El otro valor válido
-  // es 'CONTRIBUYENTE RÉGIMEN RIMPE' (27), para el RIMPE Emprendedor.
-  contribuyenteRimpe: 'CONTRIBUYENTE NEGOCIO POPULAR - RÉGIMEN RIMPE',
-
-  // Punto de emisión
-  establecimiento: '001',
-  puntoEmision: '001',
-
-  // Ambiente: 1 = Pruebas, 2 = Producción
-  ambiente: '2' as '1' | '2',
-  tipoEmision: '1', // 1 = Normal
-
-  // Tipo de comprobante
-  tipoComprobante: '01', // 01 = Factura
-
-  // Moneda
-  moneda: 'DOLAR',
-};
+// Configuración común del SRI para facturación electrónica Ecuador.
+//
+// ⚠️ Los datos del EMISOR ya no viven aquí (fase 4, paso 3, 2026-11-09): eran la constante `SRI_CONFIG`, de un
+// solo emisor. Ahora cada comprobante se arma con el `Emisor` que toca (`./emisor.ts`, tabla `sri_emisores`);
+// los valores de GCC están en `EMISOR_GCC_RESPALDO` y en la semilla de la migración 089.
 
 // Endpoints del SRI
 export const SRI_ENDPOINTS = {

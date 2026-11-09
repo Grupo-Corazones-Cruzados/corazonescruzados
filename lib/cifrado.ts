@@ -84,3 +84,8 @@ export function contextoGoogle(userId: string, campo: CampoGoogle): string {
 export function contextoCuentaBancaria(userId: string): string {
   return `member_bank_accounts:${userId}:account_number`;
 }
+
+/** La firma electrónica de un emisor (`sri_emisores`): el .p12 en base64 y su contraseña. */
+export function contextoFirmaEmisor(emisorId: number, campo: 'p12' | 'p12_password'): string {
+  return `sri_emisores:${emisorId}:${campo}`;
+}

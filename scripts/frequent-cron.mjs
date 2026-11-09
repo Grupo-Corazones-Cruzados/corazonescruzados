@@ -53,6 +53,8 @@ const NIGHTLY_JOBS = [
   { name: 'Talentos · embeddings al día', path: '/api/talentos/cron/reindexar' },
   // Los nombres que alguien cambió DIRECTAMENTE en Drive llegan a la plataforma (2026-10-13).
   { name: 'Media · nombres desde Drive',  path: '/api/media/cron/nombres' },
+  // Firma electrónica de cada emisor a 30 días de vencer: campanita + correo, una vez (2026-11-09).
+  { name: 'Facturación · firmas por vencer', path: '/api/facturacion/cron/firmas' },
 ];
 
 const APP_URL = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002').replace(/\/+$/, '');

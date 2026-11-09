@@ -110,3 +110,23 @@ export function tarjetaPago(p: Pago, conPersona = false) {
     </>
   );
 }
+
+/** Un dato con su título encima (Configuración › Cobros y › Facturación). */
+export function Dato({ t, v }: { t: string; v: string }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-[10.5px] uppercase tracking-wide text-digi-muted">{t}</dt>
+      <dd className="text-digi-text truncate" title={v}>{v}</dd>
+    </div>
+  );
+}
+
+/** Un bloque con título dentro de un panel derecho (Pagos a miembros, Emisores). */
+export function Bloque({ titulo, children }: { titulo: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <h3 className="text-[12.5px] font-semibold text-digi-text mb-2" style={{ fontFamily: 'var(--font-display)' }}>{titulo}</h3>
+      {children}
+    </section>
+  );
+}

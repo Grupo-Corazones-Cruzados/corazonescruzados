@@ -1,9 +1,9 @@
 import { pool } from '@/lib/db';
 import { buildFacturaXml, InvoiceData, InvoiceItem, parseAdditionalFieldsFromXml, isAutoAdditionalField } from './xml-builder';
-import { signXml } from './xades-signer';
+import { firmarFactura } from './xades-signer';
 import { enviarComprobante, consultarAutorizacion } from './soap-client';
 import { generateRidePdf } from './ride-pdf';
-import { SRI_CONFIG } from './config';
+import { cargarEmisor, emisorDeFactura, conSecuencial, type Emisor } from './emisor';
 import { ensureStageBilling } from '@/lib/payments';
 import { columnasProyecto } from '@/lib/projects/columnas';
 
@@ -141,17 +141,15 @@ async function linkInvoiceStages(invoiceId: number, stageIds?: (string | number)
 }
 
 /**
- * Get next sequential number
+ * La numeración vive en `emisor.ts › conSecuencial`: por emisor, establecimiento, punto y tipo, con el contador
+ * bloqueado mientras se inserta la factura. Para GCC continúa exactamente donde iba (el contador se sembró con el
+ * MAX de siempre y nunca baja de él; el mínimo de 23 sigue en la semilla y en el respaldo sin migración).
+ *
+ * Tras insertar, la factura queda marcada con su emisor (`emisor_id`); sin migración 089 no hay columna y se omite.
  */
-// Minimum sequential — must be higher than the last invoice emitted outside this system
-const SRI_MIN_SECUENCIAL = 23;
-
-async function getNextSecuencial(): Promise<number> {
-  const { rows } = await pool.query(
-    `SELECT COALESCE(MAX(CAST(SPLIT_PART(invoice_number, '-', 3) AS INTEGER)), 0) + 1 as next
-     FROM gcc_world.invoices`
-  );
-  return Math.max(rows[0].next, SRI_MIN_SECUENCIAL);
+async function marcarEmisor(db: { query: (sql: string, params?: any[]) => Promise<any> }, invoiceId: number, emisor: Emisor) {
+  if (emisor.id === null) return;
+  await db.query(`UPDATE gcc_world.invoices SET emisor_id = $1 WHERE id = $2`, [emisor.id, invoiceId]);
 }
 
 /**
@@ -175,6 +173,8 @@ interface InvoiceOptions {
    * que es lo que se hacía y pisaba sus datos reales.
    */
   comprador?: { idType: string; ruc: string; name: string; address?: string | null; email?: string | null; phone?: string | null };
+  /** Quién emite. Por omisión GCC (paso 4: las facturas automáticas de cada miembro). */
+  emisor?: Emisor;
 }
 
 export async function createInvoiceFromProject(projectId: string, options?: InvoiceOptions): Promise<number> {
@@ -235,7 +235,7 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
   const currency = options?.currency || 'USD';
   const exchangeRate = options?.exchangeRate || 1;
 
-  const secuencial = await getNextSecuencial();
+  const emisor = options?.emisor ?? await cargarEmisor('gcc');
   const fecha = new Date();
 
   const comprador = options?.comprador;
@@ -255,36 +255,40 @@ export async function createInvoiceFromProject(projectId: string, options?: Invo
     );
   }
 
-  const invoiceData: InvoiceData = {
-    secuencial,
-    fecha,
-    clienteIdTipo: isConsumidorFinal ? '07' : (comprador ? comprador.idType : clientIdType),
-    clienteRuc: isConsumidorFinal ? '9999999999999' : (comprador ? comprador.ruc : project.client_ruc),
-    clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : ((comprador ? comprador.name : project.client_name) || 'CONSUMIDOR FINAL'),
-    clienteDireccion: (comprador ? comprador.address : project.client_address) || 'N/A',
-    clienteEmail: (comprador ? comprador.email : project.client_email) || '',
-    clienteTelefono: (comprador ? comprador.phone : project.client_phone) || '',
-    items,
-    payments: options?.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
-    additionalFields: baseAdditionalFields.length > 0 ? baseAdditionalFields : undefined,
-  };
+  const invoice = await conSecuencial(emisor, '01', async (secuencial, db) => {
+    const invoiceData: InvoiceData = {
+      secuencial,
+      fecha,
+      clienteIdTipo: isConsumidorFinal ? '07' : (comprador ? comprador.idType : clientIdType),
+      clienteRuc: isConsumidorFinal ? '9999999999999' : (comprador ? comprador.ruc : project.client_ruc),
+      clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : ((comprador ? comprador.name : project.client_name) || 'CONSUMIDOR FINAL'),
+      clienteDireccion: (comprador ? comprador.address : project.client_address) || 'N/A',
+      clienteEmail: (comprador ? comprador.email : project.client_email) || '',
+      clienteTelefono: (comprador ? comprador.phone : project.client_phone) || '',
+      items,
+      payments: options?.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
+      additionalFields: baseAdditionalFields.length > 0 ? baseAdditionalFields : undefined,
+    };
 
-  // Build XML — amounts always in USD
-  const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
+    // Build XML — amounts always in USD
+    const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData, emisor);
 
-  // Calculate totals in USD
-  const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
+    // Calculate totals in USD
+    const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
 
-  // Insert invoice — all amounts in USD, currency/rate stored for reference
-  const { rows: [invoice] } = await pool.query(
-    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, currency, exchange_rate, original_total_usd)
-     VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'generated', $18, $19, $20, $21) RETURNING id`,
-    [projectId, project.client_id, (subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
-     SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
-     invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
-     subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
-     currency, exchangeRate, (subtotal0 + subtotalIva + ivaMonto).toFixed(2)]
-  );
+    // Insert invoice — all amounts in USD, currency/rate stored for reference
+    const { rows: [invoice] } = await db.query(
+      `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, currency, exchange_rate, original_total_usd)
+       VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, 'generated', $18, $19, $20, $21) RETURNING id`,
+      [projectId, project.client_id, (subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
+       emisor.ruc, emisor.razonSocial,
+       invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
+       subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
+       currency, exchangeRate, (subtotal0 + subtotalIva + ivaMonto).toFixed(2)]
+    );
+    await marcarEmisor(db, invoice.id, emisor);
+    return invoice;
+  });
 
   // Insert items
   await insertInvoiceItems(invoice.id, items);
@@ -318,6 +322,8 @@ export async function projectHasInvoice(projectId: string): Promise<{ hasInvoice
  * Create a manual invoice from multiple projects
  */
 interface ManualInvoiceOptions {
+  /** Quién emite. Por omisión GCC. */
+  emisor?: Emisor;
   projectIds: string[];
   clientIdType?: string;
   clientName: string;
@@ -404,7 +410,7 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
   const currency = options.currency || 'USD';
   const exchangeRate = options.exchangeRate || 1;
 
-  const secuencial = await getNextSecuencial();
+  const emisor = options.emisor ?? await cargarEmisor('gcc');
   const fecha = new Date();
 
   const isConsumidorFinal = !options.clientRuc || options.clientRuc === '9999999999999' || options.clientIdType === '07';
@@ -421,35 +427,39 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
     );
   }
 
-  const invoiceData: InvoiceData = {
-    secuencial,
-    fecha,
-    clienteIdTipo: isConsumidorFinal ? '07' : options.clientIdType,
-    clienteRuc: isConsumidorFinal ? '9999999999999' : options.clientRuc,
-    clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : (options.clientName || 'CONSUMIDOR FINAL'),
-    clienteDireccion: options.clientAddress || 'N/A',
-    clienteEmail: options.clientEmail || '',
-    clienteTelefono: options.clientPhone || '',
-    items,
-    payments: options.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
-    additionalFields: baseAdditionalFields.length > 0 ? baseAdditionalFields : undefined,
-  };
+  const invoice = await conSecuencial(emisor, '01', async (secuencial, db) => {
+    const invoiceData: InvoiceData = {
+      secuencial,
+      fecha,
+      clienteIdTipo: isConsumidorFinal ? '07' : options.clientIdType,
+      clienteRuc: isConsumidorFinal ? '9999999999999' : options.clientRuc,
+      clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : (options.clientName || 'CONSUMIDOR FINAL'),
+      clienteDireccion: options.clientAddress || 'N/A',
+      clienteEmail: options.clientEmail || '',
+      clienteTelefono: options.clientPhone || '',
+      items,
+      payments: options.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
+      additionalFields: baseAdditionalFields.length > 0 ? baseAdditionalFields : undefined,
+    };
 
-  const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
+    const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData, emisor);
 
-  // Totals always in USD
-  const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
+    // Totals always in USD
+    const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
 
-  // Insert invoice with is_manual = true, project_id = null
-  const { rows: [invoice] } = await pool.query(
-    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd)
-     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19) RETURNING id`,
-    [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
-     SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
-     invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
-     subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
-     currency, exchangeRate, (subtotal0 + subtotalIva + ivaMonto).toFixed(2)]
-  );
+    // Insert invoice with is_manual = true, project_id = null
+    const { rows: [invoice] } = await db.query(
+      `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd)
+       VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19) RETURNING id`,
+      [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
+       emisor.ruc, emisor.razonSocial,
+       invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
+       subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
+       currency, exchangeRate, (subtotal0 + subtotalIva + ivaMonto).toFixed(2)]
+    );
+    await marcarEmisor(db, invoice.id, emisor);
+    return invoice;
+  });
 
   // Link all projects via junction table
   for (const pid of options.projectIds) {
@@ -472,6 +482,8 @@ export async function createManualInvoice(options: ManualInvoiceOptions): Promis
  * Create a manual invoice from a ticket (no project linking)
  */
 interface TicketInvoiceOptions {
+  /** Quién emite. Por omisión GCC. */
+  emisor?: Emisor;
   ticketId: string;
   ticketTitle: string;
   clientIdType?: string;
@@ -507,7 +519,7 @@ export async function createManualInvoiceFromTicket(options: TicketInvoiceOption
   const currency = options.currency || 'USD';
   const exchangeRate = options.exchangeRate || 1;
 
-  const secuencial = await getNextSecuencial();
+  const emisor = options.emisor ?? await cargarEmisor('gcc');
   const fecha = new Date();
 
   const isConsumidorFinal = !options.clientRuc || options.clientRuc === '9999999999999' || options.clientIdType === '07';
@@ -523,41 +535,47 @@ export async function createManualInvoiceFromTicket(options: TicketInvoiceOption
     );
   }
 
-  const invoiceData: InvoiceData = {
-    secuencial,
-    fecha,
-    clienteIdTipo: isConsumidorFinal ? '07' : options.clientIdType,
-    clienteRuc: isConsumidorFinal ? '9999999999999' : options.clientRuc,
-    clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : (options.clientName || 'CONSUMIDOR FINAL'),
-    clienteDireccion: options.clientAddress || 'N/A',
-    clienteEmail: options.clientEmail || '',
-    clienteTelefono: options.clientPhone || '',
-    items,
-    payments: options.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
-    additionalFields: baseAdditionalFields.length > 0 ? baseAdditionalFields : undefined,
-  };
+  const invoice = await conSecuencial(emisor, '01', async (secuencial, db) => {
+    const invoiceData: InvoiceData = {
+      secuencial,
+      fecha,
+      clienteIdTipo: isConsumidorFinal ? '07' : options.clientIdType,
+      clienteRuc: isConsumidorFinal ? '9999999999999' : options.clientRuc,
+      clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : (options.clientName || 'CONSUMIDOR FINAL'),
+      clienteDireccion: options.clientAddress || 'N/A',
+      clienteEmail: options.clientEmail || '',
+      clienteTelefono: options.clientPhone || '',
+      items,
+      payments: options.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
+      additionalFields: baseAdditionalFields.length > 0 ? baseAdditionalFields : undefined,
+    };
 
-  const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
+    const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData, emisor);
 
-  const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
-  const totalUsd = subtotal0 + subtotalIva + ivaMonto;
+    const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
+    const totalUsd = subtotal0 + subtotalIva + ivaMonto;
 
-  const { rows: [invoice] } = await pool.query(
-    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd, source_type, source_id)
-     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19, 'ticket', $20) RETURNING id`,
-    [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
-     SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
-     invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
-     subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
-     currency, exchangeRate, totalUsd.toFixed(2), options.ticketId]
-  );
+    const { rows: [invoice] } = await db.query(
+      `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd, source_type, source_id)
+       VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19, 'ticket', $20) RETURNING id`,
+      [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
+       emisor.ruc, emisor.razonSocial,
+       invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
+       subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
+       currency, exchangeRate, totalUsd.toFixed(2), options.ticketId]
+    );
+    await marcarEmisor(db, invoice.id, emisor);
+    return { id: invoice.id as number, totalUsd };
+  });
 
   await insertInvoiceItems(invoice.id, items);
 
-  return { invoiceId: invoice.id, total: totalUsd };
+  return { invoiceId: invoice.id, total: invoice.totalUsd };
 }
 
 interface SubscriptionInvoiceOptions {
+  /** Quién emite. Por omisión GCC. */
+  emisor?: Emisor;
   subscriptionId: string;
   period: string; // 'YYYY-MM' — billed month, used as source_id suffix
   title: string;
@@ -600,7 +618,7 @@ export async function createManualInvoiceFromSubscription(options: SubscriptionI
   const currency = options.currency || 'USD';
   const exchangeRate = options.exchangeRate || 1;
 
-  const secuencial = await getNextSecuencial();
+  const emisor = options.emisor ?? await cargarEmisor('gcc');
   const fecha = new Date();
 
   const isConsumidorFinal = !options.clientRuc || options.clientRuc === '9999999999999' || options.clientIdType === '07';
@@ -616,40 +634,44 @@ export async function createManualInvoiceFromSubscription(options: SubscriptionI
     );
   }
 
-  const invoiceData: InvoiceData = {
-    secuencial,
-    fecha,
-    clienteIdTipo: isConsumidorFinal ? '07' : options.clientIdType,
-    clienteRuc: isConsumidorFinal ? '9999999999999' : options.clientRuc,
-    clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : (options.clientName || 'CONSUMIDOR FINAL'),
-    clienteDireccion: options.clientAddress || 'N/A',
-    clienteEmail: options.clientEmail || '',
-    clienteTelefono: options.clientPhone || '',
-    items,
-    payments: options.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
-    additionalFields: baseAdditionalFields.length > 0 ? baseAdditionalFields : undefined,
-  };
+  const invoice = await conSecuencial(emisor, '01', async (secuencial, db) => {
+    const invoiceData: InvoiceData = {
+      secuencial,
+      fecha,
+      clienteIdTipo: isConsumidorFinal ? '07' : options.clientIdType,
+      clienteRuc: isConsumidorFinal ? '9999999999999' : options.clientRuc,
+      clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : (options.clientName || 'CONSUMIDOR FINAL'),
+      clienteDireccion: options.clientAddress || 'N/A',
+      clienteEmail: options.clientEmail || '',
+      clienteTelefono: options.clientPhone || '',
+      items,
+      payments: options.paymentCode ? [{ code: options.paymentCode, total: 0 }] : undefined,
+      additionalFields: baseAdditionalFields.length > 0 ? baseAdditionalFields : undefined,
+    };
 
-  const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
+    const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData, emisor);
 
-  const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
-  const totalUsd = subtotal0 + subtotalIva + ivaMonto;
+    const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
+    const totalUsd = subtotal0 + subtotalIva + ivaMonto;
 
-  const sourceId = `${options.subscriptionId}-${options.period}`;
+    const sourceId = `${options.subscriptionId}-${options.period}`;
 
-  const { rows: [invoice] } = await pool.query(
-    `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd, source_type, source_id)
-     VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19, 'subscription', $20) RETURNING id`,
-    [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
-     SRI_CONFIG.ruc, SRI_CONFIG.razonSocial,
-     invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
-     subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
-     currency, exchangeRate, totalUsd.toFixed(2), sourceId]
-  );
+    const { rows: [invoice] } = await db.query(
+      `INSERT INTO gcc_world.invoices (project_id, client_id, subtotal, tax, status, invoice_number, access_key, ruc_emisor, razon_social_emisor, client_ruc, client_id_type, client_name_sri, client_email_sri, client_phone_sri, client_address_sri, subtotal_0, subtotal_iva, iva_amount, sri_status, xml_signed, is_manual, currency, exchange_rate, original_total_usd, source_type, source_id)
+       VALUES (NULL, NULL, $1, $2, 'pending', $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, 'generated', $16, true, $17, $18, $19, 'subscription', $20) RETURNING id`,
+      [(subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2), numeroFactura, claveAcceso,
+       emisor.ruc, emisor.razonSocial,
+       invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail, invoiceData.clienteTelefono, invoiceData.clienteDireccion,
+       subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2), xml,
+       currency, exchangeRate, totalUsd.toFixed(2), sourceId]
+    );
+    await marcarEmisor(db, invoice.id, emisor);
+    return { id: invoice.id as number, totalUsd };
+  });
 
   await insertInvoiceItems(invoice.id, items);
 
-  return { invoiceId: invoice.id, total: totalUsd };
+  return { invoiceId: invoice.id, total: invoice.totalUsd };
 }
 
 /**
@@ -665,12 +687,13 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
   if (!invoice) throw new Error('Factura no encontrada');
 
   try {
-    // Sign XML
-    const xmlSigned = signXml(invoice.xml_signed);
+    // Sign XML — con la firma de quien la emitió (GCC si no tiene `emisor_id`).
+    const emisor = await emisorDeFactura(invoice);
+    const xmlSigned = await firmarFactura(invoice.xml_signed, emisor);
     await pool.query(`UPDATE gcc_world.invoices SET xml_signed = $1, sri_status = 'signed', updated_at = NOW() WHERE id = $2`, [xmlSigned, invoiceId]);
 
     // Send to SRI
-    const recepcion = await enviarComprobante(xmlSigned);
+    const recepcion = await enviarComprobante(xmlSigned, emisor.ambiente);
     await pool.query(
       `UPDATE gcc_world.invoices SET sri_response = $1, sri_status = $2::text,
               status = CASE WHEN $2::text = 'rejected' AND status NOT IN ('paid','cancelled') THEN 'failed' ELSE status END,
@@ -685,7 +708,7 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
     // Wait 2 seconds then check authorization
     await new Promise(r => setTimeout(r, 2000));
 
-    const auth = await consultarAutorizacion(invoice.access_key);
+    const auth = await consultarAutorizacion(invoice.access_key, emisor.ambiente);
     if (auth.autorizado) {
       await pool.query(
         `UPDATE gcc_world.invoices SET authorization_number = $1, authorization_date = $2, sri_status = 'authorized',
@@ -724,7 +747,7 @@ export async function sendInvoiceToSri(invoiceId: number): Promise<{
         exchangeRate: Number(invoice.exchange_rate) || 1,
         // El RIDE muestra la información adicional que realmente viajó al SRI
         additionalFields: parseAdditionalFieldsFromXml(xmlSigned),
-      });
+      }, emisor);
 
       await pool.query(`UPDATE gcc_world.invoices SET pdf_data = $1, updated_at = NOW() WHERE id = $2`, [pdfBuffer, invoiceId]);
 
@@ -798,7 +821,7 @@ export async function regenerateRidePdf(invoiceId: number, persist = false): Pro
     exchangeRate: Number(invoice.exchange_rate) || 1,
     // El RIDE muestra la información adicional que realmente viajó al SRI
     additionalFields: parseAdditionalFieldsFromXml(invoice.xml_signed),
-  });
+  }, await emisorDeFactura(invoice));
 
   if (persist) {
     await pool.query(`UPDATE gcc_world.invoices SET pdf_data = $1, updated_at = NOW() WHERE id = $2`, [pdfBuffer, invoiceId]);
@@ -878,45 +901,47 @@ export async function regenerateRejectedInvoice(invoiceId: number, options: Rege
     );
   }
 
-  const secuencial = await getNextSecuencial();
+  // Se re-numera en la serie de SU emisor (el mismo que la emitió la primera vez).
+  const emisor = await emisorDeFactura(invoice);
+  await conSecuencial(emisor, '01', async (secuencial, db) => {
+    const invoiceData: InvoiceData = {
+      secuencial,
+      fecha: new Date(),
+      clienteIdTipo: isConsumidorFinal ? '07' : clientIdType,
+      clienteRuc: isConsumidorFinal ? '9999999999999' : clientRuc,
+      clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : (clientName || 'CONSUMIDOR FINAL'),
+      clienteDireccion: clientAddress,
+      clienteEmail: clientEmail,
+      clienteTelefono: clientPhone,
+      items,
+      additionalFields: additionalFields.length > 0 ? additionalFields : undefined,
+    };
 
-  const invoiceData: InvoiceData = {
-    secuencial,
-    fecha: new Date(),
-    clienteIdTipo: isConsumidorFinal ? '07' : clientIdType,
-    clienteRuc: isConsumidorFinal ? '9999999999999' : clientRuc,
-    clienteNombre: isConsumidorFinal ? 'CONSUMIDOR FINAL' : (clientName || 'CONSUMIDOR FINAL'),
-    clienteDireccion: clientAddress,
-    clienteEmail: clientEmail,
-    clienteTelefono: clientPhone,
-    items,
-    additionalFields: additionalFields.length > 0 ? additionalFields : undefined,
-  };
+    const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData, emisor);
 
-  const { xml, claveAcceso, numeroFactura } = buildFacturaXml(invoiceData);
+    const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
+    const totalUsd = subtotal0 + subtotalIva + ivaMonto;
 
-  const { subtotal0, subtotalIva, ivaMonto } = invoiceTotals(items);
-  const totalUsd = subtotal0 + subtotalIva + ivaMonto;
-
-  await pool.query(
-    `UPDATE gcc_world.invoices
-       SET invoice_number = $1, access_key = $2, xml_signed = $3,
-           client_ruc = $4, client_id_type = $5, client_name_sri = $6, client_email_sri = $7,
-           client_phone_sri = $8, client_address_sri = $9,
-           subtotal = $10, tax = $11, subtotal_0 = $12, subtotal_iva = $13, iva_amount = $14,
-           original_total_usd = $15,
-           sri_status = 'generated', sri_response = NULL,
-           authorization_number = NULL, authorization_date = NULL,
-           pdf_data = NULL, updated_at = NOW()
-     WHERE id = $16`,
-    [numeroFactura, claveAcceso, xml,
-     invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail,
-     invoiceData.clienteTelefono, invoiceData.clienteDireccion,
-     (subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2),
-     subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2),
-     totalUsd.toFixed(2),
-     invoiceId]
-  );
+    await db.query(
+      `UPDATE gcc_world.invoices
+         SET invoice_number = $1, access_key = $2, xml_signed = $3,
+             client_ruc = $4, client_id_type = $5, client_name_sri = $6, client_email_sri = $7,
+             client_phone_sri = $8, client_address_sri = $9,
+             subtotal = $10, tax = $11, subtotal_0 = $12, subtotal_iva = $13, iva_amount = $14,
+             original_total_usd = $15,
+             sri_status = 'generated', sri_response = NULL,
+             authorization_number = NULL, authorization_date = NULL,
+             pdf_data = NULL, updated_at = NOW()
+       WHERE id = $16`,
+      [numeroFactura, claveAcceso, xml,
+       invoiceData.clienteRuc, invoiceData.clienteIdTipo, invoiceData.clienteNombre, invoiceData.clienteEmail,
+       invoiceData.clienteTelefono, invoiceData.clienteDireccion,
+       (subtotal0 + subtotalIva).toFixed(2), ivaMonto.toFixed(2),
+       subtotal0.toFixed(2), subtotalIva.toFixed(2), ivaMonto.toFixed(2),
+       totalUsd.toFixed(2),
+       invoiceId]
+    );
+  });
 
   await pool.query(`DELETE FROM gcc_world.invoice_items_sri WHERE invoice_id = $1`, [invoiceId]);
   await insertInvoiceItems(invoiceId, items);

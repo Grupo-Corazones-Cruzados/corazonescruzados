@@ -1,4 +1,5 @@
-import { SRI_CONFIG, SRI_ENDPOINTS } from './config';
+import { SRI_ENDPOINTS } from './config';
+import type { Ambiente } from './emisor';
 
 const SRI_FETCH_TIMEOUT_MS = 30_000;
 const SRI_FETCH_RETRIES = 2;
@@ -35,14 +36,14 @@ async function sriFetch(endpoint: string, body: string): Promise<Response> {
 }
 
 /**
- * Envía el comprobante firmado al SRI para validación
+ * Envía el comprobante firmado al SRI para validación, al ambiente del emisor (1 pruebas, 2 producción).
  */
-export async function enviarComprobante(xmlFirmado: string): Promise<{
+export async function enviarComprobante(xmlFirmado: string, ambiente: Ambiente): Promise<{
   ok: boolean;
   estado: string;
   comprobantes: { claveAcceso: string; mensajes: { tipo: string; mensaje: string; informacionAdicional?: string }[] }[];
 }> {
-  const endpoint = SRI_ENDPOINTS[SRI_CONFIG.ambiente].recepcion;
+  const endpoint = SRI_ENDPOINTS[ambiente].recepcion;
 
   // Encode XML in base64 for SOAP
   const xmlBase64 = Buffer.from(xmlFirmado, 'utf-8').toString('base64');
@@ -88,9 +89,9 @@ export async function enviarComprobante(xmlFirmado: string): Promise<{
 }
 
 /**
- * Consulta la autorización de un comprobante por clave de acceso
+ * Consulta la autorización de un comprobante por clave de acceso, en el ambiente del emisor.
  */
-export async function consultarAutorizacion(claveAcceso: string): Promise<{
+export async function consultarAutorizacion(claveAcceso: string, ambiente: Ambiente): Promise<{
   autorizado: boolean;
   numeroAutorizacion: string;
   fechaAutorizacion: string;
@@ -98,7 +99,7 @@ export async function consultarAutorizacion(claveAcceso: string): Promise<{
   mensajes: { tipo: string; mensaje: string; informacionAdicional?: string }[];
   xmlAutorizado?: string;
 }> {
-  const endpoint = SRI_ENDPOINTS[SRI_CONFIG.ambiente].autorizacion;
+  const endpoint = SRI_ENDPOINTS[ambiente].autorizacion;
 
   const soapEnvelope = `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ec="http://ec.gob.sri.ws.autorizacion">

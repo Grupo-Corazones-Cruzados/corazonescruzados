@@ -789,6 +789,36 @@ export async function sendCuentaCobroCambiadaEmail(params: { email: string; nomb
   return deliver({ to: params.email, subject: 'Tu cuenta de cobro en GCC World', html });
 }
 
+/** Se registró o cambió la firma electrónica con la que la plataforma emite sus facturas. */
+export async function sendFirmaRegistradaEmail(params: { email: string; nombre: string; titular: string; vence: string; nueva: boolean }) {
+  const html = emailShell(
+    emailBadge('FIRMA ELECTRÓNICA', CORP.warning) +
+    emailHeading(params.nueva ? 'Registraste tu firma electrónica' : 'Cambiaste tu firma electrónica', escapeHtml(params.nombre)) +
+    emailParagraph(`Con ella firmaremos tus facturas. Titular: ${accentStrong(escapeHtml(params.titular))}. Vence el ${escapeHtml(fechaLarga(params.vence))}.`) +
+    emailButton(`${APP_URL}/dashboard/settings?tab=facturacion`, 'Ver mi facturación') +
+    emailNote('Si no fuiste tú, cambia tu contraseña y escríbenos de inmediato.'),
+  );
+  return deliver({ to: params.email, subject: 'Tu firma electrónica en GCC World', html });
+}
+
+/** La firma electrónica vence en `dias` días (aviso de 30 días; ver `lib/facturacion-emisores.ts`). */
+export async function sendFirmaPorVencerEmail(params: { email: string; nombre: string; vence: string; dias: number }) {
+  const cuando = params.dias <= 0 ? 'vence hoy' : params.dias === 1 ? 'vence mañana' : `vence en ${params.dias} días`;
+  const html = emailShell(
+    emailBadge('FIRMA POR VENCER', CORP.warning) +
+    emailHeading(`Tu firma electrónica ${cuando}`, escapeHtml(params.nombre)) +
+    emailParagraph(`El certificado con el que firmamos tus facturas vence el ${accentStrong(escapeHtml(fechaLarga(params.vence)))}. Renuévalo con tu certificadora y sube el archivo nuevo: sin firma vigente no se pueden emitir tus facturas.`) +
+    emailButton(`${APP_URL}/dashboard/settings?tab=facturacion`, 'Subir la firma nueva'),
+  );
+  return deliver({ to: params.email, subject: `Tu firma electrónica ${cuando}`, html });
+}
+
+/** AAAA-MM-DD → «3 de febrero de 2028» (un día, no un instante: sin zona). */
+function fechaLarga(ymd: string): string {
+  const [a, m, d] = ymd.split('-').map(Number);
+  return new Date(Date.UTC(a, m - 1, d, 12)).toLocaleDateString('es-EC', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' });
+}
+
 /* ── Helpers de diseño reusables para correos construidos en otras rutas
  *    (facturas, suscripciones, campañas, tickets, proyectos, proformas). Exportados
  *    para que TODOS los correos compartan el mismo tema corporativo. ─────────────── */

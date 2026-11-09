@@ -1,4 +1,4 @@
-import { SRI_CONFIG } from './config';
+import type { Emisor, TipoDoc } from './emisor';
 
 /**
  * Descompone una fecha en sus partes de día/mes/año **en hora de Ecuador**
@@ -34,17 +34,16 @@ export function ecuadorDateParts(fecha: Date): { dd: string; mm: string; aaaa: s
  * - 1 dígito: tipo de emisión
  * + 1 dígito verificador (módulo 11) = 49 total
  */
-export function generateAccessKey(fecha: Date, secuencial: number): string {
+export function generateAccessKey(fecha: Date, secuencial: number, emisor: Emisor, tipoComp: TipoDoc = '01'): string {
   const { dd, mm, aaaa } = ecuadorDateParts(fecha);
   const fechaStr = `${dd}${mm}${aaaa}`;
 
-  const tipoComp = SRI_CONFIG.tipoComprobante;
-  const ruc = SRI_CONFIG.ruc;
-  const ambiente = SRI_CONFIG.ambiente;
-  const serie = `${SRI_CONFIG.establecimiento}${SRI_CONFIG.puntoEmision}`;
+  const ruc = emisor.ruc;
+  const ambiente = emisor.ambiente;
+  const serie = `${emisor.establecimiento}${emisor.puntoEmision}`;
   const seq = String(secuencial).padStart(9, '0');
   const codigoNumerico = String(Math.floor(Math.random() * 99999999) + 1).padStart(8, '0');
-  const tipoEmision = SRI_CONFIG.tipoEmision;
+  const tipoEmision = emisor.tipoEmision;
 
   const base = `${fechaStr}${tipoComp}${ruc}${ambiente}${serie}${seq}${codigoNumerico}${tipoEmision}`;
 
@@ -74,8 +73,8 @@ function modulo11(cadena: string): string {
 }
 
 /**
- * Formatea el número de factura
+ * Formatea el número del comprobante (factura o nota de crédito): estab-pto-secuencial del emisor.
  */
-export function formatInvoiceNumber(secuencial: number): string {
-  return `${SRI_CONFIG.establecimiento}-${SRI_CONFIG.puntoEmision}-${String(secuencial).padStart(9, '0')}`;
+export function formatInvoiceNumber(secuencial: number, emisor: Emisor): string {
+  return `${emisor.establecimiento}-${emisor.puntoEmision}-${String(secuencial).padStart(9, '0')}`;
 }

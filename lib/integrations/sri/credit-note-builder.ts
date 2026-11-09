@@ -1,4 +1,5 @@
-import { SRI_CONFIG, getTipoIdentificacion } from './config';
+import { getTipoIdentificacion } from './config';
+import type { Emisor } from './emisor';
 import { generateAccessKey, formatInvoiceNumber } from './access-key';
 import { sriText, SRI_MAX } from './text';
 
@@ -28,17 +29,13 @@ interface CreditNoteData {
 }
 
 /**
- * Build Nota de Crédito XML for SRI
+ * Build Nota de Crédito XML for SRI, a nombre de `emisor` (el de la factura que anula).
  * tipoComprobante = 04 (Nota de Crédito)
  */
-export function buildCreditNoteXml(data: CreditNoteData): { xml: string; claveAcceso: string; numero: string } {
-  // Override tipo comprobante for access key
-  const originalTipoComp = SRI_CONFIG.tipoComprobante;
-  (SRI_CONFIG as any).tipoComprobante = '04';
-  const claveAcceso = generateAccessKey(data.fecha, data.secuencial);
-  (SRI_CONFIG as any).tipoComprobante = originalTipoComp;
+export function buildCreditNoteXml(data: CreditNoteData, emisor: Emisor): { xml: string; claveAcceso: string; numero: string } {
+  const claveAcceso = generateAccessKey(data.fecha, data.secuencial, emisor, '04');
 
-  const numero = `${SRI_CONFIG.establecimiento}-${SRI_CONFIG.puntoEmision}-${String(data.secuencial).padStart(9, '0')}`;
+  const numero = formatInvoiceNumber(data.secuencial, emisor);
 
   const dd = String(data.fecha.getDate()).padStart(2, '0');
   const mm = String(data.fecha.getMonth() + 1).padStart(2, '0');
@@ -108,39 +105,38 @@ export function buildCreditNoteXml(data: CreditNoteData): { xml: string; claveAc
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <notaCredito id="comprobante" version="1.1.0">
   <infoTributaria>
-    <ambiente>${SRI_CONFIG.ambiente}</ambiente>
-    <tipoEmision>${SRI_CONFIG.tipoEmision}</tipoEmision>
-    <razonSocial>${sriText(SRI_CONFIG.razonSocial, SRI_MAX.razonSocial)}</razonSocial>
-    <nombreComercial>${sriText(SRI_CONFIG.nombreComercial, SRI_MAX.nombreComercial)}</nombreComercial>
-    <ruc>${SRI_CONFIG.ruc}</ruc>
+    <ambiente>${emisor.ambiente}</ambiente>
+    <tipoEmision>${emisor.tipoEmision}</tipoEmision>
+    <razonSocial>${sriText(emisor.razonSocial, SRI_MAX.razonSocial)}</razonSocial>
+${emisor.nombreComercial ? `    <nombreComercial>${sriText(emisor.nombreComercial, SRI_MAX.nombreComercial)}</nombreComercial>\n` : ''}    <ruc>${emisor.ruc}</ruc>
     <claveAcceso>${claveAcceso}</claveAcceso>
     <codDoc>04</codDoc>
-    <estab>${SRI_CONFIG.establecimiento}</estab>
-    <ptoEmi>${SRI_CONFIG.puntoEmision}</ptoEmi>
+    <estab>${emisor.establecimiento}</estab>
+    <ptoEmi>${emisor.puntoEmision}</ptoEmi>
     <secuencial>${String(data.secuencial).padStart(9, '0')}</secuencial>
-    <dirMatriz>${sriText(SRI_CONFIG.dirMatriz, SRI_MAX.dirMatriz)}</dirMatriz>
-  </infoTributaria>
+    <dirMatriz>${sriText(emisor.dirMatriz, SRI_MAX.dirMatriz)}</dirMatriz>
+${emisor.agenteRetencion ? `    <agenteRetencion>${emisor.agenteRetencion}</agenteRetencion>\n` : ''}  </infoTributaria>
   <infoNotaCredito>
     <fechaEmision>${fechaEmision}</fechaEmision>
-    <dirEstablecimiento>${sriText(SRI_CONFIG.dirEstablecimiento, SRI_MAX.dirEstablecimiento)}</dirEstablecimiento>
+    <dirEstablecimiento>${sriText(emisor.dirEstablecimiento, SRI_MAX.dirEstablecimiento)}</dirEstablecimiento>
     <tipoIdentificacionComprador>${tipoIdComprador}</tipoIdentificacionComprador>
     <razonSocialComprador>${sriText(data.clienteNombre, SRI_MAX.razonSocialComprador)}</razonSocialComprador>
     <identificacionComprador>${idCompradorSri}</identificacionComprador>
-    <obligadoContabilidad>${SRI_CONFIG.obligadoContabilidad}</obligadoContabilidad>
+${emisor.contribuyenteEspecial ? `    <contribuyenteEspecial>${emisor.contribuyenteEspecial}</contribuyenteEspecial>\n` : ''}    <obligadoContabilidad>${emisor.obligadoContabilidad}</obligadoContabilidad>
     <codDocModificado>${codDocModificado}</codDocModificado>
     <numDocModificado>${data.facturaNumero}</numDocModificado>
     <fechaEmisionDocSustento>${data.facturaFecha}</fechaEmisionDocSustento>
     <totalSinImpuestos>${totalSinImpuestos.toFixed(2)}</totalSinImpuestos>
     <valorModificacion>${importeTotal.toFixed(2)}</valorModificacion>
-    <moneda>${SRI_CONFIG.moneda}</moneda>
+    <moneda>${emisor.moneda}</moneda>
     <totalConImpuestos>${totalConImpuestosXml}
     </totalConImpuestos>
     <motivo>${sriText(data.motivo, SRI_MAX.motivo)}</motivo>
   </infoNotaCredito>
   <detalles>${detallesXml}
   </detalles>
-  <infoAdicional>${SRI_CONFIG.contribuyenteRimpe ? `
-    <campoAdicional nombre="regimen">${sriText(SRI_CONFIG.contribuyenteRimpe, SRI_MAX.campoAdicionalValor)}</campoAdicional>` : ''}
+  <infoAdicional>${emisor.contribuyenteRimpe ? `
+    <campoAdicional nombre="regimen">${sriText(emisor.contribuyenteRimpe, SRI_MAX.campoAdicionalValor)}</campoAdicional>` : ''}
     <campoAdicional nombre="email">${sriText(data.clienteEmail || '', SRI_MAX.campoAdicionalValor)}</campoAdicional>${realIdExterior ? `
     <campoAdicional nombre="identificacionExterior">${sriText(realIdExterior, SRI_MAX.campoAdicionalValor)}</campoAdicional>` : ''}
   </infoAdicional>

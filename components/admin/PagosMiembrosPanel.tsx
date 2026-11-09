@@ -28,9 +28,8 @@ import { EditField, EditAmount, EDIT_INPUT } from '@/components/ui/EditDialog';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_FILA } from '@/components/ui/Button';
 import { money } from '@/lib/format';
 import type { CuentaDescifrada, Ganancia, Pago, PersonaPorPagar, Saldo } from '@/lib/pagos-miembros';
-import { columnasPagos, tarjetaPago, fechaCorta, origenDe, EnlaceComprobante, ESTADO_PAGO, mf } from '@/components/cobros/comun';
+import { columnasPagos, tarjetaPago, fechaCorta, origenDe, EnlaceComprobante, ESTADO_PAGO, mf, Bloque } from '@/components/cobros/comun';
 
-const df = { fontFamily: 'var(--font-display)' } as const;
 
 type Filtro = 'con_saldo' | 'pagados' | 'todos' | 'historial';
 type Lista = { personas: PersonaPorPagar[]; pagos: Pago[] };
@@ -405,15 +404,6 @@ function PanelPago({ id, onClose, onAnulado }: { id: number | null; onClose: () 
 }
 
 /* ── Piezas ─────────────────────────────────────────────────────────────────────────────────────── */
-
-function Bloque({ titulo, children }: { titulo: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h3 className="text-[12.5px] font-semibold text-digi-text mb-2" style={df}>{titulo}</h3>
-      {children}
-    </section>
-  );
-}
 
 function Dato({ t, v, copiar, tono = 'text-digi-text' }: { t: string; v: string; copiar?: (v: string) => void; tono?: string }) {
   return (

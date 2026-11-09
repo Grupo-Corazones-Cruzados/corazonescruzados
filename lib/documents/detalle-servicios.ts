@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit/js/pdfkit.standalone';
-import { SRI_CONFIG } from '@/lib/integrations/sri/config';
+import type { Emisor } from '@/lib/integrations/sri/emisor';
 
 /**
  * DETALLE DE SERVICIOS — documento INFORMATIVO que acompaña a una factura.
@@ -47,7 +47,8 @@ function money(n: number): string {
   return new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
 }
 
-export async function generateDetalleServiciosPdf(data: DetalleServiciosData): Promise<Buffer> {
+/** `emisor`: el de la factura a la que acompaña (`emisorDeFactura`). */
+export async function generateDetalleServiciosPdf(data: DetalleServiciosData, emisor: Emisor): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margins: { top: 36, bottom: 36, left: 36, right: 36 } });
     const chunks: Buffer[] = [];
@@ -64,15 +65,15 @@ export async function generateDetalleServiciosPdf(data: DetalleServiciosData): P
     const colDerW = PW * 0.44;
 
     doc.fontSize(11).font('Helvetica-Bold').fillColor('#1c1b22')
-      .text(SRI_CONFIG.razonSocial, L, y, { width: PW * 0.52 });
+      .text(emisor.razonSocial, L, y, { width: PW * 0.52 });
     y = doc.y + 1;
     doc.fontSize(9).font('Helvetica-Bold').fillColor('#4b2d8e')
-      .text(SRI_CONFIG.nombreComercial, L, y, { width: PW * 0.52 });
+      .text(emisor.nombreComercial, L, y, { width: PW * 0.52 });
     y = doc.y + 6;
     doc.fontSize(8).font('Helvetica').fillColor('#56545f');
-    doc.text(`RUC: ${SRI_CONFIG.ruc}`, L, y, { width: PW * 0.52 }); y = doc.y + 2;
-    doc.text(SRI_CONFIG.dirMatriz, L, y, { width: PW * 0.52 }); y = doc.y + 2;
-    doc.text(SRI_CONFIG.contribuyenteRimpe, L, y, { width: PW * 0.52 });
+    doc.text(`RUC: ${emisor.ruc}`, L, y, { width: PW * 0.52 }); y = doc.y + 2;
+    doc.text(emisor.dirMatriz, L, y, { width: PW * 0.52 }); y = doc.y + 2;
+    doc.text(emisor.contribuyenteRimpe, L, y, { width: PW * 0.52 });
     const finIzq = doc.y;
 
     // Recuadro del documento

@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateDetalleServiciosPdf } from '@/lib/documents/detalle-servicios';
+import { emisorDeFactura } from '@/lib/integrations/sri/emisor';
 
 /**
  * PDF del DETALLE DE SERVICIOS. Se arma al vuelo con los ítems reales de la factura más
@@ -19,8 +20,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     const { rows: [invoice] } = await pool.query(
       `SELECT invoice_number, created_at, authorization_number,
-              client_name_sri, client_ruc, client_address_sri, client_email_sri
-         FROM gcc_world.invoices WHERE id = ($1)::int`, [id]
+              client_name_sri, client_ruc, client_address_sri, client_email_sri,
+              to_jsonb(i)->>'emisor_id' AS emisor_id
+         FROM gcc_world.invoices i WHERE id = ($1)::int`, [id]
     );
     if (!invoice) return NextResponse.json({ error: 'Factura no encontrada' }, { status: 404 });
 
@@ -54,7 +56,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
         unitPrice: Number(i.unitPrice) || 0,
       })),
       notas: doc.notes || '',
-    });
+    }, await emisorDeFactura(invoice));
 
     return new NextResponse(new Uint8Array(pdf), {
       status: 200,

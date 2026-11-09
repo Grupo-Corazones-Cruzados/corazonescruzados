@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit/js/pdfkit.standalone';
-import { SRI_CONFIG } from './config';
+import type { Emisor } from './emisor';
 
 interface RideData {
   claveAcceso: string;
@@ -40,7 +40,8 @@ function fmtDate(d: string): string {
   catch { return d; }
 }
 
-export async function generateRidePdf(data: RideData): Promise<Buffer> {
+/** El RIDE de una factura, con la cabecera del emisor que la emitió (`emisorDeFactura`). */
+export async function generateRidePdf(data: RideData, emisor: Emisor): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margins: { top: 30, bottom: 30, left: 30, right: 30 } });
     const chunks: Buffer[] = [];
@@ -60,17 +61,17 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
 
     // ─── LEFT: Emisor info ───
     const topY = y;
-    doc.fontSize(9).font('Helvetica-Bold').fillColor('black').text(SRI_CONFIG.razonSocial, L, y, { width: PW * 0.46 });
+    doc.fontSize(9).font('Helvetica-Bold').fillColor('black').text(emisor.razonSocial, L, y, { width: PW * 0.46 });
     y = doc.y + 2;
-    doc.fontSize(8).font('Helvetica-Bold').text(SRI_CONFIG.nombreComercial, L, y, { width: PW * 0.46 });
+    doc.fontSize(8).font('Helvetica-Bold').text(emisor.nombreComercial, L, y, { width: PW * 0.46 });
     y = doc.y + 6;
-    doc.fontSize(7).font('Helvetica-Bold').text('Dir. Matriz:', L, y, { continued: true }).font('Helvetica').text(`   ${SRI_CONFIG.dirMatriz}`, { width: PW * 0.44 });
+    doc.fontSize(7).font('Helvetica-Bold').text('Dir. Matriz:', L, y, { continued: true }).font('Helvetica').text(`   ${emisor.dirMatriz}`, { width: PW * 0.44 });
     y = doc.y + 3;
-    doc.font('Helvetica-Bold').text('Dir. Sucursal:', L, y, { continued: true }).font('Helvetica').text(`   ${SRI_CONFIG.dirEstablecimiento}`, { width: PW * 0.44 });
+    doc.font('Helvetica-Bold').text('Dir. Sucursal:', L, y, { continued: true }).font('Helvetica').text(`   ${emisor.dirEstablecimiento}`, { width: PW * 0.44 });
     y = doc.y + 3;
-    doc.font('Helvetica-Bold').text(`Obligado A Llevar Contabilidad: `, L, y, { continued: true }).font('Helvetica').text(SRI_CONFIG.obligadoContabilidad);
+    doc.font('Helvetica-Bold').text(`Obligado A Llevar Contabilidad: `, L, y, { continued: true }).font('Helvetica').text(emisor.obligadoContabilidad);
     y = doc.y + 3;
-    doc.font('Helvetica').text(SRI_CONFIG.contribuyenteRimpe, L, y, { width: PW * 0.46 });
+    doc.font('Helvetica').text(emisor.contribuyenteRimpe, L, y, { width: PW * 0.46 });
     const leftBottomY = doc.y + 4;
 
     // ─── RIGHT: Fiscal box ───
@@ -79,7 +80,7 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
     const boxStartY = ry;
 
     doc.fontSize(7).font('Helvetica-Bold').fillColor('black');
-    doc.text('R.U.C:', rightColX + 8, ry + 6, { continued: true }).font('Helvetica-Bold').text(`  ${SRI_CONFIG.ruc}`);
+    doc.text('R.U.C:', rightColX + 8, ry + 6, { continued: true }).font('Helvetica-Bold').text(`  ${emisor.ruc}`);
     ry += 18;
     doc.fontSize(11).font('Helvetica-Bold').text('FACTURA', rightColX + 8, ry);
     ry += 16;
@@ -93,7 +94,7 @@ export async function generateRidePdf(data: RideData): Promise<Buffer> {
     doc.fontSize(7).font('Helvetica-Bold').text('FECHA Y HORA DE', rightColX + 8, ry); ry += 8;
     doc.text('AUTORIZACION', rightColX + 8, ry, { continued: true }).font('Helvetica').text(`     ${fmtDate(data.fechaAutorizacion)}`);
     ry += 12;
-    doc.font('Helvetica-Bold').text('AMBIENTE:', rightColX + 8, ry, { continued: true }).font('Helvetica').text(`     ${SRI_CONFIG.ambiente === '2' ? 'Produccion' : 'Pruebas'}`);
+    doc.font('Helvetica-Bold').text('AMBIENTE:', rightColX + 8, ry, { continued: true }).font('Helvetica').text(`     ${emisor.ambiente === '2' ? 'Produccion' : 'Pruebas'}`);
     ry += 10;
     doc.font('Helvetica-Bold').text('EMISION:', rightColX + 8, ry, { continued: true }).font('Helvetica').text('     Normal');
     ry += 14;

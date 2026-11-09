@@ -1,20 +1,13 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
-import { signCreditNoteXml } from 'ec-sri-invoice-signer';
 import { buildCreditNoteXml } from '@/lib/integrations/sri/credit-note-builder';
+import { firmarNotaCredito } from '@/lib/integrations/sri/xades-signer';
+import { emisorDeFactura, siguienteSecuencial, anotarSecuencialUsado } from '@/lib/integrations/sri/emisor';
 import { enviarComprobante, consultarAutorizacion } from '@/lib/integrations/sri/soap-client';
 import { revertSubscriptionPaymentForVoidedInvoice } from '@/lib/subscriptions';
 import { removeIncomeFromFinance, quitarIngresosDeFacturaAnulada } from '@/lib/finance';
 import { revertirGanancias } from '@/lib/ganancias';
-import fs from 'fs';
-
-function loadP12(): Buffer {
-  if (process.env.SRI_P12_BASE64) return Buffer.from(process.env.SRI_P12_BASE64, 'base64');
-  const path = process.env.SRI_P12_PATH || '';
-  if (path && fs.existsSync(path)) return fs.readFileSync(path);
-  throw new Error('Certificado .p12 no encontrado');
-}
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -35,18 +28,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Get items
     const { rows: items } = await pool.query(`SELECT * FROM gcc_world.invoice_items_sri WHERE invoice_id = $1`, [id]);
 
-    // Get next credit note sequential.
-    // NOTE: las notas de crédito se guardan dentro de invoices.sri_response.credit_note.numero
-    // (formato "NC-001-001-000000001"), no como filas independientes — por eso leemos desde ahí.
-    const { rows: [{ next }] } = await pool.query(
-      `SELECT COALESCE(MAX(
-                CAST(SPLIT_PART((sri_response::json->'credit_note'->>'numero'), '-', 4) AS INTEGER)
-              ), 0) + 1 AS next
-       FROM gcc_world.invoices
-       WHERE sri_response IS NOT NULL
-         AND sri_response::text LIKE '%credit_note%'`
-    );
-    const secuencial = Math.max(next, 1);
+    // La nota de crédito la emite QUIEN emitió la factura, con su firma y en su serie.
+    const emisor = await emisorDeFactura(inv);
+
+    // Siguiente número de nota de crédito del emisor, SIN gastarlo: se gasta solo si el SRI la autoriza
+    // (`anotarSecuencialUsado` abajo), como antes. Las notas de crédito se guardan dentro de
+    // invoices.sri_response.credit_note.numero ("NC-001-001-000000001"), no como filas propias.
+    const secuencial = await siguienteSecuencial(emisor, '04');
 
     // Format original invoice date
     const invDate = new Date(inv.created_at);
@@ -75,15 +63,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         discount: 0,
         ivaRate: Number(it.iva_rate) || 0,
       })),
-    });
+    }, emisor);
 
     // Sign
-    const p12 = loadP12();
-    const password = process.env.SRI_P12_PASSWORD || '';
-    const signedXml = signCreditNoteXml(xml, p12, { pkcs12Password: password });
+    const signedXml = await firmarNotaCredito(xml, emisor);
 
     // Send to SRI
-    const recepcion = await enviarComprobante(signedXml);
+    const recepcion = await enviarComprobante(signedXml, emisor.ambiente);
     if (!recepcion.ok) {
       const msgs = recepcion.comprobantes[0]?.mensajes?.map(m => m.informacionAdicional || m.mensaje).join('; ') || 'Error';
       console.error('[void] SRI recepcion rejected:', JSON.stringify(recepcion, null, 2));
@@ -92,7 +78,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     // Wait and check authorization
     await new Promise(r => setTimeout(r, 3000));
-    const auth = await consultarAutorizacion(claveAcceso);
+    const auth = await consultarAutorizacion(claveAcceso, emisor.ambiente);
 
     if (auth.autorizado) {
       // Mark invoice as cancelled
@@ -100,6 +86,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         `UPDATE gcc_world.invoices SET status = 'cancelled', sri_status = 'voided', sri_response = $1, updated_at = NOW() WHERE id = $2`,
         [JSON.stringify({ credit_note: { numero: `NC-${numero}`, claveAcceso, autorizacion: auth.numeroAutorizacion, motivo: motivo.trim() } }), id]
       );
+      try { await anotarSecuencialUsado(emisor, '04', secuencial); } catch (e: any) { console.error('[void] contador de notas de crédito:', e.message); }
 
       // Abonos: cada factura parcial registró su ingreso keyeado por invoiceId → se quita aquí.
       try { await removeIncomeFromFinance('invoice', String(id)); } catch { /* no-op si no era abono */ }

@@ -15,7 +15,8 @@ import FaqsPanel from '@/components/admin/FaqsPanel';
 import SolucionesPanel from '@/components/admin/SolucionesPanel';
 import PromptsPanel from '@/components/admin/PromptsPanel';
 import PagosMiembrosPanel from '@/components/admin/PagosMiembrosPanel';
-import { Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers, NotebookPen, Banknote } from 'lucide-react';
+import EmisoresPanel from '@/components/admin/EmisoresPanel';
+import { Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers, NotebookPen, Banknote, Receipt } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -41,6 +42,8 @@ const TABS = [
   { value: 'prompts', label: 'Prompts', Icon: NotebookPen, grupo: 'Personal' },
   // Lo que GCC le transfiere a cada miembro o candidato de lo que ganó (fase 4 del modelo económico, 2026-11-09).
   { value: 'pagos', label: 'Pagos a miembros', Icon: Banknote, grupo: 'Finanzas' },
+  // Las cuentas de emisor (RUC + firma) de cada miembro o candidato y de GCC (fase 4, paso 3, 2026-11-09).
+  { value: 'emisores', label: 'Emisores', Icon: Receipt, grupo: 'Finanzas' },
 ];
 
 // El Espacio de trabajo y Gumdramon eran pestañas de aquí; desde el 2026-11-08 son herramientas
@@ -134,6 +137,7 @@ function Contenido({ tab }: { tab: string }) {
       {tab === 'soluciones' && <SolucionesPanel />}
       {tab === 'prompts' && <PromptsPanel />}
       {tab === 'pagos' && <PagosMiembrosPanel />}
+      {tab === 'emisores' && <EmisoresPanel />}
     </div>
   );
 }

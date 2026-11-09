@@ -11,15 +11,16 @@ import PanelCompartirCv from '@/components/settings/PanelCompartirCv';
 import ConexionesPanel from '@/components/settings/ConexionesPanel';
 import NotificacionesPanel from '@/components/settings/NotificacionesPanel';
 import CobrosPanel from '@/components/settings/CobrosPanel';
+import FacturacionPanel from '@/components/settings/FacturacionPanel';
 import DetailHeader from '@/components/ui/DetailHeader';
 import PortadaSecciones from '@/components/ui/PortadaSecciones';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
-import { FileText, CalendarClock, Briefcase, Share2, Link2, Bell, User, ChevronRight, Wallet, type LucideIcon } from 'lucide-react';
+import { FileText, CalendarClock, Briefcase, Share2, Link2, Bell, User, ChevronRight, Wallet, Receipt, type LucideIcon } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-type TabKey = 'cv' | 'availability' | 'portfolio' | 'conexiones' | 'notificaciones' | 'cobros';
+type TabKey = 'cv' | 'availability' | 'portfolio' | 'conexiones' | 'notificaciones' | 'cobros' | 'facturacion';
 const TABS: { key: TabKey; label: string; Icon: LucideIcon; soloMiembro: boolean; grupo: 'Profesional' | 'Cuenta' }[] = [
   { key: 'cv', label: 'Mi CV', Icon: FileText, soloMiembro: true, grupo: 'Profesional' },
   { key: 'availability', label: 'Disponibilidad', Icon: CalendarClock, soloMiembro: true, grupo: 'Profesional' },
@@ -31,6 +32,9 @@ const TABS: { key: TabKey; label: string; Icon: LucideIcon; soloMiembro: boolean
   // Lo que GCC le paga a cada uno y la cuenta donde lo recibe: miembros Y candidatos (fase 4 del modelo
   // económico, 2026-11-09).
   { key: 'cobros', label: 'Cobros', Icon: Wallet, soloMiembro: false, grupo: 'Cuenta' },
+  // La cuenta de emisor (RUC y firma electrónica) con la que la plataforma hará sus facturas: miembros Y
+  // candidatos (fase 4, paso 3 del modelo económico, 2026-11-09).
+  { key: 'facturacion', label: 'Facturación', Icon: Receipt, soloMiembro: false, grupo: 'Cuenta' },
 ];
 
 /**
@@ -145,6 +149,7 @@ function Configuracion() {
               {tabActiva === 'conexiones' && <ConexionesPanel />}
               {tabActiva === 'notificaciones' && <NotificacionesPanel />}
               {tabActiva === 'cobros' && <CobrosPanel />}
+              {tabActiva === 'facturacion' && <FacturacionPanel />}
             </div>
           </div>
         )}
@@ -195,6 +200,7 @@ function ConfiguracionMovil({ tabs, seccion, isMember, onCompartir }: {
             {s.key === 'conexiones' && <ConexionesPanel />}
             {s.key === 'notificaciones' && <NotificacionesPanel />}
             {s.key === 'cobros' && <CobrosPanel />}
+            {s.key === 'facturacion' && <FacturacionPanel />}
           </div>
         )}
       </div>

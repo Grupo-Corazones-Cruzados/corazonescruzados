@@ -36,6 +36,7 @@ export type ClaseAviso =
   | 'chat'
   | 'subscription'
   | 'payout'
+  | 'firma'
   | 'cp_llegada' | 'cp_salida';
 
 export type DefinicionAviso = {
@@ -79,6 +80,8 @@ export const AVISOS: DefinicionAviso[] = [
   { clase: 'subscription', grupo: 'Suscripciones', nombre: 'Suscripción por vencer', canales: ['push', 'campana'], alcance: 'todos' },
 
   { clase: 'payout', grupo: 'Cobros', nombre: 'Te transfirieron un pago', canales: ['push', 'campana'], alcance: 'equipo' },
+  // Sin push: lo dispara el cron nocturno (01:00 de Ecuador) y no debe despertar a nadie; va además por correo.
+  { clase: 'firma', grupo: 'Facturación', nombre: 'Firma electrónica por vencer', canales: ['campana'], alcance: 'equipo' },
 ];
 
 const POR_CLASE = new Map(AVISOS.map((a) => [a.clase, a]));

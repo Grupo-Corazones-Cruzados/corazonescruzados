@@ -12,7 +12,7 @@ import { BTN_SECONDARY } from '@/components/ui/Button';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { money } from '@/lib/format';
 import type { CuentaVisible, Ganancia, Pago, Saldo, TipoCuenta } from '@/lib/pagos-miembros';
-import { columnasGanancias, tarjetaGanancia, columnasPagos, tarjetaPago, fechaCorta, mf } from '@/components/cobros/comun';
+import { columnasGanancias, tarjetaGanancia, columnasPagos, tarjetaPago, fechaCorta, mf, Dato } from '@/components/cobros/comun';
 
 const df = { fontFamily: 'var(--font-display)' } as const;
 
@@ -164,15 +164,6 @@ export default function CobrosPanel() {
           </div>
         )}
       </EditPanel>
-    </div>
-  );
-}
-
-function Dato({ t, v }: { t: string; v: string }) {
-  return (
-    <div className="min-w-0">
-      <dt className="text-[10.5px] uppercase tracking-wide text-digi-muted">{t}</dt>
-      <dd className="text-digi-text truncate" title={v}>{v}</dd>
     </div>
   );
 }
