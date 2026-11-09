@@ -322,7 +322,9 @@ export default function DashboardSidebar() {
               Un aviso que no se puede pasar por alto. Sin él, un administrador se olvida
               de que está mirando como un cliente y escribe algo que quedará firmado por
               esa persona — y el registro dirá que lo hizo ella. */}
-          {suplantacion && (
+          {/* Con el menú de Accesos al lado (web y apps) «Volver a mi vista» ya está allí, encima de la cuenta:
+              aquí no se repite (Fernando, 2026-11-09). */}
+          {suplantacion && !enApp && (
             <div className="mb-2 rounded-md px-2 py-2" style={{ background: 'rgba(224, 176, 90, 0.16)' }}>
               <button
                 onClick={volverAMiCuenta}
