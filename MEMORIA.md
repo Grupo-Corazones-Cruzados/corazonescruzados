@@ -7131,6 +7131,29 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   Un cambio solo llega a la herramienta instalada con `bash services/espacio-trabajo/instalar.sh`: el push a `main` despliega Railway, no esta copia local.
 
 ## Decisiones y reglas de negocio
+- **💰 EL MODELO ECONÓMICO DE LA PLATAFORMA (Fernando, 2026-11-09). Fuente para finanzas, talentos y tiers.**
+  - **Cada cuenta ve SU estado financiero** (ingresos, egresos y adicionales propios) en Inicio; deroga «uno para
+    toda la organización». Todo lo registrado hasta el 2026-11-09 pertenece a `lfgonzalezm0@grupocc.org`. Más
+    adelante habrá OTRO tablero con la suma de todos los miembros. Cada uno anota sus propios adicionales.
+  - **Ticket:** el responsable se lleva el valor completo de la factura.
+  - **Proyecto:** el responsable NO gana por serlo. Crea requerimientos (puede incluir sus servicios), decide a quién
+    acepta y puede tomarse requerimientos. **Lo que se gana sale de los requerimientos:** cada uno tiene precio y se
+    paga a quien lo hace; si lo comparten varios, se reparte según corresponda a cada uno.
+  - **Cobro de un proyecto:** el pago llega SIEMPRE a Grupo Corazones Cruzados; luego se generan facturas
+    automáticas con las cuentas de facturación de los usuarios que facturan al cliente, y cobran al completarse el pago.
+  - **Suscripciones:** se pagan a quien ofrece el producto y cuentan como sus ingresos.
+  - **TIER DE DESARROLLO HUMANO por lo generado acumulado** (anualidad que paga el usuario a la plataforma):
+    tier 0 < 5.000 $ gratis · tier 1 ≥ 5.000 → 30 $/año · tier 2 ≥ 20.000 → 100 $ · tier 3 ≥ 50.000 → 200 $ ·
+    tier 4 ≥ 75.000 → 300 $ · ≥ 100.000 → 400 $ (último escalón, no sube más). Aplica a miembros y candidatos.
+  - **Los beneficios de la plataforma** (anualidades) van a la cuenta del SRI de Fernando como administrador.
+  - **Propósito:** marketplace de SERVICIOS de personas naturales verificadas (no de productos tipo Amazon, no un
+    negocio con empleados): candidatos y miembros progresan con guía, herramientas y clientes; quien crece tanto
+    que sale de la plataforma pasa a consumir como cliente. Los miembros tienen además proyectos internos y
+    clientes de soluciones complejas. A futuro: marketplace de productos de clientes, también dentro del videojuego.
+  - **Talentos:** SOLO cuentan los DEMOSTRADOS (puntos ganados con tareas o actividades cumplidas); lo declarado en
+    el CV es una premisa que se valida en el trabajo. Al perfil se asocian los 5 primeros demostrados, también en
+    candidatos, y con ellos es elegible: ve lo publicado de su talento, oferta y aparece en los selectores
+    (invitar, elegir responsable). Al crear un ticket o proyecto se define primero el talento y luego a quién.
 - **«DETALLE DE SERVICIOS»: el documento INFORMATIVO de una factura (Fernando, 2026-08-20).**
   Algunos clientes piden un papel con TODOS los conceptos de la operación, incluidos los que
   Fernando **no factura ni quiere facturar** (transferencias internacionales, remesas al
