@@ -10,15 +10,16 @@ import PortfolioPanel from '@/components/settings/PortfolioPanel';
 import PanelCompartirCv from '@/components/settings/PanelCompartirCv';
 import ConexionesPanel from '@/components/settings/ConexionesPanel';
 import NotificacionesPanel from '@/components/settings/NotificacionesPanel';
+import CobrosPanel from '@/components/settings/CobrosPanel';
 import DetailHeader from '@/components/ui/DetailHeader';
 import PortadaSecciones from '@/components/ui/PortadaSecciones';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
-import { FileText, CalendarClock, Briefcase, Share2, Link2, Bell, User, ChevronRight, type LucideIcon } from 'lucide-react';
+import { FileText, CalendarClock, Briefcase, Share2, Link2, Bell, User, ChevronRight, Wallet, type LucideIcon } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
-type TabKey = 'cv' | 'availability' | 'portfolio' | 'conexiones' | 'notificaciones';
+type TabKey = 'cv' | 'availability' | 'portfolio' | 'conexiones' | 'notificaciones' | 'cobros';
 const TABS: { key: TabKey; label: string; Icon: LucideIcon; soloMiembro: boolean; grupo: 'Profesional' | 'Cuenta' }[] = [
   { key: 'cv', label: 'Mi CV', Icon: FileText, soloMiembro: true, grupo: 'Profesional' },
   { key: 'availability', label: 'Disponibilidad', Icon: CalendarClock, soloMiembro: true, grupo: 'Profesional' },
@@ -27,6 +28,9 @@ const TABS: { key: TabKey; label: string; Icon: LucideIcon; soloMiembro: boolean
   { key: 'conexiones', label: 'Conexiones', Icon: Link2, soloMiembro: false, grupo: 'Cuenta' },
   // Qué avisos recibe cada uno y por dónde (Fernando, 2026-10-29: miembros y administradores).
   { key: 'notificaciones', label: 'Notificaciones', Icon: Bell, soloMiembro: true, grupo: 'Cuenta' },
+  // Lo que GCC le paga a cada uno y la cuenta donde lo recibe: miembros Y candidatos (fase 4 del modelo
+  // económico, 2026-11-09).
+  { key: 'cobros', label: 'Cobros', Icon: Wallet, soloMiembro: false, grupo: 'Cuenta' },
 ];
 
 /**
@@ -140,6 +144,7 @@ function Configuracion() {
               {tabActiva === 'portfolio' && <PortfolioPanel />}
               {tabActiva === 'conexiones' && <ConexionesPanel />}
               {tabActiva === 'notificaciones' && <NotificacionesPanel />}
+              {tabActiva === 'cobros' && <CobrosPanel />}
             </div>
           </div>
         )}
@@ -189,6 +194,7 @@ function ConfiguracionMovil({ tabs, seccion, isMember, onCompartir }: {
             {s.key === 'portfolio' && <PortfolioPanel />}
             {s.key === 'conexiones' && <ConexionesPanel />}
             {s.key === 'notificaciones' && <NotificacionesPanel />}
+            {s.key === 'cobros' && <CobrosPanel />}
           </div>
         )}
       </div>

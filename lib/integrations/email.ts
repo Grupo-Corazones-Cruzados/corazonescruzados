@@ -760,6 +760,35 @@ export async function sendPaidInvoiceEmail(params: {
   });
 }
 
+/** GCC le transfirió a un miembro o candidato lo que ganó (Admin → Pagos a miembros). */
+export async function sendPagoRegistradoEmail(params: {
+  email: string; nombre: string; total: number; referencia: string; fecha: string; ultimos4?: string | null;
+}) {
+  const dinero = `$${Number(params.total).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const [a, m, d] = params.fecha.split('-').map(Number);
+  const dia = new Date(Date.UTC(a, m - 1, d, 12)).toLocaleDateString('es-EC', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' });
+  const html = emailShell(
+    emailBadge('PAGO ENVIADO', CORP.success) +
+    emailHeading('Te transferimos tus ganancias', escapeHtml(params.nombre)) +
+    emailParagraph(`El ${escapeHtml(dia)} te transferimos ${accentStrong(dinero)}${params.ultimos4 ? ` a tu cuenta terminada en ${escapeHtml(params.ultimos4)}` : ''}.`) +
+    emailInfoBox('REFERENCIA', escapeHtml(params.referencia)) +
+    emailButton(`${APP_URL}/dashboard/settings?tab=cobros`, 'Ver mis cobros'),
+  );
+  return deliver({ to: params.email, subject: `Pago enviado — ${dinero}`, html });
+}
+
+/** Se cambió la cuenta bancaria en la que cobra: si no fue la persona, tiene que saberlo ya. */
+export async function sendCuentaCobroCambiadaEmail(params: { email: string; nombre: string; ultimos4: string; nueva: boolean }) {
+  const html = emailShell(
+    emailBadge('CUENTA DE COBRO', CORP.warning) +
+    emailHeading(params.nueva ? 'Registraste tu cuenta de cobro' : 'Cambiaste tu cuenta de cobro', escapeHtml(params.nombre)) +
+    emailParagraph(`Desde ahora te pagaremos en la cuenta terminada en ${accentStrong(escapeHtml(params.ultimos4))}.`) +
+    emailButton(`${APP_URL}/dashboard/settings?tab=cobros`, 'Ver mis cobros') +
+    emailNote('Si no fuiste tú, cambia tu contraseña y escríbenos de inmediato.'),
+  );
+  return deliver({ to: params.email, subject: 'Tu cuenta de cobro en GCC World', html });
+}
+
 /* ── Helpers de diseño reusables para correos construidos en otras rutas
  *    (facturas, suscripciones, campañas, tickets, proyectos, proformas). Exportados
  *    para que TODOS los correos compartan el mismo tema corporativo. ─────────────── */

@@ -14,7 +14,8 @@ import ListasPanel from '@/components/admin/ListasPanel';
 import FaqsPanel from '@/components/admin/FaqsPanel';
 import SolucionesPanel from '@/components/admin/SolucionesPanel';
 import PromptsPanel from '@/components/admin/PromptsPanel';
-import { Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers, NotebookPen } from 'lucide-react';
+import PagosMiembrosPanel from '@/components/admin/PagosMiembrosPanel';
+import { Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers, NotebookPen, Banknote } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -38,6 +39,8 @@ const TABS = [
   // La documentación de cada proyecto, escrita como en Word y exportable como prompt
   // (Markdown) para dársela a una IA (Fernando, 2026-10-01).
   { value: 'prompts', label: 'Prompts', Icon: NotebookPen, grupo: 'Personal' },
+  // Lo que GCC le transfiere a cada miembro o candidato de lo que ganó (fase 4 del modelo económico, 2026-11-09).
+  { value: 'pagos', label: 'Pagos a miembros', Icon: Banknote, grupo: 'Finanzas' },
 ];
 
 // El Espacio de trabajo y Gumdramon eran pestañas de aquí; desde el 2026-11-08 son herramientas
@@ -130,6 +133,7 @@ function Contenido({ tab }: { tab: string }) {
       {tab === 'faqs' && <FaqsPanel />}
       {tab === 'soluciones' && <SolucionesPanel />}
       {tab === 'prompts' && <PromptsPanel />}
+      {tab === 'pagos' && <PagosMiembrosPanel />}
     </div>
   );
 }

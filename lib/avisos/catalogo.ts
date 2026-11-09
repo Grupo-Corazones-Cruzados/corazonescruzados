@@ -35,6 +35,7 @@ export type ClaseAviso =
   | 'reminder'
   | 'chat'
   | 'subscription'
+  | 'payout'
   | 'cp_llegada' | 'cp_salida';
 
 export type DefinicionAviso = {
@@ -76,6 +77,8 @@ export const AVISOS: DefinicionAviso[] = [
   { clase: 'chat', grupo: 'Chats', nombre: 'Mensaje nuevo', canales: ['push'], alcance: 'todos' },
 
   { clase: 'subscription', grupo: 'Suscripciones', nombre: 'Suscripción por vencer', canales: ['push', 'campana'], alcance: 'todos' },
+
+  { clase: 'payout', grupo: 'Cobros', nombre: 'Te transfirieron un pago', canales: ['push', 'campana'], alcance: 'equipo' },
 ];
 
 const POR_CLASE = new Map(AVISOS.map((a) => [a.clase, a]));

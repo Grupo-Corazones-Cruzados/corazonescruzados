@@ -79,3 +79,8 @@ export type CampoGoogle = 'refresh_token' | 'access_token';
 export function contextoGoogle(userId: string, campo: CampoGoogle): string {
   return `google_conexiones:${userId}:${campo}`;
 }
+
+/** El número de la cuenta bancaria a la que GCC le paga a cada persona (`member_bank_accounts`). */
+export function contextoCuentaBancaria(userId: string): string {
+  return `member_bank_accounts:${userId}:account_number`;
+}
