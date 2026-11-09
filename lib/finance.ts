@@ -1,5 +1,32 @@
 import { pool } from '@/lib/db';
 
+/**
+ * ⭐ CADA CUENTA TIENE SU ESTADO FINANCIERO (Fernando, 2026-11-09; deroga «uno para toda la organización»).
+ * Cada mes (`finance_months`) es de un usuario (`owner_user_id`); los renglones cuelgan del mes y el registro
+ * de orígenes (`finance_source_log`) sigue siendo GLOBAL: un origen se anota una sola vez en la plataforma.
+ *
+ * Mientras no exista la facturación por usuario, TODO lo que se anota solo —ingresos de tickets, proyectos,
+ * etapas, abonos y suscripciones, y los comprobantes del SRI— es de la cuenta de Fernando
+ * (lfgonzalezm0@grupocc.org), que es también la dueña de todo lo registrado hasta el 2026-11-09
+ * (migración `085_finanzas_por_cuenta.sql`). Cuando cada usuario facture con su cuenta, el dueño saldrá del
+ * origen y no de esta constante.
+ */
+export const DUENO_FINANZAS_GCC = '3fdb4891-6a51-456f-aa6f-f3b03b4a9555';
+
+/**
+ * ¿Esta cuenta tiene estado financiero propio? Miembros, administradores y candidatos sí; el cliente de
+ * negocio no. El token no distingue candidato de cliente (los dos son `role = 'client'`), así que para
+ * ellos se pregunta a `clients.account_type`.
+ */
+export async function tieneFinanzasPropias(user: { userId: string; role: string }): Promise<boolean> {
+  if (user.role === 'admin' || user.role === 'member') return true;
+  const { rows: [c] } = await pool.query(
+    `SELECT EXISTS (SELECT 1 FROM gcc_world.clients WHERE user_id = $1 AND account_type = 'candidate') AS si`,
+    [user.userId],
+  );
+  return !!c?.si;
+}
+
 let _initialized = false;
 
 async function ensureFinanceTables() {
@@ -7,10 +34,10 @@ async function ensureFinanceTables() {
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS gcc_world.finance_months (
-      id SERIAL PRIMARY KEY, year INT NOT NULL, month INT NOT NULL,
+      id SERIAL PRIMARY KEY, owner_user_id UUID NOT NULL, year INT NOT NULL, month INT NOT NULL,
       total_income NUMERIC(12,2) DEFAULT 0, total_expense NUMERIC(12,2) DEFAULT 0,
       total_savings NUMERIC(12,2) DEFAULT 0, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW(),
-      UNIQUE(year, month)
+      CONSTRAINT finance_months_owner_year_month_key UNIQUE (owner_user_id, year, month)
     );
     CREATE TABLE IF NOT EXISTS gcc_world.finance_items (
       id SERIAL PRIMARY KEY, month_id INT NOT NULL REFERENCES gcc_world.finance_months(id) ON DELETE CASCADE,
@@ -45,13 +72,15 @@ async function ensureFinanceTables() {
   _initialized = true;
 }
 
-async function ensureMonth(year: number, month: number): Promise<number> {
+/** El mes `year`/`month` de la cuenta `owner` (lo crea si no existe). Devuelve su id. */
+async function ensureMonth(owner: string, year: number, month: number): Promise<number> {
   await pool.query(
-    `INSERT INTO gcc_world.finance_months (year, month) VALUES ($1, $2) ON CONFLICT (year, month) DO NOTHING`,
-    [year, month]
+    `INSERT INTO gcc_world.finance_months (owner_user_id, year, month) VALUES ($1, $2, $3)
+     ON CONFLICT (owner_user_id, year, month) DO NOTHING`,
+    [owner, year, month]
   );
   const { rows: [m] } = await pool.query(
-    `SELECT id FROM gcc_world.finance_months WHERE year = $1 AND month = $2`, [year, month]
+    `SELECT id FROM gcc_world.finance_months WHERE owner_user_id = $1 AND year = $2 AND month = $3`, [owner, year, month]
   );
   return m.id;
 }
@@ -83,7 +112,8 @@ async function addIncomeToFinance(sourceType: string, sourceId: string, descript
   if (logged.length > 0) return;
 
   const d = date || new Date();
-  const monthId = await ensureMonth(d.getFullYear(), d.getMonth() + 1);
+  // Lo automático es, por ahora, de la cuenta de Fernando (ver `DUENO_FINANZAS_GCC`).
+  const monthId = await ensureMonth(DUENO_FINANZAS_GCC, d.getFullYear(), d.getMonth() + 1);
 
   const { rows: [{ max: maxOrder }] } = await pool.query(
     `SELECT COALESCE(MAX(sort_order), -1) as max FROM gcc_world.finance_items WHERE month_id = $1`, [monthId]

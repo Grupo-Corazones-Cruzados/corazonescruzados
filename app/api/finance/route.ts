@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
-import { ensureFinanceTables, ensureMonth, recalcMonth, addProjectIncomeToFinance, addTicketIncomeToFinance, SQL_INGRESO_FACTURADO, nombrarIngresosFacturados, sqlSinEtapasFacturadas } from '@/lib/finance';
+import { ensureFinanceTables, ensureMonth, addProjectIncomeToFinance, addTicketIncomeToFinance, SQL_INGRESO_FACTURADO, nombrarIngresosFacturados, sqlSinEtapasFacturadas, DUENO_FINANZAS_GCC, tieneFinanzasPropias } from '@/lib/finance';
 import { nombrarPendientes } from '@/lib/pagos/nombre-estandar';
 
 /**
@@ -76,24 +76,24 @@ export async function GET() {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
-    // Finanzas = datos de toda la organización → SOLO staff (miembro/admin). Un candidato/
-    // cliente no ve el estado financiero global.
-    if (user.role !== 'admin' && user.role !== 'member') {
-      return NextResponse.json({ data: [] });
-    }
+    // ⭐ CADA CUENTA VE SU ESTADO FINANCIERO (Fernando, 2026-11-09): miembros, administradores y
+    // candidatos, cada uno el suyo —quizá vacío—. El cliente de negocio no tiene.
+    if (!(await tieneFinanzasPropias(user))) return NextResponse.json({ data: [] });
 
     // Crear tablas una sola vez por proceso.
     if (!tablesReady) { await ensureFinanceTables(); tablesReady = true; }
 
-    // Asegurar el mes actual una vez por mes/proceso.
+    // El mes actual, una vez por mes/proceso, SOLO en la cuenta donde se anota lo automático: a cada
+    // cuenta que visita el Inicio no se le crea un mes vacío (cada uno abre los suyos con el POST).
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${now.getMonth() + 1}`;
     if (ensuredMonthKey !== monthKey) {
-      await ensureMonth(now.getFullYear(), now.getMonth() + 1);
+      await ensureMonth(DUENO_FINANZAS_GCC, now.getFullYear(), now.getMonth() + 1);
       ensuredMonthKey = monthKey;
     }
 
-    // Backfill throttled: no bloquea cada carga (los meses ya se devuelven abajo).
+    // Backfill throttled: no bloquea cada carga (los meses ya se devuelven abajo). Lo que anota va a
+    // `DUENO_FINANZAS_GCC` (ver `addIncomeToFinance`), sea quien sea el que abre el Inicio.
     if (Date.now() - lastBackfill > BACKFILL_INTERVAL_MS) {
       lastBackfill = Date.now();
       try { await backfillIncomes(); } catch (e: any) { console.error('Backfill error:', e.message); }
@@ -116,7 +116,9 @@ export async function GET() {
               COALESCE((SELECT SUM(fi.amount) FROM gcc_world.finance_items fi
                          WHERE fi.month_id = fm.id AND fi.adicional AND fi.type = 'expense'), 0) AS adicional_expense
          FROM gcc_world.finance_months fm
-        ORDER BY fm.year DESC, fm.month DESC`
+        WHERE fm.owner_user_id = $1::uuid
+        ORDER BY fm.year DESC, fm.month DESC`,
+      [user.userId]
     );
 
     return NextResponse.json({ data: rows });
@@ -125,17 +127,26 @@ export async function GET() {
   }
 }
 
+/**
+ * POST: abre un mes en la cuenta de quien tiene la sesión (para anotar sus adicionales). Cualquier cuenta
+ * con estado financiero propio (ver `tieneFinanzasPropias`); el cliente de negocio, no. Si ya existe,
+ * devuelve el que hay.
+ */
 export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    if (!(await tieneFinanzasPropias(user))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
     await ensureFinanceTables();
-    const { year, month } = await req.json();
+    const body = await req.json().catch(() => ({}));
+    const year = Number(body?.year);
+    const month = Number(body?.month);
+    if (!Number.isInteger(year) || !Number.isInteger(month) || year < 2000 || year > 2100 || month < 1 || month > 12) {
+      return NextResponse.json({ error: 'year y month requeridos' }, { status: 400 });
+    }
 
-    if (!year || !month) return NextResponse.json({ error: 'year y month requeridos' }, { status: 400 });
-
-    const monthId = await ensureMonth(year, month);
+    const monthId = await ensureMonth(user.userId, year, month);
     const { rows: [m] } = await pool.query(`SELECT * FROM gcc_world.finance_months WHERE id = $1`, [monthId]);
 
     return NextResponse.json({ data: m }, { status: 201 });

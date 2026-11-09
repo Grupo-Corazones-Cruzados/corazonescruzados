@@ -1,6 +1,8 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
+import { miembroDe } from '@/lib/projects/permisos';
+import { sqlTicketMio, sqlProyectoMio } from '@/lib/pertenencia';
 
 export async function GET() {
   try {
@@ -25,6 +27,29 @@ export async function GET() {
             WHERE status IN ('open','in_progress','in_review')
               AND (created_by_user_id = $1::text OR client_id = $2)`,
           [user.userId, clientId],
+        ),
+      ]);
+      return NextResponse.json({
+        open_tickets: Number(tickets.rows[0].count),
+        active_projects: Number(projects.rows[0].count),
+      });
+    }
+
+    // Miembro: el Inicio cuenta solo lo SUYO (Fernando, 2026-11-09: «el dashboard debe ser solo de lo que
+    // le pertenece al usuario»). Tickets que creó o de los que es responsable; proyectos que creó o en los
+    // que está (ver `lib/pertenencia.ts`). Sin los conteos de la organización, que son del administrador.
+    if (user.role === 'member') {
+      const yo = await miembroDe(user.userId);
+      const [tickets, projects] = await Promise.all([
+        pool.query(
+          `SELECT COUNT(*) FROM gcc_world.tickets t
+            WHERE t.status IN ('pending','confirmed','in_progress') AND ${sqlTicketMio('t', '$1', '$2')}`,
+          [user.userId, yo],
+        ),
+        pool.query(
+          `SELECT COUNT(*) FROM gcc_world.projects p
+            WHERE p.status IN ('open','in_progress','in_review') AND ${sqlProyectoMio('p', '$1', '$2')}`,
+          [user.userId, yo],
         ),
       ]);
       return NextResponse.json({

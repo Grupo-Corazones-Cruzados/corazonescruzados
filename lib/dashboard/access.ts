@@ -15,7 +15,8 @@ import type { User } from '@/lib/types';
  *  (Notificaciones dejó de ser un módulo: vive en la campanita del muelle inferior derecho.)
  *  Tickets         → todos
  *  Proyectos       → todos
- *  Clientes        → candidate, member, admin
+ *  Clientes        → member, admin  (2026-11-09: el candidato salió; su API ya le respondía 403, y
+ *                    el miembro ve solo SUS clientes, ver `lib/pertenencia.ts`)
  *  Facturas        → candidate, member, admin
  *  Marketplace     → todos
  *  Configuración   → todos
@@ -48,7 +49,7 @@ export const MODULE_ACCESS: { path: string; roles: AccessRole[] }[] = [
   // menú desde 2026-10-16): los crea quien los atiende, no un cliente.
   { path: '/sin-conexion', roles: ['candidate', 'member', 'admin'] },
   { path: '/dashboard/projects', roles: ALL },
-  { path: '/dashboard/clients', roles: ['candidate', 'member', 'admin'] },
+  { path: '/dashboard/clients', roles: ['member', 'admin'] },
   { path: '/dashboard/invoices', roles: ['candidate', 'member', 'admin'] },
   { path: '/dashboard/marketplace', roles: ALL },
   // Cualquier rol con una suscripción a un producto. Qué FILAS ve lo decide el servidor por

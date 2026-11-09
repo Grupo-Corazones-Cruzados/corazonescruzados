@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    if (user.role === 'client') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    // Solo los meses de ESTA cuenta (Fernando, 2026-11-09): quien no tiene ninguno recibe un reporte vacío.
 
     await ensureFinanceTables();
 
@@ -31,20 +31,24 @@ export async function GET(req: Request) {
     const soloFacturado = q.get('facturado') === '1';
     const tipo = q.get('tipo') === 'ingresos' || q.get('tipo') === 'egresos' ? (q.get('tipo') as 'ingresos' | 'egresos') : null;
 
-    const condiciones: string[] = [];
-    const params: unknown[] = [];
+    const params: unknown[] = [user.userId];
+    const condiciones: string[] = ['owner_user_id = $1::uuid'];
     if (anio) { params.push(anio); condiciones.push(`year = $${params.length}`); }
     // El resultado del mes se decide DESPUÉS, con el ingreso que toque (todo o solo facturado).
     const { rows: monthRows } = await pool.query(
-      `SELECT * FROM gcc_world.finance_months ${condiciones.length ? `WHERE ${condiciones.join(' AND ')}` : ''} ORDER BY year DESC, month DESC`,
+      `SELECT * FROM gcc_world.finance_months WHERE ${condiciones.join(' AND ')} ORDER BY year DESC, month DESC`,
       params,
+    );
+    // Los renglones de todos esos meses en una consulta, no una por mes.
+    const { rows: todos } = await pool.query(
+      `SELECT fi.*, ${SQL_INGRESO_FACTURADO} AS facturado FROM gcc_world.finance_items fi
+        WHERE fi.month_id = ANY($1::int[]) ORDER BY fi.type, fi.sort_order, fi.id`,
+      [monthRows.map((m: any) => m.id)],
     );
 
     const months = [];
     for (const m of monthRows) {
-      const { rows: items } = await pool.query(
-        `SELECT fi.*, ${SQL_INGRESO_FACTURADO} AS facturado FROM gcc_world.finance_items fi WHERE fi.month_id = $1 ORDER BY fi.type, fi.sort_order, fi.id`, [m.id]
-      );
+      const items = todos.filter((i: any) => i.month_id === m.id);
       const ingresos = items.filter((i: any) => i.type === 'income' && (!soloFacturado || i.facturado));
       // Con «solo facturado», lo del SRI y nada más: fuera también los egresos adicionales.
       const egresos = items.filter((i: any) => i.type === 'expense' && (!soloFacturado || !i.adicional));
@@ -66,8 +70,8 @@ export async function GET(req: Request) {
     }
 
     const partes = [tipo === 'ingresos' ? 'solo ingresos' : tipo === 'egresos' ? 'solo egresos' : null, anio ? String(anio) : null, soloFacturado ? 'solo facturado' : null, resultado === 'ahorro' ? 'meses con ahorro' : resultado === 'perdida' ? 'meses con pérdida' : null].filter(Boolean);
-    const subtitulo = partes.length ? partes.map((p) => String(p).charAt(0).toUpperCase() + String(p).slice(1)).join(' · ') : 'Global · todos los meses';
-    const archivo = ['Reporte-Financiero', ...(partes.length ? partes : ['Global'])].join('-').replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const subtitulo = partes.length ? partes.map((p) => String(p).charAt(0).toUpperCase() + String(p).slice(1)).join(' · ') : 'Todos los meses';
+    const archivo = ['Reporte-Financiero', ...(partes.length ? partes : ['Todos-los-meses'])].join('-').replace(/\s+/g, '-').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     const pdfBuffer = await generateFinancePdf(months, tipo === 'ingresos' ? 'Reporte de ingresos' : tipo === 'egresos' ? 'Reporte de egresos' : 'Reporte financiero', { subtitulo, solo: tipo ?? undefined });
 
     return new NextResponse(new Uint8Array(pdfBuffer), {

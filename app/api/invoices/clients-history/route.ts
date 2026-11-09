@@ -1,6 +1,8 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
+import { miembroDe } from '@/lib/projects/permisos';
+import { sqlFacturaMia } from '@/lib/pertenencia';
 
 function inferIdType(ruc: string | null): string {
   if (!ruc) return '07';
@@ -17,21 +19,31 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    // El miembro, solo los clientes de SUS facturas (Fernando, 2026-11-09: «los miembros no deberían
+    // ver los clientes de otros usuarios»); el administrador, todos.
+    const params: unknown[] = [];
+    let mias = '';
+    if (user.role === 'member') {
+      params.push(user.userId, await miembroDe(user.userId));
+      mias = `AND ${sqlFacturaMia('i', '$1', '$2')}`;
+    }
     const { rows } = await pool.query(
-      `SELECT DISTINCT ON (client_ruc)
-         client_ruc,
-         client_name_sri,
-         client_email_sri,
-         client_phone_sri,
-         client_address_sri,
-         created_at
-       FROM gcc_world.invoices
-       WHERE client_ruc IS NOT NULL
-         AND client_ruc <> ''
-         AND client_ruc <> '9999999999999'
-         AND client_name_sri IS NOT NULL
-         AND client_name_sri <> ''
-       ORDER BY client_ruc, created_at DESC`,
+      `SELECT DISTINCT ON (i.client_ruc)
+         i.client_ruc,
+         i.client_name_sri,
+         i.client_email_sri,
+         i.client_phone_sri,
+         i.client_address_sri,
+         i.created_at
+       FROM gcc_world.invoices i
+       WHERE i.client_ruc IS NOT NULL
+         AND i.client_ruc <> ''
+         AND i.client_ruc <> '9999999999999'
+         AND i.client_name_sri IS NOT NULL
+         AND i.client_name_sri <> ''
+         ${mias}
+       ORDER BY i.client_ruc, i.created_at DESC`,
+      params,
     );
 
     const data = rows.map((r: any) => ({

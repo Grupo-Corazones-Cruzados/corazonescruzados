@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureBillingClientsTable, CONSUMIDOR_FINAL_RUC } from '@/lib/billing-clients';
+import { clienteFacturacionEsMio } from '@/lib/pertenencia';
 
 /**
  * Fusiona el cliente `source_id` DENTRO del cliente `[id]` (canónico): la
@@ -20,6 +21,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { source_id } = await req.json();
     if (!source_id) return NextResponse.json({ error: 'Falta el cliente a fusionar' }, { status: 400 });
     if (String(source_id) === String(id)) return NextResponse.json({ error: 'No se puede fusionar un cliente consigo mismo' }, { status: 400 });
+    // Un miembro fusiona solo clientes suyos, los DOS (Fernando, 2026-11-09).
+    if (!(await clienteFacturacionEsMio(user, id)) || !(await clienteFacturacionEsMio(user, source_id))) {
+      return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 });
+    }
 
     const { rows: [target] } = await pool.query(`SELECT id, ruc, aliases, titular_id FROM gcc_world.billing_clients WHERE id = $1`, [id]);
     const { rows: [source] } = await pool.query(`SELECT id, ruc, aliases, titular_id FROM gcc_world.billing_clients WHERE id = $1`, [source_id]);

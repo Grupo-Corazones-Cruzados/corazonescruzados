@@ -11,7 +11,7 @@ import { Cifra, RejillaCifras } from '@/components/ui/Cifra';
 import Saludo from '@/components/dashboard/Saludo';
 import { fmt2 } from '@/lib/format';
 import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
-  Download, ChevronRight, FileDown, FileText } from 'lucide-react';
+  Download, ChevronRight, FileDown, FileText, Plus } from 'lucide-react';
 import MenuMas from '@/components/ui/MenuMas';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
 import BotonGastosSri from '@/components/dashboard/BotonGastosSri';
@@ -39,7 +39,9 @@ export default function DashboardHome() {
   // JWT pero account_type='candidate' → aquí se distingue para no tratarlo como cliente.
   const role = accessRoleOf(user);
   const isAdmin = role === 'admin';
-  const isStaff = role === 'member' || role === 'admin';
+  // ⭐ CADA CUENTA TIENE SU ESTADO FINANCIERO (Fernando, 2026-11-09): miembros, administradores y
+  // candidatos ven el SUYO y escriben sus adicionales. El cliente de negocio no tiene Inicio.
+  const tieneFinanzas = role !== 'client';
   // Por debajo de `lg` el estado financiero tiene su versión de teléfono (ver
   // `components/dashboard/EstadoFinancieroMovil.tsx`); el mismo corte que la tabla. Hasta
   // hidratar se pinta el escritorio, para no ver el teléfono un instante en el ordenador.
@@ -48,6 +50,8 @@ export default function DashboardHome() {
   const enTelefono = hidratado && !pantallaGrande;
   const [stats, setStats] = useState<Stats | null>(null);
   const [months, setMonths] = useState<FinanceMonth[]>([]);
+  // Hasta la primera respuesta no se sabe si falta el mes en curso: así «Abrir mes» no parpadea.
+  const [mesesCargados, setMesesCargados] = useState(false);
 
   // Solo el CLIENTE de negocio (no candidato ni staff) no tiene Inicio → va a Marketplace.
   useEffect(() => { if (role === 'client') router.replace('/dashboard/marketplace'); }, [role, router]);
@@ -70,10 +74,11 @@ export default function DashboardHome() {
       const res = await fetch('/api/finance');
       const data = await res.json();
       setMonths(data.data || []);
+      setMesesCargados(res.ok);
     } catch {}
   }, []);
 
-  useEffect(() => { if (isStaff) fetchMonths(); }, [isStaff, fetchMonths]);
+  useEffect(() => { if (tieneFinanzas) fetchMonths(); }, [tieneFinanzas, fetchMonths]);
 
   /**
    * FILTROS DEL ESTADO FINANCIERO (Fernando, 2026-10-29: «en la tabla de estados financieros
@@ -180,6 +185,36 @@ export default function DashboardHome() {
 
   const money = (n: number) => `$${fmt2(n)}`;
 
+  /**
+   * ABRIR EL MES EN CURSO en la cuenta (2026-11-09). Lo automático cae en la cuenta de Fernando, que
+   * siempre lo tiene; las demás lo abren aquí para anotar sus adicionales. El mes es el de quien mira
+   * (su reloj), no el del servidor, que corre en UTC.
+   */
+  const hoy = new Date();
+  const mesActual = { year: hoy.getFullYear(), month: hoy.getMonth() + 1 };
+  const faltaMesActual = mesesCargados && !months.some((m) => m.year === mesActual.year && m.month === mesActual.month);
+  const [abriendoMes, setAbriendoMes] = useState(false);
+  const abrirMesActual = async () => {
+    setAbriendoMes(true);
+    try {
+      const res = await fetch('/api/finance', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(mesActual),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.data) throw new Error(data?.error || 'No se pudo abrir el mes');
+      await fetchMonths();
+      openDetail(data.data);
+    } catch (e: any) { toast.error(e?.message || 'No se pudo abrir el mes'); }
+    finally { setAbriendoMes(false); }
+  };
+  const textoAbrirMes = `Abrir ${MONTH_NAMES[mesActual.month - 1]}`;
+  const botonAbrirMes = (
+    <button onClick={abrirMesActual} disabled={abriendoMes}
+      className={`${BTN_SECONDARY} inline-flex items-center justify-center gap-1.5 disabled:opacity-50`}>
+      <Plus className="w-4 h-4" /> {textoAbrirMes}
+    </button>
+  );
+
   return (
     <div>
       {/* Saludo. En teléfono ocupa menos: el titular es la firma de la pantalla, no su
@@ -193,29 +228,30 @@ export default function DashboardHome() {
           es la tabla). */}
       <Saludo />
 
-      {/* Stat cards — para no-staff solo sus propios tickets/proyectos (acotados por el API);
-          las finanzas globales y el conteo de clientes son solo para staff/admin. */}
+      {/* Stat cards — cada cuenta cuenta lo SUYO (lo acota el API); el conteo de clientes es del
+          admin. Las cifras de dinero son las del estado financiero de la propia cuenta. */}
       {/* En el teléfono las tres cifras de dinero no van aquí: las dice el balance de abajo,
           que sigue al filtro de año (un dato no se dice dos veces). */}
       <RejillaCifras className="mb-5">
         <Cifra Icon={Ticket} label="Tickets abiertos" value={stats?.open_tickets} />
         <Cifra Icon={FolderKanban} label="Proyectos activos" value={stats?.active_projects} />
         {isAdmin && <Cifra Icon={Users} label="Clientes" value={stats?.clients} />}
-        {isStaff && !enTelefono && <Cifra Icon={TrendingUp} label={`${soloFacturado ? 'Facturado' : delAnio ? 'Ingresos' : 'Total ingresos'}${delAnio}`} value={money(globalIncome)} tone="green" />}
-        {isStaff && !enTelefono && <Cifra Icon={TrendingDown} label={delAnio ? `Egresos${delAnio}` : 'Total egresos'} value={money(globalExpense)} tone="red" />}
-        {isStaff && !enTelefono && <Cifra Icon={PiggyBank} label={`${delAnio || soloFacturado ? 'Ahorro' : 'Total ahorro'}${delAnio}`} value={money(globalSavings)} tone={globalSavings >= 0 ? 'accent' : 'red'} />}
+        {tieneFinanzas && !enTelefono && <Cifra Icon={TrendingUp} label={`${soloFacturado ? 'Facturado' : delAnio ? 'Ingresos' : 'Total ingresos'}${delAnio}`} value={money(globalIncome)} tone="green" />}
+        {tieneFinanzas && !enTelefono && <Cifra Icon={TrendingDown} label={delAnio ? `Egresos${delAnio}` : 'Total egresos'} value={money(globalExpense)} tone="red" />}
+        {tieneFinanzas && !enTelefono && <Cifra Icon={PiggyBank} label={`${delAnio || soloFacturado ? 'Ahorro' : 'Total ahorro'}${delAnio}`} value={money(globalSavings)} tone={globalSavings >= 0 ? 'accent' : 'red'} />}
       </RejillaCifras>
 
-      {/* Estado financiero mensual — SOLO staff (datos de toda la organización). */}
-      {isStaff && (
+      {/* Estado financiero mensual — el de ESTA cuenta (miembro, admin o candidato). */}
+      {tieneFinanzas && (
         <>
           <div className="mb-3">
             <h2 className="titulo-progreso text-[18px] text-digi-text">Estado financiero mensual</h2>
-            {(mesesFiltrados.length > 0 || isAdmin) && (
+            {(mesesFiltrados.length > 0 || isAdmin || faltaMesActual) && (
               <EnBarraAcciones>
                 {/* Un solo botón montado a la vez (teléfono O escritorio): cada uno pregunta y avisa. */}
                 {isAdmin && enTelefono && <BotonGastosSri onActualizado={fetchMonths} />}
                 {isAdmin && enTelefono && <BotonEmitidasSri />}
+                {faltaMesActual && enTelefono && botonAbrirMes}
                 {mesesFiltrados.length > 0 && (
                   <MenuMas items={opcionesReporte} label={textoReporte}
                     boton={{ texto: textoReporte, icon: Download, className: `${BTN_SECONDARY} inline-flex items-center justify-center gap-1.5` }} />
@@ -223,6 +259,11 @@ export default function DashboardHome() {
               </EnBarraAcciones>
             )}
           </div>
+
+          {/* Sin ningún mes todavía no hay filtros: el botón para abrir el primero va solo, a la derecha. */}
+          {months.length === 0 && faltaMesActual && !enTelefono && (
+            <div className="hidden lg:flex justify-end mb-3">{botonAbrirMes}</div>
+          )}
 
           {/* Los filtros: en el teléfono, cada uno a todo el ancho (en media columna el
               segmentado de tres no cabía y «Pérdida» se cortaba); desde `sm`, juntos a la
@@ -257,8 +298,9 @@ export default function DashboardHome() {
                   estilo base y el botón se quedaba pegado a los filtros. */}
               {/* ⭐ «Gastos del SRI» (Fernando, 2026-10-30), junto al reporte: trae los egresos
                   del SRI de los meses aún no revisados. Solo el admin (es su clave del SRI). */}
-              {(mesesFiltrados.length > 0 || isAdmin) && (
+              {(mesesFiltrados.length > 0 || isAdmin || faltaMesActual) && (
                 <div className="hidden lg:flex items-center gap-2 ml-auto shrink-0">
+                  {faltaMesActual && !enTelefono && botonAbrirMes}
                   {isAdmin && !enTelefono && <BotonGastosSri onActualizado={fetchMonths} />}
                   {isAdmin && !enTelefono && <BotonEmitidasSri />}
                   {mesesFiltrados.length > 0 && (
@@ -364,16 +406,13 @@ export default function DashboardHome() {
               className={`${BTN_SECONDARY} !flex-none mr-auto inline-flex items-center justify-center gap-1.5`}>
               <Download className="w-4 h-4" /> PDF
             </button>
-            {isAdmin && !enTelefono && (
+            {/* El mes es de quien lo mira: cada cuenta guarda sus adicionales (Fernando, 2026-11-09). */}
+            {!enTelefono && (
               <button onClick={() => setDetailMonth(null)} className="pixel-btn pixel-btn-secondary text-sm h-11">Cancelar</button>
             )}
-            {isAdmin ? (
-              <button onClick={saveDetail} disabled={saving} className="pixel-btn pixel-btn-primary text-sm h-11 disabled:opacity-50">
-                {saving ? 'Guardando...' : 'Guardar'}
-              </button>
-            ) : (
-              <button onClick={() => setDetailMonth(null)} className="pixel-btn pixel-btn-secondary text-sm h-11">Cerrar</button>
-            )}
+            <button onClick={saveDetail} disabled={saving} className="pixel-btn pixel-btn-primary text-sm h-11 disabled:opacity-50">
+              {saving ? 'Guardando...' : 'Guardar'}
+            </button>
           </>
         ) : undefined}>
         {loadingDetail ? (
@@ -385,7 +424,7 @@ export default function DashboardHome() {
           <DetalleMes
             ingresos={incomeItems} egresos={expenseItems}
             adicionales={soloFacturado ? null : adicionales} setAdicionales={setAdicionales}
-            editable={isAdmin} oculto={ocultoPorFiltro}
+            editable={tieneFinanzas} oculto={ocultoPorFiltro}
             etiquetaIngresos={soloFacturado ? 'Facturado' : 'Ingresos'}
             totalIngresos={detailIncome + detailAdicionalIngreso} totalEgresos={detailExpense + detailAdicionalEgreso}
             ahorroAnterior={priorSavings} ahorroGlobal={cumulativeSavings}

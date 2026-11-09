@@ -2,6 +2,8 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureBillingClientsTable, getDatosFacturacionCliente, SQL_FACTURA_CUENTA, SQL_RUCS_DEL_CLIENTE, cuentaFacturable } from '@/lib/billing-clients';
+import { miembroDe } from '@/lib/projects/permisos';
+import { sqlClienteMio, sqlClienteFacturacionMio } from '@/lib/pertenencia';
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,10 +13,26 @@ export async function GET(req: NextRequest) {
     }
     await ensureBillingClientsTable();
 
+    // ⭐ El MIEMBRO ve solo SUS clientes (Fernando, 2026-11-09: «los miembros no deberían ver los
+    // clientes de otros usuarios»): los de su cliente del portal o los de sus facturas (ver
+    // `sqlClienteFacturacionMio`). El admin, todos. `mio(alias, desde)` da la condición con sus dos
+    // parámetros numerados a partir de `desde`, o nada para el admin.
+    const miembro = user.role === 'member';
+    const yo = miembro ? await miembroDe(user.userId) : null;
+    const mio = (alias: string, desde: number) => (miembro ? `AND ${sqlClienteFacturacionMio(alias, `$${desde}`, `$${desde + 1}`)}` : '');
+    const paramsMios = miembro ? [user.userId, yo] : [];
+
     // `?portal_client_id=` → los datos de facturación del cliente para PRELLENAR el modal:
     // `data` los predeterminados y `opciones` todos (hasta 3), el predeterminado primero.
     const portalClientId = new URL(req.url).searchParams.get('portal_client_id');
     if (portalClientId) {
+      if (miembro) {
+        const { rows: [suyo] } = await pool.query(
+          `SELECT 1 FROM gcc_world.clients c WHERE c.id::text = $3 AND ${sqlClienteMio('c', '$1', '$2')}`,
+          [...paramsMios, portalClientId],
+        );
+        if (!suyo) return NextResponse.json({ data: null, opciones: [] });
+      }
       const datos = await getDatosFacturacionCliente(portalClientId);
       return NextResponse.json({ data: datos[0] || null, opciones: datos });
     }
@@ -31,7 +49,9 @@ export async function GET(req: NextRequest) {
                 h.ruc = '9999999999999' AS is_consumidor_final
            FROM gcc_world.billing_clients h
            JOIN gcc_world.billing_clients t ON t.id = COALESCE(h.titular_id, h.id)
+          WHERE TRUE ${mio('t', 1)}
           ORDER BY LOWER(t.name), t.id, (h.id = COALESCE(t.dato_predeterminado_id, t.id)) DESC, (h.titular_id IS NULL) DESC, h.id`,
+        paramsMios,
       );
       const cuentas = rows.map((r: any) => ({
         ...r,
@@ -66,9 +86,9 @@ export async function GET(req: NextRequest) {
              FROM gcc_world.invoices i
             WHERE ${SQL_RUCS_DEL_CLIENTE('bc', 'i')}
          ) s ON true
-         WHERE bc.titular_id IS NULL ${where}
+         WHERE bc.titular_id IS NULL ${where} ${mio('bc', params.length + 1)}
          ORDER BY LOWER(bc.name) ASC`,
-      params
+      [...params, ...paramsMios]
     );
 
     const data = rows.map((r: any) => ({
@@ -83,7 +103,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ data });
   } catch (err: any) {
     console.error('Billing clients list error:', err.message);
-    return NextResponse.json({ data: [] });
+    // Un fallo no se disfraza de «no hay clientes» (ver `gcc-no-fingir-vacio`).
+    return NextResponse.json({ error: 'Error al cargar los clientes', data: [] }, { status: 500 });
   }
 }
 
@@ -127,11 +148,14 @@ export async function POST(req: NextRequest) {
         );
         let portalId = existing?.id;
         if (!portalId) {
+          // El cliente que crea un MIEMBRO queda a su nombre (`created_by_member_id`): sin eso, desaparecería
+          // de su lista de Clientes al guardarlo (ver `sqlClienteMio`).
+          const autor = user.role === 'member' ? await miembroDe(user.userId) : null;
           const ins = await pool.query(
-            `INSERT INTO gcc_world.clients (name, email, ruc, address, phone) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
-            [name, String(b.email || '').trim() || null, ruc || null, String(b.address || '').trim() || null, String(b.phone || '').trim() || null]
+            `INSERT INTO gcc_world.clients (name, email, ruc, address, phone, created_by_member_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+            [name, String(b.email || '').trim() || null, ruc || null, String(b.address || '').trim() || null, String(b.phone || '').trim() || null, autor]
           ).catch((e: any) => {
-            if (e.code === '23505') return pool.query(`INSERT INTO gcc_world.clients (name, ruc, address) VALUES ($1,$2,$3) RETURNING id`, [name, ruc || null, String(b.address || '').trim() || null]);
+            if (e.code === '23505') return pool.query(`INSERT INTO gcc_world.clients (name, ruc, address, created_by_member_id) VALUES ($1,$2,$3,$4) RETURNING id`, [name, ruc || null, String(b.address || '').trim() || null, autor]);
             throw e;
           });
           portalId = ins.rows[0]?.id;

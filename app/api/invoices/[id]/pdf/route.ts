@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
 import { regenerateRidePdf } from '@/lib/integrations/sri';
+import { puedeVerFactura } from '@/lib/invoices/acceso';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -23,8 +24,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
      * razón social, su dirección y lo que pagó. Se descubrió al enlazar aquí el botón
      * «Ver factura» del cliente, que antes iba a un módulo que él no puede abrir.
      *
-     * Un CLIENTE solo ve las suyas. El equipo de GCC las ve todas: emitir y revisar
-     * comprobantes es su trabajo.
+     * Un CLIENTE solo ve las suyas. El administrador las ve todas; un MIEMBRO, desde el
+     * 2026-11-09, solo las de sus tickets y proyectos (`puedeVerFactura`, abajo).
      *
      * ⚠️ Y NO BASTA CON `invoices.client_id`. Ese campo está vacío en buena parte de las
      * facturas: una emitida desde un ticket se enlaza por `source_type`/`source_id`, las
@@ -65,6 +66,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       // Se responde 404 y no 403: quien no tiene por qué saber que esa factura existe,
       // tampoco tiene por qué enterarse por el código de error.
       if (!suya) return NextResponse.json({ error: 'Factura no encontrada' }, { status: 404 });
+    } else if (user.role === 'member' && !(await puedeVerFactura(user, id))) {
+      return NextResponse.json({ error: 'Factura no encontrada' }, { status: 404 });
     }
 
     // For authorized invoices, re-render the RIDE on the fly so every download uses

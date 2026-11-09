@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureBillingClientsTable, invoiceOrigin, CONSUMIDOR_FINAL_RUC, facturaCuenta, getDatosDelTitular, SQL_RUCS_DEL_CLIENTE } from '@/lib/billing-clients';
+import { clienteFacturacionEsMio } from '@/lib/pertenencia';
 
 /** La ficha del CLIENTE: si `id` es uno de sus datos extra, la de su titular. */
 async function loadDetail(id: number) {
@@ -74,6 +75,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     }
     await ensureBillingClientsTable();
     const { id } = await params;
+    // Un miembro, solo si el cliente es suyo (Fernando, 2026-11-09). 404: no confirma que exista.
+    if (!(await clienteFacturacionEsMio(user, id))) return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 });
     const detail = await loadDetail(Number(id));
     if (!detail) return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 });
     return NextResponse.json({ data: detail });
@@ -91,6 +94,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     await ensureBillingClientsTable();
     const { id } = await params;
+    // Un miembro edita solo sus clientes (Fernando, 2026-11-09).
+    if (!(await clienteFacturacionEsMio(user, id))) return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 });
     const b = await req.json();
 
     const { rows: [existing] } = await pool.query(`SELECT ruc, titular_id FROM gcc_world.billing_clients WHERE id = $1`, [id]);

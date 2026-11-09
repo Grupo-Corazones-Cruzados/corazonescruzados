@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureBillingClientsTable, CONSUMIDOR_FINAL_RUC, MAX_DATOS_FACTURACION } from '@/lib/billing-clients';
+import { clienteFacturacionEsMio } from '@/lib/pertenencia';
 
 /**
  * Añade un juego de datos de facturación al cliente `[id]` (hasta `MAX_DATOS_FACTURACION`
@@ -16,6 +17,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     await ensureBillingClientsTable();
     const { id } = await params;
+    // Un miembro, solo en sus clientes (Fernando, 2026-11-09).
+    if (!(await clienteFacturacionEsMio(user, id))) return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 });
 
     const { rows: [t] } = await pool.query(
       `SELECT t.id, t.ruc, t.portal_client_id,

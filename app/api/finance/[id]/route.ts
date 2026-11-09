@@ -3,20 +3,32 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureFinanceTables, SQL_INGRESO_FACTURADO, SQL_RENGLON_BLOQUEADO, NOMBRE_ADICIONAL, recalcMonth } from '@/lib/finance';
 
-// GET: fetch month detail with items (admin and member only)
+/**
+ * EL MES, SI ES DE ESTA CUENTA (Fernando, 2026-11-09: cada cuenta ve y escribe solo su estado financiero).
+ * El administrador tampoco ve los de otros aquí: el tablero de la organización será otro. Un mes ajeno o
+ * un id que no es un número dan `null`, y la ruta responde 404 —no 403— para no confirmar que existe.
+ */
+async function mesDeLaCuenta(id: string, userId: string) {
+  if (!/^\d{1,9}$/.test(id)) return null;
+  const { rows: [m] } = await pool.query(
+    `SELECT * FROM gcc_world.finance_months WHERE id = $1 AND owner_user_id = $2::uuid`, [Number(id), userId]
+  );
+  return m ?? null;
+}
+
+// GET: el mes con sus renglones, solo si es de quien tiene la sesión.
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    if (user.role === 'client') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const { id } = await params;
     await ensureFinanceTables();
 
-    const { rows: [month] } = await pool.query(`SELECT * FROM gcc_world.finance_months WHERE id = $1`, [id]);
+    const month = await mesDeLaCuenta(id, user.userId);
     if (!month) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
     const { rows: items } = await pool.query(
-      `SELECT fi.*, ${SQL_INGRESO_FACTURADO} AS facturado, ${SQL_RENGLON_BLOQUEADO} AS bloqueado FROM gcc_world.finance_items fi WHERE fi.month_id = $1 ORDER BY fi.type, fi.sort_order, fi.id`, [id]
+      `SELECT fi.*, ${SQL_INGRESO_FACTURADO} AS facturado, ${SQL_RENGLON_BLOQUEADO} AS bloqueado FROM gcc_world.finance_items fi WHERE fi.month_id = $1 ORDER BY fi.type, fi.sort_order, fi.id`, [month.id]
     );
 
     return NextResponse.json({ data: { ...month, items } });
@@ -32,12 +44,14 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
  * Cuerpo: `{ adicionales: [{ type: 'income' | 'expense', description, amount }] }`. Reemplaza los
  * adicionales del mes por esa lista, en una transacción. Sin `adicionales` responde 409: es una
  * pestaña con la versión anterior, que mandaba el mes entero en `items` y aquí lo duplicaría.
+ *
+ * Desde el 2026-11-09 cada cuenta escribe los adicionales de SUS meses, y solo de ellos (antes, solo el admin).
  */
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    const { id } = await params;
+    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    const { id: idUrl } = await params;
     const { adicionales } = await req.json();
 
     if (!Array.isArray(adicionales)) {
@@ -45,8 +59,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     await ensureFinanceTables();
 
-    const { rows: [month] } = await pool.query(`SELECT id FROM gcc_world.finance_months WHERE id = $1`, [id]);
+    const month = await mesDeLaCuenta(idUrl, user.userId);
     if (!month) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const id = Number(month.id);
 
     // Los adicionales escritos ANTES de la regla de una palabra («Sueldo Helen») se aceptan tal cual
     // mientras no se cambie su nombre.
@@ -91,7 +106,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     } finally {
       cliente.release();
     }
-    await recalcMonth(Number(id));
+    await recalcMonth(id);
 
     const { rows: [m] } = await pool.query(`SELECT * FROM gcc_world.finance_months WHERE id = $1`, [id]);
     return NextResponse.json({ data: m });
@@ -100,13 +115,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 }
 
-// DELETE: remove a month and its items
+// DELETE: borra un mes de la cuenta (y sus adicionales). Solo el dueño, y solo si no tiene nada bloqueado.
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await getCurrentUser();
-    if (!user || user.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    const { id } = await params;
+    if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    const { id: idUrl } = await params;
     await ensureFinanceTables();
+
+    const month = await mesDeLaCuenta(idUrl, user.userId);
+    if (!month) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const id = Number(month.id);
 
     // Borrar el mes se llevaría por delante sus renglones bloqueados: un mes con alguno no se borra.
     const { rows: [b] } = await pool.query(
@@ -114,7 +133,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     );
     if (b?.n > 0) return NextResponse.json({ error: 'Este mes tiene ingresos o egresos del SRI: no se puede borrar.' }, { status: 409 });
 
-    await pool.query(`DELETE FROM gcc_world.finance_months WHERE id = $1`, [id]);
+    await pool.query(`DELETE FROM gcc_world.finance_months WHERE id = $1 AND owner_user_id = $2::uuid`, [id, user.userId]);
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

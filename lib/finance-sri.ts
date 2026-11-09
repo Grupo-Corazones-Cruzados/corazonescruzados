@@ -20,7 +20,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { pool } from '@/lib/db';
 import { cifrar, descifrar } from '@/lib/cifrado';
-import { ensureFinanceTables, ensureMonth, recalcMonth } from '@/lib/finance';
+import { ensureFinanceTables, ensureMonth, recalcMonth, DUENO_FINANZAS_GCC } from '@/lib/finance';
 
 export const RUC_SRI = '0930095922001';
 const CONTEXTO_CLAVE = 'sri:clave-principal';
@@ -226,7 +226,8 @@ export async function registrarResultado(id: number, meses: ResultadoMes[], erro
   const tocados = new Set<number>();
   for (const m of meses) {
     if (!m.ok) continue;
-    const monthId = await ensureMonth(m.year, m.month);
+    // Los comprobantes recibidos son del RUC de Fernando: van a su estado financiero (`DUENO_FINANZAS_GCC`).
+    const monthId = await ensureMonth(DUENO_FINANZAS_GCC, m.year, m.month);
     for (const c of m.comprobantes) {
       if (!/^\d{49}$/.test(c.clave)) continue;
       const total = Math.abs(Number(String(c.total).replace(',', '.')) || 0);
@@ -267,9 +268,10 @@ export async function sembrarMesesRevisados(hasta: Mes, en: string) {
     `INSERT INTO gcc_world.sri_sync_meses (year, month, revisado_en, comprobantes)
      SELECT EXTRACT(YEAR FROM d)::int, EXTRACT(MONTH FROM d)::int, $3::timestamptz,
             (SELECT count(*) FROM gcc_world.finance_items fi JOIN gcc_world.finance_months fm ON fm.id = fi.month_id
-              WHERE fi.source_type = 'sri_recibida' AND fm.year = EXTRACT(YEAR FROM d) AND fm.month = EXTRACT(MONTH FROM d))
+              WHERE fi.source_type = 'sri_recibida' AND fm.owner_user_id = $6::uuid
+                AND fm.year = EXTRACT(YEAR FROM d) AND fm.month = EXTRACT(MONTH FROM d))
        FROM generate_series(make_date($1, $2, 1), make_date($4, $5, 1), interval '1 month') d
      ON CONFLICT (year, month) DO NOTHING`,
-    [DESDE.year, DESDE.month, en, hasta.year, hasta.month],
+    [DESDE.year, DESDE.month, en, hasta.year, hasta.month, DUENO_FINANZAS_GCC],
   );
 }

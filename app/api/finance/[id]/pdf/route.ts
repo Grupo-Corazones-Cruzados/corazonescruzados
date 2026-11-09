@@ -10,12 +10,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    if (user.role === 'client') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    const { id } = await params;
+    const { id: idUrl } = await params;
     await ensureFinanceTables();
 
-    const { rows: [m] } = await pool.query(`SELECT * FROM gcc_world.finance_months WHERE id = $1`, [id]);
+    // Solo un mes de ESTA cuenta (Fernando, 2026-11-09); uno ajeno da 404, como si no existiera.
+    if (!/^\d{1,9}$/.test(idUrl)) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const { rows: [m] } = await pool.query(
+      `SELECT * FROM gcc_world.finance_months WHERE id = $1 AND owner_user_id = $2::uuid`, [Number(idUrl), user.userId]
+    );
     if (!m) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    const id = m.id;
 
     // `facturado=1` (el filtro «Solo facturado» del Inicio): los ingresos, solo los facturados; los
     // egresos, solo los del SRI (sin adicionales); el ahorro y el acumulado, con ese ingreso (Fernando, 2026-10-29).
@@ -24,16 +28,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       `SELECT fi.*, ${SQL_INGRESO_FACTURADO} AS facturado FROM gcc_world.finance_items fi WHERE fi.month_id = $1 ORDER BY fi.type, fi.sort_order, fi.id`, [id]
     );
 
-    // Ahorro acumulado de todos los meses anteriores a este.
+    // Ahorro acumulado de todos los meses anteriores a este, de la misma cuenta.
     const { rows: [priorRow] } = await pool.query(
       soloFacturado
         ? `SELECT COALESCE(SUM(CASE WHEN fi.type = 'expense' AND NOT fi.adicional THEN -fi.amount WHEN ${SQL_INGRESO_FACTURADO} THEN fi.amount ELSE 0 END), 0) AS prior
              FROM gcc_world.finance_items fi JOIN gcc_world.finance_months fm ON fm.id = fi.month_id
-            WHERE fm.year < $1 OR (fm.year = $1 AND fm.month < $2)`
+            WHERE fm.owner_user_id = $3::uuid AND (fm.year < $1 OR (fm.year = $1 AND fm.month < $2))`
         : `SELECT COALESCE(SUM(total_savings), 0) AS prior
              FROM gcc_world.finance_months
-            WHERE year < $1 OR (year = $1 AND month < $2)`,
-      [m.year, m.month]
+            WHERE owner_user_id = $3::uuid AND (year < $1 OR (year = $1 AND month < $2))`,
+      [m.year, m.month, user.userId]
     );
     const priorSavings = Number(priorRow?.prior) || 0;
 
