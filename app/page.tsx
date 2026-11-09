@@ -13,7 +13,6 @@ import type { AccionesAcceso } from '@/components/landing/opcionesAcceso';
 import { IconoCorazon, IconoMundo } from '@/components/landing/IconosTitular';
 import { useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
 import { appInstalada, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
-import PointerCursor from '@/components/landing/PointerCursor';
 import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
 import OnboardingSlidersModal, { enviarPostulacion } from '@/components/landing/OnboardingSlidersModal';
 import EntryChoiceModal from '@/components/landing/EntryChoiceModal';
@@ -367,7 +366,6 @@ export default function LandingPage() {
       <CabeceraSitio />
       {/* Sin ratón (teléfono, tableta) no hay puntero que dibujar: su bucle por cuadro solo
           restaba rendimiento. */}
-      {!nativeCursor && !esTactil && <PointerCursor />}
       <audio ref={corazonAudioRef} src="/sounds/music/corazon-portada.mp3" loop preload="auto" />
       {/* ====== HERO ====== */}
       <section

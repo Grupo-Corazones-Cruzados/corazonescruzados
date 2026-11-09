@@ -314,18 +314,10 @@ html {
   color: #e5e5e5;
   overflow-x: hidden;
   position: relative;
-  cursor: none;
 }
 
-.landing-page *,
-.landing-page *::before,
-.landing-page *::after {
-  cursor: none !important;
-}
-
-/* Sobre la escena clara de Progreso, el puntero del sistema, el de la plataforma
-   (Fernando, 2026-10-26). La clase la pone `PointerCursor` según de qué lado de la raya
-   esté el ratón. */
+/* EL PUNTERO NORMAL DEL SISTEMA EN TODA LA PORTADA (Fernando, 2026-11-09): ya no hay puntero del juego en
+   el lado de Aventura (`PointerCursor`, eliminado). Flecha, y mano sobre enlaces y botones. */
 html[data-gcc-app] .landing-page:not([data-app]) { visibility: hidden; }
 
 /* GCC Centralizado (Fernando, 2026-11-05): su inicio de sesión es rojo y negro. Parte del cielo
@@ -341,16 +333,10 @@ html[data-gcc-app] .landing-page:not([data-app]) { visibility: hidden; }
 .landing-page[data-app='centralizado'] .corp { --color-accent: #dc2626; --color-accent-light: rgba(220, 38, 38, 0.18); --color-accent-glow: #ef4444; --color-accent-hover: #b91c1c; }
 .landing-page[data-app='centralizado'] .corp .pixel-btn-primary { background: #dc2626; border-color: #dc2626; box-shadow: none; }
 
-.landing-page.cursor-plataforma,
-.landing-page.cursor-plataforma *,
-.landing-page.cursor-plataforma *::before,
-.landing-page.cursor-plataforma *::after {
-  cursor: auto !important;
-}
-.landing-page.cursor-plataforma a,
-.landing-page.cursor-plataforma button:not(:disabled),
-.landing-page.cursor-plataforma [role='button'] {
-  cursor: pointer !important;
+.landing-page a,
+.landing-page button:not(:disabled),
+.landing-page [role='button'] {
+  cursor: pointer;
 }
 
 /* Auth screens: use the normal OS cursor (no game pointer here). Higher
@@ -2009,7 +1995,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    hijos se quedaban con un valor a medias. Lo anima `useCorteAnimado` en JS.
    ⚡ Y NO se hereda (2026-10-26, rendimiento en el teléfono): heredable, cada cambio en
    `.landing-page` hacía recalcular los estilos de TODA la página, 60 veces por segundo al
-   elegir un mundo. Solo la leen en línea `LicuadoPortada` y `PointerCursor`. */
+   elegir un mundo. Solo la lee en línea `LicuadoPortada`. */
 @property --corte {
   syntax: '<length>';
   inherits: false;
