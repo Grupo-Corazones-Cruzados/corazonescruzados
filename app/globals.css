@@ -4962,6 +4962,26 @@ html[data-gcc-app='centralizado'], html[data-gcc-app='centralizado'] body { back
   animation: appHoja 460ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
 }
 .app-hoja-marca { position: relative; }
+/* El pensamiento sobre la hoja de acceso: centrado y del ancho de la hoja (440 px en pantallas anchas). */
+.app-pensamiento { flex: none; display: flex; justify-content: center; padding: 0 16px 10px; pointer-events: none; }
+/* Con los colores de la hoja (tarjeta y texto del tema), no los de la portada clara: así se lee igual en
+   la web (Progreso, claro) que en GCC Miembros (oscuro). Compacto: va entre el eslogan y el formulario. */
+.app-pensamiento .pensamiento-fugaz-pie {
+  width: min(92vw, 440px); height: auto; min-height: 0; padding: 10px 18px 12px; border-radius: 18px;
+  background: color-mix(in srgb, var(--color-digi-card) 88%, transparent); box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.6);
+}
+.app-pensamiento .pensamiento-fugaz-pie[data-fase='oculta'] { visibility: hidden; }
+.app-pensamiento .pensamiento-fugaz-pie::before { display: none; }
+.app-pensamiento .pensamiento-fugaz-pie .fugaz-texto { margin-top: 0; font-size: 1rem; color: var(--color-digi-text); text-shadow: none; }
+.app-pensamiento .pensamiento-fugaz-pie .fugaz-firma { margin-top: 6px; color: var(--color-digi-muted); }
+@media (min-width: 600px) { .app-inicio .app-hoja { margin-bottom: 16px; } }
+/* Pantalla ancha pero baja (portátil, la ventana de la app del Mac): filas algo más juntas para que el
+   pensamiento quepa entre el eslogan y la hoja sin taparlo. */
+@media (min-width: 600px) and (max-height: 860px) {
+  .app-inicio .app-hoja { gap: 10px; padding-top: 18px; padding-bottom: 14px; }
+  .app-inicio .app-fila { padding: 9px 14px; }
+  .app-inicio .app-legal { padding-top: 8px; }
+}
 /* Cerrar la hoja y volver a elegir mundo: solo en la web (`onVolver`), arriba a la derecha. */
 .app-volver {
   position: absolute; top: -4px; right: -6px; display: grid; place-items: center; width: 36px; height: 36px; border: 0; border-radius: 10px;

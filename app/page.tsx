@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import PixelStars from '@/components/landing/PixelStars';
 import CabeceraSitio from '@/components/sitio/CabeceraSitio';
 import PieSitio from '@/components/sitio/PieSitio';
-import PensamientosCielo from '@/components/landing/PensamientosCielo';
 import FondosPortada from '@/components/landing/FondosPortada';
 import PanelesMundo from '@/components/landing/PanelesMundo';
 import RolesMundo from '@/components/landing/RolesMundo';
@@ -448,9 +447,8 @@ export default function LandingPage() {
                 </span>
               )}
             </div>
-            {/* EL CIELO DE PENSAMIENTOS (Fernando, 2026-10-30): hasta 10 pensamientos como estrellas
-                que se encienden de una en una (ver `PensamientosCielo`). Apagado con un mundo elegido. */}
-            <PensamientosCielo lugar="cielo" visible={!mundoElegido} />
+            {/* Sin pensamientos en la portada desde el 2026-11-08 (Fernando): solo salen en la pantalla
+                de inicio de sesión, encima del formulario (`InicioApp`). */}
             {/* EL ESLOGAN (Fernando, 2026-10-28): aparece debajo de los iconos cuando el corazón
                 termina de unirse a la Tierra, palabra a palabra. Su hueco está SIEMPRE reservado
                 (invisible antes de elegir), así no mueve nada al aparecer. */}
@@ -474,9 +472,8 @@ export default function LandingPage() {
                     2026-10-30). Pero su HUECO se queda, del mismo alto, en todos los tamaños: Aventura y
                     Progreso quedan donde estaban (Fernando: «antes estaban perfectamente posicionados»).
                     En el teléfono el pensamiento aparece aquí; desde 640 px, en el cielo. */}
-                <div className="inicio-pensamiento hueco-pensamiento">
-                  <PensamientosCielo lugar="pie" visible={!mundoElegido} />
-                </div>
+                {/* El hueco del pensamiento se queda, vacío: sin él, Aventura y Progreso se moverían. */}
+                <div className="inicio-pensamiento hueco-pensamiento" aria-hidden />
               </div>
             ) : appWeb ? null : (
               <div key="mundo" className={`mundo-elegido mundo-${mundoElegido}`}>

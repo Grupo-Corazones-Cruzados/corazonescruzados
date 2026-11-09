@@ -14,6 +14,7 @@
 import { useEffect, useState, type ComponentType } from 'react';
 import { ChevronRight, FileText, UserPlus, X } from 'lucide-react';
 import BrandLoader from '@/components/ui/BrandLoader';
+import PensamientosCielo from './PensamientosCielo';
 import Segmentado from '@/components/ui/Segmentado';
 import { abrirFuera } from '@/lib/movil/abrir-fuera';
 import type { AppDeTelefono } from '@/lib/sitio/appDeTelefono';
@@ -75,6 +76,9 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta, on
 
   return (
     <div className="corp app-inicio">
+      {/* EL PENSAMIENTO, SOLO AQUÍ (Fernando, 2026-11-08): aparece y desaparece justo encima del formulario,
+          bajo el corazón-mundo de la portada. Igual en la web y en las apps: es la misma pantalla. */}
+      <div className="app-pensamiento"><PensamientosCielo lugar="pie" visible /></div>
       <main className="app-hoja">
         <div className="app-hoja-marca">
           {onVolver && (
