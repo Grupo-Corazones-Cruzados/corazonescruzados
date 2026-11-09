@@ -904,7 +904,10 @@ marco la sesión viaja en la cabecera `x-espacio-token` (`firmarPeticionesDeLaPa
 **Cómo se usa:**
 1. Nombre del personaje (se sugieren los ya guardados) y **subir la imagen** de Gemini, o
    **pegarla**: ⌘V / Ctrl+V en cualquier parte de la pantalla, o el botón «Pegar imagen» en el teléfono
-   (lee el portapapeles; el marco de las apps lleva `allow="clipboard-read"`).
+   (lee el portapapeles; el marco de las apps lleva `allow="clipboard-read"`). ⚠ En el marco de las
+   apps de iPhone/iPad, iOS niega esa lectura («no se dio permiso»): entonces se abre una **zona de
+   pegado** que se mantiene pulsada para elegir «Pegar» del sistema. La imagen llega por el evento de
+   pegar, igual que con ⌘V, y ese no necesita permiso.
 2. **Rejilla:** columnas, filas, margen y hueco, dibujada en rojo sobre la imagen; zoom.
 3. **Tocar los cuadros en el orden de la animación** (salen numerados). En la tira de abajo se
    reordenan (‹ ›) o se quitan (×).

@@ -538,17 +538,26 @@ export function Cortador() {
     window.addEventListener('paste', alPegar);
     return () => window.removeEventListener('paste', alPegar);
   }, []);
-  /** En el teléfono no hay teclas: el botón «Pegar» lee la imagen copiada (el sistema pide permiso). */
+  /**
+   * En el teléfono no hay teclas: el botón «Pegar imagen» intenta leer el portapapeles. Dentro del marco
+   * de las apps (iPhone/iPad) iOS no deja leerlo así y responde «sin permiso» (Fernando, 2026-11-09). Por eso,
+   * si no puede, abre una ZONA DE PEGADO: se mantiene pulsada, se elige «Pegar» en el menú del sistema y
+   * la imagen llega por el mismo evento de pegar que ⌘V, que no necesita ese permiso.
+   */
+  const [zonaPegar, setZonaPegar] = useState(false);
+  const zona = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (zonaPegar) zona.current?.focus(); }, [zonaPegar]);
+  useEffect(() => { setZonaPegar(false); }, [img]);
   const pegarDelPortapapeles = async () => {
     try {
-      if (!navigator.clipboard?.read) throw new Error('Este navegador no deja leer el portapapeles: usa «Subir imagen».');
+      if (!navigator.clipboard?.read) throw new Error('sin lectura');
       for (const item of await navigator.clipboard.read()) {
         const tipo = item.types.find((t) => t.startsWith('image/'));
         if (tipo) { const b = await item.getType(tipo); abrirImagen(new File([b], 'Imagen pegada', { type: tipo })); return; }
       }
       toast.error('No hay ninguna imagen copiada');
-    } catch (e: any) {
-      toast.error(e?.name === 'NotAllowedError' ? 'No se dio permiso para leer el portapapeles' : e?.message || 'No se pudo pegar');
+    } catch {
+      setZonaPegar(true);
     }
   };
 
@@ -881,6 +890,15 @@ export function Cortador() {
         <button type="button" onClick={pegarDelPortapapeles} className={`${BTN_SECONDARY} w-full`} title="Pegar la imagen copiada (⌘V o Ctrl+V)">
           <ClipboardPaste className="w-4 h-4" /> Pegar imagen
         </button>
+        {zonaPegar && (
+          <div ref={zona} contentEditable suppressContentEditableWarning inputMode="none" role="textbox" aria-label="Zona de pegado"
+            onPaste={(e) => e.preventDefault()}
+            onBeforeInput={(e) => e.preventDefault()}
+            className="rounded-lg border-2 border-dashed border-accent/60 bg-digi-darker px-3 py-5 text-center text-[13px] text-digi-text outline-none select-none"
+            style={mf}>
+            Mantén pulsado aquí y elige «Pegar»
+          </div>
+        )}
         {img && <p className="text-[11px] text-digi-muted truncate tabular-nums" style={mf} title={nombreImagen}>{nombreImagen} · {img.naturalWidth}×{img.naturalHeight}</p>}
 
         <div className="pt-3 border-t border-digi-border space-y-3">
