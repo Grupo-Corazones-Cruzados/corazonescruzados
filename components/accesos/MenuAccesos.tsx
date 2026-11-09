@@ -4,7 +4,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Eye, LogOut } from 'lucide-react';
+import { Eye, LogOut, Undo2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 import FichaUsuario from '@/components/dashboard/FichaUsuario';
@@ -33,9 +34,21 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
  */
 export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; activo?: string }) {
   const pathname = usePathname();
-  const { signOut, user } = useAuth();
+  const { signOut, user, suplantacion } = useAuth();
+  // ⚠️ Mientras se mira como otro, la sesión tiene el rol de ESE usuario: el botón se ofrece por
+  // `suplantacion` (para volver), no por el rol. Ver `DashboardSidebar`.
   const esAdmin = user?.role === 'admin';
   const [verComoOtro, setVerComoOtro] = useState(false);
+  const [volviendo, setVolviendo] = useState(false);
+  const volverAMiVista = async () => {
+    setVolviendo(true);
+    try {
+      const r = await fetch('/api/admin/suplantar', { method: 'DELETE' });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); toast.error(d.error ?? 'No se pudo volver'); return; }
+      // Recarga completa: la sesión cambia de identidad y no queda nada fiable en memoria.
+      window.location.href = '/dashboard/accesos';
+    } finally { setVolviendo(false); }
+  };
   const { abierto, cerrar } = useMenuMovil();
   // En una herramienta, la abierta queda marcada (sin `activo`, lo dice la ruta).
   const herramientaAbierta = useSearchParams().get('herramienta');
@@ -127,13 +140,19 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
         </nav>
 
         <div className="shrink-0 p-2 border-t border-digi-border">
-          {/* «VER COMO OTRO USUARIO», encima de la cuenta y solo para el administrador del grupo (Fernando,
-              2026-11-08: en el menú de Progreso existía y aquí se había perdido). El mismo diálogo. */}
-          {esAdmin && (
+          {/* «VER», encima de la cuenta y solo para el administrador del grupo (Fernando, 2026-11-08/09). El mismo
+              botón, mientras se mira como otra cuenta, es «Volver a mi vista» (antes no había cómo volver desde aquí). */}
+          {suplantacion ? (
+            <button type="button" onClick={volverAMiVista} disabled={volviendo} title="Volver a mi vista"
+              aria-label="Volver a mi vista" className={`${fila()} mb-1 disabled:opacity-60`} style={{ ...mf, color: '#E9C07A', background: 'rgba(224, 176, 90, 0.16)' }}>
+              <span className="w-6 h-6 shrink-0 grid place-items-center"><Undo2 className="w-[18px] h-[18px]" strokeWidth={2} /></span>
+              {!estrecho && <span className="truncate">Volver a mi vista</span>}
+            </button>
+          ) : esAdmin && (
             <button type="button" onClick={() => setVerComoOtro(true)} title="Ver la plataforma como otro usuario"
               aria-label="Ver la plataforma como otro usuario" className={`${fila()} mb-1`} style={mf}>
               <span className="w-6 h-6 shrink-0 grid place-items-center"><Eye className="w-[18px] h-[18px]" strokeWidth={2} /></span>
-              {!estrecho && <span className="truncate">Ver como otro usuario</span>}
+              {!estrecho && <span className="truncate">Ver</span>}
             </button>
           )}
           {/* La cuenta, siempre en la primera capa (Fernando, 2026-11-08); la segunda ya no la repite. */}
