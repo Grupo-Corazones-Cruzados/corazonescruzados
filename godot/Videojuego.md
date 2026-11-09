@@ -773,6 +773,18 @@ guardan como fuente; al juego solo entra el PNG exportado.
 | 5 | Prueba en el banco | `PruebaPersonaje.tscn` + F6 | Camina y gira entre vistas |
 | 6 | Equipo (casco, armadura, arma) como piezas que se anclan a un hueso | Aseprite + Godot | Se dibuja UNA vez y sirve para todas las animaciones |
 
+**Colocación en el lienzo de 96×128 (propuesta del 2026-11-08, a confirmar por Fernando):** el
+personaje NO llena el lienzo. **Línea de los pies fija en y = 120** para todos los personajes y
+todas las vistas (8 px abajo para la sombra y el rebote al caminar). **Eje vertical en x = 48.** El
+**origen del sprite en Godot es el punto (48, 120)**, el centro de los pies, para que el orden por
+profundidad funcione. Personaje estándar de **96 px de alto (de y = 24 a y = 120)**, con la cabeza
+en torno a un tercio del alto (estilo chibi). Los **24 px de arriba** son para el pelo, los
+sombreros y el arma levantada, y quedan **8-12 px a los lados** para los brazos. Uno más bajo
+conserva los pies en y = 120 y baja la cabeza; uno más alto usa el espacio de arriba. **Nunca se
+escala un personaje para llenar el lienzo.** La línea de los ojos va a la misma altura en las 4
+vistas. Con 96 px de personaje, la base del juego debería ser **960×540** (en 480×270 ocuparía un
+tercio de la pantalla).
+
 ### B. Animaciones de movimiento (quieto, caminar, correr, esquivar)
 | # | Paso | Herramienta | Detalle |
 |---|---|---|---|
