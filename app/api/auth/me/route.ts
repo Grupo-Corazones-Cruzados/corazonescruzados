@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
-import { getCurrentUser } from "@/lib/auth/jwt";
+import { getCurrentUser, getAuthToken, removeAuthCookie } from "@/lib/auth/jwt";
 import { pool } from "@/lib/db";
 import { ensureAdminMember } from "@/lib/ensure-admin-member";
 
 export async function GET() {
   const payload = await getCurrentUser();
   if (!payload) {
+    // UNA SESIÓN FIRMADA PERO ANULADA SE BORRA (Fernando, 2026-11-09: la app de la Mac en negro). El
+    // middleware solo mira la firma; `getCurrentUser` además `tokens_invalidated_at`. Si la cookie se
+    // quedaba, el panel iba a /auth, el middleware lo devolvía a /dashboard y la pantalla quedaba vacía
+    // para siempre. Pasó con una sesión de «Ver» cuyo usuario cambió de rol. Un fallo de la base lanza,
+    // no llega aquí: solo se borra lo que de verdad ya no vale.
+    if (await getAuthToken()) await removeAuthCookie();
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
 

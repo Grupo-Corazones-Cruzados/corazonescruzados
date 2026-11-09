@@ -18,6 +18,10 @@ final class Delegado: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKU
         // La web pregunta por este puente para saberse dentro de una app instalada (`esAppInstalada`).
         config.userContentController.add(self, name: "gccEscritorio")
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
+        if ProcessInfo.processInfo.environment["GCC_DEPURAR"] != nil {
+            let js = "window.__errores=[];addEventListener('error',e=>__errores.push(String(e.message||e.target?.src||e.target?.href)),true);addEventListener('unhandledrejection',e=>__errores.push('promesa: '+e.reason))"
+            config.userContentController.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
+        }
         web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = self
         web.uiDelegate = self
@@ -154,8 +158,11 @@ final class Delegado: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKU
     func webView(_ w: WKWebView, didFinish n: WKNavigation!) {
         guard let ruta = ProcessInfo.processInfo.environment["GCC_DEPURAR"] else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-            w.evaluateJavaScript("[location.pathname, document.querySelector('.corp')?.className || '', document.body.innerText.replace(/\\s+/g,' ').slice(0,160)].join(' | ')") { r, _ in
+            w.evaluateJavaScript("[location.href, document.readyState, document.title, document.documentElement.outerHTML.length, document.querySelector('.corp')?.className || '', document.body.innerText.replace(/\\s+/g,' ').slice(0,160), JSON.stringify(window.__errores||[]).slice(0,1500)].join(' | ')") { r, _ in
                 print("[depurar]", r ?? "")
+            }
+            w.evaluateJavaScript("document.documentElement.outerHTML + '\\n<!--RECURSOS\\n' + performance.getEntries().map(e => [e.entryType, e.name, e.responseStatus, e.transferSize, e.deliveryType].join(' ')).join('\\n') + '\\n-->'") { r, _ in
+                try? (r as? String)?.write(toFile: ruta + ".html", atomically: true, encoding: .utf8)
             }
             w.takeSnapshot(with: nil) { img, _ in
                 guard let img, let tiff = img.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
