@@ -72,21 +72,24 @@ async function ensureFinanceTables() {
   _initialized = true;
 }
 
+/** Lo mínimo de `pg` que usan estas funciones: el pool o un cliente dentro de una transacción. */
+export type Consulta = { query: (sql: string, params?: any[]) => Promise<{ rows: any[]; rowCount?: number | null }> };
+
 /** El mes `year`/`month` de la cuenta `owner` (lo crea si no existe). Devuelve su id. */
-async function ensureMonth(owner: string, year: number, month: number): Promise<number> {
-  await pool.query(
+async function ensureMonth(owner: string, year: number, month: number, db: Consulta = pool): Promise<number> {
+  await db.query(
     `INSERT INTO gcc_world.finance_months (owner_user_id, year, month) VALUES ($1, $2, $3)
      ON CONFLICT (owner_user_id, year, month) DO NOTHING`,
     [owner, year, month]
   );
-  const { rows: [m] } = await pool.query(
+  const { rows: [m] } = await db.query(
     `SELECT id FROM gcc_world.finance_months WHERE owner_user_id = $1 AND year = $2 AND month = $3`, [owner, year, month]
   );
   return m.id;
 }
 
-async function recalcMonth(monthId: number) {
-  await pool.query(`
+async function recalcMonth(monthId: number, db: Consulta = pool) {
+  await db.query(`
     UPDATE gcc_world.finance_months SET
       total_income = COALESCE((SELECT SUM(amount) FROM gcc_world.finance_items WHERE month_id = $1 AND type = 'income'), 0),
       total_expense = COALESCE((SELECT SUM(amount) FROM gcc_world.finance_items WHERE month_id = $1 AND type = 'expense'), 0),
@@ -104,34 +107,45 @@ async function recalcMonth(monthId: number) {
  */
 async function addIncomeToFinance(sourceType: string, sourceId: string, description: string, amount: number, date?: Date) {
   await ensureFinanceTables();
+  // Lo automático es, por ahora, de la cuenta de Fernando (ver `DUENO_FINANZAS_GCC`).
+  await anotarIngreso(pool, DUENO_FINANZAS_GCC, sourceType, sourceId, description, amount, date);
+}
 
+/**
+ * Anota un ingreso en el mes de la cuenta `owner`, con el cliente `db` (el pool o uno dentro de una
+ * transacción). Quien llama se asegura antes de `ensureFinanceTables()`, que hace DDL y no va dentro de una
+ * transacción. Devuelve `false` si el origen ya estaba en el registro y no anotó nada.
+ */
+export async function anotarIngreso(
+  db: Consulta, owner: string, sourceType: string, sourceId: string, description: string, amount: number, date?: Date,
+): Promise<boolean> {
   // Check log — if this source was ever registered, skip (even if item was deleted by admin)
-  const { rows: logged } = await pool.query(
+  const { rows: logged } = await db.query(
     `SELECT 1 FROM gcc_world.finance_source_log WHERE source_type = $1 AND source_id = $2`, [sourceType, sourceId]
   );
-  if (logged.length > 0) return;
+  if (logged.length > 0) return false;
 
   const d = date || new Date();
-  // Lo automático es, por ahora, de la cuenta de Fernando (ver `DUENO_FINANZAS_GCC`).
-  const monthId = await ensureMonth(DUENO_FINANZAS_GCC, d.getFullYear(), d.getMonth() + 1);
+  const monthId = await ensureMonth(owner, d.getFullYear(), d.getMonth() + 1, db);
 
-  const { rows: [{ max: maxOrder }] } = await pool.query(
+  const { rows: [{ max: maxOrder }] } = await db.query(
     `SELECT COALESCE(MAX(sort_order), -1) as max FROM gcc_world.finance_items WHERE month_id = $1`, [monthId]
   );
 
-  await pool.query(
+  await db.query(
     `INSERT INTO gcc_world.finance_items (month_id, type, description, amount, sort_order, source_type, source_id)
      VALUES ($1, 'income', $2, $3, $4, $5, $6) ON CONFLICT (source_type, source_id) WHERE source_type IS NOT NULL AND source_id IS NOT NULL DO NOTHING`,
     [monthId, description, amount, maxOrder + 1, sourceType, sourceId]
   );
 
   // Log that this source was registered (permanent — survives item deletion)
-  await pool.query(
+  await db.query(
     `INSERT INTO gcc_world.finance_source_log (source_type, source_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
     [sourceType, sourceId]
   );
 
-  await recalcMonth(monthId);
+  await recalcMonth(monthId, db);
+  return true;
 }
 
 export async function addProjectIncomeToFinance(projectId: string, projectTitle: string, totalCost: number, date?: Date) {
@@ -210,6 +224,8 @@ export function sqlSinEtapasFacturadas(columna: 'project_id' | 'ticket_id', orig
  *                      completo lo sumaría dos veces;
  *   · `subscription` → la factura de ese periodo (`source_id` = `<suscripción>-<AAAA-MM>`);
  *   · `sri_emitida`  → siempre;
+ *   · `earning`      → la parte de una persona en un cobro (`lib/ganancias.ts`): la factura cuyo id va antes
+ *                      del «:» en `source_id` (`<factura>:<usuario>`);
  *   · sin origen (escrito a mano) → nunca.
  * ⚠️ El origen por sí solo NO basta: tickets y proyectos se anotan también al completarse sin
  * factura (medido el 2026-10-29: 4 de 8 ingresos de proyecto no tienen factura).
@@ -224,6 +240,7 @@ export const SQL_INGRESO_FACTURADO = `(fi.type = 'income' AND CASE fi.source_typ
       AND i.sri_status = 'authorized' AND i.status <> 'cancelled'
       AND NOT EXISTS (SELECT 1 FROM gcc_world.project_stages ps WHERE ps.invoice_id = i.id))
   WHEN 'subscription' THEN EXISTS (SELECT 1 FROM gcc_world.invoices i WHERE i.source_type = 'subscription' AND i.source_id = fi.source_id AND i.sri_status = 'authorized' AND i.status <> 'cancelled')
+  WHEN 'earning' THEN EXISTS (SELECT 1 FROM gcc_world.invoices i WHERE i.id::text = split_part(fi.source_id, ':', 1) AND i.sri_status = 'authorized' AND i.status <> 'cancelled')
   ELSE FALSE END)`;
 
 /**
@@ -253,6 +270,7 @@ export const NOMBRE_ADICIONAL = /^\S(?:[^\n\r]{0,38}\S)?$/u;
 export function sqlEnlaceFactura(f: string = 'i'): string {
   return `(
   (fi.source_type = 'invoice' AND fi.source_id = ${f}.id::text)
+  OR (fi.source_type = 'earning' AND split_part(fi.source_id, ':', 1) = ${f}.id::text)
   OR (fi.source_type = 'sri_emitida' AND fi.source_id = ${f}.access_key)
   OR (fi.source_type = 'ticket' AND (${f}.ticket_id::text = fi.source_id OR (${f}.source_type = 'ticket' AND ${f}.source_id = fi.source_id)))
   OR (fi.source_type = 'subscription' AND ${f}.source_type = 'subscription' AND ${f}.source_id = fi.source_id)

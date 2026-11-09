@@ -27,6 +27,7 @@ import { marcarRegistrosFacturados } from '@/lib/tickets/facturacion';
 import { completarOrigenCobrado } from '@/lib/pagos/completar-origen';
 import { nombrarTrasPago } from '@/lib/pagos/nombre-estandar';
 import { addInvoiceIncomeToFinance, addSubscriptionIncomeToFinance } from '@/lib/finance';
+import { registrarCobro } from '@/lib/ganancias';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendPaidInvoiceEmail } from '@/lib/integrations/email';
 import { calcularRecargo, tarifaAlCliente, CONCEPTO_RECARGO } from './comision';
@@ -802,7 +803,7 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   if (esProducto) {
     const { itemId, userId: compradorId } = partesAltaProducto(sourceId);
     const { rows: [item] } = await pool.query(
-      `SELECT id, title, cost FROM gcc_world.member_portfolio_items WHERE id = $1`, [itemId]);
+      `SELECT id, title, cost, member_id FROM gcc_world.member_portfolio_items WHERE id = $1`, [itemId]);
     const hoy = new Date();
     periodo = `${hoy.getUTCFullYear()}-${String(hoy.getUTCMonth() + 1).padStart(2, '0')}`;
 
@@ -821,6 +822,14 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
       ],
     );
     subId = String(nueva.id);
+    // ⭐ QUIÉN LA VENDE (fase 4, 2026-11-09): la suscripción guarda su ficha y el dueño, que es quien cobra cada
+    // mes (`lib/ganancias.ts`). Aparte del INSERT y sin tumbar el alta: sin la migración 087 el cobro sigue igual.
+    if (item?.id) {
+      await pool.query(
+        `UPDATE gcc_world.subscriptions SET portfolio_item_id = $2, owner_member_id = $3 WHERE id = $1`,
+        [subId, item.id, item.member_id ?? null],
+      ).catch((e: any) => console.error('[pagos] la suscripción', subId, 'no guardó su dueño:', e.message));
+    }
     titulo = item?.title || 'Producto';
     nombreEtapa = `${titulo} — primer mes`;
 
@@ -1084,14 +1093,29 @@ async function emitirFacturaDelCobro(intento: any, esDebito: boolean): Promise<{
   // apuntar el costo entero haría que las etapas siguientes no sumaran nada, porque el
   // registro es único por origen. La suscripción es la excepción: usa SU propio origen
   // (`subscription`/`<id>-<periodo>`), que es el que sabe revertir la anulación de factura.
+  //
+  // ⭐ Y SE REPARTE (fase 4, 2026-11-09): cada persona que lo ganó lo recibe en su estado financiero, y GCC
+  // solo el resto. Una sola función, en una transacción: ver `lib/ganancias.ts`.
+  const descripcionIngreso = esSuscripcion ? nombreEtapa : `${nombreEtapa} — ${titulo}`;
   try {
-    if (esSuscripcion) {
-      await addSubscriptionIncomeToFinance(sourceId, nombreEtapa, Number(intento.charge_amount) || 0, new Date());
-    } else {
-      await addInvoiceIncomeToFinance(String(invoiceId), `${nombreEtapa} — ${titulo}`, Number(intento.charge_amount) || 0);
-    }
+    await registrarCobro(invoiceId, { descripcion: descripcionIngreso });
   } catch (e: any) {
-    console.error('[pagos] no se pudo registrar el ingreso:', e.message);
+    // El reparto falló (p. ej. sin la migración 087): el ingreso entra entero a GCC, como antes, y queda
+    // escrito en el cobro para repartirlo a mano. Callarlo haría parecer que nadie ganó nada.
+    console.error('[pagos] el reparto del cobro', intento.id, 'falló; el ingreso va entero a GCC:', e.message);
+    try {
+      if (esSuscripcion) {
+        await addSubscriptionIncomeToFinance(`${subId}-${periodo}`, descripcionIngreso, Number(intento.charge_amount) || 0, new Date());
+      } else {
+        await addInvoiceIncomeToFinance(String(invoiceId), descripcionIngreso, Number(intento.charge_amount) || 0);
+      }
+      await pool.query(
+        `UPDATE gcc_world.payment_intents SET failure_reason = $2 WHERE id = $1`,
+        [intento.id, `Cobrado y facturado, pero sin reparto de ganancias (todo a GCC): ${e.message}`],
+      ).catch(() => {});
+    } catch (e2: any) {
+      console.error('[pagos] no se pudo registrar el ingreso:', e2.message);
+    }
   }
 
   // ⚠️ Y SE LE MANDA LA FACTURA, porque la pantalla se lo prometió.

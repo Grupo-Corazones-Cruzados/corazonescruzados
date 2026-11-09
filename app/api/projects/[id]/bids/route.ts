@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { addParticipant } from '@/lib/projects/members';
 import { esGestorDelProyecto, miembroDe } from '@/lib/projects/permisos';
 import { encaja, talentosAbiertosDelProyecto, top5DeMiembro } from '@/lib/talentos/demostrados';
+import { motivoSinSegundoBeneficiario } from '@/lib/ganancias';
 
 async function ensureColumns() {
   await pool.query(`ALTER TABLE gcc_world.project_bids ADD COLUMN IF NOT EXISTS requirement_costs JSONB DEFAULT '{}'`);
@@ -102,6 +103,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     // propuesta tiene que ser de ESTE proyecto (2026-11-09: antes cualquiera aceptaba cualquiera).
     if (!(await esGestorDelProyecto({ userId: String(user.userId), role: user.role }, projectId))) {
       return NextResponse.json({ error: 'Solo el responsable del proyecto decide las propuestas' }, { status: 403 });
+    }
+
+    // ⭐ Una propuesta con requerimientos hace beneficiario a quien la manda, y un plan de etapas admite uno solo
+    // (Fernando, 2026-11-09). Se mira ANTES de aceptarla: después ya habría quedado aceptada a medias.
+    if (status === 'accepted') {
+      const { rows: [previa] } = await pool.query(
+        `SELECT member_id, requirement_ids FROM gcc_world.project_bids WHERE id = $1 AND project_id = $2`, [bid_id, projectId],
+      );
+      if (previa && (previa.requirement_ids?.length ?? 0) > 0) {
+        const bloqueo = await motivoSinSegundoBeneficiario(projectId, previa.member_id);
+        if (bloqueo) return NextResponse.json({ error: bloqueo }, { status: 409 });
+      }
     }
 
     const { rows } = await pool.query(

@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // y ACEPTAR asignaciones, que es lo que fija cuánto se le paga a un miembro (2026-09-28).
 import { esGestorDelProyecto, miembroDe, requerimientoDelProyecto, ESTADOS_CERRADOS } from '@/lib/projects/permisos';
 import { talentosDelRequerimiento, validarTalento } from '@/lib/talentos/demostrados';
+import { motivoSinSegundoBeneficiario } from '@/lib/ganancias';
 
 async function proyectoCerrado(projectId: string): Promise<boolean> {
   const { rows: [p] } = await pool.query(`SELECT status FROM gcc_world.projects WHERE id = $1`, [projectId]);
@@ -63,6 +64,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (error) return NextResponse.json({ error }, { status: 400 });
     }
 
+    // Asignarse a uno mismo queda aceptado al momento: con un plan de etapas, solo si no suma un segundo beneficiario.
+    if (isSelfAssign) {
+      const bloqueo = await motivoSinSegundoBeneficiario(id, member_id);
+      if (bloqueo) return NextResponse.json({ error: bloqueo }, { status: 409 });
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO gcc_world.requirement_assignments (project_id, requirement_id, member_id, proposed_cost, member_cost, status)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
@@ -109,6 +116,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         [member_cost, assignment_id]
       );
     } else if (action === 'accept') {
+      // ⭐ Un plan de etapas admite un único beneficiario (Fernando, 2026-11-09).
+      const bloqueo = await motivoSinSegundoBeneficiario(id, asig.member_id);
+      if (bloqueo) return NextResponse.json({ error: bloqueo }, { status: 409 });
       await pool.query(
         `UPDATE gcc_world.requirement_assignments SET status = 'accepted', updated_at = NOW() WHERE id = $1`,
         [assignment_id]

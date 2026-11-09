@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { getProjectBilling, getProjectEtapas, ensureStageBilling } from '@/lib/payments';
+import { motivoSinEtapas } from '@/lib/ganancias';
 
 /** Plan de etapas del proyecto (el acuerdo con el cliente) y su base de reparto. */
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -10,7 +11,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id } = await params;
     const billing = await getProjectBilling(id);
-    return NextResponse.json({ data: billing?.etapas || [], baseTotal: billing?.baseTotal || 0 });
+    return NextResponse.json({ data: billing?.etapas || [], baseTotal: billing?.baseTotal || 0, bloqueo: await motivoSinEtapas(id) });
   } catch (err: any) {
     console.error('Project stages error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -77,6 +78,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       await pool.query(`DELETE FROM gcc_world.project_stages WHERE project_id = ($1)::bigint`, [id]);
       return NextResponse.json({ ok: true, data: [] });
     }
+
+    // ⭐ ETAPAS SOLO CON UN ÚNICO BENEFICIARIO (Fernando, 2026-11-09): con varios, cada requerimiento se cobra y
+    // se reparte por separado (`lib/ganancias.ts`). Quitar el plan sí se puede siempre (arriba).
+    const bloqueo = await motivoSinEtapas(id);
+    if (bloqueo) return NextResponse.json({ error: bloqueo }, { status: 409 });
 
     // La última recoge el resto de la base del proyecto (nunca negativa).
     const base = Number(billing.baseTotal) || 0;

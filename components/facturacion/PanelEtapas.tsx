@@ -25,9 +25,11 @@ export type EtapaPlan = {
  * sean el mismo formulario. Reparte `base` —el total del proyecto, o lo consumido del ticket—:
  * se escriben las etapas y la ÚLTIMA recoge el resto (no se escribe). Una etapa cerrada
  * (facturada o cobrada) se ve pero no se toca. `endpoint` recibe `PUT { stages }`.
+ * `bloqueo`: por qué no se puede definir un plan (p. ej. un proyecto con varios beneficiarios); se enseña en una
+ * línea en lugar del formulario y solo queda quitar el plan, si lo hay.
  */
 export default function PanelEtapas({
-  open, onClose, endpoint, base, etiquetaBase, etapas, onGuardado, avisoQuitar = 'Plan de etapas eliminado',
+  open, onClose, endpoint, base, etiquetaBase, etapas, onGuardado, avisoQuitar = 'Plan de etapas eliminado', bloqueo = null,
 }: {
   open: boolean;
   onClose: () => void;
@@ -37,6 +39,7 @@ export default function PanelEtapas({
   etapas: EtapaPlan[];
   onGuardado: (etapas: any[]) => void;
   avisoQuitar?: string;
+  bloqueo?: string | null;
 }) {
   const [draft, setDraft] = useState<EtapaPlan[]>([]);
   const [guardando, setGuardando] = useState(false);
@@ -77,10 +80,13 @@ export default function PanelEtapas({
       onClose={() => !guardando && onClose()}
       onSave={guardar}
       saving={guardando}
-      canSave={draft.filter((e) => String(e.name).trim()).length >= 2}
+      canSave={!bloqueo && draft.filter((e) => String(e.name).trim()).length >= 2}
       saveLabel="Guardar etapas"
       danger={etapas.length > 0 && !hayCerradas ? { label: 'Quitar plan de etapas', onClick: () => enviar([], avisoQuitar) } : undefined}
     >
+      {bloqueo ? (
+        <p className="text-[12px] text-digi-muted" style={pf}>{bloqueo}</p>
+      ) : (<>
       <EditField label={etiquetaBase}>
         <div className={`${EDIT_INPUT} flex items-center justify-between opacity-70`}>
           <span>Base de reparto</span>
@@ -121,6 +127,7 @@ export default function PanelEtapas({
           <Plus className="w-3.5 h-3.5" /> Añadir etapa
         </button>
       </div>
+      </>)}
     </EditPanel>
   );
 }

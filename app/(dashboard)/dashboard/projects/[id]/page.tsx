@@ -282,7 +282,8 @@ export default function ProjectDetailPage() {
   };
   const acceptBid = async (bidId: number) => {
     try {
-      await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: bidId, status: 'accepted' }) });
+      const res = await fetch(`/api/projects/${id}/bids`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bid_id: bidId, status: 'accepted' }) });
+      if (!res.ok) { toast.error((await res.json().catch(() => ({}))).error || 'Error'); return; }
       fetchProject(); toast.success('Propuesta aceptada');
     } catch { toast.error('Error'); }
   };
@@ -910,11 +911,12 @@ export default function ProjectDetailPage() {
   };
 
   const resolveAssignment = async (assignmentId: number, action: 'accept' | 'reject') => {
-    await fetch(`/api/projects/${id}/requirements/assign`, {
+    const res = await fetch(`/api/projects/${id}/requirements/assign`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ assignment_id: assignmentId, action }),
     });
+    if (!res.ok) { toast.error((await res.json().catch(() => ({}))).error || 'Error'); return; }
     toast.success(action === 'accept' ? 'Aceptado' : 'Rechazado');
     fetchProject();
   };
@@ -2444,6 +2446,9 @@ export default function ProjectDetailPage() {
         etapas={(billing?.etapas || []).map((e: any) => ({ id: e.id, name: e.name, amount: e.amount, invoiceNumber: e.invoiceNumber, cerrada: !!e.invoiceId || !!e.cobro }))}
         onGuardado={(etapas) => { aplicarPlan(etapas); fetchProject(); }}
         avisoQuitar="Plan de etapas eliminado — el proyecto vuelve a facturarse por requerimientos"
+        // Etapas solo con un único beneficiario (Fernando, 2026-11-09): la misma regla que aplica la API.
+        bloqueo={new Set(reqs.flatMap((r: any) => (r.assignments || []).filter((a: any) => a.status === 'accepted').map((a: any) => String(a.member_id)))).size > 1
+          ? 'El pago por etapas solo es posible cuando el proyecto tiene un único beneficiario.' : null}
       />
 
       {/* Panel: Imágenes del proyecto (se abre desde el header) */}

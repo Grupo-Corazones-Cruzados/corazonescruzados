@@ -6,6 +6,7 @@ import { buildCreditNoteXml } from '@/lib/integrations/sri/credit-note-builder';
 import { enviarComprobante, consultarAutorizacion } from '@/lib/integrations/sri/soap-client';
 import { revertSubscriptionPaymentForVoidedInvoice } from '@/lib/subscriptions';
 import { removeIncomeFromFinance, quitarIngresosDeFacturaAnulada } from '@/lib/finance';
+import { revertirGanancias } from '@/lib/ganancias';
 import fs from 'fs';
 
 function loadP12(): Buffer {
@@ -156,6 +157,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           }
         }
       }
+
+      // Las ganancias de cada persona en este cobro quedan revertidas y salen de su estado financiero.
+      try { await revertirGanancias(Number(id)); } catch (e: any) { console.error('[void] revertir ganancias:', e.message); }
 
       // Paso final y general: cualquier ingreso que siga enlazado a esta factura sin otra vigente
       // se quita del estado financiero (Fernando, 2026-10-29). Ver `quitarIngresosDeFacturaAnulada`.

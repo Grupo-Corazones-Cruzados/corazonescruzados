@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoice, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { addProjectIncomeToFinance, addInvoiceIncomeToFinance } from '@/lib/finance';
 import { heredarDeFacturaAnulada, type OrigenRefacturado } from '@/lib/pagos/refactura';
+import { heredarGanancias } from '@/lib/ganancias';
 import { getProjectStages, getProjectBilling } from '@/lib/payments';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { sendViaGmail } from '@/lib/integrations/google-workspace';
@@ -120,6 +121,10 @@ export async function POST(req: NextRequest) {
           if (clientId) await pool.query(`UPDATE gcc_world.invoices SET client_id = $1 WHERE id = $2`, [clientId, invoiceId]);
           const { rows: [nueva] } = await pool.query(`SELECT total FROM gcc_world.invoices WHERE id = $1`, [invoiceId]);
           await addInvoiceIncomeToFinance(String(invoiceId), `Refactura — ${refacturados[0]?.titulo || client_name}`, Number(nueva?.total) || 0);
+          // Las ganancias de la anulada pasan a la nueva (y el renglón de GCC baja en lo suyo): ni se pierden ni
+          // se cuentan dos veces. Ver `heredarGanancias`.
+          try { await heredarGanancias(refactura_de, invoiceId, `Refactura — ${refacturados[0]?.titulo || client_name}`); }
+          catch (e: any) { console.error('[manual] refactura: no se heredaron las ganancias:', e.message); }
           // Fase 2: actualiza la cuenta de facturación del cliente con los datos re-emitidos.
           if (clientId) {
             await upsertBillingForClient(clientId, {
