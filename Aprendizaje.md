@@ -12258,3 +12258,23 @@ separación de los fotogramas.
 el eje en x = 48 en CADA fotograma, quitar los repetidos) más la **aprobación de Fernando por
 animación**. Propuesta y fases en `godot/Videojuego.md` §4-quater. Antes de construir la pantalla,
 hay que **probar con este personaje** (Gemini, PixelLab y video) y que Fernando elija.
+
+### P13 — Generar imágenes sin gasto por imagen · 🔎 Propuesto (2026-11-08)
+**Necesidad (Fernando):** no quiere un gasto alto por generación. Pregunta si hay algo como Claude
+Code (una herramienta local de un proveedor, con suscripción).
+**Investigado (2026-11-08):**
+- **No existe para imágenes un «Claude Code» de suscripción que se automatice.** La extensión
+  nanobanana de Gemini CLI exige una clave de API con facturación; la suscripción Google AI Pro solo
+  sirve en la app de Gemini, a mano (lo que Fernando ya hace para las vistas). Lo mismo ChatGPT Plus.
+- **Local en esta Mac (M4 Pro, 24 GB, 58 GB libres):** Draw Things (gratis, Mac/iPad: FLUX, SDXL,
+  Qwen Image…) o ComfyUI (programable por API, ideal para una cola automática). Modelos de edición
+  con referencia: **Qwen-Image-Edit (Apache 2.0, uso comercial libre)** o FLUX.1 Kontext [dev]
+  (licencia no comercial para el modelo). En 24 GB hay que usar versiones cuantizadas: cuesta minutos
+  por imagen, no segundos. No hay pruebas publicadas de coherencia de sprites en local: hay que
+  medirlo con un personaje real.
+- **PixelLab** tiene una suscripción mensual fija (fuentes no oficiales: 9-50 $/mes; la API se
+  factura aparte).
+- **La marioneta no gasta nada:** las animaciones se hacen en Godot sin generar fotogramas.
+**Propuesta:** las 4 vistas, a mano en la app de Gemini con la suscripción (como ahora). Los
+fotogramas de las animaciones, en local con Qwen-Image-Edit en ComfyUI + la limpieza automática. La
+API de Gemini solo como apoyo puntual. Primero, una prueba local gratuita con su monstruo.
