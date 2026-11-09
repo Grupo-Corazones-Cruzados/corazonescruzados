@@ -52,7 +52,7 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta }: 
   onCrearCuenta: () => void;
 }) {
   const [modo, setModo] = useState<'ingresar' | 'crear'>('ingresar');
-  const todas = useOpcionesAcceso(app === 'aventura' ? 'game' : 'dashboard', acciones);
+  const todas = useOpcionesAcceso(acciones);
   const opciones = app === 'centralizado' ? todas.filter((o) => o.clave === 'miembro') : todas;
   const registro = useEstadoRegistro();
   const pausa = registro?.bloqueado ? `En pausa hasta el ${horaDeReanudacion(registro.hasta)}` : null;
@@ -78,6 +78,10 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta }: 
           <h1>GCC World</h1>
           <p>{SUBTITULO[app]}</p>
         </div>
+        {/* Aventura (el videojuego) se reinició desde cero el 2026-11-08: la app solo dice que llega pronto. */}
+        {app === 'aventura' ? (
+          <p className="roles-proximamente">Próximamente</p>
+        ) : (<>
         {/* Centralizado es solo para miembros: ahí no se crean cuentas. */}
         {app !== 'centralizado' && (
           <Segmentado etiqueta="Cuenta" valor={modo} onChange={setModo}
@@ -94,6 +98,7 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta }: 
               </>
             )}
         </div>
+        </>)}
 
         <button type="button" className="app-legal" onClick={verLegal}>Legal y privacidad</button>
       </main>

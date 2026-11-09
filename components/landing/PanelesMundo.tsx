@@ -46,10 +46,10 @@ const MUNDOS: Record<Mundo, {
   },
 };
 
-export default function PanelesMundo({ onElegir, bloqueado }: { onElegir: (m: Mundo) => void; bloqueado?: boolean }) {
+export default function PanelesMundo({ onElegir }: { onElegir: (m: Mundo) => void }) {
   const [eligiendo, setEligiendo] = useState<Mundo | null>(null);
   const elegir = (m: Mundo) => {
-    if (bloqueado || eligiendo) return;
+    if (eligiendo) return;
     // El «clic de selección» de videojuego (Fernando, 2026-10-29). Dentro del clic: iOS solo deja
     // sonar audio que nace de un gesto.
     sonarSeleccion();
@@ -73,7 +73,7 @@ export default function PanelesMundo({ onElegir, bloqueado }: { onElegir: (m: Mu
               </li>
             ))}
           </ul>
-          <button type="button" onClick={() => elegir(m)} disabled={bloqueado} className="panel-mundo-boton">
+          <button type="button" onClick={() => elegir(m)} className="panel-mundo-boton">
             {/* La flecha apunta hacia donde se EXPANDE el mundo al elegirlo (Fernando,
                 2026-10-28): escritorio → / ←; teléfono ↓ / ↑. La gira el CSS. */}
             <span className="panel-mundo-texto-boton">{d.boton}</span>

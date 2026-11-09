@@ -125,7 +125,7 @@ export async function POST(req: Request) {
     const newCounter = verification.authenticationInfo.newCounter;
     const authToken = randomBytes(32).toString('hex');
     // Fija la cookie de cliente a ESTA fila (la que tiene la passkey), para que
-    // /api/character/me reconozca el personaje correcto y no muestre formularios.
+    // la sesión reconozca la cuenta correcta y no muestre formularios.
     const clientToken = client.client_token || generateClientToken();
 
     await pool.query(

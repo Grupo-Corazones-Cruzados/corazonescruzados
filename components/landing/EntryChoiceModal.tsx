@@ -23,7 +23,7 @@ import { ChevronRight, Loader2, LogIn } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import PixelBadge from '@/components/ui/PixelBadge';
 import BotonCerrar from '@/components/ui/BotonCerrar';
-import { nombresDestino, useOpcionesAcceso, type TonoOpcion } from '@/components/landing/opcionesAcceso';
+import { useOpcionesAcceso, type TonoOpcion } from '@/components/landing/opcionesAcceso';
 
 type Tone = TonoOpcion;
 
@@ -36,7 +36,6 @@ export default function EntryChoiceModal({
   onProposalApproved,
   onClientPending,
   onClose,
-  destination = 'game',
 }: {
   onCandidate: () => void;
   onCandidateLogin: () => void;
@@ -48,14 +47,11 @@ export default function EntryChoiceModal({
   /** Cliente con cuenta no verificada → mostrar "requiere verificación". */
   onClientPending: (info: { email?: string | null }) => void;
   onClose: () => void;
-  /** Destino tras iniciar sesión: "game" (Entrar) o "dashboard" (Colaborar). */
-  destination?: 'game' | 'dashboard';
 }) {
-  // El nombre del destino y las opciones salen de `opcionesAcceso.ts`, la definición única
-  // que comparten este diálogo y las tarjetas de roles de la portada (`RolesMundo`).
-  const { destino } = nombresDestino(destination);
-  const titulo = `¿Cómo quieres ingresar ${destino.preposicion} ${destino.palabra}?`;
-  const opciones = useOpcionesAcceso(destination, {
+  // Las opciones salen de `opcionesAcceso.ts`, la definición única que comparten este diálogo
+  // y las tarjetas de roles de la portada (`RolesMundo`).
+  const titulo = '¿Cómo quieres ingresar a la Plataforma?';
+  const opciones = useOpcionesAcceso({
     onCandidate, onCandidateLogin, onClient, onMember, onProposalPending, onProposalApproved, onClientPending,
   });
 
@@ -104,8 +100,8 @@ export default function EntryChoiceModal({
                 vale `#4B2D8E`. Así el resalte sigue leyéndose el día que este diálogo pase a
                 tema claro, que es tan fácil como quitarle la clase `dark` al overlay. */}
             <h2 className="text-[17px] font-semibold text-digi-text leading-tight">
-              ¿Cómo quieres ingresar {destino.preposicion}{' '}
-              <span className="text-accent-glow">{destino.palabra}</span>?
+              ¿Cómo quieres ingresar a la{' '}
+              <span className="text-accent-glow">Plataforma</span>?
             </h2>
             <p className="text-[12.5px] text-digi-muted mt-0.5">Elige tu camino para continuar.</p>
           </div>

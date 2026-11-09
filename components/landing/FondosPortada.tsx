@@ -1,14 +1,12 @@
 /**
  * LOS DOS MUNDOS DE LA PORTADA (Fernando, 2026-10-26).
  *
- * Va DENTRO del héroe, encima del cielo estrellado (que sigue siendo el de siempre, con su
- * cámara) y debajo de las esquinas de cámara y del titular. Pinta tres cosas:
+ * Va DENTRO del héroe, encima del cielo estrellado (el de siempre) y debajo de las esquinas de cámara y del titular. Pinta tres cosas:
  *
  * · **La Aventura** — sobre el mismo cielo, una nebulosa suave y, desde `xl`, un HUD de
  *   videojuego en pixel-art (Misión, Vida, Nivel a la izquierda; Mapa, Tesoros, Compañeros a
  *   la derecha), en espejo con las tarjetas de Progreso para que los dos lados pesen igual.
- *   Con «Aventura» la nebulosa se intensifica y pasan estrellas fugaces. Al empezar el juego
- *   (`juegoEnCurso`) todo esto se va: la intro tiene su propio cielo.
+ *   Con «Aventura» la nebulosa se intensifica y pasan estrellas fugaces.
  * · **La escena de Progreso** — la Plataforma en claro: fondo claro con malla de puntos,
  *   manchas de color que flotan, cuadraditos que suben y, desde `xl`, tarjetas de panel que
  *   se animan (barras, anillo, lista, gráfica, nivel). Ocupa la pantalla entera y se RECORTA
@@ -48,12 +46,12 @@ function CorazonPixel({ lleno, className }: { lleno: boolean; className?: string
   );
 }
 
-export default function FondosPortada({ modo, juegoEnCurso, ligero = false, sinFrontera = false }: { sinFrontera?: boolean; modo: ModoPortada; juegoEnCurso: boolean; ligero?: boolean }) {
-  const aventura = modo === 'aventura' && !juegoEnCurso;
+export default function FondosPortada({ modo, ligero = false, sinFrontera = false }: { sinFrontera?: boolean; modo: ModoPortada; ligero?: boolean }) {
+  const aventura = modo === 'aventura';
   return (
     <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
       {/* ── Aventura: lo que se suma al cielo ── */}
-      <div className="escena-aventura absolute inset-0" style={{ opacity: juegoEnCurso ? 0 : 1 }}>
+      <div className="escena-aventura absolute inset-0">
         <div className="ea-nebulosas absolute inset-0" style={{ opacity: aventura ? 1 : 0.5 }}>
           <div className="ea-nebulosa ea-nebulosa-1" />
           <div className="ea-nebulosa ea-nebulosa-2" />
@@ -203,7 +201,7 @@ export default function FondosPortada({ modo, juegoEnCurso, ligero = false, sinF
 
       {/* ── La raya ── */}
       {/* ── La frontera: el licuado (onda viva, gotas y bruma). Sustituye a la raya recta. ── */}
-      {!sinFrontera && <LicuadoPortada modo={modo} juegoEnCurso={juegoEnCurso} ligero={ligero} />}
+      {!sinFrontera && <LicuadoPortada modo={modo} ligero={ligero} />}
     </div>
   );
 }

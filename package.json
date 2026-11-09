@@ -9,7 +9,6 @@
     "start": "next start -p $PORT",
     "migrate": "node scripts/migrate.mjs",
     "migrate:status": "node scripts/migrate.mjs --status",
-    "juego:publicar": "bash scripts/publicar-juego.sh",
     "postinstall": "prisma generate",
     "agente:worker": "node scripts/agente-worker.mjs",
     "cv:ensayo": "node scripts/cv-ensayo.mjs",

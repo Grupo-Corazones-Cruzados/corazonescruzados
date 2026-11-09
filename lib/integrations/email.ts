@@ -177,26 +177,6 @@ export async function sendCodigoDeRecuperacionEmail(email: string, code: string,
   return enviarCodigo(email, code, alias, 'recuperacion');
 }
 
-export async function sendCharacterVerificationEmail(
-  email: string,
-  token: string,
-  alias: string,
-) {
-  const url = `${APP_URL}/api/character/auth/verify?token=${token}`;
-  const html = emailShell(
-    emailHeading('Confirma tu cuenta', 'Para guardar tu progreso en GCC World') +
-    emailParagraph(`Hola ${accentStrong(escapeHtml(alias))},<br/>Recibimos tu registro en el juego. Confirma este correo para activar tu cuenta y poder seguir jugando con tu personaje. Hasta que confirmes, tu contraseña no será válida.`) +
-    emailButton(url, 'Confirmar mi cuenta') +
-    emailNote('Este enlace expira en 24 horas. Si no fuiste tú, puedes ignorar este correo.'),
-  );
-  return deliver({
-    from: FROM_EMAIL,
-    to: email,
-    subject: 'Confirma tu cuenta — GCC World',
-    html,
-  });
-}
-
 export async function sendCandidateProposalVerificationEmail(
   email: string,
   token: string,

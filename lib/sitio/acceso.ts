@@ -25,20 +25,6 @@
 export const ACCESO_PLATAFORMA = 'plataforma';
 
 /**
- * El valor de `?acceso=` que abre el acceso **con el juego como destino** (2026-08-19).
- *
- * Nació con los botones «IR» del panel izquierdo de `/clientes`: desde la tarjeta de
- * Videojuego, entrar tiene que acabar en la aventura, no en el panel. `?acceso=cliente` ya
- * existía pero manda al `dashboard` a propósito —es lo que separa «entrar a trabajar» de
- * «entrar a jugar»—, así que hacía falta un valor propio.
- *
- * ⚠️ **No abre un formulario nuevo**: abre el mismo diálogo de acceso de cliente de la
- * portada, solo que con `entryDestination = 'game'`. La regla de este archivo sigue en pie —
- * el acceso es UNO SOLO.
- */
-export const ACCESO_VIDEOJUEGO = 'videojuego';
-
-/**
  * ⭐ A DÓNDE SE PUEDE VOLVER TRAS INICIAR SESIÓN — definición única (2026-08-23).
  *
  * `?redirect=` existe **para una sola cosa**: el guardián del panel (`middleware.ts`) manda
@@ -60,7 +46,7 @@ export const ACCESO_VIDEOJUEGO = 'videojuego';
 // `/herramienta`: lo mismo con un acceso compartido a una herramienta (2026-10-27).
 // `/api/productos/entrar`: un producto manda aquí a quien quiere entrar sin sesión; tras iniciarla
 // vuelve y entra al producto con su pase (2026-11-08).
-const DESTINOS_PERMITIDOS = ['/dashboard', '/juego', '/enlace', '/entrega', '/herramienta', '/api/productos/entrar'];
+const DESTINOS_PERMITIDOS = ['/dashboard', '/enlace', '/entrega', '/herramienta', '/api/productos/entrar'];
 
 export function destinoTrasAccesoValido(ruta: string | null | undefined): string | null {
   if (!ruta) return null;

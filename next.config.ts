@@ -162,9 +162,6 @@ const nextConfig: NextConfig = {
     ];
   },
 
-  // Los archivos del juego se revalidan en cada carga: al desplegar un mundo
-  // nuevo, el navegador debe descargar la versión nueva y no servir la vieja de
-  // caché. El equivalente en producción de lo que hace server.cjs en desarrollo.
   async headers() {
     return [
       // El espacio de trabajo solo se deja enmarcar desde las apps de GCC.
@@ -172,10 +169,6 @@ const nextConfig: NextConfig = {
         source,
         headers: [{ key: 'Content-Security-Policy', value: "frame-ancestors 'self' https://app.grupocc.org https://www.grupocc.org https://grupocc.org http://localhost:3792" }],
       })),
-      {
-        source: '/game/:path*',
-        headers: [{ key: 'Cache-Control', value: 'no-cache, must-revalidate' }],
-      },
     ];
   },
 };

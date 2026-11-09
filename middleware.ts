@@ -38,7 +38,7 @@ export async function middleware(request: NextRequest) {
 
   // En las apps, con sesión, la portada (el inicio de sesión) no se vuelve a ver: se va a Accesos. Solo
   // cerrando sesión se ve otra vez (Fernando, 2026-11-08).
-  // `?acceso=` sí pasa: Aventura manda por ahí a la intro a quien aún no tiene personaje.
+  // `?acceso=` sí pasa: abre una puerta de acceso concreta.
   if (valid && pathname === "/" && request.cookies.get("gcc_app")?.value && !request.nextUrl.searchParams.has("acceso")) {
     return NextResponse.redirect(new URL("/dashboard/accesos", request.url));
   }

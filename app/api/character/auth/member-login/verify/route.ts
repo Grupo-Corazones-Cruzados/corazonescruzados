@@ -15,8 +15,8 @@ import {
 
 /**
  * Paso 2 del login de MIEMBRO/ADMIN: valida el código (2FA) y abre la sesión.
- * Si tiene personaje → abre su sesión (approved/verified). Si no → lo autentica
- * como staff (JWT) para que arranque el intro y cree su personaje.
+ * Si su correo tiene fila en `clients` (donde viven las passkeys) también abre esa
+ * sesión y ofrece la passkey; si no, basta la sesión de staff (JWT).
  */
 export async function POST(req: Request) {
   try {
@@ -46,30 +46,30 @@ export async function POST(req: Request) {
       return NextResponse.json({ error }, { status });
     }
 
-    // Personaje del juego asociado por correo o user_id.
+    // Su fila de `clients` por correo o user_id (la que guarda sus passkeys).
     await pool.query(
       `ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS user_id uuid`,
     );
     const c = await pool.query(
       `SELECT id, client_token FROM gcc_world.clients
-        WHERE (LOWER(email) = $1 OR user_id = $2) AND character_data IS NOT NULL
-        ORDER BY last_seen_at DESC NULLS LAST LIMIT 1`,
+        WHERE LOWER(email) = $1 OR user_id = $2
+        ORDER BY COALESCE(user_id = $2, false) DESC, last_seen_at DESC NULLS LAST LIMIT 1`,
       [cleanEmail, user.id],
     );
-    const character = c.rows[0];
+    const cliente = c.rows[0];
 
-    if (!character) {
+    if (!cliente) {
       const jwt = await createToken({
         userId: String(user.id),
         email: cleanEmail,
         role: user.role,
       });
       await setAuthCookie(jwt);
-      return NextResponse.json({ ok: true, hasCharacter: false });
+      return NextResponse.json({ ok: true, hasClient: false });
     }
 
     const ipHash = hashIp(await getClientIp());
-    const clientToken = character.client_token || randomBytes(24).toString('hex');
+    const clientToken = cliente.client_token || randomBytes(24).toString('hex');
     const authToken = randomBytes(32).toString('hex');
     await pool.query(
       `UPDATE gcc_world.clients
@@ -77,7 +77,7 @@ export async function POST(req: Request) {
               auth_expires = NOW() + INTERVAL '30 days',
               approved = true, email_verified = true, user_id = $5, last_seen_at = NOW()
         WHERE id = $4`,
-      [ipHash, clientToken, authToken, character.id, user.id],
+      [ipHash, clientToken, authToken, cliente.id, user.id],
     );
 
     const cookieStore = await cookies();
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
 
     // Sesión de STAFF (JWT): para que el dashboard (Colaborar) reconozca al
     // miembro/admin sin pedir login de nuevo. Coexiste con las cookies de
-    // personaje (el juego usa esas; el dashboard usa el JWT).
+    // cliente (las passkeys usan esas; el dashboard usa el JWT).
     const jwt = await createToken({
       userId: String(user.id),
       email: cleanEmail,
@@ -109,11 +109,11 @@ export async function POST(req: Request) {
     const pk = await pool.query(
       // Solo las que sirven: una de antes del cambio de dominio no cuenta (migración 062).
       `SELECT 1 FROM gcc_world.client_passkeys WHERE client_id = $1 AND rp_id IS NOT NULL LIMIT 1`,
-      [character.id],
+      [cliente.id],
     );
     return NextResponse.json({
       ok: true,
-      hasCharacter: true,
+      hasClient: true,
       hasPasskey: pk.rows.length > 0,
     });
   } catch (err: unknown) {

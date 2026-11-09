@@ -50,7 +50,7 @@ export async function eliminarCuentaEn(cli: ClienteBd, userId: string): Promise<
       `UPDATE gcc_world.clients
           SET name = 'Cuenta eliminada', full_name = NULL, alias = NULL,
               email = $2, pending_email = NULL, workspace_email = NULL, phone = NULL, company = NULL, ruc = NULL,
-              address = NULL, country = NULL, character_data = NULL, character_data_v1 = NULL,
+              address = NULL, country = NULL,
               client_token = NULL, ip_hash = NULL, password_hash = NULL, pending_password_hash = NULL,
               verification_token = NULL, auth_token = NULL, auth_expires = NULL, webauthn_challenge = NULL,
               recovery_code = NULL, approved = false, profile_completed = false, updated_at = NOW()

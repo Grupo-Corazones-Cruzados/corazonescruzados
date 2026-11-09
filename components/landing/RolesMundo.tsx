@@ -104,7 +104,7 @@ export default function RolesMundo({
   /** GCC Centralizado es solo para miembros: las demás cuentas no tienen nada que hacer ahí. */
   soloMiembro?: boolean;
 }) {
-  const todas = useOpcionesAcceso(tema === 'aventura' ? 'game' : 'dashboard', acciones);
+  const todas = useOpcionesAcceso(acciones);
   const opciones = soloMiembro ? todas.filter((o) => o.clave === 'miembro') : todas;
 
   /**
@@ -126,14 +126,32 @@ export default function RolesMundo({
     window.setTimeout(o.onClick, 450);
   };
 
+  const volver = onVolver && (
+    <button type="button" onClick={() => { sonarVolver(); onVolver(); }} className="roles-volver aparecer" style={{ ['--retraso' as string]: `${retrasoBase}ms` }}>
+      <ArrowLeft aria-hidden="true" />
+      Volver
+    </button>
+  );
+
+  /**
+   * AVENTURA, «PRÓXIMAMENTE» (Fernando, 2026-11-08): el videojuego se reinició desde cero. El mundo
+   * se sigue eligiendo con su animación, pero en lugar de los roles (que llevaban al juego) solo dice
+   * que llega pronto.
+   */
+  if (tema === 'aventura') {
+    return (
+      <div className="roles-mundo roles-aventura">
+        {volver}
+        <p className="roles-proximamente aparecer" style={{ ['--retraso' as string]: `${retrasoBase + 80}ms` }}>
+          Próximamente
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className={`roles-mundo roles-${tema}`}>
-      {onVolver && (
-        <button type="button" onClick={() => { sonarVolver(); onVolver(); }} className="roles-volver aparecer" style={{ ['--retraso' as string]: `${retrasoBase}ms` }}>
-          <ArrowLeft aria-hidden="true" />
-          Volver
-        </button>
-      )}
+      {volver}
       <div className="roles-fila" data-n={opciones.length} style={{ ['--n' as string]: opciones.length }}>
         {opciones.map((o, i) => (
           <Tarjeta

@@ -60,7 +60,7 @@ const CAPAS = [
 // En modo ligero solo la banda más marcada de cada lado.
 const CAPAS_LIGERO = [0, 3];
 
-export default function LicuadoPortada({ modo, juegoEnCurso, ligero = false }: { modo: ModoPortada; juegoEnCurso: boolean; ligero?: boolean }) {
+export default function LicuadoPortada({ modo, ligero = false }: { modo: ModoPortada; ligero?: boolean }) {
   const recorteRef = useRef<SVGPathElement | null>(null);
   const brumaRef = useRef<SVGPathElement | null>(null);
   const brilloRef = useRef<SVGPathElement | null>(null);
@@ -89,7 +89,6 @@ export default function LicuadoPortada({ modo, juegoEnCurso, ligero = false }: {
     // pintada donde iba aunque `--corte` llegara a su sitio.
     const paso = (ahora: number) => {
       cancelar = pedirCuadro(paso, 120);
-      if (juegoEnCurso) return;
       if (intervalo && ahora - ultimo < intervalo) return;
       ultimo = ahora;
       const t = (ahora - t0) / 1000;
@@ -189,9 +188,9 @@ export default function LicuadoPortada({ modo, juegoEnCurso, ligero = false }: {
       escena.style.removeProperty('-webkit-clip-path');
       escena.style.removeProperty('clip-path');
     };
-  }, [ligero, juegoEnCurso]);
+  }, [ligero]);
 
-  const visible = modo === 'partido' && !juegoEnCurso;
+  const visible = modo === 'partido';
 
   return (
     <>

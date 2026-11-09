@@ -1,13 +1,12 @@
 'use client';
 
 /**
- * MemberLoginModal — login de MIEMBROS/ADMIN para entrar al juego, en 2 pasos:
+ * MemberLoginModal — login de MIEMBROS/ADMIN, en 2 pasos:
  * credenciales (gcc_world.users) → código de verificación por correo (2FA).
  */
 
 import { useCerrarAlTocarFuera } from '@/lib/hooks/useCerrarAlTocarFuera';
-import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { motivoPasskey, passkeyDisponible, usePasskeyPreparada, usePasskeyRegistro } from '@/lib/hooks/usePasskeyPreparada';
 import LogoGirando from '@/components/ui/LogoGirando';
 import FingerprintIcon from '@/components/landing/FingerprintIcon';
@@ -21,12 +20,8 @@ export default function MemberLoginModal({
   onLoggedIn,
 }: {
   onClose: () => void;
-  /** hasCharacter=false → el miembro aún no tiene personaje (debe crearlo). */
-  onLoggedIn: (hasCharacter: boolean) => void;
+  onLoggedIn: () => void;
 }) {
-  // «El juego» solo es destino en la web y en Aventura; en Progreso y Centralizado se entra al panel.
-  const [alJuego, setAlJuego] = useState(true);
-  useEffect(() => { const app = appDeTelefono(); setAlJuego(!app || app === 'aventura'); }, []);
   const [step, setStep] = useState<'creds' | 'factor' | 'code' | 'passkeyOffer'>('creds');
   const [email, setEmail] = useState('');
   const [pwd, setPwd] = useState('');
@@ -56,7 +51,7 @@ export default function MemberLoginModal({
       }
       // Cuenta exenta del segundo factor (ver la migración 029): el servidor ya dejó la
       // sesión abierta, así que no hay «código o passkey» que elegir. Entra directo.
-      if (j?.sinCodigo) { onLoggedIn(true); return; }
+      if (j?.sinCodigo) { onLoggedIn(); return; }
       setMasked(j?.masked ?? null);
       setTienePasskey(j?.tienePasskey === true && passkeyDisponible());
       setStep('factor');
@@ -128,7 +123,7 @@ export default function MemberLoginModal({
         void prepararPasskey();
         return;
       }
-      onLoggedIn(true);
+      onLoggedIn();
     } catch (e: unknown) {
       setError(motivoPasskey(e) === 'otro' && e instanceof Error ? e.message : 'No se pudo usar la passkey en este dispositivo. Si no está guardada aquí, entra con el código y podrás añadirla.');
     } finally {
@@ -152,18 +147,19 @@ export default function MemberLoginModal({
         return;
       }
       /**
-       * Con personaje se ofrece la passkey; sin personaje entra (irá a crearlo).
+       * Si su cuenta tiene fila de cliente (donde viven las passkeys) se ofrece la passkey;
+       * si no, entra directamente.
        *
        * ⚠️ Se ofrece AUNQUE ya tenga una, porque puede estar en otro aparato. Haber
        * llegado hasta aquí es la señal: con una passkey utilizable en este equipo habría
        * entrado con ella en vez de pedir un código. Antes solo se ofrecía a quien no
        * tenía ninguna, y eso dejaba encerrado a quien sí (ver `ClientLoginModal`).
        */
-      if (j.hasCharacter && passkeyDisponible()) {
+      if (j.hasClient && passkeyDisponible()) {
         setError(null);
         setStep('passkeyOffer');
       } else {
-        onLoggedIn(j.hasCharacter === true);
+        onLoggedIn();
       }
     } catch {
       setError('Error de red');
@@ -199,7 +195,7 @@ export default function MemberLoginModal({
         void prepararRegistro();
         return;
       }
-      onLoggedIn(true);
+      onLoggedIn();
     } catch (e: unknown) {
       const motivo = motivoPasskey(e);
       if (motivo === 'ya-registrada') setError('Este dispositivo ya tiene una passkey de tu cuenta. Puedes continuar.');
@@ -245,7 +241,7 @@ export default function MemberLoginModal({
           </h2>
           <p style={{ fontFamily: BODY, fontSize: '0.84rem', color: 'var(--auth-suave, #b9b2cf)', margin: '0 0 16px' }}>
             {step === 'creds'
-              ? `Inicia sesión con tu cuenta de miembro o administrador para entrar${alJuego ? ' al juego' : ''}.`
+              ? 'Inicia sesión con tu cuenta de miembro o administrador para entrar.'
               : step === 'factor'
                 ? 'Verificamos tus credenciales. Por seguridad, completa un segundo paso.'
                 : step === 'code'
@@ -277,12 +273,12 @@ export default function MemberLoginModal({
               </button>
               <button
                 type="button"
-                onClick={() => onLoggedIn(true)}
+                onClick={() => onLoggedIn()}
                 disabled={busy}
                 className="pixel-btn pixel-btn-secondary"
                 style={{ opacity: busy ? 0.6 : 1 }}
               >
-                {alJuego ? 'Ahora no, entrar al juego' : 'Ahora no, continuar'}
+                Ahora no, continuar
               </button>
             </div>
           ) : step === 'creds' ? (
@@ -401,7 +397,7 @@ export default function MemberLoginModal({
                 className="pixel-btn pixel-btn-primary"
                 style={{ marginTop: 4, opacity: busy || code.length !== 6 ? 0.5 : 1 }}
               >
-                {busy ? 'Verificando...' : alJuego ? 'Entrar al juego' : 'Entrar'}
+                {busy ? 'Verificando...' : 'Entrar'}
               </button>
               <button
                 type="button"

@@ -8,7 +8,7 @@ const STAFF_COOKIE = 'auth_token';
 /**
  * Cierra la sesión y DESVINCULA el dispositivo de la cuenta: limpia las cookies
  * (personaje + staff) y borra client_token/auth_token/ip_hash de la fila, para
- * que /api/character/me ya no la reconozca por cookie ni por IP. Lo usa "Cambiar
+ * que la sesión de cliente ya no se reconozca por cookie ni por IP. Lo usa "Cambiar
  * tipo de ingreso" para poder entrar con otra cuenta.
  */
 export async function POST() {

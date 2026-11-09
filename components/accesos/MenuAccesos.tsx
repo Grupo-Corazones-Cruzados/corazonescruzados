@@ -39,7 +39,7 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
   const activoReal = activo ?? (pathname.startsWith('/dashboard/admin/gumdramon-app') ? 'gumdramon'
     : pathname.startsWith('/dashboard/admin/espacio') ? 'entorno'
     : pathname.startsWith('/dashboard/tools') ? herramientaAbierta ?? undefined : undefined);
-  const { apps, productos, herramientas, rutaHerramienta, abrirProducto, entrandoAlJuego } = useAccesos();
+  const { apps, productos, herramientas, rutaHerramienta, abrirProducto } = useAccesos();
   const [sobreElMenu, setSobreElMenu] = useState(false);
   const telefono = useConsultaMedia('(max-width: 63.99rem)');
   // Con segunda capa, siempre estrecha: desplegada solo en Comunicados (Fernando, 2026-11-08).
@@ -85,13 +85,16 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
         <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-2 px-2 ${movimiento}`} style={mf}>
           <Grupo titulo="Apps" primero>
             {apps.map((a) => (
-              <button key={a.id} type="button" onClick={a.abrir} title={estrecho ? a.titulo : undefined} className={fila(a.id)}>
+              <button key={a.id} type="button" onClick={a.proximamente ? undefined : a.abrir} aria-disabled={a.proximamente || undefined}
+                title={a.proximamente ? `${a.titulo} · Próximamente` : estrecho ? a.titulo : undefined}
+                className={`${fila(a.id)} ${a.proximamente ? 'cursor-default opacity-60 hover:bg-transparent hover:text-digi-muted' : ''}`}>
                 {/* El color del tema con que se abre cada app. */}
                 <span className="w-6 h-6 shrink-0 rounded-md grid place-items-center border border-white/15"
                   style={{ background: definicionTema(a.tema)?.muestra.acento === '#fafafa' ? '#000' : definicionTema(a.tema)?.muestra.acento }}>
                   <a.Icono className="w-[14px] h-[14px] text-white" strokeWidth={2} />
                 </span>
-                {!estrecho && <span className="truncate">{a.id === 'aventura' && entrandoAlJuego ? 'Entrando…' : a.titulo}</span>}
+                {!estrecho && <span className="truncate">{a.titulo}</span>}
+                {!estrecho && a.proximamente && <span className="ml-auto shrink-0 text-[11px] text-digi-muted">Próximamente</span>}
               </button>
             ))}
           </Grupo>
@@ -131,7 +134,6 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
           </button>
         </div>
       </aside>
-      {entrandoAlJuego && <div aria-hidden className="cambio-tema entra" style={{ background: '#000' }} />}
     </>
   );
 }

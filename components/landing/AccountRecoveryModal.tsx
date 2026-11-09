@@ -14,12 +14,9 @@ const BODY = "'Inter', system-ui, -apple-system, sans-serif";
 export default function AccountRecoveryModal({
   onClose,
   onSuccess,
-  destination = 'game',
 }: {
   onClose: () => void;
   onSuccess: () => void;
-  /** Destino tras iniciar sesión: 'game' (Entrar) o 'dashboard' (Colaborar). */
-  destination?: 'game' | 'dashboard';
 }) {
   const [step, setStep] = useState<'creds' | 'factor' | 'code' | 'passkeyOffer'>('creds');
   const [email, setEmail] = useState('');
@@ -267,7 +264,7 @@ export default function AccountRecoveryModal({
                 className="pixel-btn pixel-btn-secondary"
                 style={{ opacity: busy ? 0.6 : 1 }}
               >
-                {destination === 'dashboard' ? 'Ahora no, comenzar a colaborar' : 'Ahora no, entrar al juego'}
+                Ahora no, comenzar a colaborar
               </button>
             </div>
           ) : step === 'creds' ? (

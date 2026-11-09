@@ -34,7 +34,7 @@ function maskEmail(email: string): string {
 const generateCode = codigoNuevo;
 
 /**
- * Paso 1 del login de MIEMBRO/ADMIN para entrar al juego: valida credenciales
+ * Paso 1 del login de MIEMBRO/ADMIN: valida credenciales
  * contra gcc_world.users (member/admin) y envía un código de verificación al
  * correo (2FA). El paso 2 es /member-login/verify.
  */

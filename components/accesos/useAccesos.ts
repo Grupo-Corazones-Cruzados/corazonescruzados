@@ -8,12 +8,12 @@ import { useRutasEspacio } from '@/components/espacio/useRutasEspacio';
 import { accessRoleOf } from '@/lib/dashboard/access';
 import { herramientasPara, type Herramienta } from '@/lib/herramientas/catalogo';
 import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
-import { markGameEntry } from '@/lib/world/gameEntry';
 import type { AccesoProducto } from '@/lib/productos/tipos';
 import { PRODUCTOS_EMBEBIDOS, rutaDelProducto } from '@/lib/productos/modulos';
 import type { TemaId } from '@/lib/temas';
 
-export type AppAcceso = { id: string; titulo: string; Icono: LucideIcon; tema: TemaId; abrir: () => void };
+/** `proximamente`: la app se enseña pero aún no abre (Aventura, desde que el juego se reinició: 2026-11-08). */
+export type AppAcceso = { id: string; titulo: string; Icono: LucideIcon; tema: TemaId; abrir: () => void; proximamente?: boolean };
 
 /**
  * El icono de app de cada producto, servido desde la PROPIA plataforma (`public/productos-iconos/`,
@@ -36,7 +36,6 @@ export function useAccesos() {
   const esEquipo = rol === 'admin' || rol === 'member';
   const [app, setApp] = useState<AppDeTelefono | null>(null);
   const [productos, setProductos] = useState<AccesoProducto[] | null>(null);
-  const [entrandoAlJuego, setEntrandoAlJuego] = useState(false);
   const rutasEspacio = useRutasEspacio();
 
   useEffect(() => { setApp(appDeTelefono()); }, []);
@@ -57,28 +56,11 @@ export function useAccesos() {
       .catch(() => setProductos((p) => p ?? []));
   }, [user]);
 
-  /** Con personaje y cuenta en regla se entra directo; si no, la portada lleva por la intro. */
-  const entrarAlJuego = async () => {
-    if (entrandoAlJuego) return;
-    setEntrandoAlJuego(true);
-    // Aventura usa el tema negro: se funde a negro mientras se decide a dónde entrar.
-    await new Promise((r) => window.setTimeout(r, 320));
-    try {
-      const j = await fetch('/api/character/me', { cache: 'no-store' }).then((r) => r.json());
-      const enRegla = j?.isMember || j?.hasAccount || (j?.approved && j?.emailVerified);
-      if (j?.exists && j.characterData && enRegla) {
-        markGameEntry();
-        window.location.href = '/juego';
-        return;
-      }
-    } catch { /* sin respuesta: la portada lo resuelve */ }
-    window.location.href = '/?acceso=videojuego';
-  };
-
   const apps: AppAcceso[] = [
     { id: 'progreso', titulo: 'Progreso', Icono: LayoutDashboard, tema: 'claro',
       abrir: () => router.push(rol === 'client' ? '/dashboard/marketplace' : '/dashboard') },
-    { id: 'aventura', titulo: 'Aventura', Icono: Gamepad2, tema: 'negro', abrir: entrarAlJuego },
+    // El videojuego se reinició desde cero (Fernando, 2026-11-08): se enseña como «Próximamente».
+    { id: 'aventura', titulo: 'Aventura', Icono: Gamepad2, tema: 'negro', abrir: () => undefined, proximamente: true },
     // Centralizado solo en GCC Miembros (y en la web): en GCC World no se ofrece a nadie.
     ...(esEquipo && app !== 'progreso'
       ? [{ id: 'centralizado', titulo: 'Centralizado', Icono: Network, tema: 'orquidea' as TemaId, abrir: () => router.push('/dashboard/centralized') }]
@@ -97,5 +79,5 @@ export function useAccesos() {
   const herramientas: Herramienta[] = herramientasPara({ esEquipo, esAdmin: rol === 'admin', app, conEspacio: !!rutasEspacio });
   const rutaHerramienta = (h: Herramienta) => (h.abre && rutasEspacio ? rutasEspacio[h.abre] : `/dashboard/tools?herramienta=${h.id}`);
 
-  return { apps, productos, herramientas, rutaHerramienta, abrirProducto, entrandoAlJuego };
+  return { apps, productos, herramientas, rutaHerramienta, abrirProducto };
 }

@@ -26,7 +26,7 @@ import { RUTAS_HERRAMIENTA } from '@/lib/herramientas/catalogo';
  *   · Accesos y las herramientas: GCC World en «Mixto», GCC Miembros en «Corazón».
  *   · Centralizado: «Orquídea».
  *   · Progreso: «Claro».
- *   · Aventura es el juego (`/juego`): se entra fundiendo a negro desde Accesos.
+ *   · Aventura: «Próximamente» desde que el videojuego se reinició (2026-11-08).
  * En las apps el tema no se cambia (no hay selector). El cambio entre secciones se anima en el
  * layout del panel.
  */

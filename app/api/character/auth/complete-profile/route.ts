@@ -46,8 +46,7 @@ export async function POST(req: Request) {
       const r = await pool.query(
         `SELECT id, email_verified, email, account_type, profile_completed FROM gcc_world.clients
           WHERE ip_hash = $1
-            AND (character_data IS NOT NULL
-                 OR (account_type = 'candidate' AND approved = true AND COALESCE(profile_completed, false) = false))
+            AND account_type = 'candidate' AND approved = true AND COALESCE(profile_completed, false) = false
           ORDER BY last_seen_at DESC NULLS LAST LIMIT 1`,
         [ipHash],
       );

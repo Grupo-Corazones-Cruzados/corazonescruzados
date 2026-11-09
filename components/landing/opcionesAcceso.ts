@@ -55,20 +55,6 @@ export interface OpcionAcceso {
 }
 
 /**
- * Nombre del destino, con su preposición — de aquí sale en TODO el acceso (Fernando,
- * 2026-08-17): «a la Plataforma» / «al Videojuego». `dest` va en infinitivo («iniciar sesión
- * y entrar a la Plataforma»); `aDestino`, sin verbo, para las frases en imperativo.
- */
-export function nombresDestino(destination: 'game' | 'dashboard') {
-  const destino =
-    destination === 'dashboard'
-      ? { preposicion: 'a la', palabra: 'Plataforma' }
-      : { preposicion: 'al', palabra: 'Videojuego' };
-  const aDestino = `${destino.preposicion} ${destino.palabra}`;
-  return { destino, aDestino, dest: `entrar ${aDestino}` };
-}
-
-/**
  * ⭐ 2026-10-29 (Fernando): LAS TARJETAS YA NO RECONOCEN EL EQUIPO.
  *
  * Antes, por la IP o una cookie, la tarjeta de Postulación desaparecía o decía «en revisión» /
@@ -81,8 +67,7 @@ export function nombresDestino(destination: 'game' | 'dashboard') {
  *   cuenta está en pausa (iniciar sesión sigue igual).
  * `AccionesAcceso` conserva los manejadores de estados por si otra pantalla los usa.
  */
-export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: AccionesAcceso): OpcionAcceso[] {
-  const { dest } = nombresDestino(destination);
+export function useOpcionesAcceso(acciones: AccionesAcceso): OpcionAcceso[] {
 
   const registro = useEstadoRegistro();
   const pausa = !!registro?.bloqueado;
@@ -99,7 +84,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       Icono: LogIn,
       titulo: 'Candidato',
       corta: 'Inicia sesión con tu cuenta.',
-      descripcion: `Ya tengo una cuenta de candidato: iniciar sesión y ${dest}.`,
+      descripcion: 'Ya tengo una cuenta de candidato: iniciar sesión y entrar a la Plataforma.',
       onClick: acciones.onCandidateLogin,
     },
     {
@@ -112,9 +97,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       corta: pausa ? 'Inicia sesión; crear cuenta, en pausa.' : 'Tus productos y servicios.',
       descripcion: pausa
         ? `Puedes iniciar sesión con tu cuenta. Crear una cuenta nueva desde este equipo estará disponible a partir del ${horaDeReanudacion(registro?.hasta ?? null)}.`
-        : destination === 'dashboard'
-          ? 'Accede a la Plataforma para gestionar tus productos, servicios y proyectos del grupo.'
-          : 'Inicia sesión (o crea tu cuenta) y entra al Videojuego.',
+        : 'Accede a la Plataforma para gestionar tus productos, servicios y proyectos del grupo.',
       onClick: acciones.onClient,
     },
     {
@@ -124,7 +107,7 @@ export function useOpcionesAcceso(destination: 'game' | 'dashboard', acciones: A
       Icono: ShieldCheck,
       titulo: 'Miembro',
       corta: 'Miembros y administradores.',
-      descripcion: `Ya soy miembro o administrador: iniciar sesión y ${dest}.`,
+      descripcion: 'Ya soy miembro o administrador: iniciar sesión y entrar a la Plataforma.',
       onClick: acciones.onMember,
     },
   ];

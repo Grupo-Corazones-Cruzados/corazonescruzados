@@ -1,5 +1,21 @@
 # Videojuego GCC World — Documento de desarrollo (fuente de verdad viva)
 
+> ## ⛔ 2026-11-08 — EL JUEGO SE REINICIA DESDE CERO (decisión de Fernando)
+> *«quiero empezar desde cero… si me dejas archivos basura vamos a confundirnos»*. Se **borró
+> todo** lo construido: el proyecto Godot entero (scripts, escenas, las estampas del prólogo, la
+> música, el personaje por piezas, `tools/generar_estampas.py`), la integración web (`/juego`, la
+> pantalla de carga, el creador de personaje, la intro de la portada, `public/game`,
+> `public/personajes`, `public/character`, los scripts de personaje y `npm run juego:publicar`) y
+> los datos de personaje de la BD (`clients.character_data*`, respaldados fuera del repo en
+> `respaldos-locales/personajes-2026-11-08.json`). El botón «Aventura» de la portada muestra
+> «Próximamente». **Solo se conservan este documento, `HISTORIA.md` y `GUION_VISUAL.md`.**
+>
+> **Cómo leer lo de abajo:** es **referencia histórica de lo aprendido**: historia, reglas del
+> arte, trampas del export web y cómo trabajar con Fernando. **Nada del código, de los archivos ni
+> de los comandos que se citan existe ya.** Siguen vigentes las decisiones de §3-bis (rumbo de
+> publicación) y §4-ter (flujo de producción por tipo de asset). Todo lo recuperable está en el
+> historial de git, anterior al commit del 2026-11-08. Fernando empieza por una **semilla** nueva.
+
 > Este archivo es la **fuente de verdad del desarrollo del videojuego**. Lo mantiene la
 > skill `/videojuegogcc`: al invocarla, se lee y analiza completo; cuando hay avances,
 > correcciones o temas nuevos, se **actualiza** aquí (sin duplicar; corrigiendo lo viejo

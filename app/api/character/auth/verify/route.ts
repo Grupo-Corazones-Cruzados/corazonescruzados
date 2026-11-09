@@ -17,7 +17,7 @@ body{margin:0;background:#0a0a14;color:#e5e5e5;font-family:'Courier New',monospa
 h1{margin:0 0 12px;color:${color};letter-spacing:0.18em;font-size:1.2rem;text-transform:uppercase;}
 p{color:#cbd5e1;font-size:.95rem;line-height:1.6;margin:0 0 20px;}
 a{display:inline-block;background:${color};color:#0a0a14;text-decoration:none;padding:12px 28px;font-weight:bold;border:2px solid ${color};letter-spacing:0.08em;}
-</style></head><body><div class="card"><h1>${title}</h1><p>${message}</p><a href="/">Volver al juego</a></div></body></html>`;
+</style></head><body><div class="card"><h1>${title}</h1><p>${message}</p><a href="/">Volver a GCC World</a></div></body></html>`;
   return new Response(body, {
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
   });
@@ -51,7 +51,7 @@ export async function GET(req: Request) {
     ) {
       return html(
         'Enlace expirado',
-        'Este enlace ya expiró. Vuelve al juego e inténtalo de nuevo.',
+        'Este enlace ya expiró. Vuelve a GCC World e inténtalo de nuevo.',
         '#a13333',
       );
     }
@@ -92,7 +92,7 @@ export async function GET(req: Request) {
 
     return html(
       '¡Cuenta confirmada!',
-      `Bienvenido${row.alias ? `, ${row.alias}` : ''}. Tu cuenta está activa. Vuelve al juego para continuar.`,
+      `Bienvenido${row.alias ? `, ${row.alias}` : ''}. Tu cuenta está activa. Vuelve a GCC World para continuar.`,
       '#7B5FBF',
     );
   } catch (err: unknown) {
