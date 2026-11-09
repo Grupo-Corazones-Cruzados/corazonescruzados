@@ -74,7 +74,7 @@ function useDictado(alTexto: (t: string) => void) {
 
   async function empezar() {
     setError('');
-    if (!navigator.mediaDevices?.getUserMedia) { setError('El micrófono necesita entrar por HTTPS.'); return; }
+    if (!navigator.mediaDevices?.getUserMedia) { setError('El micrófono no está disponible aquí: hace falta entrar por HTTPS y que la app tenga permiso de micrófono.'); return; }
     let flujo: MediaStream;
     try { flujo = await navigator.mediaDevices.getUserMedia({ audio: true }); }
     catch { setError('No hay permiso para usar el micrófono.'); return; }

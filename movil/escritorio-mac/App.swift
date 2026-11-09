@@ -61,6 +61,16 @@ final class Delegado: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKU
         return host == "grupocc.org" || host.hasSuffix(".grupocc.org") || host.hasSuffix(".ts.net")
     }
 
+    /// EL MICRÓFONO (Gumdramon y el dictado del Espacio, 2026-11-08). Sin esto y sin
+    /// `NSMicrophoneUsageDescription`, WebKit esconde `navigator.mediaDevices` y la página creía que le
+    /// faltaba HTTPS. Solo para las páginas del grupo por HTTPS; macOS pregunta una vez por la app.
+    func webView(_ w: WKWebView, requestMediaCapturePermissionFor origen: WKSecurityOrigin, initiatedByFrame f: WKFrameInfo,
+                 type tipo: WKMediaCaptureType, decisionHandler: @escaping (WKPermissionDecision) -> Void) {
+        let host = origen.host
+        let propio = origen.protocol == "https" && (host == "grupocc.org" || host.hasSuffix(".grupocc.org") || host.hasSuffix(".ts.net"))
+        decisionHandler(propio && tipo == .microphone ? .grant : .deny)
+    }
+
     func webView(_ w: WKWebView, decidePolicyFor accion: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if accion.shouldPerformDownload { return decisionHandler(.download) }
         let url = accion.request.url

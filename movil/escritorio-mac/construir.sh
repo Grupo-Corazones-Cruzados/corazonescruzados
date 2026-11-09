@@ -28,6 +28,7 @@ construir() {  # $1 nombre visible, $2 gcc_app, $3 id, $4 color del icono
   <key>LSMinimumSystemVersion</key><string>13.0</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
   <key>NSHighResolutionCapable</key><true/>
+  <key>NSMicrophoneUsageDescription</key><string>Para Gumdramon y para dictar en el Espacio de trabajo.</string>
   <key>GCCApp</key><string>$2</string>
   <key>GCCNombre</key><string>$1</string>
 </dict></plist>

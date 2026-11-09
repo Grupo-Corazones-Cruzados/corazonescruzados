@@ -24,7 +24,7 @@ export function aPcm16(entrada: Float32Array, hz: number): Int16Array {
  * Se manda en orden: uno detrás de otro, para que un envío lento no desordene el audio.
  */
 export async function abrirMicrofono(alNivel: (n: number) => void): Promise<{ cerrar: () => void; reanudar: () => void }> {
-  if (!navigator.mediaDevices?.getUserMedia) throw new Error('El micrófono necesita entrar por HTTPS.');
+  if (!navigator.mediaDevices?.getUserMedia) throw new Error('El micrófono no está disponible aquí: hace falta entrar por HTTPS y que la app tenga permiso de micrófono.');
   const flujo = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
   const Contexto = window.AudioContext || (window as any).webkitAudioContext;
   const ctx: AudioContext = new Contexto();
