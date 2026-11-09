@@ -63,7 +63,7 @@ type Rejilla = { columnas: number; filas: number; margenX: number; margenY: numb
 /** `pies`: cada cuadro con sus pies en el suelo. `conservar`: el borde de abajo del recorte es el suelo, así
  *  un salto o una caída mantienen su altura. En los dos, el eje horizontal es el centro de lo dibujado. */
 type Colocacion = 'pies' | 'conservar';
-type Limpieza = { quitarFondo: boolean; fondo: [number, number, number]; tolerancia: number; escala: number; colocacion: Colocacion; quitarRestos: boolean; ajusteX: number; ajusteY: number };
+type Limpieza = { quitarFondo: boolean; fondo: [number, number, number]; tolerancia: number; bordes: number; escala: number; colocacion: Colocacion; quitarRestos: boolean; ajusteX: number; ajusteY: number };
 type Rect = { x: number; y: number; w: number; h: number };
 type Modo = 'franja' | 'rejilla';
 /** Lo que se está arrastrando sobre la imagen en el modo franja. */
@@ -167,6 +167,50 @@ function detectarCortes(m: Uint8Array, w: number, b: Rect): number[] {
 }
 
 /**
+ * EL FONDO, SIN HALO (Fernando, 2026-11-09: «los bordes mal recortados»).
+ *  1. Se borra el fondo DESDE LOS BORDES HACIA DENTRO, como el bote de pintura: solo lo que está
+ *     conectado al exterior. El contorno oscuro del personaje hace de muro, así que un personaje del
+ *     mismo color que el fondo no pierde nada por dentro. Por eso no hace falta verde croma.
+ *  2. Los huecos de fondo ENCERRADOS (entre el brazo y el cuerpo) se quitan con la mitad de tolerancia.
+ *  3. «Limpiar bordes»: `l.bordes` pasadas que quitan, del borde de lo que queda, los píxeles que se
+ *     parecen al fondo (con tolerancia triple). Es el halo de mezcla que dejan la IA y la compresión;
+ *     el contorno oscuro queda lejos del color del fondo y se respeta.
+ */
+function quitarFondo(d: Uint8ClampedArray, w: number, h: number, l: Limpieza) {
+  const [fr, fg, fb] = l.fondo;
+  const dist = (i: number) => Math.abs(d[i * 4] - fr) + Math.abs(d[i * 4 + 1] - fg) + Math.abs(d[i * 4 + 2] - fb);
+  const tol = l.tolerancia * 3;
+  const fuera = new Uint8Array(w * h);
+  const pila: number[] = [];
+  const sembrar = (i: number) => { if (!fuera[i] && (d[i * 4 + 3] < 128 || dist(i) <= tol)) { fuera[i] = 1; pila.push(i); } };
+  for (let x = 0; x < w; x++) { sembrar(x); sembrar((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { sembrar(y * w); sembrar(y * w + w - 1); }
+  while (pila.length) {
+    const i = pila.pop()!;
+    const x = i % w;
+    if (x > 0) sembrar(i - 1);
+    if (x < w - 1) sembrar(i + 1);
+    if (i >= w) sembrar(i - w);
+    if (i < w * (h - 1)) sembrar(i + w);
+  }
+  for (let i = 0; i < w * h; i++) if (fuera[i] || dist(i) <= tol / 2) d[i * 4 + 3] = 0;
+  const halo = tol * 3;
+  for (let pasada = 0; pasada < l.bordes; pasada++) {
+    const quitar: number[] = [];
+    for (let i = 0; i < w * h; i++) {
+      if (d[i * 4 + 3] < 128) continue;
+      const x = i % w;
+      const junto = (x > 0 && d[(i - 1) * 4 + 3] < 128) || (x < w - 1 && d[(i + 1) * 4 + 3] < 128)
+        || (i >= w && d[(i - w) * 4 + 3] < 128) || (i < w * (h - 1) && d[(i + w) * 4 + 3] < 128)
+        || x === 0 || x === w - 1 || i < w || i >= w * (h - 1);
+      if (junto && dist(i) <= halo) quitar.push(i);
+    }
+    if (!quitar.length) break;
+    for (const i of quitar) d[i * 4 + 3] = 0;
+  }
+}
+
+/**
  * Restos de las filas vecinas: piezas sueltas que entran por un borde del recorte (los pies de la fila
  * de arriba, la mano de la pose de al lado) y son mucho más pequeñas que la figura. Lo que no toca el
  * borde se respeta aunque sea pequeño: una corona que se cae es parte de la animación.
@@ -231,13 +275,7 @@ function procesar(img: HTMLImageElement, r: Rect, l: Limpieza): Cuadro {
   ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
   const d = ctx.getImageData(0, 0, sw, sh).data;
 
-  if (l.quitarFondo) {
-    const [fr, fg, fb] = l.fondo;
-    const tol = l.tolerancia * 3;
-    for (let p = 0; p < d.length; p += 4) {
-      if (Math.abs(d[p] - fr) + Math.abs(d[p + 1] - fg) + Math.abs(d[p + 2] - fb) <= tol) d[p + 3] = 0;
-    }
-  }
+  if (l.quitarFondo) quitarFondo(d, sw, sh, l);
 
   if (l.quitarRestos) quitarRestos(d, sw, sh);
 
@@ -433,7 +471,7 @@ export function Cortador() {
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [nombreImagen, setNombreImagen] = useState('');
   const [rejilla, setRejilla] = useState<Rejilla>({ columnas: 4, filas: 1, margenX: 0, margenY: 0, sepX: 0, sepY: 0 });
-  const [limpieza, setLimpieza] = useState<Limpieza>({ quitarFondo: true, fondo: [255, 255, 255], tolerancia: 24, escala: 1, colocacion: 'pies', quitarRestos: true, ajusteX: 0, ajusteY: 0 });
+  const [limpieza, setLimpieza] = useState<Limpieza>({ quitarFondo: true, fondo: [255, 255, 255], tolerancia: 24, bordes: 1, escala: 1, colocacion: 'pies', quitarRestos: true, ajusteX: 0, ajusteY: 0 });
   // Modo franja (Fernando, 2026-11-09): hojas irregulares, con filas de distinto número de poses y
   // separaciones desiguales. Se elige una fila y se reparte con cortes que se arrastran.
   const [modo, setModo] = useState<Modo>('franja');
@@ -959,6 +997,9 @@ export function Cortador() {
                 <Numero label="Tolerancia" valor={limpieza.tolerancia} max={255} onChange={(n) => setLimpieza((l) => ({ ...l, tolerancia: n }))} />
               </div>
             </div>
+          )}
+          {limpieza.quitarFondo && (
+            <Numero label="Limpiar bordes (px)" valor={limpieza.bordes} min={0} max={4} onChange={(n) => setLimpieza((l) => ({ ...l, bordes: n }))} />
           )}
           <Numero label="Tamaño de cada píxel en la imagen" valor={limpieza.escala} min={1} max={64} onChange={(n) => setLimpieza((l) => ({ ...l, escala: n }))} />
           <div className="flex items-center justify-between gap-2">

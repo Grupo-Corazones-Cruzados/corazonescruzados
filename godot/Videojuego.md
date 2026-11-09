@@ -953,6 +953,22 @@ de 96 px de ancho a escala 1 y se cortan en la celda (sale el aviso en rojo). La
 96×128. Para poses anchas: escala 2 (todo el personaje más pequeño) o, si Fernando lo pide, una celda
 más ancha por personaje.
 
+**Quitar el fondo sin halo (2026-11-09):** el fondo se borra **desde los bordes hacia dentro** (como el
+bote de pintura), así que el contorno oscuro hace de muro y un personaje del mismo color que el fondo
+no pierde nada. Los huecos encerrados se quitan con media tolerancia. **«Limpiar bordes (px)»** (1 por
+defecto, hasta 4) quita del borde los píxeles parecidos al fondo (tolerancia triple): el halo de
+mezcla. Medido con la hoja del rey: con 0 pasadas queda un halo blanco y gris; con 1 desaparece
+casi entero; 2 apenas cambia más.
+
+**⭐ Requisitos para pedirle la hoja a Gemini** (para que el fondo salga perfecto):
+- fondo **liso, de un solo color, sin degradado, textura, sombra en el suelo ni viñeta**;
+- **magenta puro (#FF00FF)**, el color de transparencia clásico del pixel art porque casi nunca está
+  en un personaje. Si el personaje lleva magenta, otro color plano que no tenga (cian #00FFFF);
+- **contorno oscuro y continuo** de 1 px alrededor del personaje, que es el muro del bote de pintura;
+- **sin suavizado** en los bordes: píxeles nítidos, sin sombras proyectadas ni brillos fuera del cuerpo;
+- **las poses separadas**, con aire entre ellas y entre filas: nada que se toque de una fila a otra;
+- descargar en **PNG**, no en WebP ni JPG: la compresión crea el halo.
+
 **Lo que escribe** en `godot/assets/personajes/<personaje>/` (`lib/herramientas/sprites.ts`):
 - `<animacion>_<direccion>.png`: los fotogramas en fila, en celdas de 96×128;
 - `<personaje>.json`: las animaciones con fotogramas, fps y bucle;
