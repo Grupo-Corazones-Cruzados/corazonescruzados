@@ -71,6 +71,12 @@ final class Delegado: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKU
         decisionHandler(propio && tipo == .microphone ? .grant : .deny)
     }
 
+    /// SI SE CAE EL PROCESO DE LA PÁGINA, SE RECARGA (Fernando, 2026-11-09: la ventana se quedó en negro). Sin
+    /// esto WebKit deja la vista vacía hasta cerrar la app; con esto vuelve sola a donde estaba.
+    func webViewWebContentProcessDidTerminate(_ w: WKWebView) {
+        if w.url == nil || w.url?.scheme == "about" { w.load(URLRequest(url: BASE.appendingPathComponent("dashboard"))) } else { w.reload() }
+    }
+
     func webView(_ w: WKWebView, decidePolicyFor accion: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if accion.shouldPerformDownload { return decisionHandler(.download) }
         let url = accion.request.url
