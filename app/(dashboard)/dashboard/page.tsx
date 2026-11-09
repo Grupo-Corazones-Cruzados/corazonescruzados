@@ -9,8 +9,9 @@ import PixelDataTable from '@/components/ui/PixelDataTable';
 import PixelModal from '@/components/ui/PixelModal';
 import { Cifra, RejillaCifras } from '@/components/ui/Cifra';
 import Saludo from '@/components/dashboard/Saludo';
-import { fmt2 } from '@/lib/format';
-import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank,
+import { fmt2, fmtInt } from '@/lib/format';
+import { tierDe } from '@/lib/tier';
+import { Ticket, FolderKanban, Users, TrendingUp, TrendingDown, PiggyBank, Award,
   Download, ChevronRight, FileDown, FileText, Plus } from 'lucide-react';
 import MenuMas from '@/components/ui/MenuMas';
 import { EnBarraAcciones } from '@/components/dashboard/BarraAcciones';
@@ -133,6 +134,10 @@ export default function DashboardHome() {
   const globalIncome = mesesDelAnio.reduce((s, m) => s + entradaDe(m), 0);
   const globalExpense = mesesDelAnio.reduce((s, m) => s + salidaDe(m), 0);
   const globalSavings = globalIncome - globalExpense;
+  // ⭐ EL TIER (Fernando, 2026-11-09; `lib/tier.ts`): sobre lo FACTURADO de todos los meses, sin
+  // filtros de año ni de resultado: es lo generado en toda la vida de la cuenta.
+  const generado = months.reduce((s, m) => s + Number(m.facturado_income || 0), 0);
+  const { actual: tier } = tierDe(generado);
   const delAnio = anio === 'todos' ? '' : ` ${anio}`;
 
   const openDetail = async (m: FinanceMonth) => {
@@ -232,12 +237,13 @@ export default function DashboardHome() {
           admin. Las cifras de dinero son las del estado financiero de la propia cuenta. */}
       {/* En el teléfono las tres cifras de dinero no van aquí: las dice el balance de abajo,
           que sigue al filtro de año (un dato no se dice dos veces). */}
-      <RejillaCifras className="mb-5">
+      <RejillaCifras className="mb-5" siete={isAdmin && tieneFinanzas && !enTelefono}>
         <Cifra Icon={Ticket} label="Tickets abiertos" value={stats?.open_tickets} />
         <Cifra Icon={FolderKanban} label="Proyectos activos" value={stats?.active_projects} />
         {isAdmin && <Cifra Icon={Users} label="Clientes" value={stats?.clients} />}
         {tieneFinanzas && !enTelefono && <Cifra Icon={TrendingUp} label={`${soloFacturado ? 'Facturado' : delAnio ? 'Ingresos' : 'Total ingresos'}${delAnio}`} value={money(globalIncome)} tone="green" />}
         {tieneFinanzas && !enTelefono && <Cifra Icon={TrendingDown} label={delAnio ? `Egresos${delAnio}` : 'Total egresos'} value={money(globalExpense)} tone="red" />}
+        {tieneFinanzas && <Cifra Icon={Award} label={`Tier ${tier.tier} · $${fmtInt(Math.round(generado))}`} value={tier.anual ? `${money(tier.anual)}/año` : 'Gratis'} />}
         {tieneFinanzas && !enTelefono && <Cifra Icon={PiggyBank} label={`${delAnio || soloFacturado ? 'Ahorro' : 'Total ahorro'}${delAnio}`} value={money(globalSavings)} tone={globalSavings >= 0 ? 'accent' : 'red'} />}
       </RejillaCifras>
 

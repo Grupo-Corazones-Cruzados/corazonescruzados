@@ -43,9 +43,10 @@ const CHIP: Record<TonoCifra, string> = {
  * altura […] me interesa más espacio para la tabla»). Dos columnas en el teléfono, tres desde
  * `md` y, desde `xl`, las seis en UNA fila. Antes eran tarjetas de ~90 px en dos filas.
  */
-export function RejillaCifras({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+/** `siete`: Inicio del admin, con el tier (2026-11-09), tiene siete cifras: las siete en una fila desde `xl`. */
+export function RejillaCifras({ children, className = '', siete = false }: { children: React.ReactNode; className?: string; siete?: boolean }) {
   // En dos columnas, una cifra que queda sola en su fila ocupa la fila entera (sin hueco al lado).
-  return <div className={`grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 max-md:[&>*:last-child:nth-child(odd)]:col-span-2 ${className}`}>{children}</div>;
+  return <div className={`grid grid-cols-2 md:grid-cols-3 ${siete ? 'xl:grid-cols-7' : 'xl:grid-cols-6'} gap-2 max-md:[&>*:last-child:nth-child(odd)]:col-span-2 ${className}`}>{children}</div>;
 }
 
 export function Cifra({
