@@ -22,9 +22,10 @@ import { accessRoleOf, type AccessRole } from '@/lib/dashboard/access';
 import { RUTAS_HERRAMIENTA } from '@/lib/herramientas/catalogo';
 
 /**
- * EL TEMA SEGÚN LA APP Y LA SECCIÓN (Fernando, 2026-11-08). Desde el 2026-11-09, en la web y en GCC World
- * lo da el TIPO DE CUENTA (abajo). En GCC Miembros:
- *   · Accesos, productos y herramientas: «Corazón».
+ * EL TEMA SEGÚN LA APP Y LA SECCIÓN (Fernando, 2026-11-08). Cada sección con tema propio lo conserva:
+ *   · Productos: «Corazón» en la web y GCC Miembros, «Mixto» en GCC World.
+ *   · Accesos y las herramientas (lo general): por TIPO DE CUENTA en la web y GCC World (abajo); «Corazón» en
+ *     GCC Miembros.
  *   · Centralizado: «Orquídea».
  *   · Progreso: «Claro».
  *   · Aventura: «Próximamente» desde que el videojuego se reinició (2026-11-08).
@@ -34,15 +35,17 @@ import { RUTAS_HERRAMIENTA } from '@/lib/herramientas/catalogo';
 function temaDeSeccion(app: AppDeTelefono | null, ruta: string, elegido: TemaId, instalada: AppDeTelefono | null, rol: AccessRole | null): TemaId {
   if (!app) return elegido;
   const en = (r: string) => ruta === r || ruta.startsWith(r + '/');
+  // Las secciones con tema propio lo conservan en todas partes (Fernando, 2026-11-09: «antes estaba bien»).
   if (en('/dashboard/centralized')) return 'orquidea';
-  // ⇒ EN LA WEB Y EN GCC WORLD, EL TEMA LO DA EL TIPO DE CUENTA (Fernando, 2026-11-09): miembro (y el
-  // administrador) en «Corazón», candidato en «Mixto», cliente en «Eléctrico», en toda la interfaz. GCC
-  // Miembros sigue como estaba: allí solo entran miembros. Sin cuenta aún, el elegido (no salta de color).
-  if (instalada !== 'centralizado') {
+  if (en('/dashboard/producto')) return app === 'centralizado' ? 'corazon' : 'mixto';
+  // ⇒ LO GENERAL (Accesos y las herramientas) va con el TIPO DE CUENTA en la web y en GCC World (2026-11-09):
+  // miembro (y administrador) «Corazón», candidato «Mixto», cliente «Eléctrico». En GCC Miembros, «Corazón».
+  if (en('/dashboard/accesos') || RUTAS_HERRAMIENTA.some(en)) {
+    if (instalada === 'centralizado') return 'corazon';
     if (!rol) return elegido;
     return rol === 'admin' || rol === 'member' ? 'corazon' : rol === 'candidate' ? 'mixto' : 'electrico';
   }
-  if (en('/dashboard/accesos') || en('/dashboard/producto') || RUTAS_HERRAMIENTA.some(en)) return 'corazon';
+  // Progreso.
   return 'claro';
 }
 
