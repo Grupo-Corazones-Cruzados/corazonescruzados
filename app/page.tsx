@@ -13,7 +13,7 @@ import { sonarUnion, sonarVolver } from '@/lib/sitio/sonidoSeleccion';
 import type { AccionesAcceso } from '@/components/landing/opcionesAcceso';
 import { IconoCorazon, IconoMundo } from '@/components/landing/IconosTitular';
 import { useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
-import { appDeTelefono, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
+import { appInstalada, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 import PointerCursor from '@/components/landing/PointerCursor';
 import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
 import OnboardingSlidersModal, { enviarPostulacion } from '@/components/landing/OnboardingSlidersModal';
@@ -68,7 +68,7 @@ export default function LandingPage() {
    */
   const [appTelefono, setAppTelefono] = useState<AppDeTelefono | null>(null);
   useEffect(() => {
-    const app = appDeTelefono();
+    const app = appInstalada();
     if (!app) return;
     setAppTelefono(app);
     setMundoElegido(app === 'progreso' ? 'progreso' : 'aventura');
@@ -114,7 +114,8 @@ export default function LandingPage() {
     // (2026-08-17). Aquí llega quien lo pulsa desde `/soluciones`, `/legal` o cualquier
     // otra página, vía `/auth`. El diálogo es el mismo: no hay una segunda copia.
     // En una app ese menú sobra: `appTelefono` ya muestra las opciones, con su tema.
-    else if (acceso === ACCESO_PLATAFORMA) { if (!appDeTelefono()) setEntryChoiceOpen(true); }
+    // Desde el 2026-11-08 la web entra como el teléfono: la pantalla de acceso de la app (`InicioApp`).
+    else if (acceso === ACCESO_PLATAFORMA) { if (!appInstalada()) setMundoElegido('progreso'); }
     // El enlace del correo de APROBACIÓN (`/api/candidate/continuar`): abre la creación de la
     // cuenta del candidato. Sustituye a la tarjeta «Aprobada», que dependía de reconocer su equipo
     // (Fernando, 2026-10-29).
@@ -298,6 +299,12 @@ export default function LandingPage() {
     return () => window.removeEventListener('keydown', alPulsar);
   }, [mundoElegido, appTelefono]);
   const elegirMundo = (m: 'aventura' | 'progreso') => setMundoElegido(m);
+  /**
+   * EN LA WEB, ELEGIR MUNDO ABRE LA PANTALLA DE ACCESO DE LA APP DE ESE MUNDO (Fernando, 2026-11-08: «el
+   * registro debe ser igual que la versión móvil»). La elección Progreso/Aventura se queda como está; en
+   * vez de los roles, sube la misma hoja de entrar y crear cuenta que ve el teléfono.
+   */
+  const appWeb: AppDeTelefono | null = !appTelefono && mundoElegido ? mundoElegido : null;
 
   /**
    * LO QUE HACE CADA OPCIÓN DE ACCESO — una sola vez (2026-10-26). La usan el diálogo
@@ -471,7 +478,7 @@ export default function LandingPage() {
                   <PensamientosCielo lugar="pie" visible={!mundoElegido} />
                 </div>
               </div>
-            ) : (
+            ) : appWeb ? null : (
               <div key="mundo" className={`mundo-elegido mundo-${mundoElegido}`}>
                 {/* Entran cuando TERMINA el eslogan (Fernando, 2026-10-28): cruce 0,65 s + 1,9 s y las
                     palabras del eslogan, ≈ 3,4 s. Con «reducir movimiento», enseguida. */}
@@ -488,9 +495,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {appTelefono && (
+      {(appTelefono || appWeb) && (
         <InicioApp
-          app={appTelefono}
+          app={appTelefono ?? appWeb!}
+          onVolver={appTelefono ? undefined : () => setMundoElegido(null)}
           acciones={accionesAcceso}
           onPostular={() => setOnboardingOpen(true)}
           onCrearCuenta={() => setClientSignupOpen(true)}
@@ -587,8 +595,8 @@ export default function LandingPage() {
           onLoggedIn={() => {
             setClientLoginOpen(false);
             if (destinoTrasAcceso) { window.location.href = destinoTrasAcceso; return; }
-            // El cliente va al marketplace del panel; en una app, a Accesos.
-            window.location.href = appDeTelefono() ? '/dashboard/accesos' : '/dashboard/marketplace';
+            // El cliente va a Accesos, en la app y en la web (la web es GCC Miembros desde el 2026-11-08).
+            window.location.href = '/dashboard/accesos';
           }}
         />
       )}

@@ -12,7 +12,7 @@
  */
 
 import { useEffect, useState, type ComponentType } from 'react';
-import { ChevronRight, FileText, UserPlus } from 'lucide-react';
+import { ChevronRight, FileText, UserPlus, X } from 'lucide-react';
 import BrandLoader from '@/components/ui/BrandLoader';
 import Segmentado from '@/components/ui/Segmentado';
 import { abrirFuera } from '@/lib/movil/abrir-fuera';
@@ -45,11 +45,13 @@ function Fila({ Icono, titulo, texto, onClick }: {
   );
 }
 
-export default function InicioApp({ app, acciones, onPostular, onCrearCuenta }: {
+export default function InicioApp({ app, acciones, onPostular, onCrearCuenta, onVolver }: {
   app: AppDeTelefono;
   acciones: AccionesAcceso;
   onPostular: () => void;
   onCrearCuenta: () => void;
+  /** Solo en la web, donde a esta hoja se llega eligiendo un mundo: vuelve a la elección (2026-11-08). */
+  onVolver?: () => void;
 }) {
   const [modo, setModo] = useState<'ingresar' | 'crear'>('ingresar');
   const todas = useOpcionesAcceso(acciones);
@@ -75,6 +77,11 @@ export default function InicioApp({ app, acciones, onPostular, onCrearCuenta }: 
     <div className="corp app-inicio">
       <main className="app-hoja">
         <div className="app-hoja-marca">
+          {onVolver && (
+            <button type="button" className="app-volver" onClick={onVolver} aria-label="Cerrar y elegir otro mundo" title="Elegir otro mundo">
+              <X aria-hidden />
+            </button>
+          )}
           <h1>GCC World</h1>
           <p>{SUBTITULO[app]}</p>
         </div>

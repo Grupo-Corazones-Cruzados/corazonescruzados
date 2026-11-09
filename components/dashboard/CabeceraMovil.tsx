@@ -35,7 +35,7 @@ import { Menu, RotateCw } from 'lucide-react';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 import BotonPantallaActiva from '@/components/espacio/BotonPantallaActiva';
 import { esAppInstalada } from '@/components/espacio/api';
-import { appDeTelefono } from '@/lib/sitio/appDeTelefono';
+import { appDeTelefono, appInstalada } from '@/lib/sitio/appDeTelefono';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -44,11 +44,14 @@ export default function CabeceraMovil({ siempre = false }: { siempre?: boolean }
   const { abrir } = useMenuMovil();
   // Se decide tras montar: en el servidor no hay `window` y el HTML tiene que coincidir.
   const [enApp, setEnApp] = useState(false);
+  // Recargar solo en una app instalada: en el navegador ya está el botón del navegador.
+  const [instalada, setInstalada] = useState(false);
   const [recargando, setRecargando] = useState(false);
   const ruta = usePathname();
   const enEspacio = ruta.startsWith('/dashboard/admin/espacio');
   useEffect(() => {
     setEnApp(esAppInstalada() || !!appDeTelefono());
+    setInstalada(esAppInstalada() || !!appInstalada());
   }, []);
 
   return (
@@ -83,7 +86,7 @@ export default function CabeceraMovil({ siempre = false }: { siempre?: boolean }
 
       {enEspacio && <BotonPantallaActiva className="ml-auto" />}
 
-      {enApp && (
+      {instalada && (
         <button
           onClick={() => { setRecargando(true); window.location.reload(); }}
           disabled={recargando}

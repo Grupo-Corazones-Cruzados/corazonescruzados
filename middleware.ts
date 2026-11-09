@@ -25,9 +25,10 @@ export async function middleware(request: NextRequest) {
   const isAuth = AUTH_ROUTES.some((r) => pathname.startsWith(r));
 
   // Las apps (GCC World y GCC Miembros) abren Accesos al ARRANCAR o al iniciar sesión, viniendo de la
-  // portada (Fernando, 2026-11-08). El botón «Inicio» también pide `/dashboard`, y ese debe llegar al
-  // Inicio: es navegación interna (`rsc`) o viene de otra página del panel.
-  if (valid && pathname === "/dashboard" && request.cookies.get("gcc_app")?.value) {
+  // portada (Fernando, 2026-11-08). La web también: desde ese día es GCC Miembros. El botón «Inicio»
+  // también pide `/dashboard`, y ese debe llegar al Inicio: es navegación interna (`rsc`) o viene de
+  // otra página del panel.
+  if (valid && pathname === "/dashboard") {
     const interna = request.headers.has("rsc") || request.nextUrl.searchParams.has("_rsc");
     const referer = request.headers.get("referer");
     const desdeElPanel = !!referer && new URL(referer).pathname.startsWith("/dashboard");
