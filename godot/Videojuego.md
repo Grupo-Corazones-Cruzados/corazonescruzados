@@ -920,6 +920,34 @@ marco la sesión viaja en la cabecera `x-espacio-token` (`firmarPeticionesDeLaPa
    esquivar, saltar, recibir daño, morir, hablar, especial u otra con nombre libre) y la dirección
    (abajo, arriba, izquierda, derecha o ninguna). Golpes, saltos y morir se proponen sin bucle.
 
+**Modo «Por fila» (2026-11-09, por defecto)**, para hojas irregulares como las que salen de Gemini
+(rótulo a la izquierda, filas con distinto número de poses, huecos desiguales):
+- **Tocar una fila** la elige sola (de su primera a su última línea con dibujo). Si sale el doble de
+  alta que las demás, porque un salto se mete entre los pies de la fila de arriba, se parte por la
+  línea con menos dibujo. También se puede **arrastrar** para marcar la franja a mano.
+- Los **cortes se proponen** en los huecos de fondo **anchos** (≥ 6 % del alto: entre letras no se
+  corta). Se arrastran los bordes y los cortes; tocar dentro añade un corte; arrastrar un corte fuera
+  de la franja lo quita. «Detectar cortes» y «Quitar cortes».
+- Los trozos mucho más bajos que una pose (el rótulo) entran **apagados**; tocarlos los incluye.
+- **Quitar restos de las filas vecinas:** borra las piezas que tocan el borde del recorte y miden
+  menos del 25 % de la figura. Lo que no toca el borde se respeta (una corona que se cae).
+- **Colocación:** «Pies al suelo en cada cuadro», o **«Conservar la altura (saltos)»**, donde el
+  borde de abajo de la franja es el suelo.
+- **La escala se propone UNA vez por imagen**, con la pose más alta de la primera fila, y no vuelve
+  a cambiar sola: todas las animaciones de un personaje salen a la misma escala.
+
+**Colocar un fotograma a mano (2026-11-09):** tocando su miniatura, la vista previa se detiene en él.
+Se arrastra con el dedo o el ratón, o se mueve con las flechas (Mayúsculas = 4 px; Esc suelta). El
+fotograma anterior se ve en transparencia y salen las guías de la plantilla de Procreate: tope de la
+cabeza (y = 24, azul), ojos (y = 44, morado), suelo (y = 120, rojo) y eje (x = 48, gris).
+«Restablecer» y «Listo». El desplazamiento va por cuadro de origen, así que sigue al fotograma si se
+reordena.
+
+⚠ **Con la hoja del rey orejón (2026-11-09)**, las poses de salto con los brazos abiertos miden más
+de 96 px de ancho a escala 1 y se cortan en la celda (sale el aviso en rojo). La celda es fija de
+96×128. Para poses anchas: escala 2 (todo el personaje más pequeño) o, si Fernando lo pide, una celda
+más ancha por personaje.
+
 **Lo que escribe** en `godot/assets/personajes/<personaje>/` (`lib/herramientas/sprites.ts`):
 - `<animacion>_<direccion>.png`: los fotogramas en fila, en celdas de 96×128;
 - `<personaje>.json`: las animaciones con fotogramas, fps y bucle;

@@ -60,10 +60,22 @@ const DIRECCIONES = [
 const SIN_BUCLE = new Set(['atacar', 'atacar_2', 'saltar', 'recibir_dano', 'morir', 'esquivar', 'especial']);
 
 type Rejilla = { columnas: number; filas: number; margenX: number; margenY: number; sepX: number; sepY: number };
-type Limpieza = { quitarFondo: boolean; fondo: [number, number, number]; tolerancia: number; escala: number; alinear: boolean; ajusteX: number; ajusteY: number };
+/** `pies`: cada cuadro con sus pies en el suelo. `conservar`: el borde de abajo del recorte es el suelo, así
+ *  un salto o una caída mantienen su altura. En los dos, el eje horizontal es el centro de lo dibujado. */
+type Colocacion = 'pies' | 'conservar';
+type Limpieza = { quitarFondo: boolean; fondo: [number, number, number]; tolerancia: number; escala: number; colocacion: Colocacion; quitarRestos: boolean; ajusteX: number; ajusteY: number };
+type Rect = { x: number; y: number; w: number; h: number };
+type Modo = 'franja' | 'rejilla';
+/** Lo que se está arrastrando sobre la imagen en el modo franja. */
+type Arrastre =
+  | { tipo: 'corte'; i: number; movido: boolean }
+  | { tipo: 'borde'; lado: 'izq' | 'der' | 'arr' | 'aba' }
+  | { tipo: 'nueva'; x0: number; y0: number; movido: boolean }
+  | { tipo: 'anadir'; x: number; movido: boolean };
 type Animacion = { archivo: string; fotogramas: number; ancho: number; alto: number; fps: number; bucle: boolean; guardada: string };
 type Ficha = { personaje: string; animaciones: Record<string, Animacion> };
-type Cuadro = { canvas: HTMLCanvasElement; desborda: boolean; vacio: boolean };
+/** `caja`: lo dibujado, ya colocado en la celda (para saber si se sale al moverlo a mano). */
+type Cuadro = { canvas: HTMLCanvasElement; desborda: boolean; vacio: boolean; caja: { x0: number; y0: number; x1: number; y1: number } | null };
 type Puerta = 'cargando' | 'web' | 'clave' | 'dentro';
 
 const nombreSeguro = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
@@ -78,13 +90,138 @@ function celda(i: number, r: Rejilla, w: number, h: number) {
   return { x: r.margenX + col * (cw + r.sepX), y: r.margenY + fila * (ch + r.sepY), w: cw, h: ch };
 }
 
+/** ¿Este píxel es dibujo (no fondo)? Con el mismo color y tolerancia que la limpieza. */
+function mascara(datos: ImageData, l: Limpieza): Uint8Array {
+  const { data: d, width: w, height: h } = datos;
+  const m = new Uint8Array(w * h);
+  const [fr, fg, fb] = l.fondo;
+  const tol = Math.max(l.tolerancia, 8) * 3;
+  for (let i = 0, p = 0; i < w * h; i++, p += 4) {
+    m[i] = d[p + 3] >= 128 && Math.abs(d[p] - fr) + Math.abs(d[p + 1] - fg) + Math.abs(d[p + 2] - fb) > tol ? 1 : 0;
+  }
+  return m;
+}
+
+/** La fila de dibujos que hay a la altura `y`: de su primera a su última línea con dibujo, y de lado a lado. */
+function detectarFila(m: Uint8Array, w: number, h: number, y: number): Rect | null {
+  const conDibujo = (fila: number) => { let n = 0; for (let x = 0; x < w; x++) n += m[fila * w + x]; return n >= 2; };
+  let cy = Math.max(0, Math.min(h - 1, Math.round(y)));
+  // Si se tocó el hueco entre filas, la más cercana (hasta 24 px).
+  if (!conDibujo(cy)) {
+    let hallada = -1;
+    for (let d = 1; d <= 24 && hallada < 0; d++) {
+      if (cy - d >= 0 && conDibujo(cy - d)) hallada = cy - d;
+      else if (cy + d < h && conDibujo(cy + d)) hallada = cy + d;
+    }
+    if (hallada < 0) return null;
+    cy = hallada;
+  }
+  let y0 = cy, y1 = cy;
+  while (y0 > 0 && conDibujo(y0 - 1)) y0--;
+  while (y1 < h - 1 && conDibujo(y1 + 1)) y1++;
+  // Dos filas pegadas (un salto que se mete entre los pies de la fila de arriba) salen como una sola el
+  // doble de alta que las demás: se parte por la línea con menos dibujo, y se queda la parte tocada.
+  const corridas: number[] = [];
+  for (let fy = 0; fy < h;) {
+    if (!conDibujo(fy)) { fy++; continue; }
+    const ini = fy;
+    while (fy < h && conDibujo(fy)) fy++;
+    if (fy - ini > 8) corridas.push(fy - ini);
+  }
+  const mediana = corridas.length ? [...corridas].sort((a, b) => a - b)[Math.floor(corridas.length / 2)] : 0;
+  for (let vuelta = 0; vuelta < 4 && mediana && y1 - y0 + 1 > mediana * 1.6; vuelta++) {
+    const desde = y0 + Math.round((y1 - y0) * 0.3), hasta = y1 - Math.round((y1 - y0) * 0.3);
+    let menor = Infinity, linea = -1;
+    for (let fy = desde; fy <= hasta; fy++) {
+      let n = 0; for (let x = 0; x < w; x++) n += m[fy * w + x];
+      if (n < menor) { menor = n; linea = fy; }
+    }
+    if (linea < 0) break;
+    if (cy < linea) y1 = linea - 1; else y0 = linea + 1;
+  }
+  let x0 = w, x1 = -1;
+  for (let fy = y0; fy <= y1; fy++) for (let x = 0; x < w; x++) if (m[fy * w + x]) { if (x < x0) x0 = x; if (x > x1) x1 = x; }
+  if (x1 < 0) return null;
+  // Un píxel de aire a los lados y arriba; abajo no: el borde de abajo es el suelo de la fila.
+  const ax = Math.max(0, x0 - 1), ay = Math.max(0, y0 - 1);
+  return { x: ax, y: ay, w: Math.min(w, x1 + 2) - ax, h: y1 + 1 - ay };
+}
+
+/** Cortes donde, dentro de la franja, hay una columna sin dibujo: uno en el centro de cada hueco. */
+function detectarCortes(m: Uint8Array, w: number, b: Rect): number[] {
+  // Entre las letras de un rótulo también hay huecos: solo se corta en los anchos.
+  const minimo = Math.max(4, Math.round(b.h * 0.06));
+  const x0 = Math.round(b.x), x1 = Math.round(b.x + b.w), y0 = Math.round(b.y), y1 = Math.round(b.y + b.h);
+  const vacia: boolean[] = [];
+  for (let x = x0; x < x1; x++) { let n = 0; for (let y = y0; y < y1; y++) n += m[y * w + x]; vacia.push(n < 2); }
+  const cortes: number[] = [];
+  let i = 0;
+  while (i < vacia.length && vacia[i]) i++;
+  while (i < vacia.length) {
+    if (!vacia[i]) { i++; continue; }
+    const ini = i;
+    while (i < vacia.length && vacia[i]) i++;
+    if (i < vacia.length && i - ini >= minimo) cortes.push(x0 + Math.round((ini + i) / 2));
+  }
+  return cortes;
+}
+
+/**
+ * Restos de las filas vecinas: piezas sueltas que entran por un borde del recorte (los pies de la fila
+ * de arriba, la mano de la pose de al lado) y son mucho más pequeñas que la figura. Lo que no toca el
+ * borde se respeta aunque sea pequeño: una corona que se cae es parte de la animación.
+ */
+function quitarRestos(d: Uint8ClampedArray, w: number, h: number) {
+  const etiqueta = new Int32Array(w * h).fill(-1);
+  const tamanos: number[] = [];
+  const tocaBorde: boolean[] = [];
+  const pila: number[] = [];
+  for (let inicio = 0; inicio < w * h; inicio++) {
+    if (etiqueta[inicio] >= 0 || d[inicio * 4 + 3] < 128) continue;
+    const id = tamanos.length;
+    let n = 0, borde = false;
+    etiqueta[inicio] = id; pila.push(inicio);
+    while (pila.length) {
+      const i = pila.pop()!;
+      n++;
+      const x = i % w, y = (i - x) / w;
+      if (x === 0 || y === 0 || x === w - 1 || y === h - 1) borde = true;
+      for (const v of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1]) {
+        if (v >= 0 && etiqueta[v] < 0 && d[v * 4 + 3] >= 128) { etiqueta[v] = id; pila.push(v); }
+      }
+    }
+    tamanos.push(n); tocaBorde.push(borde);
+  }
+  if (tamanos.length < 2) return;
+  const mayor = Math.max(...tamanos);
+  for (let i = 0; i < w * h; i++) {
+    const id = etiqueta[i];
+    if (id >= 0 && tocaBorde[id] && tamanos[id] < mayor * 0.25) d[i * 4 + 3] = 0;
+  }
+}
+
+/** Alto de lo dibujado dentro de un trozo: una pose ocupa casi toda la franja; un rótulo, poco. */
+function altoDibujo(m: Uint8Array, w: number, t: Rect): number {
+  let y0 = Infinity, y1 = -1;
+  for (let y = Math.round(t.y); y < Math.round(t.y + t.h); y++) {
+    for (let x = Math.round(t.x); x < Math.round(t.x + t.w); x++) if (m[y * w + x]) { if (y < y0) y0 = y; y1 = y; break; }
+  }
+  return y1 < 0 ? 0 : y1 - y0 + 1;
+}
+
+/** Los trozos de una franja entre sus cortes, de izquierda a derecha. */
+function trozos(b: Rect, cortes: number[]): Rect[] {
+  const bordes = [b.x, ...cortes, b.x + b.w];
+  return bordes.slice(0, -1).map((x, i) => ({ x, y: b.y, w: bordes[i + 1] - x, h: b.h }));
+}
+
 /**
  * Un cuadro de la imagen → una celda del juego.
  * La reducción no promedia: cada bloque de `escala × escala` se queda con su color MÁS REPETIDO (o
  * transparente si la mayoría lo es). Promediar inventaría colores intermedios en los bordes, que es
  * justo lo que ensucia el pixel art que sale de la IA.
  */
-function procesar(img: HTMLImageElement, r: { x: number; y: number; w: number; h: number }, l: Limpieza): Cuadro {
+function procesar(img: HTMLImageElement, r: Rect, l: Limpieza): Cuadro {
   const sx = Math.round(r.x), sy = Math.round(r.y);
   const sw = Math.max(1, Math.round(r.w)), sh = Math.max(1, Math.round(r.h));
   const c = document.createElement('canvas');
@@ -101,6 +238,8 @@ function procesar(img: HTMLImageElement, r: { x: number; y: number; w: number; h
       if (Math.abs(d[p] - fr) + Math.abs(d[p + 1] - fg) + Math.abs(d[p + 2] - fb) <= tol) d[p + 3] = 0;
     }
   }
+
+  if (l.quitarRestos) quitarRestos(d, sw, sh);
 
   const k = Math.max(1, Math.round(l.escala));
   const w2 = Math.max(1, Math.floor(sw / k)), h2 = Math.max(1, Math.floor(sh / k));
@@ -141,29 +280,39 @@ function procesar(img: HTMLImageElement, r: { x: number; y: number; w: number; h
   const salida = document.createElement('canvas');
   salida.width = CELDA.ancho; salida.height = CELDA.alto;
   const vacio = x1 < 0;
-  if (vacio) return { canvas: salida, desborda: false, vacio };
-  const dx = (l.alinear ? Math.round(CELDA.ancho / 2 - (x0 + x1 + 1) / 2) : Math.round((CELDA.ancho - w2) / 2)) + l.ajusteX;
-  const dy = (l.alinear ? CELDA.alto - MARGEN_PIES - 1 - y1 : Math.round((CELDA.alto - h2) / 2)) + l.ajusteY;
+  if (vacio) return { canvas: salida, desborda: false, vacio, caja: null };
+  const dx = Math.round(CELDA.ancho / 2 - (x0 + x1 + 1) / 2) + l.ajusteX;
+  const dy = (l.colocacion === 'pies' ? CELDA.alto - MARGEN_PIES - 1 - y1 : CELDA.alto - MARGEN_PIES - h2) + l.ajusteY;
   const tmp = document.createElement('canvas');
   tmp.width = w2; tmp.height = h2;
   tmp.getContext('2d')!.putImageData(new ImageData(red, w2, h2), 0, 0);
   salida.getContext('2d')!.drawImage(tmp, dx, dy);
   const desborda = x0 + dx < 0 || y0 + dy < 0 || x1 + dx >= CELDA.ancho || y1 + dy >= CELDA.alto;
-  return { canvas: salida, desborda, vacio };
+  return { canvas: salida, desborda, vacio, caja: { x0: x0 + dx, y0: y0 + dy, x1: x1 + dx, y1: y1 + dy } };
 }
 
-/** Una celda del juego a tamaño grande, con el suelo marcado: lo que se ve al animar. */
-function Escenario({ cuadros, fps, reproducir, guias, escala = 3 }: {
+/** Las guías de la plantilla de Procreate (godot/plantillas): mismas líneas, mismos colores. */
+const GUIA_CABEZA = 24;
+const GUIA_OJOS = 44;
+
+/**
+ * Una celda del juego a tamaño grande, con el suelo y las guías: lo que se ve al animar. Con `fijo`
+ * se queda en ese fotograma y, si hay `onArrastre`, el personaje se mueve con el dedo o el ratón
+ * (en píxeles del juego); `fantasma` es el fotograma anterior, en transparencia, para alinearlo.
+ */
+function Escenario({ cuadros, fps, reproducir, guias, escala = 3, fijo = null, fantasma = null, onArrastre }: {
   cuadros: HTMLCanvasElement[]; fps: number; reproducir: boolean; guias: boolean; escala?: number;
+  fijo?: number | null; fantasma?: HTMLCanvasElement | null; onArrastre?: (dx: number, dy: number, fin: boolean) => void;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [i, setI] = useState(0);
-  useEffect(() => { setI(0); }, [cuadros]);
+  const inicio = useRef<{ x: number; y: number } | null>(null);
+  useEffect(() => { setI(0); }, [cuadros.length]);
   useEffect(() => {
-    if (!reproducir || cuadros.length < 2) return;
+    if (fijo !== null || !reproducir || cuadros.length < 2) return;
     const id = window.setInterval(() => setI((n) => (n + 1) % cuadros.length), 1000 / Math.max(1, fps));
     return () => window.clearInterval(id);
-  }, [reproducir, fps, cuadros.length]);
+  }, [reproducir, fps, cuadros.length, fijo]);
   useEffect(() => {
     const c = ref.current;
     if (!c) return;
@@ -175,18 +324,28 @@ function Escenario({ cuadros, fps, reproducir, guias, escala = 3 }: {
     ctx.ellipse(CELDA.ancho / 2, CELDA.alto - MARGEN_PIES, 18, 4, 0, 0, Math.PI * 2);
     ctx.fill();
     if (guias) {
-      ctx.fillStyle = 'rgba(239,68,68,0.55)';
+      ctx.fillStyle = 'rgba(80,180,255,0.6)';
+      ctx.fillRect(0, GUIA_CABEZA, CELDA.ancho, 1);
+      ctx.fillStyle = 'rgba(200,120,255,0.6)';
+      ctx.fillRect(0, GUIA_OJOS, CELDA.ancho, 1);
+      ctx.fillStyle = 'rgba(239,68,68,0.7)';
       ctx.fillRect(0, CELDA.alto - MARGEN_PIES, CELDA.ancho, 1);
-      ctx.fillStyle = 'rgba(148,163,184,0.45)';
+      ctx.fillStyle = 'rgba(148,163,184,0.5)';
       ctx.fillRect(CELDA.ancho / 2, 0, 1, CELDA.alto);
     }
-    const f = cuadros[i % Math.max(1, cuadros.length)];
+    if (fantasma) { ctx.globalAlpha = 0.3; ctx.drawImage(fantasma, 0, 0); ctx.globalAlpha = 1; }
+    const f = cuadros[fijo ?? i % Math.max(1, cuadros.length)];
     if (f) ctx.drawImage(f, 0, 0);
-  }, [i, cuadros, guias]);
+  }, [i, cuadros, guias, fijo, fantasma]);
+  const k = (e: React.PointerEvent<HTMLCanvasElement>) => e.currentTarget.getBoundingClientRect().width / CELDA.ancho;
+  const arrastrable = fijo !== null && !!onArrastre;
   return (
     <canvas ref={ref} width={CELDA.ancho} height={CELDA.alto}
-      className="block rounded-md border border-digi-border bg-digi-darker"
-      style={{ width: CELDA.ancho * escala, height: CELDA.alto * escala, imageRendering: 'pixelated' }} />
+      className={`block rounded-md border bg-digi-darker ${arrastrable ? 'border-accent cursor-move' : 'border-digi-border'}`}
+      style={{ width: CELDA.ancho * escala, height: CELDA.alto * escala, imageRendering: 'pixelated', ...(arrastrable ? { touchAction: 'none' as const } : {}) }}
+      onPointerDown={arrastrable ? (e) => { e.currentTarget.setPointerCapture(e.pointerId); inicio.current = { x: e.clientX, y: e.clientY }; } : undefined}
+      onPointerMove={arrastrable ? (e) => { const o = inicio.current; if (o) onArrastre!(Math.round((e.clientX - o.x) / k(e)), Math.round((e.clientY - o.y) / k(e)), false); } : undefined}
+      onPointerUp={arrastrable ? (e) => { const o = inicio.current; inicio.current = null; if (o) onArrastre!(Math.round((e.clientX - o.x) / k(e)), Math.round((e.clientY - o.y) / k(e)), true); } : undefined} />
   );
 }
 
@@ -274,7 +433,22 @@ export function Cortador() {
   const [img, setImg] = useState<HTMLImageElement | null>(null);
   const [nombreImagen, setNombreImagen] = useState('');
   const [rejilla, setRejilla] = useState<Rejilla>({ columnas: 4, filas: 1, margenX: 0, margenY: 0, sepX: 0, sepY: 0 });
-  const [limpieza, setLimpieza] = useState<Limpieza>({ quitarFondo: true, fondo: [255, 255, 255], tolerancia: 24, escala: 1, alinear: true, ajusteX: 0, ajusteY: 0 });
+  const [limpieza, setLimpieza] = useState<Limpieza>({ quitarFondo: true, fondo: [255, 255, 255], tolerancia: 24, escala: 1, colocacion: 'pies', quitarRestos: true, ajusteX: 0, ajusteY: 0 });
+  // Modo franja (Fernando, 2026-11-09): hojas irregulares, con filas de distinto número de poses y
+  // separaciones desiguales. Se elige una fila y se reparte con cortes que se arrastran.
+  const [modo, setModo] = useState<Modo>('franja');
+  const [banda, setBanda] = useState<Rect | null>(null);
+  const [cortes, setCortes] = useState<number[]>([]);
+  const [borrador, setBorrador] = useState<Rect | null>(null);
+  const [cursor, setCursor] = useState('crosshair');
+  const arrastre = useRef<Arrastre | null>(null);
+  // Colocación a mano de cada fotograma (Fernando, 2026-11-09): un desplazamiento en píxeles del juego,
+  // por cuadro de origen, que se suma a la colocación automática. `activo` es el que se está moviendo.
+  const [ajustes, setAjustes] = useState<Record<number, { x: number; y: number }>>({});
+  const [activo, setActivo] = useState<number | null>(null);
+  const base = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const arrastrando = useRef(false);
+  const datosImg = useRef<ImageData | null>(null);
   const [zoom, setZoom] = useState(1);
   const [gotero, setGotero] = useState(false);
   const [seleccion, setSeleccion] = useState<number[]>([]);
@@ -331,10 +505,17 @@ export function Cortador() {
       const ctx = c.getContext('2d')!;
       ctx.drawImage(i, 0, 0, 1, 1, 0, 0, 1, 1);
       const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
-      // La escala propuesta: que el alto de una celda quepa en los 128 px del juego.
-      const filas = rejilla.filas;
-      const altoCelda = i.naturalHeight / filas;
-      setLimpieza((l) => ({ ...l, fondo: [r, g, b], escala: Math.max(1, Math.round(altoCelda / CELDA.alto)) }));
+      const todo = document.createElement('canvas');
+      todo.width = i.naturalWidth; todo.height = i.naturalHeight;
+      const tctx = todo.getContext('2d', { willReadFrequently: true })!;
+      tctx.drawImage(i, 0, 0);
+      datosImg.current = tctx.getImageData(0, 0, i.naturalWidth, i.naturalHeight);
+      setBanda(null); setCortes([]); setAjustes({}); setActivo(null);
+      escalaPropuesta.current = false;
+      // En rejilla, la escala propuesta es que el alto de una celda quepa en los 128 px del juego; en
+      // franja se propone al elegir la fila, que es cuando se sabe cuánto mide.
+      const altoCelda = i.naturalHeight / rejilla.filas;
+      setLimpieza((l) => ({ ...l, fondo: [r, g, b], escala: modo === 'rejilla' ? Math.max(1, Math.round(altoCelda / CELDA.alto)) : 1 }));
       // Que la imagen entre entera a lo ancho en la columna central (sin el relleno de 16 px por lado).
       const ancho = (visor.current?.clientWidth ?? 900) - 32;
       setZoom(Math.min(1, ancho / i.naturalWidth));
@@ -353,6 +534,46 @@ export function Cortador() {
     ctx.drawImage(img, 0, 0);
     const grosor = Math.max(1, Math.round(1 / zoom));
     ctx.lineWidth = grosor;
+    const numero = (texto: string, x: number, y: number) => {
+      const t = Math.max(12, Math.round(16 / zoom));
+      ctx.fillStyle = 'rgba(124,58,237,0.95)';
+      ctx.fillRect(x, y, t * (texto.length > 1 ? 1.9 : 1.4), t * 1.3);
+      ctx.fillStyle = '#fff';
+      ctx.font = `600 ${t}px system-ui, sans-serif`;
+      ctx.textBaseline = 'top';
+      ctx.fillText(texto, x + t * 0.3, y + t * 0.15);
+    };
+    if (modo === 'franja') {
+      const W = img.naturalWidth, H = img.naturalHeight;
+      const b = borrador ?? banda;
+      if (b) {
+        // Lo de fuera, apagado: la franja es lo que cuenta.
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fillRect(0, 0, W, b.y);
+        ctx.fillRect(0, b.y + b.h, W, H - b.y - b.h);
+        ctx.fillRect(0, b.y, b.x, b.h);
+        ctx.fillRect(b.x + b.w, b.y, W - b.x - b.w, b.h);
+        ctx.strokeStyle = 'rgba(124,58,237,0.95)';
+        ctx.lineWidth = grosor * 2;
+        ctx.strokeRect(b.x, b.y, b.w, b.h);
+      }
+      if (banda && !borrador) {
+        const lista = trozos(banda, cortes);
+        lista.forEach((t, i) => {
+          const orden = seleccion.indexOf(i);
+          if (orden < 0) { ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(t.x, t.y, t.w, t.h); }
+          else numero(String(orden + 1), t.x + grosor * 2, t.y + grosor * 2);
+        });
+        const asa = Math.max(6, Math.round(10 / zoom));
+        cortes.forEach((x) => {
+          ctx.fillStyle = 'rgba(239,68,68,0.95)';
+          ctx.fillRect(x - grosor, banda.y - asa, grosor * 2, banda.h + asa * 2);
+          ctx.fillRect(x - asa / 2, banda.y - asa, asa, asa);
+          ctx.fillRect(x - asa / 2, banda.y + banda.h, asa, asa);
+        });
+      }
+      return;
+    }
     for (let i = 0; i < total; i++) {
       const r = celda(i, rejilla, img.naturalWidth, img.naturalHeight);
       const orden = seleccion.indexOf(i);
@@ -362,17 +583,124 @@ export function Cortador() {
       }
       ctx.strokeStyle = orden >= 0 ? 'rgba(124,58,237,0.95)' : 'rgba(239,68,68,0.85)';
       ctx.strokeRect(r.x + grosor / 2, r.y + grosor / 2, r.w - grosor, r.h - grosor);
-      if (orden >= 0) {
-        const t = Math.max(14, Math.round(18 / zoom));
-        ctx.fillStyle = 'rgba(124,58,237,0.95)';
-        ctx.fillRect(r.x, r.y, t * 1.6, t * 1.3);
-        ctx.fillStyle = '#fff';
-        ctx.font = `600 ${t}px system-ui, sans-serif`;
-        ctx.textBaseline = 'top';
-        ctx.fillText(String(orden + 1), r.x + t * 0.3, r.y + t * 0.15);
-      }
+      if (orden >= 0) numero(String(orden + 1), r.x, r.y);
     }
-  }, [img, rejilla, seleccion, total, zoom]);
+  }, [img, rejilla, seleccion, total, zoom, modo, banda, cortes, borrador]);
+
+  /** Cambiar la franja o sus cortes: todos sus trozos pasan a ser la animación, en orden. */
+  const fijarFranja = (b: Rect | null, c: number[]) => {
+    const orden = [...c].sort((a, z) => a - z);
+    setAjustes({}); setActivo(null);
+    setBanda(b); setCortes(orden);
+    if (!b || !img || !datosImg.current) { setSeleccion([]); return; }
+    // Los trozos mucho más bajos que una pose (el rótulo de la fila) entran apagados; se tocan para usarlos.
+    const m = mascara(datosImg.current, limpieza);
+    const altos = trozos(b, orden).map((t) => altoDibujo(m, img.naturalWidth, t));
+    const max = Math.max(0, ...altos);
+    setSeleccion(altos.map((a, i) => (a > 0 && a >= max * 0.45 ? i : -1)).filter((i) => i >= 0));
+  };
+  const autoCortes = (b: Rect) => {
+    if (!datosImg.current || !img) return [];
+    return detectarCortes(mascara(datosImg.current, limpieza), img.naturalWidth, b);
+  };
+  /**
+   * Escala propuesta UNA vez por imagen, con la primera fila: que la pose más alta quepa sobre la línea
+   * del suelo. Se mide la pose y no la franja (la de un salto es más alta por el recorrido), y no se
+   * vuelve a cambiar sola: todas las animaciones de un personaje tienen que salir a la misma escala.
+   */
+  const escalaPropuesta = useRef(false);
+  const proponerEscala = (b: Rect, c: number[]) => {
+    if (escalaPropuesta.current || !img || !datosImg.current) return;
+    escalaPropuesta.current = true;
+    const m = mascara(datosImg.current, limpieza);
+    const alto = Math.max(0, ...trozos(b, c).map((t) => altoDibujo(m, img.naturalWidth, t)));
+    if (alto) setLimpieza((l) => ({ ...l, escala: Math.max(1, Math.ceil(alto / (CELDA.alto - MARGEN_PIES))) }));
+  };
+
+  const aImagen = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const caja = e.currentTarget.getBoundingClientRect();
+    const k = img!.naturalWidth / caja.width;
+    return { x: (e.clientX - caja.left) * k, y: (e.clientY - caja.top) * k, tol: 8 * k };
+  };
+  /** Qué hay bajo el puntero en la franja: un corte, un borde o el interior. */
+  const queHay = (x: number, y: number, tol: number): Arrastre | null => {
+    if (!banda) return null;
+    const dentroY = y >= banda.y - tol && y <= banda.y + banda.h + tol;
+    const dentroX = x >= banda.x - tol && x <= banda.x + banda.w + tol;
+    const i = cortes.findIndex((c) => Math.abs(c - x) <= tol);
+    if (i >= 0 && dentroY) return { tipo: 'corte', i, movido: false };
+    if (dentroY && Math.abs(x - banda.x) <= tol) return { tipo: 'borde', lado: 'izq' };
+    if (dentroY && Math.abs(x - (banda.x + banda.w)) <= tol) return { tipo: 'borde', lado: 'der' };
+    if (dentroX && Math.abs(y - banda.y) <= tol) return { tipo: 'borde', lado: 'arr' };
+    if (dentroX && Math.abs(y - (banda.y + banda.h)) <= tol) return { tipo: 'borde', lado: 'aba' };
+    if (dentroX && dentroY) return { tipo: 'anadir', x, movido: false };
+    return null;
+  };
+
+  const alBajar = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!img || modo !== 'franja' || gotero) return;
+    const { x, y, tol } = aImagen(e);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    arrastre.current = queHay(x, y, tol) ?? { tipo: 'nueva', x0: x, y0: y, movido: false };
+  };
+  const alMover = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!img || modo !== 'franja') return;
+    const { x, y, tol } = aImagen(e);
+    const a = arrastre.current;
+    if (!a) {
+      const h = queHay(x, y, tol);
+      setCursor(gotero ? 'crosshair' : !h ? 'crosshair' : h.tipo === 'corte' || (h.tipo === 'borde' && (h.lado === 'izq' || h.lado === 'der')) ? 'ew-resize' : h.tipo === 'borde' ? 'ns-resize' : 'copy');
+      return;
+    }
+    const W = img.naturalWidth, H = img.naturalHeight;
+    if (a.tipo === 'nueva') {
+      a.movido = a.movido || Math.abs(x - a.x0) > tol / 2 || Math.abs(y - a.y0) > tol / 2;
+      if (a.movido) {
+        const cx = Math.max(0, Math.min(W, x)), cy = Math.max(0, Math.min(H, y));
+        setBorrador({ x: Math.round(Math.min(a.x0, cx)), y: Math.round(Math.min(a.y0, cy)), w: Math.round(Math.abs(cx - a.x0)), h: Math.round(Math.abs(cy - a.y0)) });
+      }
+    } else if (a.tipo === 'anadir') {
+      a.movido = a.movido || Math.abs(x - a.x) > tol / 2;
+    } else if (a.tipo === 'corte' && banda) {
+      a.movido = true;
+      const nx = Math.round(Math.max(banda.x + 1, Math.min(banda.x + banda.w - 1, x)));
+      setCortes((c) => c.map((v, k) => (k === a.i ? nx : v)));
+    } else if (a.tipo === 'borde' && banda) {
+      const b = { ...banda };
+      const fx = Math.round(Math.max(0, Math.min(W, x))), fy = Math.round(Math.max(0, Math.min(H, y)));
+      if (a.lado === 'izq') { const der = b.x + b.w; b.x = Math.min(fx, der - 2); b.w = der - b.x; }
+      if (a.lado === 'der') b.w = Math.max(2, fx - b.x);
+      if (a.lado === 'arr') { const aba = b.y + b.h; b.y = Math.min(fy, aba - 2); b.h = aba - b.y; }
+      if (a.lado === 'aba') b.h = Math.max(2, fy - b.y);
+      setBanda(b);
+    }
+  };
+  const alSoltar = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const a = arrastre.current;
+    arrastre.current = null;
+    if (!img || modo !== 'franja' || !a) return;
+    const { x, y, tol } = aImagen(e);
+    if (a.tipo === 'nueva') {
+      setBorrador(null);
+      let b: Rect | null = null;
+      if (a.movido && borrador && borrador.w > 3 && borrador.h > 3) b = borrador;
+      else if (!a.movido && datosImg.current) b = detectarFila(mascara(datosImg.current, limpieza), img.naturalWidth, img.naturalHeight, y);
+      if (!b) { if (!a.movido) toast.error('No hay ninguna fila de dibujos ahí'); return; }
+      const c = autoCortes(b);
+      proponerEscala(b, c);
+      fijarFranja(b, c);
+    } else if (a.tipo === 'anadir' && !a.movido && banda) {
+      const i = trozos(banda, cortes).findIndex((t) => x >= t.x && x < t.x + t.w);
+      if (i >= 0 && !seleccion.includes(i)) setSeleccion((s) => [...s, i].sort((p, q) => p - q));
+      else fijarFranja(banda, [...cortes, Math.round(x)]);
+    } else if (a.tipo === 'corte' && banda) {
+      // Arrastrado fuera de la franja, se quita.
+      const fuera = y < banda.y - tol * 3 || y > banda.y + banda.h + tol * 3;
+      fijarFranja(banda, fuera ? cortes.filter((_, k) => k !== a.i) : cortes);
+    } else if (a.tipo === 'borde' && banda) {
+      fijarFranja(banda, cortes.filter((c) => c > banda.x && c < banda.x + banda.w));
+    }
+  };
 
   const alTocarImagen = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!img) return;
@@ -389,6 +717,7 @@ export function Cortador() {
       setGotero(false);
       return;
     }
+    if (modo !== 'rejilla') return;
     for (let i = 0; i < total; i++) {
       const r = celda(i, rejilla, img.naturalWidth, img.naturalHeight);
       if (x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h) {
@@ -400,10 +729,46 @@ export function Cortador() {
 
   const cuadros = useMemo<Cuadro[]>(() => {
     if (!img) return [];
+    if (modo === 'franja') {
+      if (!banda) return [];
+      const lista = trozos(banda, cortes);
+      return seleccion.filter((i) => i < lista.length).map((i) => procesar(img, lista[i], limpieza));
+    }
     return seleccion.filter((i) => i < total).map((i) => procesar(img, celda(i, rejilla, img.naturalWidth, img.naturalHeight), limpieza));
-  }, [img, seleccion, rejilla, limpieza, total]);
-  const lienzos = useMemo(() => cuadros.map((c) => c.canvas), [cuadros]);
-  const desbordan = cuadros.filter((c) => c.desborda).length;
+  }, [img, seleccion, rejilla, limpieza, total, modo, banda, cortes]);
+  const origen = useMemo(() => seleccion.filter((i) => modo === 'rejilla' ? i < total : true).slice(0, cuadros.length), [seleccion, modo, total, cuadros.length]);
+  const colocados = useMemo<Cuadro[]>(() => cuadros.map((c, pos) => {
+    const a = ajustes[origen[pos]];
+    if (!a || (!a.x && !a.y) || !c.caja) return c;
+    const lienzo = document.createElement('canvas');
+    lienzo.width = CELDA.ancho; lienzo.height = CELDA.alto;
+    lienzo.getContext('2d')!.drawImage(c.canvas, a.x, a.y);
+    const caja = { x0: c.caja.x0 + a.x, y0: c.caja.y0 + a.y, x1: c.caja.x1 + a.x, y1: c.caja.y1 + a.y };
+    return { ...c, canvas: lienzo, caja, desborda: caja.x0 < 0 || caja.y0 < 0 || caja.x1 >= CELDA.ancho || caja.y1 >= CELDA.alto };
+  }), [cuadros, ajustes, origen]);
+  const lienzos = useMemo(() => colocados.map((c) => c.canvas), [colocados]);
+  const desbordan = colocados.filter((c) => c.desborda).length;
+  const posActivo = activo === null ? -1 : origen.indexOf(activo);
+  useEffect(() => { if (activo !== null && posActivo < 0) setActivo(null); }, [activo, posActivo]);
+  const ajustar = (fn: (a: { x: number; y: number }) => { x: number; y: number }) => {
+    if (activo === null) return;
+    setAjustes((t) => ({ ...t, [activo]: fn(t[activo] ?? { x: 0, y: 0 }) }));
+  };
+  // Flechas: 1 píxel (con Mayúsculas, 4), mientras haya un fotograma elegido y no se esté escribiendo.
+  useEffect(() => {
+    if (activo === null) return;
+    const alPulsar = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && ['INPUT', 'SELECT', 'TEXTAREA'].includes(el.tagName)) return;
+      const paso = e.shiftKey ? 4 : 1;
+      const d = { ArrowLeft: [-paso, 0], ArrowRight: [paso, 0], ArrowUp: [0, -paso], ArrowDown: [0, paso] }[e.key];
+      if (!d) { if (e.key === 'Escape') setActivo(null); return; }
+      e.preventDefault();
+      setAjustes((t) => { const a = t[activo] ?? { x: 0, y: 0 }; return { ...t, [activo]: { x: a.x + d[0], y: a.y + d[1] } }; });
+    };
+    window.addEventListener('keydown', alPulsar);
+    return () => window.removeEventListener('keydown', alPulsar);
+  }, [activo]);
 
   const mover = (pos: number, paso: number) => setSeleccion((s) => {
     const n = [...s];
@@ -436,7 +801,7 @@ export function Cortador() {
         if (!r.ok) throw new Error(j.error || 'No se pudo guardar');
         setFicha(j.data);
         if (!personajes.includes(personajeId)) setPersonajes((p) => [...p, personajeId].sort());
-        setSeleccion([]);
+        if (modo === 'franja') fijarFranja(null, []); else setSeleccion([]);
         toast.success(`«${nombreAnimacion}» guardada en godot/assets/personajes/${personajeId}/`);
       } catch (e: any) {
         toast.error(e.message);
@@ -487,7 +852,27 @@ export function Cortador() {
         {img && <p className="text-[11px] text-digi-muted truncate tabular-nums" style={mf} title={nombreImagen}>{nombreImagen} · {img.naturalWidth}×{img.naturalHeight}</p>}
 
         <div className="pt-3 border-t border-digi-border space-y-3">
-          <p className="text-[12px] font-semibold text-digi-text" style={mf}>Rejilla</p>
+          <p className="text-[12px] font-semibold text-digi-text" style={mf}>Corte</p>
+          <div role="radiogroup" aria-label="Modo de corte" className="grid grid-cols-2 rounded-md border border-digi-border bg-digi-darker p-0.5">
+            {([['franja', 'Por fila'], ['rejilla', 'Rejilla']] as [Modo, string][]).map(([valor, texto]) => (
+              <button key={valor} type="button" role="radio" aria-checked={modo === valor}
+                onClick={() => { setModo(valor); setSeleccion([]); fijarFranja(null, []); }}
+                className={`h-8 rounded text-[13px] transition-colors ${modo === valor ? 'bg-digi-card text-digi-text shadow-sm ring-1 ring-digi-border font-medium' : 'text-digi-muted hover:text-digi-text'}`} style={mf}>
+                {texto}
+              </button>
+            ))}
+          </div>
+          {modo === 'franja' ? (
+            <>
+              <p className="text-[11px] text-digi-muted tabular-nums" style={mf}>
+                {banda ? `Franja de ${Math.round(banda.w)} × ${Math.round(banda.h)} px · ${cortes.length} ${cortes.length === 1 ? 'corte' : 'cortes'} · ${cortes.length + 1} trozos` : 'Sin fila elegida'}
+              </p>
+              <div className="space-y-2">
+                <button type="button" className={`${BTN_SECONDARY} w-full`} disabled={!banda} onClick={() => banda && fijarFranja(banda, autoCortes(banda))}>Detectar cortes</button>
+                <button type="button" className={`${BTN_SECONDARY} w-full`} disabled={!banda || !cortes.length} onClick={() => banda && fijarFranja(banda, [])}>Quitar cortes</button>
+              </div>
+            </>
+          ) : (<>
           <div className="grid grid-cols-2 gap-2">
             <Numero label="Columnas" valor={rejilla.columnas} min={1} max={64} onChange={(n) => { setRejilla((r) => ({ ...r, columnas: n })); setSeleccion([]); }} />
             <Numero label="Filas" valor={rejilla.filas} min={1} max={64} onChange={(n) => { setRejilla((r) => ({ ...r, filas: n })); setSeleccion([]); }} />
@@ -501,6 +886,7 @@ export function Cortador() {
               Cada cuadro: {celdaOrigen.w.toFixed(1).replace('.', ',')} × {celdaOrigen.h.toFixed(1).replace('.', ',')} px
             </p>
           )}
+          </>)}
         </div>
 
         <div className="pt-3 border-t border-digi-border space-y-3">
@@ -526,9 +912,12 @@ export function Cortador() {
           )}
           <Numero label="Tamaño de cada píxel en la imagen" valor={limpieza.escala} min={1} max={64} onChange={(n) => setLimpieza((l) => ({ ...l, escala: n }))} />
           <div className="flex items-center justify-between gap-2">
-            <span className="text-[12px] text-digi-text" style={mf}>Pies en la línea del suelo</span>
-            <Interruptor activo={limpieza.alinear} onChange={(v: boolean) => setLimpieza((l) => ({ ...l, alinear: v }))} etiqueta="Pies en la línea del suelo" />
+            <span className="text-[12px] text-digi-text" style={mf}>Quitar restos de las filas vecinas</span>
+            <Interruptor activo={limpieza.quitarRestos} onChange={(v: boolean) => setLimpieza((l) => ({ ...l, quitarRestos: v }))} etiqueta="Quitar restos de las filas vecinas" />
           </div>
+          <PixelSelect label="Colocación en la celda" value={limpieza.colocacion}
+            onChange={(e) => setLimpieza((l) => ({ ...l, colocacion: e.target.value as Colocacion }))}
+            options={[{ value: 'pies', label: 'Pies al suelo en cada cuadro' }, { value: 'conservar', label: 'Conservar la altura (saltos)' }]} />
           <div className="grid grid-cols-2 gap-2">
             <Numero label="Mover derecha" valor={limpieza.ajusteX} min={-96} max={96} onChange={(n) => setLimpieza((l) => ({ ...l, ajusteX: n }))} />
             <Numero label="Mover abajo" valor={limpieza.ajusteY} min={-128} max={128} onChange={(n) => setLimpieza((l) => ({ ...l, ajusteY: n }))} />
@@ -540,10 +929,14 @@ export function Cortador() {
       <section className="bg-digi-card border border-digi-border rounded-lg min-w-0">
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-digi-border">
           <p className="text-[12px] font-semibold text-digi-text flex-1 min-w-0 truncate" style={mf}>
-            {!img ? 'Sube la imagen con las poses' : gotero ? 'Toca el fondo de la imagen' : `Toca los cuadros en el orden de la animación · ${seleccion.length} elegidos`}
+            {!img ? 'Sube la imagen con las poses' : gotero ? 'Toca el fondo de la imagen'
+              : modo === 'rejilla' ? `Toca los cuadros en el orden de la animación · ${seleccion.length} elegidos`
+              : !banda ? 'Toca una fila para elegirla, o arrastra para marcar la franja'
+              : `Toca dentro para cortar o para usar un trozo apagado · arrastra un corte fuera para quitarlo · ${seleccion.length} fotogramas`}
           </p>
-          {seleccion.length > 0 && (
-            <button type="button" onClick={() => setSeleccion([])} className={BTN_ICONO_FILA} title="Quitar la selección" aria-label="Quitar la selección"><Eraser className="w-4 h-4" /></button>
+          {(seleccion.length > 0 || banda) && (
+            <button type="button" onClick={() => (modo === 'franja' ? fijarFranja(null, []) : setSeleccion([]))} className={BTN_ICONO_FILA}
+              title={modo === 'franja' ? 'Elegir otra fila' : 'Quitar la selección'} aria-label={modo === 'franja' ? 'Elegir otra fila' : 'Quitar la selección'}><Eraser className="w-4 h-4" /></button>
           )}
           <button type="button" onClick={() => setZoom((z) => Math.max(0.1, +(z / 1.25).toFixed(3)))} disabled={!img} className={BTN_ICONO_FILA} title="Alejar" aria-label="Alejar"><ZoomOut className="w-4 h-4" /></button>
           <span className="text-[11px] text-digi-muted tabular-nums w-10 text-center" style={mf}>{Math.round(zoom * 100)} %</span>
@@ -551,9 +944,12 @@ export function Cortador() {
         </div>
         <div ref={visor} className="overflow-auto max-h-[calc(100dvh-14rem)] p-4">
           {img ? (
+            // En la franja se arrastra con el dedo o el lápiz: sin `touch-action: none` el iPad desplazaría la página.
             <canvas ref={lienzo} onClick={alTocarImagen}
-              className={gotero ? 'cursor-crosshair' : 'cursor-pointer'}
-              style={{ width: img.naturalWidth * zoom, height: img.naturalHeight * zoom, imageRendering: 'pixelated' }} />
+              onPointerDown={alBajar} onPointerMove={alMover} onPointerUp={alSoltar} onPointerCancel={() => { arrastre.current = null; setBorrador(null); }}
+              className={gotero ? 'cursor-crosshair' : modo === 'rejilla' ? 'cursor-pointer' : ''}
+              style={{ width: img.naturalWidth * zoom, height: img.naturalHeight * zoom, imageRendering: 'pixelated',
+                ...(modo === 'franja' && !gotero ? { cursor, touchAction: 'none' as const } : {}) }} />
           ) : (
             <button type="button" onClick={() => entrada.current?.click()}
               className="w-full py-20 flex flex-col items-center gap-2 rounded-lg border-2 border-dashed border-digi-border text-digi-muted hover:border-accent hover:text-accent transition-colors">
@@ -567,8 +963,25 @@ export function Cortador() {
       {/* ── 3. La animación: verla, ordenarla y guardarla ── (entre lg y xl, bajo la imagen) */}
       <section className="bg-digi-card border border-digi-border rounded-lg p-4 space-y-4 lg:col-start-2 xl:col-start-auto">
         <div className="flex justify-center">
-          <Escenario cuadros={lienzos} fps={fps} reproducir={reproducir} guias={guias} />
+          <Escenario cuadros={lienzos} fps={fps} reproducir={reproducir} guias={guias}
+            fijo={posActivo >= 0 ? posActivo : null}
+            fantasma={posActivo > 0 ? lienzos[posActivo - 1] : posActivo === 0 && lienzos.length > 1 ? lienzos[lienzos.length - 1] : null}
+            onArrastre={(dx, dy, fin) => {
+              // La base se toma al empezar cada arrastre: las flechas pueden haberlo movido entre medias.
+              if (!arrastrando.current && activo !== null) { arrastrando.current = true; base.current = ajustes[activo] ?? { x: 0, y: 0 }; }
+              ajustar(() => ({ x: base.current.x + dx, y: base.current.y + dy }));
+              if (fin) arrastrando.current = false;
+            }} />
         </div>
+        {posActivo >= 0 ? (
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <p className="basis-full text-[12px] text-digi-text tabular-nums text-center" style={mf}>
+              Fotograma {posActivo + 1} · {(ajustes[activo!]?.x ?? 0) >= 0 ? '+' : ''}{ajustes[activo!]?.x ?? 0}, {(ajustes[activo!]?.y ?? 0) >= 0 ? '+' : ''}{ajustes[activo!]?.y ?? 0} px
+            </p>
+            <button type="button" className={BTN_SECONDARY} onClick={() => { ajustar(() => ({ x: 0, y: 0 })); base.current = { x: 0, y: 0 }; }}>Restablecer</button>
+            <button type="button" className={BTN_PRIMARY} onClick={() => setActivo(null)}>Listo</button>
+          </div>
+        ) : (
         <div className="flex items-center justify-center gap-2">
           <button type="button" onClick={() => setReproducir((r) => !r)} className={BTN_SECONDARY} disabled={lienzos.length < 2}>
             {reproducir ? <><Pause className="w-4 h-4" /> Pausar</> : <><Play className="w-4 h-4" /> Reproducir</>}
@@ -578,6 +991,7 @@ export function Cortador() {
             <Interruptor activo={guias} onChange={setGuias} etiqueta="Guías" />
           </div>
         </div>
+        )}
         {desbordan > 0 && (
           <p className="text-[12px] text-red-500" style={mf}>
             {desbordan === 1 ? 'Un cuadro se sale' : `${desbordan} cuadros se salen`} de la celda de 96 × 128: sube el tamaño de cada píxel.
@@ -586,9 +1000,11 @@ export function Cortador() {
 
         {cuadros.length > 0 && (
           <ol className="flex flex-wrap gap-2">
-            {cuadros.map((c, pos) => (
-              <li key={`${seleccion[pos]}-${pos}`} className={`relative rounded border ${c.desborda ? 'border-red-400' : 'border-digi-border'} bg-digi-darker`}>
-                <canvas width={CELDA.ancho} height={CELDA.alto} className="block" style={{ width: 48, height: 64, imageRendering: 'pixelated' }}
+            {colocados.map((c, pos) => (
+              <li key={`${origen[pos]}-${pos}`} className={`relative rounded border bg-digi-darker ${posActivo === pos ? 'border-accent ring-2 ring-accent/40' : c.desborda ? 'border-red-400' : 'border-digi-border'}`}>
+                <canvas width={CELDA.ancho} height={CELDA.alto} className="block cursor-pointer" style={{ width: 48, height: 64, imageRendering: 'pixelated' }}
+                  title="Tocar para colocarlo a mano"
+                  onClick={() => { const o = origen[pos]; if (activo === o) { setActivo(null); return; } setActivo(o); base.current = ajustes[o] ?? { x: 0, y: 0 }; }}
                   ref={(el) => { if (el) { const ctx = el.getContext('2d')!; ctx.clearRect(0, 0, el.width, el.height); ctx.drawImage(c.canvas, 0, 0); } }} />
                 <span className="absolute top-0.5 left-1 text-[10px] font-semibold text-digi-muted tabular-nums" style={mf}>{pos + 1}</span>
                 <div className="flex justify-between">
