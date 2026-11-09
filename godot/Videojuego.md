@@ -785,6 +785,14 @@ escala un personaje para llenar el lienzo.** La línea de los ojos va a la misma
 vistas. Con 96 px de personaje, la base del juego debería ser **960×540** (en 480×270 ocuparía un
 tercio de la pantalla).
 
+**Precisión de la línea de los pies y criaturas no humanoides (2026-11-08):** la fila y = 120 es el
+SUELO y se deja vacía; la última fila de píxeles de los pies va en **y = 119**, tocando la línea por
+encima. Lo que se apoya (manos de una criatura a cuatro patas, la base de un limo) también toca el
+suelo ahí. Una criatura que vuela dibuja su sombra en el suelo y el cuerpo flota por encima; el
+origen sigue en (48, 120). Una criatura que no cabe en 96×128 usa un lienzo mayor, con las mismas
+reglas y la **misma densidad de píxel**: pies a 8 px del borde inferior, eje en el centro, y nunca
+se encoge para que quepa. Las no humanoides pequeñas se animan fotograma a fotograma (§4-ter D).
+
 ### B. Animaciones de movimiento (quieto, caminar, correr, esquivar)
 | # | Paso | Herramienta | Detalle |
 |---|---|---|---|
