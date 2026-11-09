@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { esAppInstalada } from '@/components/espacio/api';
 
-export type RutasEspacio = { espacio: string; gumdramon: string };
+export type RutasEspacio = { espacio: string; gumdramon: string; sprites: string };
 
 /**
  * A DÓNDE ABRIR EL ESPACIO DE TRABAJO Y GUMDRAMON — o `null` si aquí no existen.
@@ -15,9 +15,9 @@ export function useRutasEspacio(): RutasEspacio | null {
   const [rutas, setRutas] = useState<RutasEspacio | null>(null);
   useEffect(() => {
     const enApp = esAppInstalada();
-    const enMarco = { espacio: '/dashboard/admin/espacio-app', gumdramon: '/dashboard/admin/gumdramon-app' };
+    const enMarco = { espacio: '/dashboard/admin/espacio-app', gumdramon: '/dashboard/admin/gumdramon-app', sprites: '/dashboard/admin/sprites-app' };
     fetch('/api/espacio-trabajo/estado')
-      .then((r) => setRutas(r.ok ? { espacio: '/dashboard/admin/espacio', gumdramon: '/gumdramon' } : enApp ? enMarco : null))
+      .then((r) => setRutas(r.ok ? { espacio: '/dashboard/admin/espacio', gumdramon: '/gumdramon', sprites: '/dashboard/tools/sprites' } : enApp ? enMarco : null))
       .catch(() => setRutas(enApp ? enMarco : null));
   }, []);
   return rutas;

@@ -894,9 +894,12 @@ chat con Gemini, saca la versión del personaje, le pide los fotogramas que nece
 corta** en la plataforma: así se asegura de que cada corte es preciso. Deroga para este caso la cola
 automática de §4-quater, que queda solo como idea.
 
-**Dónde:** Herramientas → Edición → **Cortador de sprites** (`/dashboard/tools/sprites`). Solo
-aparece **en la Mac** (la instancia local del Espacio de trabajo, `localhost:3792`), porque escribe
-en el disco; en la web y en el marco de las apps no se ofrece y su API responde 404.
+**Dónde:** Herramientas → Edición → **Cortador de sprites**. Escribe en el disco de la Mac, así que
+lo sirve siempre la Mac. En su navegador, `localhost:3792/dashboard/tools/sprites`; en las apps
+(teléfono, iPad, escritorio), un marco por Tailscale (`/dashboard/admin/sprites-app` → `/sprites`), igual
+que Gumdramon y Generación de Contenido. En la web normal no aparece y su API responde 404. En el
+marco la sesión viaja en la cabecera `x-espacio-token` (`firmarPeticionesDeLaPagina`, en
+`components/espacio/api.ts`), por eso la tira guardada se pide por `fetch` y no con un `<img>`.
 
 **Cómo se usa:**
 1. Nombre del personaje (se sugieren los ya guardados) y **subir la imagen** de Gemini.

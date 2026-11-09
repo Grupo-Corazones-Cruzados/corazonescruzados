@@ -75,8 +75,7 @@ function Herramientas() {
   useEffect(() => { setApp(appDeTelefono()); }, []);
   const rutasEspacio = useRutasEspacio();
   const tools = useMemo(
-    // En la Mac el Espacio se abre directo (no en el marco de las apps): ahí sí se puede escribir en el disco.
-    () => herramientasPara({ esEquipo, esAdmin: rol === 'admin', app, conEspacio: !!rutasEspacio, enLaMac: rutasEspacio?.espacio === '/dashboard/admin/espacio' }),
+    () => herramientasPara({ esEquipo, esAdmin: rol === 'admin', app, conEspacio: !!rutasEspacio }),
     [esEquipo, rol, app, rutasEspacio],
   );
   const [search, setSearch] = useState('');
@@ -210,7 +209,7 @@ function Herramientas() {
 
 
   const selectTool = (id: string) => {
-    // El Espacio de trabajo y Gumdramon no tienen pantalla aquí: van a la suya.
+    // El Espacio de trabajo, Gumdramon y el Cortador de sprites no tienen pantalla aquí: van a la suya.
     const abre = tools.find((t) => t.id === id)?.abre;
     if (abre && rutasEspacio) { window.location.href = rutasEspacio[abre]; return; }
     setSelectedTool(id);
@@ -225,7 +224,7 @@ function Herramientas() {
   const enSeccion = !!app && !!tool;
   const cuerpoHerramienta = () => !tool ? null
     : tool.id === 'convert' ? <ConvertirArchivos key={formKey} descripcion={tool.description} alUsar={(t, d) => anotarUso('convert', t, d)} />
-    : tool.id === 'transcribe' ? <TranscribirAudio key={formKey} alUsar={(t, d) => anotarUso('transcribe', t, d)} /> : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'formatos-excel' ? renderFormatosExcel() : tool.id === 'sprites' ? renderSprites() : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace();
+    : tool.id === 'transcribe' ? <TranscribirAudio key={formKey} alUsar={(t, d) => anotarUso('transcribe', t, d)} /> : tool.id === 'entrega-unica' ? renderEntrega() : tool.id === 'qr' ? <GeneradorQR /> : tool.id === 'formatos-excel' ? renderFormatosExcel() : tool.id === 'descargador-video' ? renderDescargador() : renderEnlace();
 
   // Compartir con alguien de fuera por un enlace con token (`lib/herramientas/accesos`): en cada
   // herramienta `compartible`, solo para el equipo. En las apps va en la barra del historial.
@@ -293,14 +292,6 @@ function Herramientas() {
     <div className="space-y-3">
       <p className="text-[12px] text-digi-muted" style={mf}>{tool?.description}</p>
       <Link href="/dashboard/tools/formatos-excel" className={`${BTN_PRIMARY} w-full`}><ExternalLink className="w-4 h-4" /> Abrir herramienta</Link>
-    </div>
-  );
-
-  // También a página completa: la imagen con su rejilla no cabe en esta columna.
-  const renderSprites = () => (
-    <div className="space-y-3">
-      <p className="text-[12px] text-digi-muted" style={mf}>{tool?.description}</p>
-      <Link href="/dashboard/tools/sprites" className={`${BTN_PRIMARY} w-full`}><ExternalLink className="w-4 h-4" /> Abrir herramienta</Link>
     </div>
   );
 

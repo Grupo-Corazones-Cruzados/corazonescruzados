@@ -194,8 +194,13 @@ function Escenario({ cuadros, fps, reproducir, guias, escala = 3 }: {
 function AnimacionGuardada({ personaje, nombre, a, onBorrar }: { personaje: string; nombre: string; a: Animacion; onBorrar: () => void }) {
   const [cuadros, setCuadros] = useState<HTMLCanvasElement[]>([]);
   useEffect(() => {
+    // Por `fetch` y no con un <img src>: dentro del marco de las apps la sesión va en una cabecera
+    // (`firmarPeticionesDeLaPagina`) y una imagen no la lleva.
+    let url = '';
+    let vivo = true;
     const img = new Image();
     img.onload = () => {
+      if (!vivo) return;
       const lista: HTMLCanvasElement[] = [];
       for (let f = 0; f < a.fotogramas; f++) {
         const c = document.createElement('canvas');
@@ -205,7 +210,11 @@ function AnimacionGuardada({ personaje, nombre, a, onBorrar }: { personaje: stri
       }
       setCuadros(lista);
     };
-    img.src = `${API}/imagen?personaje=${encodeURIComponent(personaje)}&archivo=${encodeURIComponent(a.archivo)}&v=${encodeURIComponent(a.guardada)}`;
+    fetch(`${API}/imagen?personaje=${encodeURIComponent(personaje)}&archivo=${encodeURIComponent(a.archivo)}`)
+      .then((r) => (r.ok ? r.blob() : Promise.reject(new Error('sin imagen'))))
+      .then((b) => { if (!vivo) return; url = URL.createObjectURL(b); img.src = url; })
+      .catch(() => { /* la fila se queda sin vista previa; el nombre y los datos siguen */ });
+    return () => { vivo = false; if (url) URL.revokeObjectURL(url); };
     // Por sus valores, no por el objeto: cada vez que se vuelve a pedir la ficha llega un objeto nuevo
     // con lo mismo, y la imagen se volvía a descargar sin llegar a pintarse.
   }, [personaje, a.archivo, a.guardada, a.fotogramas, a.ancho, a.alto]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -258,7 +267,7 @@ export default function CortadorSprites() {
   );
 }
 
-function Cortador() {
+export function Cortador() {
   const [personajes, setPersonajes] = useState<string[]>([]);
   const [personaje, setPersonaje] = useState('');
   const [ficha, setFicha] = useState<Ficha | null>(null);

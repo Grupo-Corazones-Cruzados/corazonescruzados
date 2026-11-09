@@ -8,6 +8,7 @@ export class ErrorEspacio extends Error {
 const LLAVE_TOKEN = 'espacio_token';
 export const RUTA_EMBEBIDA = '/espacio';
 export const RUTA_CONTENIDO = '/contenido';
+export const RUTA_SPRITES = '/sprites';
 /** Aplicación instalada: la nativa del teléfono, la web del escritorio (Safari, «Añadir al Dock») o
  *  la nativa de la Mac (`movil/escritorio-mac`), que se anuncia con el puente `gccEscritorio`. */
 export const esAppInstalada = () => !!(window as any).Capacitor?.isNativePlatform?.()
@@ -29,7 +30,7 @@ export function cabeceras(extra: Record<string, string> = {}): Record<string, st
 }
 
 function sesionCaducada() {
-  if (window.location.pathname === RUTA_EMBEBIDA || window.location.pathname === RUTA_CONTENIDO) { guardarToken(null); window.dispatchEvent(new Event('espacio-sin-sesion')); }
+  if ([RUTA_EMBEBIDA, RUTA_CONTENIDO, RUTA_SPRITES].includes(window.location.pathname)) { guardarToken(null); window.dispatchEvent(new Event('espacio-sin-sesion')); }
   else window.location.href = rutaAcceso(window.location.pathname + window.location.search);
 }
 
@@ -131,3 +132,24 @@ export const TEXTO_ESTADO: Record<EstadoViva, { texto: string; clase: string }> 
   libre: { texto: 'Lista', clase: 'text-green-400' },
   cerrada: { texto: 'Cerrada', clase: 'text-digi-muted' },
 };
+
+/**
+ * Safari no da cookies a un marco de otro dominio, así que dentro de las apps la sesión viaja en una
+ * cabecera. Una página enmarcada (Generación de Contenido, Cortador de sprites) hace muchos `fetch`:
+ * aquí se firma cada uno a `/api/`, y solo en esa página. Si caduca, se vuelve a pedir la contraseña en
+ * lugar de mostrar listas vacías.
+ */
+export function firmarPeticionesDeLaPagina() {
+  const original = window.fetch.bind(window);
+  window.fetch = async (entrada, init) => {
+    const url = typeof entrada === 'string' ? entrada : entrada instanceof URL ? entrada.href : entrada.url;
+    const interna = url.startsWith('/api/') || url.startsWith(`${window.location.origin}/api/`);
+    const token = tokenGuardado();
+    if (!interna || !token) return original(entrada, init);
+    const headers = new Headers(init?.headers ?? (entrada instanceof Request ? entrada.headers : undefined));
+    headers.set('x-espacio-token', token);
+    const r = await original(entrada, { ...init, headers });
+    if (r.status === 401) { guardarToken(null); window.dispatchEvent(new Event('espacio-sin-sesion')); }
+    return r;
+  };
+}
