@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { accesosDelUsuario, PRODUCTOS } from '@/lib/productos/accesos';
 import { emitirPase } from '@/lib/productos/pases';
+import { pool } from '@/lib/db';
+import { getClientIp, hashIp } from '@/lib/world/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,7 +32,12 @@ function aviso(titulo: string, texto: string, estado: number) {
 /**
  * ENTRAR A UN NEGOCIO DE UN PRODUCTO CON LA SESIÓN DE GCC WORLD (`lib/productos/pases.ts`).
  * GET /api/productos/entrar?producto=reservas&slug=mi-hotel&destino=panel → 302 al producto con un
- * pase de un uso. Solo si la cuenta tiene ese negocio, y nunca desde «ver como otro usuario».
+ * pase de un uso. Solo si la cuenta tiene ese negocio.
+ *
+ * Con «Ver» (suplantación) TAMBIÉN se entra, con la cuenta de la persona que se mira (Fernando, 2026-11-09:
+ * «si veo como un usuario de la organización debería también tomar su sesión y poder entrar a su tenant»).
+ * El producto no sabe que es el administrador, así que cada entrada queda en `gcc_world.suplantaciones`
+ * (columna `producto`), ANTES de entregar el pase.
  */
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams;
@@ -45,14 +52,17 @@ export async function GET(req: NextRequest) {
     const volver = `${req.nextUrl.pathname}${req.nextUrl.search}`;
     return NextResponse.redirect(new URL(`/?acceso=cliente&redirect=${encodeURIComponent(volver)}`, origenPublico(req)));
   }
-  if (user.suplantadoPor) {
-    return aviso('No disponible mientras ves como otra cuenta',
-      'Los productos no se abren con «Ver». Vuelve a tu vista con el botón de abajo a la izquierda para entrar.', 403);
-  }
-
   const accesos = Object.values(await accesosDelUsuario(user.email)).flat();
   if (!accesos.some((a) => a.producto === producto.clave && a.slug === slug))
-    return aviso('Esta cuenta no tiene ese negocio', 'Pide al administrador del negocio que te dé acceso con tu correo.', 403);
+    return aviso('Esta cuenta no tiene ese negocio', 'Pide al administrador del negocio que te dé acceso con su correo.', 403);
+
+  if (user.suplantadoPor) {
+    await pool.query(
+      `INSERT INTO gcc_world.suplantaciones (admin_id, admin_email, usuario_id, usuario_email, usuario_rol, ip_hash, producto, terminada_en)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, now())`,
+      [user.suplantadoPor, user.suplantadoPorEmail ?? null, user.userId, user.email, user.role, hashIp(await getClientIp()), `${producto.clave}/${slug}`],
+    );
+  }
 
   const ticket = await emitirPase(user.email, producto.clave, slug);
   // La dirección del producto es relativa (`/p/<producto>`, bajo GCC World) o, si aún no se migró, su subdominio.
