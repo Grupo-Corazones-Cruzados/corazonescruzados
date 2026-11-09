@@ -3,6 +3,7 @@ import { sincronizarCostoProyecto } from '@/lib/payments';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { addParticipant } from '@/lib/projects/members';
+import { esGestorDelProyecto, miembroDe } from '@/lib/projects/permisos';
 
 async function ensureColumns() {
   await pool.query(`ALTER TABLE gcc_world.project_bids ADD COLUMN IF NOT EXISTS requirement_costs JSONB DEFAULT '{}'`);
@@ -36,14 +37,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const body = await req.json();
     await ensureColumns();
 
+    // La propuesta es SIEMPRE del miembro de la sesión (2026-11-09): antes `member_id` venía del
+    // cuerpo y `bid_id` actualizaba cualquier propuesta de cualquier proyecto.
+    const yo = await miembroDe(String(user.userId));
+    if (yo == null) return NextResponse.json({ error: 'Necesitas un perfil de miembro para proponer' }, { status: 403 });
+
     // Update existing bid (member submitting proposal)
     if (body.bid_id) {
       const { rows } = await pool.query(
         `UPDATE gcc_world.project_bids
          SET proposal = $1, bid_amount = $2, requirement_ids = $3, work_dates = $4, requirement_costs = $5, status = 'pending', updated_at = NOW()
-         WHERE id = $6 RETURNING *`,
-        [body.proposal, body.bid_amount, body.requirement_ids || [], body.work_dates || [], JSON.stringify(body.requirement_costs || {}), body.bid_id]
+         WHERE id = $6 AND project_id = $7 AND member_id = $8 AND status IN ('invited', 'pending') RETURNING *`,
+        [body.proposal, body.bid_amount, body.requirement_ids || [], body.work_dates || [], JSON.stringify(body.requirement_costs || {}), body.bid_id, id, yo]
       );
+      if (!rows[0]) return NextResponse.json({ error: 'Propuesta no encontrada' }, { status: 404 });
       return NextResponse.json({ data: rows[0] });
     }
 
@@ -53,7 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (project_id, member_id) DO NOTHING
        RETURNING *`,
-      [id, body.member_id, body.proposal || null, body.bid_amount || null, body.estimated_days || null, body.requirement_ids || [], JSON.stringify(body.requirement_costs || {}), body.status || 'invited']
+      [id, yo, body.proposal || null, body.bid_amount || null, body.estimated_days || null, body.requirement_ids || [], JSON.stringify(body.requirement_costs || {}), 'pending']
     );
     return NextResponse.json({ data: rows[0] }, { status: 201 });
   } catch (err: any) {
@@ -69,11 +76,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const { bid_id, status } = await req.json();
 
     if (!bid_id || !status) return NextResponse.json({ error: 'bid_id and status required' }, { status: 400 });
+    if (!['accepted', 'rejected'].includes(status)) return NextResponse.json({ error: 'Estado no válido' }, { status: 400 });
+    // Aceptar o rechazar es del gestor del proyecto (admin, creador o responsable), y la
+    // propuesta tiene que ser de ESTE proyecto (2026-11-09: antes cualquiera aceptaba cualquiera).
+    if (!(await esGestorDelProyecto({ userId: String(user.userId), role: user.role }, projectId))) {
+      return NextResponse.json({ error: 'Solo el responsable del proyecto decide las propuestas' }, { status: 403 });
+    }
 
     const { rows } = await pool.query(
-      `UPDATE gcc_world.project_bids SET status = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
-      [status, bid_id]
+      `UPDATE gcc_world.project_bids SET status = $1, updated_at = NOW() WHERE id = $2 AND project_id = $3 RETURNING *`,
+      [status, bid_id, projectId]
     );
+    if (!rows[0]) return NextResponse.json({ error: 'Propuesta no encontrada' }, { status: 404 });
 
     const bid = rows[0];
 

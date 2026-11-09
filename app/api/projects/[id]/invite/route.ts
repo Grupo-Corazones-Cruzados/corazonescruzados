@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse, after } from 'next/server';
 import { avisarInvitacionProyecto } from '@/lib/projects/members';
+import { esGestorDelProyecto } from '@/lib/projects/permisos';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -11,6 +12,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { member_ids } = await req.json();
 
     if (!member_ids?.length) return NextResponse.json({ error: 'member_ids required' }, { status: 400 });
+    // Invitar es del gestor del proyecto (2026-11-09: antes bastaba con tener sesión).
+    if (!(await esGestorDelProyecto({ userId: String(user.userId), role: user.role }, id))) {
+      return NextResponse.json({ error: 'Solo el responsable del proyecto invita' }, { status: 403 });
+    }
 
     // Validate project status allows invitations
     const { rows: [proj] } = await pool.query(`SELECT status FROM gcc_world.projects WHERE id = $1`, [id]);
