@@ -21,7 +21,7 @@ import PercepcionSocialSystem from '@/components/centralized/systems/PercepcionS
 import GestionSocialSystem from '@/components/centralized/systems/GestionSocialSystem';
 import GeneracionDeContenidoSystem from '@/components/centralized/systems/GeneracionDeContenidoSystem';
 import ControlPsicosocialSystem from '@/components/centralized/systems/ControlPsicosocialSystem';
-import { isPiso, isPaso, cellName as cellNameFor } from '@/lib/centralized/systems';
+import { isPiso, isPaso } from '@/lib/centralized/systems';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -65,10 +65,7 @@ export default function CentralizedSystemPage() {
 
   if (system === undefined) {
     return (
-      <div>
-        <div className="mb-4">{backLink}</div>
-        <div className="flex items-center justify-center py-16 text-[13px] text-digi-muted" style={mf}>Cargando…</div>
-      </div>
+      <div className="flex items-center justify-center py-16 text-[13px] text-digi-muted" style={mf}>Cargando…</div>
     );
   }
 
@@ -87,39 +84,28 @@ export default function CentralizedSystemPage() {
     );
   }
 
-  const cell = system.cell_name || cellNameFor(piso, paso);
 
   // El mapa ocupa la pantalla entera y lleva dentro su propia flecha de volver (Fernando, 2026-11-05).
   if (slug === 'control-psicosocial') return <ControlPsicosocialSystem />;
 
   return (
     <div>
-      {/* Breadcrumb + acciones. En el teléfono «Compartir acceso» (secundaria) bajaba sola a
-          su propia fila a todo el ancho: ahí va dentro del «⋯» y la celda del breadcrumb se
-          omite para que todo quepa en una línea; desde `lg`, como siempre (Fernando,
-          2026-10-23). */}
-      <div className="flex items-center gap-2 mb-4 pb-3 border-b border-digi-border flex-wrap">
-        {backLink}
-        <span className="hidden sm:inline text-digi-muted/50">/</span>
-        <span className="hidden sm:inline text-[12px] text-digi-muted" style={mf}>{cell}</span>
-        <span className="text-digi-muted/50">/</span>
-        <span className="min-w-0 text-[13px] font-semibold text-digi-text" style={mf}>{system.name}</span>
-        {/* Generación de Contenido solo vive en la Mac de Fernando: no hay acceso que compartir. */}
-        {isAdmin && slug !== 'generacion-de-contenido' && (
+      {/* SIN RUTA ARRIBA (Fernando, 2026-11-09: «una secuencia de páginas innecesaria»): el pie ya dice
+          Inicio › Centralizado › piso › paso › sistema. Arriba solo queda «Compartir acceso» del admin. */}
+      {isAdmin && slug !== 'generacion-de-contenido' && (
+        <div className="flex justify-end mb-3">
           <button
             onClick={() => setShareOpen(true)}
-            className="ml-auto hidden lg:inline-flex items-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors"
+            className="hidden lg:inline-flex items-center gap-1.5 text-[12px] text-digi-text border border-digi-border rounded px-3 py-1.5 hover:border-accent hover:text-accent transition-colors"
             style={mf}
           >
             <Share2 className="w-3.5 h-3.5" /> Compartir acceso
           </button>
-        )}
-        {isAdmin && slug !== 'generacion-de-contenido' && (
-          <span className="lg:hidden flex ml-auto">
+          <span className="lg:hidden flex">
             <MenuMas items={[{ label: 'Compartir acceso', icon: Share2, onClick: () => setShareOpen(true) }]} />
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Contenido específico del sistema (por slug) */}
       <Suspense fallback={<div className="py-12 text-center text-[13px] text-digi-muted" style={mf}>Cargando…</div>}>
