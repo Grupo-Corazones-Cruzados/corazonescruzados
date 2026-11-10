@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { puedeVerSuscripcion } from '@/lib/subscriptions-alcance';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureSubscriptionTables, computePeriods, summarizeSubscription, toYMD } from '@/lib/subscriptions';
 
@@ -53,17 +54,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     // El cliente ve el detalle de LO SUYO —necesita los meses para poder pagarlos—, y de
     // nada más. Se comprueba contra la base, no contra lo que diga la pantalla.
-    if (user.role !== 'admin' && user.role !== 'member') {
-      const { rows } = await pool.query(
-        `SELECT 1 FROM gcc_world.subscriptions s
-           LEFT JOIN gcc_world.clients c ON c.id = s.client_id
-          WHERE s.id = ($2)::bigint
-            AND (LOWER(s.client_email_sri) = LOWER($1) OR LOWER(c.email) = LOWER($1))
-          LIMIT 1`,
-        [String(user.email), id],
-      );
-      if (rows.length === 0) return NextResponse.json({ error: 'Esta suscripción no es tuya.' }, { status: 403 });
-    }
+    // El miembro, igual: solo las suyas (`alcanceSuscripciones`, 2026-11-09).
+    if (!(await puedeVerSuscripcion(user, Number(id)))) return NextResponse.json({ error: 'Esta suscripción no es tuya.' }, { status: 403 });
 
     const detail = await loadDetail(Number(id));
     if (!detail) return NextResponse.json({ error: 'Suscripción no encontrada' }, { status: 404 });
@@ -82,6 +74,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
     await ensureSubscriptionTables();
     const { id } = await params;
+    if (!(await puedeVerSuscripcion(user, Number(id)))) return NextResponse.json({ error: 'Esta suscripción no es tuya.' }, { status: 403 });
     const body = await req.json();
 
     const fields: string[] = [];
@@ -141,6 +134,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     }
     await ensureSubscriptionTables();
     const { id } = await params;
+    if (!(await puedeVerSuscripcion(user, Number(id)))) return NextResponse.json({ error: 'Esta suscripción no es tuya.' }, { status: 403 });
     // Las facturas SRI ya emitidas NO se borran (son documentos fiscales); solo se
     // elimina la suscripción y su historial de marcas de pago (cascade).
     await pool.query(`DELETE FROM gcc_world.subscriptions WHERE id = $1`, [Number(id)]);

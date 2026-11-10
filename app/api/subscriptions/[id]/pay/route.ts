@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { puedeVerSuscripcion } from '@/lib/subscriptions-alcance';
 import { NextRequest, NextResponse } from 'next/server';
 import { createManualInvoiceFromSubscription, sendInvoiceToSri } from '@/lib/integrations/sri';
 import { addSubscriptionIncomeToFinance } from '@/lib/finance';
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const { id: idStr } = await params;
     const id = Number(idStr);
+    if (!(await puedeVerSuscripcion(user, id))) return NextResponse.json({ error: 'Esta suscripción no es tuya.' }, { status: 403 });
     const body = await req.json();
     const action = String(body.action || 'pay');
     const period = String(body.period || '').slice(0, 7); // 'YYYY-MM'

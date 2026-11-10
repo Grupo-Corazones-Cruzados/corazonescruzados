@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureSubscriptionTables, computePeriods, summarizeSubscription, toYMD } from '@/lib/subscriptions';
+import { alcanceSuscripciones } from '@/lib/subscriptions-alcance';
 
 const PER_PAGE_MAX = 100;
 
@@ -20,7 +21,6 @@ export async function GET(req: NextRequest) {
     //
     // Se aceptan los DOS vínculos porque en la base conviven: `client_id` en las creadas
     // desde el módulo y `client_email_sri` en las más antiguas.
-    const esCliente = user.role !== 'admin' && user.role !== 'member';
 
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, Number(searchParams.get('page')) || 1);
@@ -30,11 +30,9 @@ export async function GET(req: NextRequest) {
 
     const where: string[] = [];
     const params: any[] = [];
-    if (esCliente) {
-      params.push(String(user.email));
-      where.push(`(LOWER(s.client_email_sri) = LOWER($${params.length})
-                   OR s.client_id IN (SELECT c.id FROM gcc_world.clients c WHERE LOWER(c.email) = LOWER($${params.length})))`);
-    }
+    // Cada cuenta, lo suyo (`alcanceSuscripciones`): el miembro ya no ve las de otro miembro.
+    const alcance = await alcanceSuscripciones(user, params);
+    if (alcance) where.push(alcance);
     if (status !== 'all') { params.push(status); where.push(`s.status = $${params.length}`); }
     if (search) {
       params.push(`%${search}%`);
@@ -47,11 +45,8 @@ export async function GET(req: NextRequest) {
     // «Activas: 12» y una sola fila en la tabla, que es peor que no ver el contador.
     const searchParamsArr: any[] = [];
     const cuentaWhere: string[] = [];
-    if (esCliente) {
-      searchParamsArr.push(String(user.email));
-      cuentaWhere.push(`(LOWER(s.client_email_sri) = LOWER($${searchParamsArr.length})
-                         OR s.client_id IN (SELECT c.id FROM gcc_world.clients c WHERE LOWER(c.email) = LOWER($${searchParamsArr.length})))`);
-    }
+    const alcanceCuenta = await alcanceSuscripciones(user, searchParamsArr);
+    if (alcanceCuenta) cuentaWhere.push(alcanceCuenta);
     if (search) {
       searchParamsArr.push(`%${search}%`);
       cuentaWhere.push(`(s.title ILIKE $${searchParamsArr.length} OR s.client_name_sri ILIKE $${searchParamsArr.length})`);
