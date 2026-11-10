@@ -281,6 +281,14 @@ Fernando propuso la skill «claude-animated-shorts» (mromidev, MIT). Revisada: 
 - **Trampa:** HyperFrames salta en el tiempo sin llamar al `onUpdate` de GSAP; un canvas se dibuja con el aviso `hf-seek` o sale congelado.
 - Guía en `references/personajes.md`. Blender queda para sistemas y objetos; los personajes, para lo que le pasa a una persona.
 
+### Meta y TikTok: lo que dice la documentación oficial (2026-11-09)
+Investigado antes de construir. Cambia el plan en cuatro puntos:
+- **Facebook:** un Reel de Página dura de 3 a 90 s (`/{page}/video_reels`, subida por `rupload`), y sus videos duran unos 2 min. Para lo que pase de 90 s hay que publicar como video normal o recortar una versión. Se puede programar entre 10 min y 29 días.
+- **Instagram:** Reels de hasta 15 min, pero el archivo no puede pasar de 300 MB: hay que recomprimir (H.264, AAC, `moov` al principio, máximo 25 Mbps). Una subida por cuenta; no hay publicación cruzada documentada.
+- **App de Meta:** con «Standard access» basta para usar sus propias Páginas y cuenta publicitaria sin App Review, pero **en modo desarrollo lo publicado solo lo ven los roles de la app**: tiene que estar en Live. Sin confirmar si puede pasar a Live sin enviar revisión. Token: usuario del sistema del portafolio, que no caduca.
+- **Anuncios de Meta:** `OUTCOME_ENGAGEMENT` con `THRUPLAY` para vistas, `lifetime_budget` en centavos con `end_time`, `pacing_type=["day_parting"]` y `adset_schedule` (días 6 y 0; minutos 420–660 y 1020–1380), `status=PAUSED`, un conjunto con `publisher_platforms=["facebook"]` y otro con `["instagram"]`. Mínimo en USD sin confirmar: se lee de `minimum_budgets` de la cuenta. La música con derechos impide promocionar un video de Instagram.
+- **TikTok:** Spark Ads por API con el código de autorización del video (`/tt_video/authorize/`). El acceso de desarrollador exige registrarse como anunciante directo con correo de empresa, y lo revisan en unos 3 días hábiles más 2 o 3 de la app. Publicar con la API for Business exige una URL pública de dominio verificado y, desde 2026-03-20, el formulario de acceso a la API de cuentas. «Promocionar» en la app empezaba en 10 $ según un artículo suyo, sin API.
+
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?
