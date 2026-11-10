@@ -44,6 +44,11 @@ export interface TalentoPublico {
   servicios: string[];
   /** Skills DE ESE TALENTO. Una lista única mezclaba lo de un oficio con lo del otro. */
   skills: string[];
+  /**
+   * Las redes que ESE talento conectó en Configuración ▸ Conexiones (Fernando, 2026-11-10: lfgonzalezm0 es
+   * automatización, lfgonzalezm1 es psicología). Ya en orden; una red sin conectar no ocupa sitio.
+   */
+  redes: { red: Red; etiqueta: string; url: string }[];
 }
 export interface ItemPortafolio {
   id: number;
@@ -70,11 +75,6 @@ export interface CvPublico {
   /** Solo si el miembro los encendió. Ausentes, no vacíos, cuando están apagados. */
   correo?: string;
   telefono?: string;
-  /**
-   * Enlaces a perfiles, ya normalizados a URL absoluta y en el orden en que se
-   * pintan. Solo trae las que la persona rellenó: una red vacía no ocupa sitio.
-   */
-  redes: { red: Red; etiqueta: string; url: string }[];
   idiomas: string[];
   talentos: TalentoPublico[];
   portafolio: ItemPortafolio[];

@@ -250,9 +250,9 @@ export async function generarCvPdf(cv: CvPublico, portadas: PortadaPortafolio[] 
     // En papel un enlace no se pulsa, así que se escribe la dirección legible —sin
     // `https://` ni `www.`— precedida del nombre de la red, que es lo que permite
     // teclearla. `textoCorto` es el mismo recorte que usa la página.
-    if (cv.redes.length) {
+    if (talento?.redes.length) {
       rotuloRail('Redes');
-      for (const r of cv.redes) {
+      for (const r of talento.redes) {
         doc.fillColor(C.violetaClaro).font('Helvetica-Bold').fontSize(7.5)
           .text(r.etiqueta, rx, ry, { width: rw });
         ry = doc.y;

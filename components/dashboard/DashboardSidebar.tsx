@@ -21,7 +21,7 @@ import { usePolicyEffects } from '@/components/providers/PolicyEffectsProvider';
 import {
   Home, Ticket, FolderKanban, CalendarClock, Store, Users, ReceiptText, Network, Wrench, FilePen,
   Settings, LifeBuoy, ShieldCheck, Workflow,
-  LogOut, Undo2, LayoutDashboard, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info, LayoutGrid, AppWindow,
+  LogOut, Undo2, Eye, LayoutDashboard, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Info, LayoutGrid, AppWindow,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -155,6 +155,8 @@ export default function DashboardSidebar() {
       && (it.href !== '/dashboard/plataformas' || tienePlataformas)
       // Accesos ya no es un módulo: en las apps es la primera capa (`MenuAccesos`) y en la web no existe.
       && it.href !== '/dashboard/accesos'
+      // Configuración va al pie, encima de la cuenta (Fernando, 2026-11-10), no en la lista.
+      && it.href !== '/dashboard/settings'
       // En las apps Herramientas, Plataformas (los productos) y Centralizado se abren desde Accesos.
       && !(enApp && ['/dashboard/tools', '/dashboard/plataformas', '/dashboard/centralized'].includes(it.href))) }))
     .filter((g) => g.items.length > 0);
@@ -342,7 +344,24 @@ export default function DashboardSidebar() {
 
           {/* La ficha de la cuenta; para el administrador abre «ver como otro usuario». */}
           {/* En las apps la cuenta va en la primera capa (`MenuAccesos`). */}
-          {!enApp && <FichaUsuario estrecho={collapsed} alPulsar={esAdmin ? () => setVerComoOtro(true) : undefined} />}
+          {/* Encima de la cuenta: «Ver como otro usuario» y luego Configuración (Fernando, 2026-11-10). */}
+          {!enApp && !suplantacion && esAdmin && (
+            <button type="button" onClick={() => setVerComoOtro(true)} title="Ver la plataforma como otro usuario"
+              aria-label="Ver la plataforma como otro usuario"
+              className={`flex items-center gap-2.5 rounded-md h-9 w-full text-[13px] font-medium text-digi-muted hover:text-digi-text hover:bg-white/[0.06] transition-colors mb-0.5 ${collapsed ? 'justify-center px-0' : 'px-2.5'}`} style={mf}>
+              <Eye className="w-[18px] h-[18px] shrink-0" strokeWidth={2} />
+              {!collapsed && <span className="truncate">Ver como otro usuario</span>}
+            </button>
+          )}
+          {!enApp && (
+            <Link href="/dashboard/settings" title={collapsed ? 'Configuración' : undefined}
+              className={`relative flex items-center gap-2.5 rounded-md h-9 w-full text-[13px] font-medium transition-colors mb-2 ${collapsed ? 'justify-center px-0' : 'px-2.5'} ${
+                isActive('/dashboard/settings') ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-white/[0.06]'}`} style={mf}>
+              <Settings className="w-[18px] h-[18px] shrink-0" strokeWidth={2} />
+              {!collapsed && <span className="truncate">Configuración</span>}
+            </Link>
+          )}
+          {!enApp && <FichaUsuario estrecho={collapsed} />}
 
           {/* Dos botones, con el MISMO comportamiento al pasar por encima: no cambian de
               relleno ni de borde, solo suben el brillo. El botón de contraer sigue fuera,

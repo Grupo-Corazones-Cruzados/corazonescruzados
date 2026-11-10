@@ -299,7 +299,7 @@ export default function CvCuerpo({
           estrecha: los iconos de red desbordaban y aparecía una barra de
           desplazamiento horizontal. Como pie de la página entera aprovecha también
           el ancho de la ficha, que es donde estaba el sitio que faltaba. */}
-      <BarraContacto cv={cv} urlPdf={talento ? `${urlPdf}?talento=${encodeURIComponent(talento.nombre)}` : urlPdf} />
+      <BarraContacto cv={cv} redes={talento?.redes ?? []} urlPdf={talento ? `${urlPdf}?talento=${encodeURIComponent(talento.nombre)}` : urlPdf} />
     </div>
   );
 }
@@ -359,7 +359,7 @@ function SelectorTalento({ talentos, activo, onElegir }: {
  * y son enlaces, no información que haya que leer. Las redes son solo iconos desde
  * el principio. La descarga **nunca** se encoge: es la acción principal.
  */
-function BarraContacto({ cv, urlPdf }: { cv: CvPublico; urlPdf: string }) {
+function BarraContacto({ cv, redes, urlPdf }: { cv: CvPublico; redes: CvPublico['talentos'][number]['redes']; urlPdf: string }) {
   const hayContacto = !!(cv.correo || cv.telefono);
   return (
     <div className="cv-barra cv-no-imprimir">
@@ -382,14 +382,14 @@ function BarraContacto({ cv, urlPdf }: { cv: CvPublico; urlPdf: string }) {
           </a>
         )}
 
-        {hayContacto && cv.redes.length > 0 && (
+        {hayContacto && redes.length > 0 && (
           <span className="hidden sm:block h-5 w-px shrink-0 bg-digi-border" aria-hidden />
         )}
 
         {/* Redes: solo iconos. El nombre va en el `title` y en la etiqueta accesible. */}
-        {cv.redes.length > 0 && (
+        {redes.length > 0 && (
           <div className="cv-scroll flex min-w-0 items-center gap-1.5 overflow-x-auto py-0.5">
-            {cv.redes.map((r) => (
+            {redes.map((r) => (
               <a key={r.red} href={r.url} target="_blank" rel="noopener noreferrer nofollow"
                 className="cv-red shrink-0" title={`${r.etiqueta}: ${textoCorto(r.url)}`} aria-label={r.etiqueta}>
                 <IconoRed red={r.red} />

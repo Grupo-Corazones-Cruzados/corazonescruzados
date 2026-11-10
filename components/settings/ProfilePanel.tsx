@@ -17,13 +17,7 @@ import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 /** Idiomas del selector. Vive aquí porque aquí es donde se eligen. */
 const IDIOMAS = ['Español', 'Inglés', 'Portugués', 'Francés', 'Italiano', 'Alemán', 'Chino (Mandarín)', 'Japonés', 'Coreano', 'Ruso', 'Árabe', 'Kichwa', 'Catalán', 'Neerlandés', 'Hindi']
   .map((l) => ({ value: l, label: l }));
-import { normalizarRed, REDES, type Red } from '@/lib/members/redes';
-import { User, Camera, RefreshCw, ExternalLink, Save, AtSign, Linkedin, Globe, Youtube, Music2, Instagram, Facebook, type LucideIcon } from 'lucide-react';
-
-/** Icono de cada red junto a su nombre (TikTok no tiene marca en lucide: una nota musical). */
-const ICONO_RED: Record<Red, LucideIcon> = {
-  linkedin: Linkedin, web: Globe, youtube: Youtube, tiktok: Music2, instagram: Instagram, facebook: Facebook,
-};
+import { User, Camera, RefreshCw, Save } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -35,10 +29,12 @@ export default function ProfilePanel({ accion }: { accion?: React.ReactNode } = 
   const [lastName, setLastName] = useState(user?.last_name || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [avatarPreview, setAvatarPreview] = useState(user?.avatar_url || '');
-  const [youtube, setYoutube] = useState(user?.youtube_handle || '');
-  const [tiktok, setTiktok] = useState(user?.tiktok_handle || '');
-  const [instagram, setInstagram] = useState(user?.instagram_handle || '');
-  const [facebook, setFacebook] = useState(user?.facebook_handle || '');
+  /* Las redes ya no se escriben aquí: cada talento las conecta en Configuración ▸ Conexiones (Fernando,
+     2026-11-10). Lo que había se reenvía tal cual para que guardar el perfil no lo borre. */
+  const youtube = user?.youtube_handle || '';
+  const tiktok = user?.tiktok_handle || '';
+  const instagram = user?.instagram_handle || '';
+  const facebook = user?.facebook_handle || '';
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -71,8 +67,6 @@ export default function ProfilePanel({ accion }: { accion?: React.ReactNode } = 
   const [salarioMin, setSalarioMin] = useState('');
   const [salarioMax, setSalarioMax] = useState('');
   const [idiomas, setIdiomas] = useState<string[]>([]);
-  const [linkedin, setLinkedin] = useState('');
-  const [web, setWeb] = useState('');
 
   useEffect(() => {
     if (!esMiembro) return;
@@ -84,8 +78,6 @@ export default function ProfilePanel({ accion }: { accion?: React.ReactNode } = 
         setSalarioMin(d.salary_min != null ? String(d.salary_min) : '');
         setSalarioMax(d.salary_max != null ? String(d.salary_max) : '');
         setIdiomas(Array.isArray(d.languages) ? d.languages : []);
-        setLinkedin(d.linkedin_url || '');
-        setWeb(d.website_url || '');
       })
       .catch(() => {});
   }, [esMiembro]);
@@ -140,13 +132,6 @@ export default function ProfilePanel({ accion }: { accion?: React.ReactNode } = 
     e.preventDefault();
     setSaving(true);
     try {
-      // Se comprueba ANTES de la petición: así el aviso señala el campo concreto en
-      // vez de devolver un 400 genérico con el resto del formulario ya enviado.
-      for (const [red, valor] of [['linkedin', linkedin], ['web', web], ['youtube', youtube], ['tiktok', tiktok], ['instagram', instagram], ['facebook', facebook]] as [Red, string][]) {
-        const { error } = normalizarRed(red, valor);
-        if (error) throw new Error(`${REDES[red].etiqueta}: ${error}`);
-      }
-
       const res = await fetch('/api/users/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -166,7 +151,7 @@ export default function ProfilePanel({ accion }: { accion?: React.ReactNode } = 
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            location: ubicacion, linkedin_url: linkedin, website_url: web,
+            location: ubicacion,
             salary_min: salarioMin, salary_max: salarioMax, languages: idiomas,
           }),
         });
@@ -175,15 +160,6 @@ export default function ProfilePanel({ accion }: { accion?: React.ReactNode } = 
           throw new Error(d.error || 'Error al guardar el CV público');
         }
       }
-
-      // Refleja la URL ya compuesta: quien escribió «@fulano» ve en el acto el
-      // enlace completo que se ha guardado, sin tener que recargar para creérselo.
-      setYoutube(normalizarRed('youtube', youtube).url || '');
-      setTiktok(normalizarRed('tiktok', tiktok).url || '');
-      setInstagram(normalizarRed('instagram', instagram).url || '');
-      setFacebook(normalizarRed('facebook', facebook).url || '');
-      setLinkedin(normalizarRed('linkedin', linkedin).url || '');
-      setWeb(normalizarRed('web', web).url || '');
 
       await refreshUser();
       toast.success('Perfil actualizado');
@@ -293,19 +269,6 @@ export default function ProfilePanel({ accion }: { accion?: React.ReactNode } = 
         </GrupoForm>
         )}
 
-        <GrupoForm titulo="Redes sociales" Icon={AtSign}>
-          {/* LinkedIn y el sitio web viven aquí desde 2026-08-14: son enlaces, y
-              tenerlos en «Mi CV» los separaba de los otros cuatro sin motivo. */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {esMiembro && <CampoRed red="linkedin" valor={linkedin} onChange={setLinkedin} />}
-            {esMiembro && <CampoRed red="web" valor={web} onChange={setWeb} />}
-            <CampoRed red="youtube" valor={youtube} onChange={setYoutube} />
-            <CampoRed red="tiktok" valor={tiktok} onChange={setTiktok} />
-            <CampoRed red="instagram" valor={instagram} onChange={setInstagram} />
-            <CampoRed red="facebook" valor={facebook} onChange={setFacebook} />
-          </div>
-        </GrupoForm>
-
         {/* Sin la sección «Cuenta»: correo, ID, rol y verificado son datos del
             sistema, no del perfil que se edita. Quien entra ya sabe con qué cuenta
             está, y el correo está arriba junto a la foto. Lo quitó Fernando. */}
@@ -320,43 +283,5 @@ export default function ProfilePanel({ accion }: { accion?: React.ReactNode } = 
       </form>
       <EliminarCuenta open={eliminando} onClose={() => setEliminando(false)} />
     </SettingsPanel>
-  );
-}
-
-/* ── Campo de una red social: enlace + aviso en vivo + atajo para abrirlo ─────
- * El aviso aparece mientras se escribe, no al guardar: descubrir en el botón
- * «Guardar» que un campo de arriba está mal obliga a volver a buscarlo.        */
-function CampoRed({ red, valor, onChange }: { red: Red; valor: string; onChange: (v: string) => void }) {
-  const def = REDES[red];
-  const Icono = ICONO_RED[red];
-  const { url, error } = normalizarRed(red, valor);
-  // Nada de gritar sobre un campo que aún se está escribiendo: solo se avisa
-  // cuando ya parece una dirección terminada.
-  const avisar = !!error && valor.trim().length > 3;
-
-  return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center justify-between gap-2">
-        <label className="inline-flex items-center gap-1.5 text-[12px] font-medium text-digi-text" style={mf}>
-          <Icono className="w-3.5 h-3.5 text-digi-muted" /> {def.etiqueta}
-        </label>
-        {url && (
-          <a href={url} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-[11px] text-digi-muted hover:text-accent transition-colors" style={mf}
-            title="Abrir el enlace para comprobar que lleva a tu perfil">
-            <ExternalLink className="w-3 h-3" /> Probar
-          </a>
-        )}
-      </div>
-      <input
-        type="url" inputMode="url" value={valor} onChange={(e) => onChange(e.target.value)}
-        placeholder={def.ejemplo}
-        aria-invalid={avisar || undefined}
-        className={`field-control w-full px-3 py-2 bg-digi-darker border-2 rounded-md text-sm text-digi-text placeholder:text-digi-muted/50 focus:outline-none transition-colors
-          ${avisar ? 'border-red-400 focus:border-red-500' : 'border-digi-border focus:border-accent'}`}
-        style={mf}
-      />
-      {avisar && <p className="text-[11px] text-red-600" style={mf}>{error}</p>}
-    </div>
   );
 }

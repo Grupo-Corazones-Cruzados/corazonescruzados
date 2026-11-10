@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Eye, LogOut, Undo2 } from 'lucide-react';
+import { Eye, LogOut, Settings, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
@@ -52,7 +52,7 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
   const { abierto, cerrar } = useMenuMovil();
   // En una herramienta, la abierta queda marcada (sin `activo`, lo dice la ruta).
   const herramientaAbierta = useSearchParams().get('herramienta');
-  const activoReal = activo ?? (pathname.startsWith('/dashboard/admin/gumdramon-app') ? 'gumdramon'
+  const activoReal = pathname.startsWith('/dashboard/settings') ? 'configuracion' : activo ?? (pathname.startsWith('/dashboard/admin/gumdramon-app') ? 'gumdramon'
     : pathname.startsWith('/dashboard/admin/espacio') ? 'entorno'
     : pathname.startsWith('/dashboard/tools') ? herramientaAbierta ?? undefined : undefined);
   const { apps, productos, herramientas, rutaHerramienta, abrirProducto } = useAccesos();
@@ -152,9 +152,15 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
             <button type="button" onClick={() => setVerComoOtro(true)} title="Ver la plataforma como otro usuario"
               aria-label="Ver la plataforma como otro usuario" className={`${fila()} mb-1`} style={mf}>
               <span className="w-6 h-6 shrink-0 grid place-items-center"><Eye className="w-[18px] h-[18px]" strokeWidth={2} /></span>
-              {!estrecho && <span className="truncate">Ver</span>}
+              {!estrecho && <span className="truncate">Ver como otro usuario</span>}
             </button>
           )}
+          {/* Configuración, encima de la cuenta (Fernando, 2026-11-10). */}
+          <Link href="/dashboard/settings" title={estrecho ? 'Configuración' : undefined}
+            className={`${fila('configuracion')} mb-2`} style={mf}>
+            <span className="w-6 h-6 shrink-0 grid place-items-center"><Settings className="w-[18px] h-[18px]" strokeWidth={2} /></span>
+            {!estrecho && <span className="truncate">Configuración</span>}
+          </Link>
           {/* La cuenta, siempre en la primera capa (Fernando, 2026-11-08); la segunda ya no la repite. */}
           <FichaUsuario estrecho={estrecho} />
           <button onClick={signOut} aria-label="Cerrar sesión" title="Cerrar sesión"

@@ -24,7 +24,8 @@ import { pool } from '@/lib/db';
 import type {
   CvPublico, Educacion, EstadoLaboral, Experiencia, ItemPortafolio, Jornada, Modalidad, TalentoPublico,
 } from '@/lib/members/cv-tipos';
-import { normalizarRed, ORDEN_REDES, REDES, type Red } from '@/lib/members/redes';
+import { normalizarRed, REDES, type Red } from '@/lib/members/redes';
+import { redesPorTalentoDeMiembro } from '@/lib/redes/talento';
 import { miembroEnProyectoSql } from '@/lib/projects/permisos';
 
 /* ── Tipos y etiquetas: en `cv-tipos.ts`, que es puro y lo comparte el navegador.
@@ -139,30 +140,6 @@ function aExperiencia(e: any): Experiencia {
     hasta: String(e?.end_year ?? '').trim(),
   };
 }
-/**
- * Los enlaces de perfil, ya normalizados y en orden. Vuelve a pasar por
- * `normalizarRed()` **aunque en la base ya deberían estar bien**: hay filas
- * anteriores a la migración 035 y un enlace sin `https://` en un `href` es una ruta
- * relativa — un botón que no lleva a ninguna parte delante de un reclutador.
- * Lo que no se pueda arreglar, no se publica.
- */
-function armarRedes(m: any, cv: any): { red: Red; etiqueta: string; url: string }[] {
-  const bruto: Record<Red, unknown> = {
-    linkedin: cv.linkedin_url,
-    web: cv.website_url,
-    youtube: m.youtube_handle,
-    instagram: m.instagram_handle,
-    tiktok: m.tiktok_handle,
-    facebook: m.facebook_handle,
-  };
-  const salida: { red: Red; etiqueta: string; url: string }[] = [];
-  for (const red of ORDEN_REDES) {
-    const { url } = normalizarRed(red, bruto[red]);
-    if (url) salida.push({ red, etiqueta: REDES[red].etiqueta, url });
-  }
-  return salida;
-}
-
 /** Una entrada vacía del editor (se agregó y no se rellenó) no se publica. */
 const tieneAlgo = (o: Record<string, string>) => Object.values(o).some((v) => v !== '');
 
@@ -260,6 +237,7 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
   }
 
   const talentosCrudos: any[] = Array.isArray(cv.talents) ? cv.talents : [];
+  const redesConectadas = await redesPorTalentoDeMiembro(memberId);
   const talentos: TalentoPublico[] = talentosCrudos
     .map((t) => ({
       nombre: String(t?.key ?? '').trim(),
@@ -267,6 +245,9 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
       experiencia: (Array.isArray(t?.experience) ? t.experience : []).map(aExperiencia).filter(tieneAlgo as any),
       servicios: serviciosPorTalento.get(String(t?.key ?? '')) || [],
       skills: lista(t?.skills),
+      redes: (redesConectadas.get(String(t?.key ?? '').trim()) || [])
+        .map((r) => ({ red: r.red as Red, etiqueta: REDES[r.red as Red].etiqueta, url: normalizarRed(r.red as Red, r.url).url || '' }))
+        .filter((r) => r.url),
     }))
     .filter((t) => t.nombre);
 
@@ -285,7 +266,6 @@ export async function armarCvPublico(memberId: string): Promise<CvPublico | null
     // registro de miembro es la de respaldo.
     foto: texto(m.avatar_url) || texto(m.photo_url),
     bio: texto(cv.bio),
-    redes: armarRedes(m, cv),
     idiomas: lista(cv.languages),
     talentos,
     // Primero los proyectos de la app —son el trabajo real y con cliente detrás— y

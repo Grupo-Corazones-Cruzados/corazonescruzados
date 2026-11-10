@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import EspacioDrive, { type EspacioDriveDatos } from '@/components/google/EspacioDrive';
+import RedesPorTalento from './RedesPorTalento';
 import { CheckCircle2, XCircle, AlertTriangle, HardDrive, Mail, CalendarDays } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -163,6 +164,9 @@ export default function ConexionesPanel() {
           )}
         </div>
       </div>
+
+      {/* Las redes de cada talento (Fernando, 2026-11-10). */}
+      <RedesPorTalento />
 
       <PixelConfirm
         open={confirmar}
