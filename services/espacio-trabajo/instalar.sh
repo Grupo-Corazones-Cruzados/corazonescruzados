@@ -76,6 +76,12 @@ cat > "$plist_servicio.nuevo" <<PLIST
 </dict></plist>
 PLIST
 
+# La web local firma sus sesiones con una clave propia de esta Mac. Desde el 2026-11-07 la app no
+# acepta la clave de ejemplo, y sin esta no se podía entrar. Se crea una vez y nunca sale de aquí.
+SECRETO_JWT="$DATOS/jwt-secret"
+[[ -s "$SECRETO_JWT" ]] || { openssl rand -base64 48 | tr -d '\n' > "$SECRETO_JWT"; chmod 600 "$SECRETO_JWT"; }
+JWT_LOCAL="$(cat "$SECRETO_JWT")"
+
 cat > "$plist_web.nuevo" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -87,6 +93,7 @@ cat > "$plist_web.nuevo" <<PLIST
     <key>PATH</key><string>$RUTA</string><key>HOME</key><string>$HOME</string><key>NODE_ENV</key><string>production</string>
     <key>ESPACIO_TRABAJO_LOCAL</key><string>1</string>
     <key>ESPACIO_ADMIN_EMAIL</key><string>$CORREO</string>
+    <key>JWT_SECRET</key><string>$JWT_LOCAL</string>
   </dict>
   <key>RunAtLoad</key><true/>
   <key>KeepAlive</key><true/>
