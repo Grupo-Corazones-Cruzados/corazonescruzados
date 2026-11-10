@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { MessagesSquare, Users2, Bot, Coins, ShieldAlert, Plug } from 'lucide-react';
 import { exigirContexto } from '@/lib/inquilino';
+import { devolverAlAgente } from '@/lib/agente/retomar';
 import { NOMBRE_DEL_MODULO, esRutaDeModulo, EXIGE_ROL } from '@/lib/modulos';
 import { prisma } from '@/lib/db';
 import { Tarjeta, Insignia, EstadoVacio, BOTON_PRIMARIO } from '@/componentes/ui';
@@ -31,6 +32,9 @@ export default async function PaginaPanel({
   const { cliente } = await params;
   const { sinPermiso } = await searchParams;
   const { inquilino, montados, sesion } = await exigirContexto(cliente);
+  // Las tomadas cuyo plazo del Estudio ya pasó vuelven al agente antes de contarlas (retomar.ts).
+  // El escaparate no se toca: sus datos son de muestra y no se guardan cambios en él.
+  if (!inquilino.soloLectura) await devolverAlAgente({ inquilinoId: inquilino.id });
 
   /**
    * ⚠️ POR QUÉ ESTÁS AQUÍ Y NO DONDE QUERÍAS IR.

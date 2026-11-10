@@ -15,6 +15,7 @@ import { decidir } from './ia';
 import { enviarTexto } from './whatsapp';
 import { registrarSaliente } from './ingesta';
 import { resolverMedios } from './medios';
+import { devolverAlAgente } from './retomar';
 import { terminar, fallar, type Trabajo } from './cola';
 import { MODELO_POR_DEFECTO, RAZONAMIENTO_POR_DEFECTO, esRazonamientoValido } from './modelos';
 
@@ -41,6 +42,9 @@ export async function procesarTrabajo(trabajo: Trabajo): Promise<ResultadoCorrid
 }
 
 export async function procesarConversacion(conversacionId: number): Promise<ResultadoCorrida> {
+  // Si una persona la tomó y ya pasó el plazo del Estudio, vuelve al agente ANTES de leerla:
+  // así contesta a este mismo mensaje (ver retomar.ts).
+  await devolverAlAgente({ conversacionId });
   const { rows: [conv] } = await pool.query(
     `SELECT c.*, ct.wa_id, ct.nombre_perfil
        FROM conversaciones c

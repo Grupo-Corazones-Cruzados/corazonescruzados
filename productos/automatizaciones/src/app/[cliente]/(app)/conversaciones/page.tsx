@@ -1,4 +1,5 @@
 import { exigirContexto } from '@/lib/inquilino';
+import { devolverAlAgente } from '@/lib/agente/retomar';
 import { prisma } from '@/lib/db';
 import { pool } from '@/lib/db';
 import Bandeja, { type ConversacionLista, type MensajeVista, type Gasto } from './Bandeja';
@@ -25,6 +26,9 @@ export default async function PaginaConversaciones({
   const soloNoLeidos = f === 'noleidos';
   const soloTomadas = f === 'tomadas';
   const { inquilino, sesion } = await exigirContexto(cliente);
+  // Las tomadas cuyo plazo del Estudio ya pasó vuelven al agente antes de contarlas (retomar.ts).
+  // El escaparate no se toca: sus datos son de muestra y no se guardan cambios en él.
+  if (!inquilino.soloLectura) await devolverAlAgente({ inquilinoId: inquilino.id });
 
   const busca = (q || '').trim();
   // Las etiquetas del negocio, y la elegida en el filtro (`?e=`), solo si es SUYA.

@@ -23,7 +23,7 @@ export default async function PaginaEstudio({ params }: { params: Promise<{ clie
 
   const { rows: [canal] } = await pool.query(
     `SELECT id, numero_visible, nombre_verificado, estado, bot_activo, coexistencia_verificada,
-            modelo, razonamiento, debounce_segundos, ventana_mensajes, ultimo_error, ultimo_error_en,
+            modelo, razonamiento, debounce_segundos, ventana_mensajes, retomar_minutos, ultimo_error, ultimo_error_en,
             ia_api_key_cifrada
        FROM canales WHERE inquilino_id = $1 ORDER BY id LIMIT 1`,
     [inquilino.id],
@@ -67,6 +67,7 @@ export default async function PaginaEstudio({ params }: { params: Promise<{ clie
     razonamiento: canal.razonamiento,
     debounce: canal.debounce_segundos,
     ventana: canal.ventana_mensajes,
+    retomarMinutos: canal.retomar_minutos,
     ultimoError: canal.ultimo_error,
     ultimoErrorEn: canal.ultimo_error_en ? canal.ultimo_error_en.toISOString() : null,
     // Solo los cuatro últimos caracteres salen al navegador, para reconocerla.

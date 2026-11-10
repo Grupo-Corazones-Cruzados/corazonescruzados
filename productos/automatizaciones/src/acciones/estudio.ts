@@ -122,12 +122,21 @@ export async function guardarAjustes(slug: string, datos: FormData): Promise<Res
   const debounce = Math.max(0, Math.min(120, Number(datos.get('debounce') || 8)));
   const ventana = Math.max(5, Math.min(200, Number(datos.get('ventana') || 40)));
   const botActivo = String(datos.get('botActivo') || '') === 'on';
+  // El plazo para que el agente retome una conversación tomada: número + unidad, guardado en minutos.
+  const MULT: Record<string, number> = { minutos: 1, horas: 60, dias: 1440 };
+  const unidad = String(datos.get('retomarUnidad') || 'horas');
+  const cantidad = Math.floor(Number(datos.get('retomarCantidad')));
+  if (!MULT[unidad] || !Number.isFinite(cantidad) || cantidad < 1) {
+    return { ok: false, error: 'El tiempo para que el agente retome tiene que ser de al menos 1 minuto.' };
+  }
+  const retomar = cantidad * MULT[unidad];
+  if (retomar > 525600) return { ok: false, error: 'El tiempo para que el agente retome no puede pasar de 365 días.' };
 
   await pool.query(
     `UPDATE canales SET razonamiento = $2, debounce_segundos = $3, ventana_mensajes = $4,
-            bot_activo = $5, actualizado_en = NOW()
+            bot_activo = $5, retomar_minutos = $6, actualizado_en = NOW()
       WHERE id = $1`,
-    [r.canal.id, razonamiento, debounce, ventana, botActivo],
+    [r.canal.id, razonamiento, debounce, ventana, botActivo, retomar],
   );
   revalidatePath(`/${slug}/estudio`);
   return {

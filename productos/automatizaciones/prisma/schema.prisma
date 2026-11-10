@@ -333,6 +333,9 @@ model Canal {
   debounceSegundos Int     @default(8) @map("debounce_segundos")
   ventanaMensajes  Int     @default(40) @map("ventana_mensajes")
   botActivo        Boolean @default(false) @map("bot_activo")
+  /// Minutos que se espera, desde lo último que hizo una persona en una conversación tomada,
+  /// para que el agente la retome solo (2026-11-10). Por defecto 6 horas; de 1 a 525600.
+  retomarMinutos   Int     @default(360) @map("retomar_minutos")
 
   estado                 String    @default("sin_conectar") @db.VarChar(30)
   coexistenciaVerificada Boolean   @default(false) @map("coexistencia_verificada")

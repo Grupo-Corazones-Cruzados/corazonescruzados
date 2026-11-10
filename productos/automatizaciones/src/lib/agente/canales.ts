@@ -27,6 +27,8 @@ export interface Canal {
   debounce_segundos: number;
   ventana_mensajes: number;
   bot_activo: boolean;
+  /** Minutos tras lo último que hizo una persona para que el agente retome la conversación. */
+  retomar_minutos: number;
   estado: string;
   coexistencia_verificada: boolean;
   /** Cuándo se pidió a Meta la agenda del cliente. Un solo intento por alta, en 24 h. */

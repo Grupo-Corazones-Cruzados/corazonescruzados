@@ -26,6 +26,8 @@ export type CanalVista = {
   razonamiento: string;
   debounce: number;
   ventana: number;
+  /** Minutos tras lo último que hizo una persona para que el agente retome la conversación. */
+  retomarMinutos: number;
   ultimoError: string | null;
   ultimoErrorEn: string | null;
   /** Los cuatro últimos caracteres de la clave de OpenAI del canal; null si no hay. */
@@ -59,6 +61,12 @@ const SECCIONES: OpcionRail[] = [
 
 const ESTADO = (activo: boolean) => <Insignia tono={activo ? 'exito' : 'neutro'}>{activo ? 'Activo' : 'Inactivo'}</Insignia>;
 const plural = (n: number, uno: string, varios: string) => `${n} ${n === 1 ? uno : varios}`;
+/** Los minutos guardados, en la unidad más grande que los dice exactos (360 → 6 horas). */
+function plazoLegible(min: number): { cantidad: number; unidad: 'minutos' | 'horas' | 'dias' } {
+  if (min % 1440 === 0) return { cantidad: min / 1440, unidad: 'dias' };
+  if (min % 60 === 0) return { cantidad: min / 60, unidad: 'horas' };
+  return { cantidad: min, unidad: 'minutos' };
+}
 
 export default function Estudio({
   slug,
@@ -82,6 +90,7 @@ export default function Estudio({
   const seccion = s.activo;
   const panelAbierto = nuevo || editando !== null;
   const cerrarPanel = () => { setNuevo(false); setEditando(null); };
+  const plazo = plazoLegible(canal.retomarMinutos);
   const falloIA = esFalloDeIA(canal.ultimoError) ? canal.ultimoError : null;
   const activos = bloques.filter((b) => b.activo).length;
   const filasInstrucciones = INSTRUCCIONES.map((i) => ({ ...i, actual: instrucciones.find((x) => x.tipo === i.tipo) ?? null }));
@@ -173,6 +182,16 @@ export default function Estudio({
                 </Campo>
                 <Campo etiqueta="Memoria (mensajes)">
                   <Entrada type="number" name="ventana" min={5} max={200} defaultValue={canal.ventana} />
+                </Campo>
+                <Campo etiqueta="El agente retoma tras">
+                  <div className="flex gap-2" title="Desde lo último que hizo una persona en una conversación tomada: tomarla o escribirle.">
+                    <Entrada type="number" name="retomarCantidad" min={1} required defaultValue={plazo.cantidad} className="w-24 shrink-0" />
+                    <Selector name="retomarUnidad" defaultValue={plazo.unidad}>
+                      <option value="minutos">Minutos</option>
+                      <option value="horas">Horas</option>
+                      <option value="dias">Días</option>
+                    </Selector>
+                  </div>
                 </Campo>
               </div>
 
