@@ -39,7 +39,10 @@ final class Delegado: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKU
         ventana.makeKeyAndOrderFront(nil)
         armarMenu(nombre)
 
-        marcarApp { [weak self] in self?.web.load(URLRequest(url: BASE.appendingPathComponent("dashboard"))) }
+        // Depurar: `GCC_ABRIR=/dashboard/...` arranca en esa ruta en vez del inicio.
+        let inicio = ProcessInfo.processInfo.environment["GCC_ABRIR"].flatMap { URL(string: $0, relativeTo: BASE)?.absoluteURL }
+            ?? BASE.appendingPathComponent("dashboard")
+        marcarApp { [weak self] in self?.web.load(URLRequest(url: inicio)) }
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -171,6 +174,12 @@ final class Delegado: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKU
             }
             w.evaluateJavaScript("document.documentElement.outerHTML + '\\n<!--RECURSOS\\n' + performance.getEntries().map(e => [e.entryType, e.name, e.responseStatus, e.transferSize, e.deliveryType].join(' ')).join('\\n') + '\\n-->'") { r, _ in
                 try? (r as? String)?.write(toFile: ruta + ".html", atomically: true, encoding: .utf8)
+            }
+            // Depurar: `GCC_JS` es una expresión que se evalúa en la página; su resultado sale como `[js]`.
+            if let js = ProcessInfo.processInfo.environment["GCC_JS"] {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+                    w.evaluateJavaScript(js) { r, e in print("[js]", r ?? e?.localizedDescription ?? "") }
+                }
             }
             w.takeSnapshot(with: nil) { img, _ in
                 guard let img, let tiff = img.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),

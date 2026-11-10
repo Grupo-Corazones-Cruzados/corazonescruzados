@@ -24,6 +24,25 @@ export default function EspacioEnApp({ ruta = RUTA_EMBEBIDA, titulo = 'Espacio d
   const [intento, setIntento] = useState(0);
   const [completa, setCompleta] = useState(false);
 
+  /**
+   * EL MARCO EMPIEZA DONDE EMPIEZA EL CONTENIDO (Fernando, 2026-11-09: en Centralizado el menú 2 tapaba
+   * Generación de Contenido). Era `lg:left-16`, pensado para un solo raíl; Centralizado lleva dos. Se
+   * mide el borde izquierdo de `<main>` —lo que el layout ya reservó para los menús— en vez de suponerlo.
+   */
+  const [izquierda, setIzquierda] = useState<number | null>(null);
+  useEffect(() => {
+    const medir = () => {
+      const main = document.querySelector('main');
+      setIzquierda(window.innerWidth >= 1024 && main ? Math.round(main.getBoundingClientRect().left) : null);
+    };
+    medir();
+    const main = document.querySelector('main');
+    const ro = new ResizeObserver(medir);
+    if (main) ro.observe(main);
+    window.addEventListener('resize', medir);
+    return () => { ro.disconnect(); window.removeEventListener('resize', medir); };
+  }, []);
+
   useEffect(() => {
     if (!esAppInstalada() || (user && user.role !== 'admin')) { router.replace('/dashboard/tools'); return; }
     fetch('/api/espacio-trabajo/direccion').then((r) => r.json()).then((j) => setDireccion(j.direccion || null)).catch(() => setEstado('sin-conexion'));
@@ -49,7 +68,8 @@ export default function EspacioEnApp({ ruta = RUTA_EMBEBIDA, titulo = 'Espacio d
   return (
     // Toda la pantalla bajo la cabecera de la sección (`CabeceraSeccion`): en las apps es una herramienta
     // aparte de Progreso, sin pie ni márgenes (Fernando, 2026-11-08: «no está aprovechando el espacio»).
-    <div className="fixed inset-x-0 bottom-[var(--pie-panel)] top-[calc(3.5rem+var(--seguro-arriba))] lg:top-0 lg:left-16 z-10 bg-digi-card overflow-hidden">
+    <div style={izquierda != null ? { left: izquierda } : undefined}
+      className="fixed inset-x-0 bottom-[var(--pie-panel)] top-[calc(3.5rem+var(--seguro-arriba))] lg:top-0 lg:left-16 z-10 bg-digi-card overflow-hidden">
       {src && <iframe key={intento} src={src} title={titulo} allow="microphone; clipboard-read; clipboard-write" className={`border-0 ${completa ? 'fixed inset-0 z-[2147483000] w-screen h-dvh' : 'w-full h-full'} ${estado === 'listo' ? '' : 'invisible'}`} />}
       {estado === 'cargando' && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}
       {estado === 'sin-conexion' && (
