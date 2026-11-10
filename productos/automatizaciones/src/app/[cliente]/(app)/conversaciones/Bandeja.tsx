@@ -130,10 +130,24 @@ const TIPOS: Record<string, { icono: React.ComponentType<{ className?: string }>
   /** El aviso de una llamada de WhatsApp (2026-11-10): «Llamada perdida», «Llamada de voz · 2:31». */
   llamada: { icono: Phone, nombre: 'Llamada' },
 };
-function Contenido({ texto, tipo }: { texto: string | null; tipo: string }) {
+/**
+ * El contenido de un mensaje con el icono de su tipo. En la LISTA va en una línea y se corta; en la
+ * BURBUJA (`envolver`) el texto fluye en varias líneas con el icono delante, como WhatsApp: una nota
+ * de voz transcrita o la descripción de una foto pueden ser largas y no deben salirse del chat
+ * (Fernando, 2026-11-10).
+ */
+function Contenido({ texto, tipo, envolver = false }: { texto: string | null; tipo: string; envolver?: boolean }) {
   const t = TIPOS[tipo];
   if (!t) return <>{texto || `[${tipo}]`}</>;
   const Icono = t.icono;
+  if (envolver) {
+    return (
+      <>
+        <Icono className="mr-1 inline h-3.5 w-3.5 align-[-2px] text-tenue" />
+        {texto || t.nombre}
+      </>
+    );
+  }
   return (
     <span className="inline-flex min-w-0 items-center gap-1">
       <Icono className="h-3.5 w-3.5 shrink-0" />
@@ -646,7 +660,7 @@ export default function Bandeja({
                         )}
                       >
                         <p className="whitespace-pre-wrap break-words">
-                          <Contenido texto={m.texto} tipo={m.tipo} />
+                          <Contenido texto={m.texto} tipo={m.tipo} envolver />
                           {/* La hora y los ✓ dentro de la burbuja, abajo a la derecha. */}
                           <span className="float-right ml-3 mt-2 flex items-center gap-1 text-[11px] leading-none text-tenue">
                             {delAgente && <Bot className="h-3 w-3" aria-label="Agente" />}

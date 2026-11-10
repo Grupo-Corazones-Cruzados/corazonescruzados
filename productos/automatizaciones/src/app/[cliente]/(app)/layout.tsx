@@ -8,6 +8,7 @@ import { BarraLateral, BarraInferior, HuecoBarraAcciones } from '@/componentes/N
 import { AvisoEscaparate } from '@/componentes/AvisoEscaparate';
 import { AvisoVistaComo } from '@/componentes/AvisoVistaComo';
 import { AvisoLlamadas } from '@/componentes/Llamadas';
+import { AvisaModulo } from '@/componentes/AvisaModulo';
 import { estaEmbebido } from '@/lib/sesion';
 import { conBase } from '@/lib/base';
 
@@ -110,6 +111,7 @@ export default async function LayoutApp({
       />}
       </div>
       {conLlamadas && <AvisoLlamadas slug={cliente} />}
+      {embebido && <AvisaModulo />}
     </AplicaMarca>
   );
 }
