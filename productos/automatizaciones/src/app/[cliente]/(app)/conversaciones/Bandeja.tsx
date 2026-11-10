@@ -62,6 +62,8 @@ type Abierta = {
   etiquetas: string[];
   /** ¿Sigue abierta la ventana de 24 h de WhatsApp para escribir libremente? */
   ventanaAbierta: boolean;
+  /** El número del NEGOCIO que recibió el chat; solo con más de uno (2026-11-10). */
+  numeroNegocio: string | null;
 };
 
 const NOMBRE_ESTADO: Record<Estado, string> = { ABIERTO: 'Abierto', EN_PROCESO: 'En proceso', CERRADO: 'Cerrado' };
@@ -206,14 +208,21 @@ function GrupoBuscable({ titulo, items, alElegir, vacio }: { titulo: string; ite
 }
 
 /** El panel de filtros entero: el mismo en la columna de escritorio y en el panel del teléfono. */
-function PanelFiltros({ bandeja, estados, etiquetas, usuarios, alElegir }: {
-  bandeja: ItemFiltro[]; estados: ItemFiltro[]; etiquetas: ItemFiltro[]; usuarios: ItemFiltro[]; alElegir?: () => void;
+function PanelFiltros({ bandeja, numeros, estados, etiquetas, usuarios, alElegir }: {
+  bandeja: ItemFiltro[]; numeros: ItemFiltro[]; estados: ItemFiltro[]; etiquetas: ItemFiltro[]; usuarios: ItemFiltro[]; alElegir?: () => void;
 }) {
   return (
     <div className="flex h-full min-h-0 flex-col gap-0.5">
       <div className="flex shrink-0 flex-col gap-0.5 pb-2">
         {bandeja.map((x) => <FiltroPanel key={x.clave} {...x} alElegir={alElegir} />)}
       </div>
+      {/* Con más de un número del negocio, se filtra por el número que recibió (2026-11-10). */}
+      {numeros.length > 1 && (
+        <section className="flex shrink-0 flex-col gap-0.5 border-t border-borde py-2">
+          <p className="px-3 pb-1 text-[12px] font-medium text-tenue">Números</p>
+          {numeros.map((x) => <FiltroPanel key={x.clave} {...x} alElegir={alElegir} />)}
+        </section>
+      )}
       <section className="flex shrink-0 flex-col gap-0.5 border-t border-borde py-2">
         <p className="px-3 pb-1 text-[12px] font-medium text-tenue">Estado</p>
         {estados.map((x) => <FiltroPanel key={x.clave} {...x} alElegir={alElegir} />)}
@@ -243,6 +252,8 @@ export default function Bandeja({
   usuarios,
   sinAsignar,
   usuarioFiltro,
+  numeros,
+  numeroFiltro,
   esAdmin,
   abierta,
   mensajes,
@@ -263,6 +274,8 @@ export default function Bandeja({
   usuarios: { id: number; nombre: string; n: number }[];
   sinAsignar: number;
   usuarioFiltro: number | 'ninguno' | null;
+  numeros: { id: number; nombre: string; n: number }[];
+  numeroFiltro: number | null;
   esAdmin: boolean;
   abierta: Abierta | null;
   mensajes: MensajeVista[];
@@ -293,7 +306,7 @@ export default function Bandeja({
   }, [abierta?.id, mensajes.length]);
 
   // La dirección lleva los filtros (se combinan): bandeja, estado, etiqueta, usuario, búsqueda.
-  type Url = { q?: string; f?: 'noleidos' | 'tomadas' | null; s?: Estado | null; e?: number | null; u?: number | 'ninguno' | null; c?: number | null };
+  type Url = { q?: string; f?: 'noleidos' | 'tomadas' | null; s?: Estado | null; e?: number | null; u?: number | 'ninguno' | null; n?: number | null; c?: number | null };
   const url = (o: Url) => {
     const p = new URLSearchParams();
     const q = o.q ?? busca;
@@ -301,7 +314,9 @@ export default function Bandeja({
     const s = o.s === undefined ? estadoFiltro : o.s;
     const e = o.e === undefined ? etiquetaId : o.e;
     const u = o.u === undefined ? usuarioFiltro : o.u;
+    const n = o.n === undefined ? numeroFiltro : o.n;
     if (q) p.set('q', q);
+    if (n) p.set('n', String(n));
     if (f) p.set('f', f);
     if (s) p.set('s', PARAM_ESTADO[s]);
     if (e) p.set('e', String(e));
@@ -313,10 +328,13 @@ export default function Bandeja({
 
   // Los grupos del panel. Tocar el elegido otra vez lo quita (se pueden combinar grupos).
   const bandeja: ItemFiltro[] = [
-    { clave: 'todos', nombre: 'Todos', icono: MessagesSquare, n: cuentas.todas, href: url({ f: null, s: null, e: null, u: null, c: null }), activo: !filtro && !estadoFiltro && !etiquetaId && !usuarioFiltro },
+    { clave: 'todos', nombre: 'Todos', icono: MessagesSquare, n: cuentas.todas, href: url({ f: null, s: null, e: null, u: null, n: null, c: null }), activo: !filtro && !estadoFiltro && !etiquetaId && !usuarioFiltro && !numeroFiltro },
     { clave: 'noleidos', nombre: 'No leídos', icono: MessageCircleMore, n: cuentas.noLeidas, href: url({ f: filtro === 'noleidos' ? null : 'noleidos', c: null }), activo: filtro === 'noleidos' },
     { clave: 'tomadas', nombre: 'Tomadas', icono: Hand, n: cuentas.tomadas, href: url({ f: filtro === 'tomadas' ? null : 'tomadas', c: null }), activo: filtro === 'tomadas' },
   ];
+  const itemsNumero: ItemFiltro[] = numeros.map((x) => ({
+    clave: `n${x.id}`, nombre: x.nombre, icono: Phone, n: x.n, href: url({ n: numeroFiltro === x.id ? null : x.id, c: null }), activo: numeroFiltro === x.id,
+  }));
   const ICONO_ESTADO: Record<Estado, React.ComponentType<{ className?: string }>> = { ABIERTO: CircleDot, EN_PROCESO: Clock, CERRADO: CircleCheck };
   const itemsEstado: ItemFiltro[] = (['ABIERTO', 'EN_PROCESO', 'CERRADO'] as Estado[]).map((s) => ({
     clave: s, nombre: NOMBRE_ESTADO[s], icono: ICONO_ESTADO[s], n: estados[s], href: url({ s: estadoFiltro === s ? null : s, c: null }), activo: estadoFiltro === s,
@@ -330,7 +348,7 @@ export default function Bandeja({
       clave: `u${x.id}`, nombre: x.nombre, icono: UserRound, n: x.n, href: url({ u: usuarioFiltro === x.id ? null : x.id, c: null }), activo: usuarioFiltro === x.id,
     })),
   ];
-  const activos = [...bandeja.slice(1), ...itemsEstado, ...itemsEtiqueta, ...itemsUsuario].filter((x) => x.activo).map((x) => x.nombre);
+  const activos = [...bandeja.slice(1), ...itemsNumero, ...itemsEstado, ...itemsEtiqueta, ...itemsUsuario].filter((x) => x.activo).map((x) => x.nombre);
   const titulo = activos.length ? activos.join(' · ') : 'Todos';
 
   function alternarBot() {
@@ -416,7 +434,7 @@ export default function Bandeja({
     <div className="flex h-full min-h-0 bg-tarjeta">
       {/* ── EL PANEL DE FILTROS (escritorio): cada grupo en su sitio, con desplazamiento propio. */}
       <nav aria-label="Filtros" className="hidden w-[240px] shrink-0 border-r border-borde bg-wa-panel px-2 py-3 lg:block">
-        <PanelFiltros bandeja={bandeja} estados={itemsEstado} etiquetas={itemsEtiqueta} usuarios={itemsUsuario} />
+        <PanelFiltros bandeja={bandeja} numeros={itemsNumero} estados={itemsEstado} etiquetas={itemsEtiqueta} usuarios={itemsUsuario} />
       </nav>
 
       {/* ── LOS CHATS. En el teléfono desaparecen cuando hay uno abierto. */}
@@ -698,6 +716,12 @@ export default function Bandeja({
                   <dt className="text-[13px] text-tenue">Lo atiende</dt>
                   <dd><Insignia tono={abierta.botActivo ? 'exito' : 'aviso'}>{abierta.botActivo ? 'Agente' : abierta.tomadaPor ?? 'Equipo'}</Insignia></dd>
                 </div>
+                {abierta.numeroNegocio && (
+                  <div className="flex items-center justify-between gap-3 py-3">
+                    <dt className="text-[13px] text-tenue">Escribió a</dt>
+                    <dd className="truncate text-[13px] text-texto">{abierta.numeroNegocio}</dd>
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-3 py-3">
                   <dt className="text-[13px] text-tenue">Estado</dt>
                   <dd className="text-[13px] font-medium text-texto">{NOMBRE_ESTADO[abierta.estado]}</dd>
@@ -746,7 +770,7 @@ export default function Bandeja({
 
       {/* ── FILTROS EN EL TELÉFONO: el mismo panel, encima. */}
       <PanelLateral abierto={filtrosTel} alCerrar={() => setFiltrosTel(false)} titulo="Filtros" lleno>
-        <PanelFiltros bandeja={bandeja} estados={itemsEstado} etiquetas={itemsEtiqueta} usuarios={itemsUsuario} alElegir={() => setFiltrosTel(false)} />
+        <PanelFiltros bandeja={bandeja} numeros={itemsNumero} estados={itemsEstado} etiquetas={itemsEtiqueta} usuarios={itemsUsuario} alElegir={() => setFiltrosTel(false)} />
       </PanelLateral>
 
       {/* ── LOS DIÁLOGOS DE LAS OPCIONES ── */}

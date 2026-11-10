@@ -262,3 +262,32 @@ export async function enviarPlantilla(
 export async function datosWaba(wabaId: string, token: string) {
   return graph(`/${wabaId}?fields=id,name,currency,timezone_id,account_review_status`, { method: 'GET', token });
 }
+
+/**
+ * Cómo está conectado un número, según Meta (2026-11-10). `is_on_biz_app: true` = sigue en la app
+ * WhatsApp Business (coexistencia); `false` = solo en la Cloud API. Es lo que se MIDE tras el alta
+ * en vez de fiarse de lo que se pidió: si alguien elige Cloud API y escribe un número que está en
+ * la app, se guarda lo que de verdad quedó.
+ */
+export async function datosDelNumero(phoneNumberId: string, token: string) {
+  return (await graph(
+    `/${phoneNumberId}?fields=id,display_phone_number,verified_name,is_on_biz_app,platform_type`,
+    { method: 'GET', token },
+  )) as { id: string; display_phone_number?: string; verified_name?: string; is_on_biz_app?: boolean; platform_type?: string };
+}
+
+/**
+ * Activa las LLAMADAS ENTRANTES del número (Cloud API Calling, 2026-11-10). Solo para números
+ * CLOUD_API: Meta no admite llamadas en coexistencia. Las salientes no se piden (cuestan dinero y
+ * llevan permiso del usuario): `callback_permission_status` no se toca.
+ *
+ * Meta exige un límite de mensajería de 2.000 o más y un método de pago en la cuenta; si falta,
+ * contesta con error y se guarda tal cual para enseñarlo. Los teléfonos de los contactos pueden
+ * tardar hasta 7 días en mostrar el botón de llamar.
+ */
+export async function activarLlamadas(phoneNumberId: string, token: string) {
+  return graph(`/${phoneNumberId}/settings`, {
+    method: 'POST', token,
+    body: JSON.stringify({ calling: { status: 'ENABLED', call_icon_visibility: 'DEFAULT' } }),
+  });
+}

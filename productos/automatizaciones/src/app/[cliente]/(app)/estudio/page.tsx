@@ -6,6 +6,7 @@ import { CabeceraPagina } from '@/componentes/Navegacion';
 import Link from 'next/link';
 import { BOTON_PRIMARIO, EstadoVacio } from '@/componentes/ui';
 import { Bot, Plug } from 'lucide-react';
+import { numerosYElegido } from '@/lib/agente/numeros';
 import Estudio, { type CanalVista, type Instruccion, type Bloque } from './Estudio';
 
 export const dynamic = 'force-dynamic';
@@ -17,16 +18,21 @@ export const metadata = { title: 'Estudio' };
  * Es ADMIN porque cambiar aquí una línea cambia lo que el agente le dice a cada cliente
  * del negocio. Un operador atiende conversaciones; no reescribe al agente.
  */
-export default async function PaginaEstudio({ params }: { params: Promise<{ cliente: string }> }) {
+export default async function PaginaEstudio({ params, searchParams }: {
+  params: Promise<{ cliente: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { cliente } = await params;
   const { inquilino } = await exigirContexto(cliente, EXIGE_ROL.estudio, 'estudio');
+  // Cada número tiene su propio agente (2026-11-10): se elige con `?numero=`.
+  const { numeros, canalId } = await numerosYElegido(inquilino.id, (await searchParams).numero);
 
   const { rows: [canal] } = await pool.query(
     `SELECT id, numero_visible, nombre_verificado, estado, bot_activo, coexistencia_verificada,
             modelo, razonamiento, debounce_segundos, ventana_mensajes, retomar_minutos, ultimo_error, ultimo_error_en,
             ia_api_key_cifrada
-       FROM canales WHERE inquilino_id = $1 ORDER BY id LIMIT 1`,
-    [inquilino.id],
+       FROM canales WHERE inquilino_id = $1 AND id = $2`,
+    [inquilino.id, canalId],
   );
 
   if (!canal) {
@@ -58,6 +64,7 @@ export default async function PaginaEstudio({ params }: { params: Promise<{ clie
   );
 
   const vista: CanalVista = {
+    id: canal.id,
     numero: canal.numero_visible,
     nombreVerificado: canal.nombre_verificado,
     estado: canal.estado,
@@ -85,6 +92,7 @@ export default async function PaginaEstudio({ params }: { params: Promise<{ clie
     <Estudio
       slug={cliente}
       canal={vista}
+      numeros={numeros}
       instrucciones={instrucciones}
       bloques={bloques as Bloque[]}
     />

@@ -14,9 +14,12 @@ import {
 import { esFalloDeIA } from '@/lib/fallos';
 import { fechaHora } from '@/lib/formato';
 import { CabeceraPagina } from '@/componentes/Navegacion';
+import { SelectorNumero } from '@/componentes/SelectorNumero';
+import type { NumeroOpcion } from '@/lib/agente/numeros';
 import { guardarInstruccion, guardarConocimiento, borrarConocimiento, guardarAjustes, guardarClaveIA } from '@/acciones/estudio';
 
 export type CanalVista = {
+  id: number;
   numero: string | null;
   nombreVerificado: string | null;
   estado: string;
@@ -71,11 +74,13 @@ function plazoLegible(min: number): { cantidad: number; unidad: 'minutos' | 'hor
 export default function Estudio({
   slug,
   canal,
+  numeros,
   instrucciones,
   bloques,
 }: {
   slug: string;
   canal: CanalVista;
+  numeros: NumeroOpcion[];
   instrucciones: Instruccion[];
   bloques: Bloque[];
 }) {
@@ -99,6 +104,7 @@ export default function Estudio({
 
   function guardarAjustesForm(datos: FormData) {
     arranca(async () => {
+      datos.set('canal', String(canal.id));
       const r = await guardarAjustes(slug, datos);
       if (!r.ok) { toast.error(r.error); return; }
       toast.success(r.mensaje ?? 'Guardado.');
@@ -124,9 +130,12 @@ export default function Estudio({
         }
         menu={[{ etiqueta: 'Conexión con WhatsApp', icono: Plug, href: `/${slug}/configuracion?seccion=whatsapp` }]}
         acciones={
-          seccion === 'conocimiento' && (
-            <Boton icono={Plus} onClick={() => { setNuevo(true); setEditando(null); }}>Nuevo bloque</Boton>
-          )
+          <>
+            <SelectorNumero numeros={numeros} actual={canal.id} />
+            {seccion === 'conocimiento' && (
+              <Boton icono={Plus} onClick={() => { setNuevo(true); setEditando(null); }}>Nuevo bloque</Boton>
+            )}
+          </>
         }
         accionesTelefono={
           s.enUrl && seccion === 'agente'
@@ -278,6 +287,7 @@ export default function Estudio({
           key={editando?.clave ?? 'nuevo'}
           action={(datos) =>
             arranca(async () => {
+              datos.set('canal', String(canal.id));
               const r = await guardarConocimiento(slug, datos);
               if (!r.ok) { toast.error(r.error); return; }
               toast.success(r.mensaje ?? 'Guardado.');
@@ -328,7 +338,7 @@ export default function Estudio({
               disabled={enCurso || !instruccion || instruccion.texto === (actualInstruccion?.contenido ?? '')}
               onClick={() => arranca(async () => {
                 if (!instruccion) return;
-                const r = await guardarInstruccion(slug, instruccion.tipo as never, instruccion.texto);
+                const r = await guardarInstruccion(slug, instruccion.tipo as never, instruccion.texto, canal.id);
                 if (!r.ok) { toast.error(r.error); return; }
                 toast.success(r.mensaje ?? 'Guardado.');
                 setInstruccion(null);
@@ -359,6 +369,7 @@ export default function Estudio({
               onClick={() => arranca(async () => {
                 const d = new FormData();
                 d.set('clave', clave.valor);
+                d.set('canal', String(canal.id));
                 const r = await guardarClaveIA(slug, d);
                 if (!r.ok) { toast.error(r.error, { duration: 12000 }); return; }
                 toast.success(r.mensaje ?? 'Guardada.');
@@ -386,7 +397,7 @@ export default function Estudio({
         alAceptar={() =>
           arranca(async () => {
             if (!borrar) return;
-            const r = await borrarConocimiento(slug, borrar.clave);
+            const r = await borrarConocimiento(slug, borrar.clave, canal.id);
             if (!r.ok) { toast.error(r.error); return; }
             toast.success(r.mensaje ?? 'Eliminado.');
             if (editando?.clave === borrar.clave) cerrarPanel();

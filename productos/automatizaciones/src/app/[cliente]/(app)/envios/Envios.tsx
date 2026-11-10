@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { RefreshCw, Send, Users2, AlertTriangle, Phone, Plug } from 'lucide-react';
 import { Boton, Campo, Selector, Insignia, Tarjeta, EstadoVacio, Confirmar, Tabla, BOTON_PRIMARIO } from '@/componentes/ui';
 import { CabeceraPagina } from '@/componentes/Navegacion';
+import { SelectorNumero } from '@/componentes/SelectorNumero';
+import type { NumeroOpcion } from '@/lib/agente/numeros';
 import { sincronizar, lanzar } from '@/acciones/envios';
 import { fechaHora } from '@/lib/formato';
 
@@ -31,9 +33,9 @@ const ETIQUETA_ESTADO: Record<string, string> = {
 };
 
 export default function Envios({
-  slug, numero, hayCanal, plantillas, listas, envios, puedeOperar, puedeConectar,
+  slug, numero, canalId, numeros, hayCanal, plantillas, listas, envios, puedeOperar, puedeConectar,
 }: {
-  slug: string; numero: string | null; hayCanal: boolean;
+  slug: string; numero: string | null; canalId: number | null; numeros: NumeroOpcion[]; hayCanal: boolean;
   plantillas: PlantillaVista[]; listas: ListaVista[]; envios: EnvioVista[]; puedeOperar: boolean;
   /** Solo un administrador entra a Configuración: a los demás no se les ofrece el enlace. */
   puedeConectar: boolean;
@@ -81,13 +83,14 @@ export default function Envios({
         titulo="Envíos"
         descripcion="WhatsApp solo deja escribir libremente a quien te ha escrito en las últimas 24 horas. Para el resto hacen falta plantillas, y Meta las revisa una a una."
         detalles={numero ? [{ icono: Phone, etiqueta: 'Número que envía', valor: numero, href: `tel:${numero.replace(/[^\d+]/g, '')}` }] : undefined}
+        acciones={<SelectorNumero numeros={numeros} actual={canalId} />}
         menu={puedeOperar ? [{
           etiqueta: 'Sincronizar con Meta',
           icono: RefreshCw,
           deshabilitado: enCurso,
           alPulsar: () =>
             arranca(async () => {
-              const r = await sincronizar(slug);
+              const r = await sincronizar(slug, canalId ?? undefined);
               if (!r.ok) { toast.error(r.error); return; }
               toast.success(r.mensaje ?? 'Sincronizado.');
               router.refresh();
@@ -240,7 +243,7 @@ export default function Envios({
         alAceptar={() =>
           arranca(async () => {
             if (!plantillaId || !listaId) return;
-            const r = await lanzar(slug, plantillaId, listaId);
+            const r = await lanzar(slug, plantillaId, listaId, canalId ?? undefined);
             if (!r.ok) { toast.error(r.error); return; }
             toast.success(r.mensaje ?? 'Enviado.');
             setConfirmar(false);

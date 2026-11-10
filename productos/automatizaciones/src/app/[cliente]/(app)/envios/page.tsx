@@ -1,5 +1,6 @@
 import { exigirContexto } from '@/lib/inquilino';
 import { pool } from '@/lib/db';
+import { numerosYElegido } from '@/lib/agente/numeros';
 import Envios, { type PlantillaVista, type ListaVista, type EnvioVista } from './Envios';
 
 export const dynamic = 'force-dynamic';
@@ -12,13 +13,18 @@ export const metadata = { title: 'Envíos' };
  * plantillas, que Meta revisa una a una. Por eso esta pantalla enseña SIEMPRE el estado de
  * cada una — una en revisión no sale, y saberlo antes de pulsar ahorra el susto.
  */
-export default async function PaginaEnvios({ params }: { params: Promise<{ cliente: string }> }) {
+export default async function PaginaEnvios({ params, searchParams }: {
+  params: Promise<{ cliente: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { cliente } = await params;
   const { inquilino, sesion } = await exigirContexto(cliente);
+  // Las plantillas son de cada número (2026-11-10): se elige con `?numero=`.
+  const { numeros, canalId } = await numerosYElegido(inquilino.id, (await searchParams).numero);
 
   const { rows: [canal] } = await pool.query(
-    `SELECT id, numero_visible, estado FROM canales WHERE inquilino_id = $1 ORDER BY id LIMIT 1`,
-    [inquilino.id],
+    `SELECT id, numero_visible, estado FROM canales WHERE inquilino_id = $1 AND id = $2`,
+    [inquilino.id, canalId],
   );
 
   const { rows: plantillas } = canal
@@ -45,14 +51,16 @@ export default async function PaginaEnvios({ params }: { params: Promise<{ clien
        JOIN plantillas_agente p ON p.id = e.plantilla_id
        LEFT JOIN listas_contactos l ON l.id = e.lista_id
        LEFT JOIN usuarios u ON u.id = e.lanzado_por_id
-      WHERE e.inquilino_id = $1 ORDER BY e.creado_en DESC LIMIT 20`,
-    [inquilino.id],
+      WHERE e.inquilino_id = $1 AND p.canal_id = $2 ORDER BY e.creado_en DESC LIMIT 20`,
+    [inquilino.id, canal?.id ?? 0],
   );
 
   return (
     <Envios
       slug={cliente}
       numero={canal?.numero_visible ?? null}
+      canalId={canal?.id ?? null}
+      numeros={numeros}
       hayCanal={Boolean(canal)}
       plantillas={plantillas.map((p: any): PlantillaVista => ({
         id: p.id, nombre: p.nombre, idioma: p.idioma, categoria: p.categoria,

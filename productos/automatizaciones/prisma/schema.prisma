@@ -336,6 +336,11 @@ model Canal {
   /// Minutos que se espera, desde lo último que hizo una persona en una conversación tomada,
   /// para que el agente la retome solo (2026-11-10). Por defecto 6 horas; de 1 a 525600.
   retomarMinutos   Int     @default(360) @map("retomar_minutos")
+  /// COEXISTENCIA (sigue en la app WhatsApp Business) o CLOUD_API (solo en la API, con llamadas).
+  metodo           String  @default("COEXISTENCIA") @db.VarChar(12)
+  /// NO · ACTIVAS · ERROR — las llamadas entrantes en Meta (solo CLOUD_API).
+  llamadas         String  @default("NO") @db.VarChar(10)
+  llamadasError    String? @map("llamadas_error")
 
   estado                 String    @default("sin_conectar") @db.VarChar(30)
   coexistenciaVerificada Boolean   @default(false) @map("coexistencia_verificada")

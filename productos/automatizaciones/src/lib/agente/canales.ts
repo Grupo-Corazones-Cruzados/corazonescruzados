@@ -29,6 +29,11 @@ export interface Canal {
   bot_activo: boolean;
   /** Minutos tras lo último que hizo una persona para que el agente retome la conversación. */
   retomar_minutos: number;
+  /** COEXISTENCIA o CLOUD_API (2026-11-10). */
+  metodo: 'COEXISTENCIA' | 'CLOUD_API';
+  /** NO · ACTIVAS · ERROR: las llamadas entrantes en Meta. */
+  llamadas: 'NO' | 'ACTIVAS' | 'ERROR';
+  llamadas_error: string | null;
   estado: string;
   coexistencia_verificada: boolean;
   /** Cuándo se pidió a Meta la agenda del cliente. Un solo intento por alta, en 24 h. */
@@ -141,4 +146,39 @@ export function canalPublico(canal: Canal) {
     tiene_ia_api_key: Boolean(ia_api_key_cifrada),
     tiene_pin: Boolean(pin_cifrado),
   };
+}
+
+/**
+ * Un NÚMERO NUEVO del inquilino arranca con el agente del primero (2026-11-10): mismos ajustes,
+ * misma clave de OpenAI, mismas instrucciones activas y el mismo conocimiento. Apagado: el
+ * cliente lo enciende en el Estudio cuando quiera. Después cada número se edita por separado.
+ *
+ * La clave va cifrada con el id del canal como contexto, así que no se copia el blob: se
+ * descifra con el contexto del origen y se vuelve a cifrar con el del destino.
+ */
+export async function copiarAgente(origenId: number, destinoId: number): Promise<void> {
+  const origen = await canalPorId(origenId);
+  if (!origen) return;
+  await pool.query(
+    `UPDATE canales SET ia_proveedor = $2, modelo = $3, razonamiento = $4, max_tokens = $5,
+            debounce_segundos = $6, ventana_mensajes = $7, retomar_minutos = $8, bot_activo = false,
+            actualizado_en = NOW()
+      WHERE id = $1`,
+    [destinoId, origen.ia_proveedor, origen.modelo, origen.razonamiento, origen.max_tokens,
+     origen.debounce_segundos, origen.ventana_mensajes, origen.retomar_minutos],
+  );
+  const clave = secretoDelCanal(origen, 'ia_api_key');
+  if (clave) await guardarSecreto(destinoId, 'ia_api_key', clave);
+  await pool.query(
+    `INSERT INTO prompts (inquilino_id, canal_id, tipo, version, contenido, activo)
+     SELECT inquilino_id, $2, tipo, 1, contenido, true FROM prompts WHERE canal_id = $1 AND activo
+     ON CONFLICT DO NOTHING`,
+    [origenId, destinoId],
+  );
+  await pool.query(
+    `INSERT INTO conocimiento (inquilino_id, canal_id, clave, titulo, contenido, orden, activo)
+     SELECT inquilino_id, $2, clave, titulo, contenido, orden, activo FROM conocimiento WHERE canal_id = $1
+     ON CONFLICT (canal_id, clave) DO NOTHING`,
+    [origenId, destinoId],
+  );
 }

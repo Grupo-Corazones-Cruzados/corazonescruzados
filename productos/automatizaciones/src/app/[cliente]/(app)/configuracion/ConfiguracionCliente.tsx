@@ -59,7 +59,8 @@ export default function ConfiguracionCliente({
   pagos,
   miOrigen,
   perfil,
-  conexion,
+  numeros,
+  falloAlta,
   meta,
   esCortesia,
 }: {
@@ -71,7 +72,8 @@ export default function ConfiguracionCliente({
   miOrigen: 'GCC' | 'PRODUCTO' | null;
   /** Los datos de su cuenta de GCC World, si entra con ella. */
   perfil: PerfilVista | null;
-  conexion: ConexionVista | null;
+  numeros: ConexionVista[];
+  falloAlta: { texto: string; en: string | null } | null;
   /** Identificadores PÚBLICOS de la app de Meta (el secreto no sale del servidor). */
   meta: { appId: string | null; configId: string | null };
   esCortesia: boolean;
@@ -109,7 +111,7 @@ export default function ConfiguracionCliente({
           />
         )}
         {seccion === 'whatsapp' && (
-          <SeccionWhatsApp slug={slug} conexion={conexion} appId={meta.appId} configId={meta.configId} esCortesia={esCortesia} />
+          <SeccionWhatsApp slug={slug} numeros={numeros} falloAlta={falloAlta} appId={meta.appId} configId={meta.configId} esCortesia={esCortesia} />
         )}
         {seccion === 'suscripcion' && <SeccionSuscripcion slug={slug} s={suscripcion} pagos={pagos} />}
         {seccion === 'cuenta' && <SeccionCuenta slug={slug} miOrigen={miOrigen} perfil={perfil} />}

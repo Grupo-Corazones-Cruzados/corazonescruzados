@@ -62,16 +62,20 @@ export default async function PaginaConfiguracion({ params }: { params: Promise<
   // se debe, y por tanto un solo sitio donde aparece el botón de pagar.
   const suscripcion = vistaSuscripcion(ctx);
 
-  // El canal del inquilino, sin secretos: solo si existe el token.
-  const { rows: [c] } = await pool.query(
-    `SELECT estado, numero_visible, nombre_verificado, waba_id, phone_number_id,
+  // Los números del inquilino, sin secretos: solo si existe el token (varios desde 2026-11-10).
+  const { rows: canales } = await pool.query(
+    `SELECT id, metodo, llamadas, llamadas_error, estado, numero_visible, nombre_verificado, waba_id, phone_number_id,
             wa_token_cifrado IS NOT NULL AS tiene_token, coexistencia_verificada,
             conectado_en, contactos_sincronizados_en, ultimo_error, ultimo_error_en
-       FROM canales WHERE inquilino_id = $1 ORDER BY id LIMIT 1`,
+       FROM canales WHERE inquilino_id = $1 ORDER BY id`,
     [inquilino.id],
   );
   const iso = (d: Date | null) => (d ? new Date(d).toISOString() : null);
-  const conexion: ConexionVista | null = c ? {
+  const numeros: ConexionVista[] = canales.filter((c) => c.phone_number_id).map((c) => ({
+    id: c.id,
+    metodo: c.metodo,
+    llamadas: c.llamadas,
+    llamadasError: c.llamadas_error,
     estado: c.estado,
     numero: c.numero_visible,
     nombreVerificado: c.nombre_verificado,
@@ -83,7 +87,10 @@ export default async function PaginaConfiguracion({ params }: { params: Promise<
     agendaPedidaEn: iso(c.contactos_sincronizados_en),
     ultimoError: c.ultimo_error,
     ultimoErrorEn: iso(c.ultimo_error_en),
-  } : null;
+  }));
+  // Un alta que no terminó deja un canal sin número: su fallo se enseña encima de la lista.
+  const sinTerminar = canales.find((c) => !c.phone_number_id && c.estado === 'error' && c.ultimo_error);
+  const falloAlta = sinTerminar ? { texto: sinTerminar.ultimo_error as string, en: iso(sinTerminar.ultimo_error_en) } : null;
 
   const historial: PagoVista[] = pagos.map((p) => ({
     id: p.id,
@@ -104,7 +111,8 @@ export default async function PaginaConfiguracion({ params }: { params: Promise<
       pagos={historial}
       miOrigen={await miOrigen(cliente)}
       perfil={perfil ? { ...perfil, foto: perfil.tieneFoto ? conBase(`/${cliente}/foto?u=${ctx.sesion.uid}`) : null } : null}
-      conexion={conexion}
+      numeros={numeros}
+      falloAlta={falloAlta}
       meta={{ appId: process.env.WHATSAPP_APP_ID || null, configId: process.env.WHATSAPP_ES_CONFIG_ID || null }}
       esCortesia={inquilino.cortesia}
     />

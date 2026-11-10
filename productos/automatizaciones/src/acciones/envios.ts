@@ -13,20 +13,24 @@ type CanalDelCliente =
   | { ok: false; error: string }
   | { ok: true; canal: any; ctx: Contexto };
 
-async function canalDelCliente(slug: string, minimo: 'OPERADOR' | 'ADMIN' = 'OPERADOR'): Promise<CanalDelCliente> {
+/**
+ * El número (canal) del inquilino sobre el que se actúa. Desde 2026-11-10 hay varios: llega su id,
+ * pero solo vale si es DE ESTE inquilino (`id = … AND inquilino_id = …`). Sin id, el primero.
+ */
+async function canalDelCliente(slug: string, minimo: 'OPERADOR' | 'ADMIN' = 'OPERADOR', canalId?: number | null): Promise<CanalDelCliente> {
   const permiso = await contextoEscritura(slug, minimo);
   if (!permiso.ok) return { ok: false, error: permiso.error };
-  const { rows: [canal] } = await pool.query(
-    `SELECT c.* FROM canales c WHERE c.inquilino_id = $1 ORDER BY c.id LIMIT 1`,
-    [permiso.ctx.inquilino.id],
-  );
+  const id = Number(canalId) || null;
+  const { rows: [canal] } = id
+    ? await pool.query(`SELECT c.* FROM canales c WHERE c.id = $2 AND c.inquilino_id = $1`, [permiso.ctx.inquilino.id, id])
+    : await pool.query(`SELECT c.* FROM canales c WHERE c.inquilino_id = $1 ORDER BY c.id LIMIT 1`, [permiso.ctx.inquilino.id]);
   if (!canal) return { ok: false, error: 'Todavía no hay un número conectado.' };
   return { ok: true, canal, ctx: permiso.ctx };
 }
 
 /** Traer de Meta el estado de las plantillas. Lo nuestro (el mapeo de variables) no se pisa. */
-export async function sincronizar(slug: string): Promise<Resultado> {
-  const r = await canalDelCliente(slug);
+export async function sincronizar(slug: string, canalId?: number): Promise<Resultado> {
+  const r = await canalDelCliente(slug, 'OPERADOR', canalId);
   if (!r.ok) return { ok: false, error: r.error };
   try {
     const { total, nuevas } = await sincronizarPlantillas(r.canal);
@@ -47,8 +51,8 @@ export async function sincronizar(slug: string): Promise<Resultado> {
  *   · que Meta la tenga APROBADA —una en revisión no sale—,
  *   · y que la lista sea suya y tenga a alguien con teléfono.
  */
-export async function lanzar(slug: string, plantillaId: number, listaId: number): Promise<Resultado> {
-  const r = await canalDelCliente(slug);
+export async function lanzar(slug: string, plantillaId: number, listaId: number, canalId?: number): Promise<Resultado> {
+  const r = await canalDelCliente(slug, 'OPERADOR', canalId);
   if (!r.ok) return { ok: false, error: r.error };
 
   const { rows: [plantilla] } = await pool.query(

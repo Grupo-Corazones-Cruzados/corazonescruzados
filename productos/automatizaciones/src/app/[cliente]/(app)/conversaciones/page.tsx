@@ -17,10 +17,10 @@ export default async function PaginaConversaciones({
   searchParams,
 }: {
   params: Promise<{ cliente: string }>;
-  searchParams: Promise<{ c?: string; q?: string; e?: string; f?: string; s?: string; u?: string }>;
+  searchParams: Promise<{ c?: string; q?: string; e?: string; f?: string; s?: string; u?: string; n?: string }>;
 }) {
   const { cliente } = await params;
-  const { c, q, e, f, s: sParam, u: uParam } = await searchParams;
+  const { c, q, e, f, s: sParam, u: uParam, n: nParam } = await searchParams;
   const ESTADOS = { abierto: 'ABIERTO', enproceso: 'EN_PROCESO', cerrado: 'CERRADO' } as const;
   const estadoFiltro = sParam && sParam in ESTADOS ? ESTADOS[sParam as keyof typeof ESTADOS] : null;
   const soloNoLeidos = f === 'noleidos';
@@ -80,9 +80,19 @@ export default async function PaginaConversaciones({
   const usuarioFiltro: number | 'ninguno' | null =
     uParam === 'ninguno' ? 'ninguno' : uParam && usuariosNegocio.some((x) => String(x.id) === uParam) ? Number(uParam) : null;
 
+  // Los NÚMEROS del negocio (varios desde 2026-11-10), con su cuenta; `?n=` solo si es suyo.
+  const { rows: numerosNegocio } = await pool.query<{ id: number; nombre: string; n: number }>(
+    `SELECT ca.id, COALESCE(ca.numero_visible, ca.nombre_verificado, 'Número ' || ca.id) AS nombre,
+            (SELECT COUNT(*)::int FROM conversaciones cv WHERE cv.canal_id = ca.id) AS n
+       FROM canales ca WHERE ca.inquilino_id = $1 AND ca.phone_number_id IS NOT NULL ORDER BY ca.id`,
+    [inquilino.id],
+  );
+  const numeroFiltro = nParam && numerosNegocio.some((x) => String(x.id) === nParam) ? Number(nParam) : null;
+
   const conversaciones = await prisma.conversacion.findMany({
     where: {
       inquilinoId: inquilino.id,
+      ...(numeroFiltro ? { canalId: numeroFiltro } : {}),
       ...(soloTomadas ? { botActivo: false } : {}),
       ...(estadoFiltro ? { estadoAtencion: estadoFiltro } : {}),
       ...(usuarioFiltro === 'ninguno' ? { asignadaAId: null } : usuarioFiltro ? { asignadaAId: usuarioFiltro } : {}),
@@ -224,6 +234,8 @@ export default async function PaginaConversaciones({
       usuarios={usuariosNegocio.map((x) => ({ ...x, n: nUsuario.get(x.id) ?? 0 }))}
       sinAsignar={nUsuario.get(null) ?? 0}
       usuarioFiltro={usuarioFiltro}
+      numeros={numerosNegocio}
+      numeroFiltro={numeroFiltro}
       esAdmin={sesion.rol === 'ADMIN'}
       abierta={
         abierta
@@ -239,6 +251,7 @@ export default async function PaginaConversaciones({
               estado: abierta.estadoAtencion as 'ABIERTO' | 'EN_PROCESO' | 'CERRADO',
               etiquetas: abierta.contacto.etiquetas.map((t) => t.etiqueta.nombre).sort(),
               ventanaAbierta,
+              numeroNegocio: numerosNegocio.length > 1 ? numerosNegocio.find((x) => x.id === abierta.canalId)?.nombre ?? null : null,
             }
           : null
       }

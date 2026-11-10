@@ -20,13 +20,17 @@ type CanalDelCliente =
   | { ok: false; error: string }
   | { ok: true; canal: any; ctx: Contexto };
 
-async function canalDelCliente(slug: string, minimo: 'OPERADOR' | 'ADMIN' = 'ADMIN'): Promise<CanalDelCliente> {
+/**
+ * El número (canal) del inquilino sobre el que se actúa. Desde 2026-11-10 hay varios: llega su id,
+ * pero solo vale si es DE ESTE inquilino (`id = … AND inquilino_id = …`). Sin id, el primero.
+ */
+async function canalDelCliente(slug: string, minimo: 'OPERADOR' | 'ADMIN' = 'ADMIN', canalId?: number | null): Promise<CanalDelCliente> {
   const permiso = await contextoEscritura(slug, minimo);
   if (!permiso.ok) return { ok: false, error: permiso.error };
-  const { rows: [canal] } = await pool.query(
-    `SELECT c.* FROM canales c WHERE c.inquilino_id = $1 ORDER BY c.id LIMIT 1`,
-    [permiso.ctx.inquilino.id],
-  );
+  const id = Number(canalId) || null;
+  const { rows: [canal] } = id
+    ? await pool.query(`SELECT c.* FROM canales c WHERE c.id = $2 AND c.inquilino_id = $1`, [permiso.ctx.inquilino.id, id])
+    : await pool.query(`SELECT c.* FROM canales c WHERE c.inquilino_id = $1 ORDER BY c.id LIMIT 1`, [permiso.ctx.inquilino.id]);
   if (!canal) return { ok: false, error: 'Todavía no hay un número conectado.' };
   return { ok: true, canal, ctx: permiso.ctx };
 }
@@ -43,8 +47,9 @@ export async function guardarInstruccion(
   slug: string,
   tipo: 'perfil_agente' | 'reglas_negocio' | 'resumen_conversacion',
   contenido: string,
+  canalId?: number,
 ): Promise<Resultado> {
-  const r = await canalDelCliente(slug);
+  const r = await canalDelCliente(slug, 'ADMIN', canalId);
   if (!r.ok) return { ok: false, error: r.error };
   const texto = String(contenido ?? '').trim();
   if (!texto) return { ok: false, error: 'Escribe la instrucción.' };
@@ -76,7 +81,7 @@ export async function guardarInstruccion(
 
 /** Crear o actualizar un bloque de conocimiento. La clave lo identifica dentro del canal. */
 export async function guardarConocimiento(slug: string, datos: FormData): Promise<Resultado> {
-  const r = await canalDelCliente(slug, 'OPERADOR');
+  const r = await canalDelCliente(slug, 'OPERADOR', Number(datos.get('canal')));
   if (!r.ok) return { ok: false, error: r.error };
 
   const clave = String(datos.get('clave') || '').trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
@@ -99,8 +104,8 @@ export async function guardarConocimiento(slug: string, datos: FormData): Promis
   return { ok: true, mensaje: 'Guardado.' };
 }
 
-export async function borrarConocimiento(slug: string, clave: string): Promise<Resultado> {
-  const r = await canalDelCliente(slug);
+export async function borrarConocimiento(slug: string, clave: string, canalId?: number): Promise<Resultado> {
+  const r = await canalDelCliente(slug, 'ADMIN', canalId);
   if (!r.ok) return { ok: false, error: r.error };
   await pool.query(`DELETE FROM conocimiento WHERE canal_id = $1 AND clave = $2`, [r.canal.id, clave]);
   revalidatePath(`/${slug}/estudio`);
@@ -114,7 +119,7 @@ export async function borrarConocimiento(slug: string, clave: string): Promise<R
  * tocar las conversaciones una por una. Es el botón que se busca cuando algo va mal.
  */
 export async function guardarAjustes(slug: string, datos: FormData): Promise<Resultado> {
-  const r = await canalDelCliente(slug);
+  const r = await canalDelCliente(slug, 'ADMIN', Number(datos.get('canal')));
   if (!r.ok) return { ok: false, error: r.error };
 
   const razonamiento = String(datos.get('razonamiento') || 'low');
@@ -156,7 +161,7 @@ export async function guardarAjustes(slug: string, datos: FormData): Promise<Res
  * vuelve al navegador; la pantalla solo ve sus cuatro últimos caracteres.
  */
 export async function guardarClaveIA(slug: string, datos: FormData): Promise<Resultado> {
-  const r = await canalDelCliente(slug);
+  const r = await canalDelCliente(slug, 'ADMIN', Number(datos.get('canal')));
   if (!r.ok) return { ok: false, error: r.error };
   if (!claveMaestraConfigurada()) return { ok: false, error: 'Falta AGENTE_CLAVE_MAESTRA en el servidor: no se puede guardar la clave cifrada.' };
 
