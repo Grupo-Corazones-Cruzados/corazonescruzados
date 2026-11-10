@@ -289,6 +289,26 @@ Investigado antes de construir. Cambia el plan en cuatro puntos:
 - **Anuncios de Meta:** `OUTCOME_ENGAGEMENT` con `THRUPLAY` para vistas, `lifetime_budget` en centavos con `end_time`, `pacing_type=["day_parting"]` y `adset_schedule` (días 6 y 0; minutos 420–660 y 1020–1380), `status=PAUSED`, un conjunto con `publisher_platforms=["facebook"]` y otro con `["instagram"]`. Mínimo en USD sin confirmar: se lee de `minimum_budgets` de la cuenta. La música con derechos impide promocionar un video de Instagram.
 - **TikTok:** Spark Ads por API con el código de autorización del video (`/tt_video/authorize/`). El acceso de desarrollador exige registrarse como anunciante directo con correo de empresa, y lo revisan en unos 3 días hábiles más 2 o 3 de la app. Publicar con la API for Business exige una URL pública de dominio verificado y, desde 2026-03-20, el formulario de acceso a la API de cuentas. «Promocionar» en la app empezaba en 10 $ según un artículo suyo, sin API.
 
+### Rediseño pedido por Fernando (2026-11-10): especificación
+La interfaz actual (pestañas, «Videos» y «Guiones») le resulta confusa. Lo que pidió, en sus términos:
+- **Talentos y canales:** lfgonzalezm0 es automatización de procesos y lfgonzalezm1 es psicología.
+- **Navegación de Progreso:** «Configuración» pasa al menú 1, encima de la foto de perfil, y encima de ella «Ver como otro usuario».
+- **Redes por talento:** en Configuración, cada talento conecta sus redes, una cuenta por red, con métodos disponibles para cualquier usuario en la web y en el teléfono. Desaparece la pestaña de redes del perfil, y el CV compartido por talento muestra las redes conectadas de ese talento.
+- **Nueva idea:** 1) talento (uno de los suyos); 2) referencias de ese talento, varias, con filtros por cliente y por tipo (proyecto, ticket, producto), solo proyectos completados y sin la etiqueta de estado; 3) video base ya recortado.
+- **Entregables:** desaparecen guion largo, guion corto, short, requerimientos y metadatos. Quedan cuatro:
+  - **Miniatura vertical** para TikTok, Reels y Shorts.
+  - **Video editado** con animaciones, transiciones y efectos, **sin música**.
+  - **Carrusel** comercial con ganchos para seguir deslizando. Al final, invitación a seguir la cuenta y, siempre, el logo de Grupo Corazones Cruzados con la dirección del sitio para registrarse.
+  - **Infografía técnica** para LinkedIn.
+  - Destino: video en Reels, TikTok y Shorts; carrusel en Instagram y LinkedIn; infografía en LinkedIn.
+- **Videos largos de YouTube:** quedan pendientes, con un apartado propio en el futuro.
+- **Sesiones locales:** como administrador puede generar para otros usuarios con «Ver como». Cada idea tiene una única sesión. Se quitan la lista de sesiones con sus botones, el botón de subir video, la pestaña de guiones y el título encima del contenedor. «Compartir» va al menú de tres puntos. El agente pone el nombre de la idea la primera vez; después solo lo edita él.
+- **Panel derecho:** los entregables, con enlace a Google Drive.
+- **Dos momentos:**
+  - **«Subir»:** sube el proyecto a su Drive (lfgonzalezm0@grupocc.org), en una carpeta dedicada, y trae los enlaces. Se puede seguir editando en la sesión, y otro botón actualiza Drive.
+  - **«Publicar»:** pide título, descripción, visibilidad y programación, una sola vez para todas las redes, sin pedir canal. Publica y entonces borra el proyecto local.
+- **Hecho de inmediato:** sin música en el agente; `construir.mjs` la rechaza salvo que él la pida.
+
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?
