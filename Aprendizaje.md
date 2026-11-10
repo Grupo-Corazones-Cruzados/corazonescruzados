@@ -315,6 +315,16 @@ La interfaz actual (pestañas, «Videos» y «Guiones») le resulta confusa. Lo 
   - Construirlo todo junto.
   - **Publicar exige las cinco redes conectadas al talento:** Instagram, Facebook, LinkedIn, YouTube y TikTok. Si falta una, no se publica.
 
+### Construido (2026-11-10, commits ccf8ad86 y ce7245b6)
+
+- **Navegación:** Configuración sale de la lista de Progreso y va al pie del primer menú, encima de la foto; encima, «Ver como otro usuario».
+- **Redes por talento:** tabla `redes_talento` (migración 091), sección en Configuración ▸ Conexiones. El intento de conexión vive en `redes_talento_intentos` y se gasta al volver, así sirve desde la app, que abre el navegador del sistema. YouTube funciona; Meta, TikTok y LinkedIn aparecen como «pendiente de aprobación» hasta tener sus credenciales. Los dos canales ya conectados se pasaron a su talento.
+- **CV:** el perfil ya no tiene «Redes sociales»; el CV compartido y su PDF enseñan las redes conectadas del talento que se está viendo.
+- **Agente:** `construir.mjs --final` (1080×1920, 30 fps, 14 Mbps, sin CapCut, sin `textos`) se probó sobre una copia del video aprobado. `entregables.mjs` hace la miniatura, el carrusel y la infografía con `gpt-image-2`; probado con cinco ilustraciones, en unos 90 s. Solo Fernando juzga cómo se ven.
+- **Pantalla:** `IdeasDeContenido.tsx` (ideas · chat · entregables). Drive en `GCC World · Archivos de la empresa / Generación de Contenido / <talento> / <id · idea>`, compartido solo con el dominio. «Compartir» del ⋯ copia ese enlace (interpretación, falta que Fernando la confirme).
+- **Publicar:** `publicar-idea.ts`. Hoy se detiene siempre, porque faltan las redes de Meta, TikTok y LinkedIn. Solo YouTube tiene publicador; cada red nueva necesita su publicador antes de abrir la puerta.
+- **Pendiente de Fernando:** registrar `https://app.grupocc.org/api/redes/youtube/callback` y `http://localhost:3792/api/redes/youtube/callback` en el cliente OAuth de Google. La ruta vieja de Generación de Contenido ya no existe, así que hasta entonces no se puede conectar ni reconectar un canal. Además, las apps de Meta, TikTok y LinkedIn.
+
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
 - **P2:** añadir una pista de audio y un gráfico a ese proyecto con CapCut cerrado: ¿abre y persiste al guardar?
