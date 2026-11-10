@@ -7142,7 +7142,7 @@ capa de datos (`lib/centralized/generacion-contenido-db.ts`), su agente
   - **Cobro de un proyecto:** el pago llega SIEMPRE a Grupo Corazones Cruzados; luego se generan facturas
     automáticas con las cuentas de facturación de los usuarios que facturan al cliente, y cobran al completarse el pago.
   - **Suscripciones:** se pagan a quien ofrece el producto y cuentan como sus ingresos.
-  - **TIER DE DESARROLLO HUMANO por lo generado acumulado** (anualidad que paga el usuario a la plataforma):
+  - **TIER DE DESARROLLO HUMANO por lo generado acumulado, SOLO lo FACTURADO; los adicionales no cuentan** (anualidad que paga el usuario a la plataforma):
     tier 0 < 5.000 $ gratis · tier 1 ≥ 5.000 → 30 $/año · tier 2 ≥ 20.000 → 100 $ · tier 3 ≥ 50.000 → 200 $ ·
     tier 4 ≥ 75.000 → 300 $ · ≥ 100.000 → 400 $ (último escalón, no sube más). Aplica a miembros y candidatos.
   - **Los beneficios de la plataforma** (anualidades) van a la cuenta del SRI de Fernando como administrador.
