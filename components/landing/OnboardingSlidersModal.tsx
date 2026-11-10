@@ -154,8 +154,9 @@ const MOTIVOS: AccordionItem[] = [
           tiempo, nos han enseñado a mirarnos como distintos. Es cierto que crecemos en entornos
           diferentes, pero los valores que de verdad importan son los mismos en todas partes.
         </p>
+        {/* Texto de Fernando (editor de textos, 2026-11-10), literal. */}
         <p style={cardDesc}>
-          Creemos que un corazón —y una organización— puede representar esa{' '}
+          Creemos que un corazón  y una organización puede representar esa{' '}
           <strong style={strong}>alianza que ya existe</strong>, silenciosa, en el fondo de la
           humanidad. El Grupo Corazones Cruzados nace para unir al mundo a través de sus valores y
           de un sistema que represente lo que de verdad necesitamos. Y lo que más necesitamos hoy
@@ -177,11 +178,11 @@ const MOTIVOS: AccordionItem[] = [
         <p style={cardDesc}>
           Demasiadas veces los más jóvenes heredamos las consecuencias de problemas que otros
           prefirieron ignorar, convencidos de que era más fácil llamarlos imposibles que intentar
-          resolverlos. Esa <strong style={strong}>realidad imposible</strong> —donde los valores se
-          unen y la organización se fortalece por encima de la separación— solo puede enfrentarse
-          con una <strong style={strong}>disciplina centralizada</strong>: un sueño único y
-          compartido, trabajado cada día, que resuelve los problemas sociales paso a paso hasta
-          limpiar nuestras calles, y el mundo, de aquello que está mal.
+          resolverlos. Esa <strong style={strong}>realidad imposible</strong> donde los valores se
+          unen y la organización se fortalece por encima de la separación, solo puede enfrentarse
+          con una <strong style={strong}>disciplina centralizada</strong> en trabajar cada día en
+          resolver las problemáticas sociales paso a paso hasta limpiar nuestras calles y el mundo,
+          de aquello que está mal.
         </p>
       </>
     ),
@@ -193,29 +194,28 @@ const MOTIVOS: AccordionItem[] = [
       <>
         <p style={cardDesc}>
           Crecimos creyendo que la democracia, a través del voto, era la mejor forma de elegir a
-          quienes nos representan. Pero, con demasiada frecuencia, ese camino ha terminado en
-          corrupción y en entregar poder a quien no lo ha merecido. Tener acceso a recursos que no
-          se han ganado, solo porque otros los conceden por confianza, no es un liderazgo legítimo.
+          quienes nos representan, pero con demasiada frecuencia ese camino ha terminado en
+          corrupción y en entregar el poder a quien no lo ha merecido.
         </p>
         <p style={cardDesc}>
-          El verdadero poder no se decide: se <strong style={strong}>construye</strong>, se{' '}
-          <strong style={strong}>gana</strong> y se sostiene cuando la gente reconoce a su líder
-          por convicción, no porque deba elegir entre opciones que no la representan. Ni siquiera el
-          voto nulo ofrece una salida: es apenas un vacío que nunca nos ha permitido elegir algo
-          distinto.
+          El verdadero poder no se debe obtener a través de las apariencias, sino que se{' '}
+          <strong style={strong}>construye</strong>, se <strong style={strong}>gana</strong> y se
+          sostiene cuando el liderazgo es reconocido y respetado por convicción de las personas. Hoy
+          estamos obligados a elegir entre el menos peor y ni siquiera el voto nulo ofrece una salida
+          o solución.
         </p>
         <p style={cardDesc}>
           Por eso creemos que el liderazgo debe surgir de una <strong style={strong}>causa social
-          genuina</strong>, nacida de la vida, las razones y las acciones de quien la encarna —no de
-          la pertenencia a un partido—. Un líder se impone por naturaleza: si es capaz de movilizar
-          a las personas y de habitar su corazón, es un líder nato; si no logra moverlas,
-          sencillamente no lo es.
+          genuina</strong>, nacida de la vida, las razones y las acciones de quien la encarna, no de
+          la pertenencia a un partido. Un líder se impone por naturaleza, y si es capaz de movilizar
+          a las personas y de habitar su corazón, es un líder nato; en caso contrario, simplemente no
+          lo es.
         </p>
         <p style={cardDesc}>
-          Cuando existen preferencias divididas, su tarea es ganarse el corazón de todos; y si eso
-          no es posible, entonces no había un solo líder, sino dos. El liderazgo es vivo y
-          cambiante, pero siempre auténtico: se conquista con acciones reales, sin falsos positivos
-          ni voluntades compradas. Eso —y no una votación— es lo que da legitimidad al poder.
+          Cuando existen preferencias divididas, su tarea es ganarse el corazón de todos, y si eso
+          no es posible, entonces no existe un solo líder, sino dos. El liderazgo es vivo y
+          cambiante, pero siempre auténtico, se conquista con acciones reales, sin falsos positivos
+          ni voluntades compradas. Eso y no una votación es lo que da legitimidad al poder.
         </p>
       </>
     ),
