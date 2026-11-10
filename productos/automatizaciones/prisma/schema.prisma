@@ -910,3 +910,25 @@ model ContactoEtiqueta {
   @@id([contactoId, etiquetaId])
   @@map("contacto_etiquetas")
 }
+
+/// Una llamada ENTRANTE de WhatsApp (Cloud API Calling, 2026-11-10). Ver sql/migraciones/021.
+model Llamada {
+  id               Int       @id @default(autoincrement())
+  inquilinoId      Int       @map("inquilino_id")
+  canalId          Int       @map("canal_id")
+  conversacionId   Int?      @map("conversacion_id")
+  mensajeId        Int?      @map("mensaje_id")
+  waCallId         String    @unique @map("wa_call_id") @db.VarChar(200)
+  /// SONANDO · CONTESTANDO · EN_CURSO · TERMINADA · PERDIDA · RECHAZADA · FALLIDA
+  estado           String    @default("SONANDO") @db.VarChar(12)
+  sdpOferta        String?   @map("sdp_oferta")
+  atendidaPorId    Int?      @map("atendida_por_id")
+  llegoEn          DateTime  @default(now()) @map("llego_en") @db.Timestamptz(3)
+  contestadaEn     DateTime? @map("contestada_en") @db.Timestamptz(3)
+  terminadaEn      DateTime? @map("terminada_en") @db.Timestamptz(3)
+  duracionSegundos Int?      @map("duracion_segundos")
+  error            String?
+
+  @@index([inquilinoId, estado, llegoEn(sort: Desc)], map: "llamadas_por_estado")
+  @@map("llamadas")
+}

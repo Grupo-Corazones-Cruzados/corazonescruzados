@@ -127,6 +127,8 @@ const TIPOS: Record<string, { icono: React.ComponentType<{ className?: string }>
   document: { icono: FileText, nombre: 'Documento' },
   location: { icono: MapPin, nombre: 'Ubicación' },
   sticker: { icono: Sticker, nombre: 'Sticker' },
+  /** El aviso de una llamada de WhatsApp (2026-11-10): «Llamada perdida», «Llamada de voz · 2:31». */
+  llamada: { icono: Phone, nombre: 'Llamada' },
 };
 function Contenido({ texto, tipo }: { texto: string | null; tipo: string }) {
   const t = TIPOS[tipo];

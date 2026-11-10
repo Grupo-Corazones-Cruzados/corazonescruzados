@@ -28,6 +28,7 @@ import {
   extraerCambiosDeNumero, migrarNumeroDeContacto,
 } from '@/lib/agente/ingesta';
 import { encolar } from '@/lib/agente/cola';
+import { extraerLlamadas, registrarLlamada, terminarLlamada } from '@/lib/agente/llamadas';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -155,6 +156,25 @@ export async function POST(req: Request) {
      * traza ya salvó dos veces datos que un lector mío leyó mal—, pero no se ingiere.
      */
     if (campo === 'history') return NextResponse.json({ ok: true });
+
+    /**
+     * ── LAS LLAMADAS (`calls`, 2026-11-10) ──────────────────────────────────────────
+     * Solo números CLOUD_API. `connect` la deja SONANDO con su oferta SDP (la contesta el
+     * navegador de alguien del equipo, ver lib/agente/llamadas.ts); `terminate` la cierra.
+     * No se encola nada: el agente de IA no atiende llamadas.
+     */
+    if (campo === 'calls') {
+      const { eventos, nombres } = extraerLlamadas(payload);
+      for (const ev of eventos) {
+        try {
+          if (ev.event === 'connect') await registrarLlamada(canal.id, ev, nombres.get(ev.from) ?? null);
+          else if (ev.event === 'terminate') await terminarLlamada(canal.id, ev);
+        } catch (e: any) {
+          console.error('[agente/webhook] llamada:', e?.message);
+        }
+      }
+      return NextResponse.json({ ok: true });
+    }
 
     /**
      * ── LOS ACUSES (`statuses`): ✓ enviado, ✓✓ entregado, ✓✓ azul leído (2026-11-08) ──

@@ -1,12 +1,13 @@
 import type { CSSProperties } from 'react';
 import { exigirContexto } from '@/lib/inquilino';
-import { prisma } from '@/lib/db';
+import { prisma, pool } from '@/lib/db';
 import { perfilGcc } from '@/lib/cuentaGcc';
 import { AplicaMarca } from '@/componentes/Marca';
 import { urlLogo } from '@/lib/marca';
 import { BarraLateral, BarraInferior, HuecoBarraAcciones } from '@/componentes/Navegacion';
 import { AvisoEscaparate } from '@/componentes/AvisoEscaparate';
 import { AvisoVistaComo } from '@/componentes/AvisoVistaComo';
+import { AvisoLlamadas } from '@/componentes/Llamadas';
 import { estaEmbebido } from '@/lib/sesion';
 import { conBase } from '@/lib/base';
 
@@ -28,6 +29,10 @@ export default async function LayoutApp({
   const { inquilino, sesion, montados } = await exigirContexto(cliente);
   // Dentro de GCC World el menú lo pone la plataforma (`/<slug>/entrar`, `lib/sesion.ts`).
   const embebido = await estaEmbebido();
+  // El aviso de llamadas entrantes, solo si algún número del negocio recibe llamadas (2026-11-10)
+  // y para quien puede contestar: ni consulta, ni «ver como», ni el escaparate.
+  const conLlamadas = sesion.rol !== 'CONSULTA' && !sesion.suplantadoPor && !inquilino.soloLectura
+    && (await pool.query(`SELECT 1 FROM canales WHERE inquilino_id = $1 AND llamadas = 'ACTIVAS' LIMIT 1`, [inquilino.id])).rows.length > 0;
 
   // La foto de quien entra con su cuenta de GCC World (2026-11-08), servida por `/<cliente>/foto`
   // (en la plataforma es un `data:` grande: no se mete en cada página).
@@ -104,6 +109,7 @@ export default async function LayoutApp({
         enVista={!!sesion.suplantadoPor}
       />}
       </div>
+      {conLlamadas && <AvisoLlamadas slug={cliente} />}
     </AplicaMarca>
   );
 }

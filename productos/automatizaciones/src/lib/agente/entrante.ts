@@ -7,7 +7,7 @@
  */
 
 /** El campo del webhook: dice QUÉ nos está contando Meta, no solo de quién. */
-export type CampoWebhook = 'messages' | 'smb_message_echoes' | 'smb_app_state_sync' | 'history' | 'otro';
+export type CampoWebhook = 'messages' | 'smb_message_echoes' | 'smb_app_state_sync' | 'history' | 'calls' | 'otro';
 
 /** Lo que nos interesa de un mensaje de la Cloud API, ya normalizado. */
 export interface MensajeEntrante {
@@ -83,7 +83,7 @@ export function extraerMensajes(payload: any): { phoneNumberId: string | null; m
 export function campoDelWebhook(payload: any): CampoWebhook {
   const campo = payload?.entry?.[0]?.changes?.[0]?.field;
   return campo === 'messages' || campo === 'smb_message_echoes'
-      || campo === 'smb_app_state_sync' || campo === 'history'
+      || campo === 'smb_app_state_sync' || campo === 'history' || campo === 'calls'
     ? campo : 'otro';
 }
 

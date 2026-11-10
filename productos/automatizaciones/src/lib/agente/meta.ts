@@ -291,3 +291,25 @@ export async function activarLlamadas(phoneNumberId: string, token: string) {
     body: JSON.stringify({ calling: { status: 'ENABLED', call_icon_visibility: 'DEFAULT' } }),
   });
 }
+
+/**
+ * Contestar, rechazar o colgar una llamada (Cloud API Calling, 2026-11-10). `pre_accept` y
+ * `accept` llevan la MISMA respuesta SDP; `reject` y `terminate` no llevan ninguna.
+ */
+export async function accionLlamada(
+  phoneNumberId: string,
+  token: string,
+  callId: string,
+  accion: 'pre_accept' | 'accept' | 'reject' | 'terminate',
+  sdp?: string,
+) {
+  return graph(`/${phoneNumberId}/calls`, {
+    method: 'POST', token,
+    body: JSON.stringify({
+      messaging_product: 'whatsapp',
+      call_id: callId,
+      action: accion,
+      ...(sdp ? { session: { sdp_type: 'answer', sdp } } : {}),
+    }),
+  });
+}
