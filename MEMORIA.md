@@ -222,16 +222,13 @@ base verbatim):
   reemplazar en `archivo` el `original` por el `texto`, literal. Los marcadores `{fecha}` y `{destino}` de las
   opciones de acceso son variables del código. Después, volver a sembrar `original = texto` para que el editor
   muestre «0 cambiados».
-- **Pendiente (2026-11-09): el editor no tiene Candidatos.** Se sembró antes de que existiera la página y
-  todavía enseña Soluciones y Desarrollo Humano, que ya no existen. Fernando lo pidió al día con lo que
-  existe hoy. Las 142 filas de Candidatos (presentación, los 8 apartados y el formulario; negritas como
-  `**así**`) ya están generadas desde el código en `../respaldos-gcc/editor-textos/candidatos.json`
-  (con `generar.py`), fuera del repo. El HTML del editor ya corregido (`ORDEN_PAGINAS` = Inicio, Candidatos, Clientes, Miembros,
-  Común a todas) está en la misma carpeta: `textos-del-sitio.html`, listo para publicar en su URL. Faltan dos cosas, que solo pueden hacerse con las herramientas
-  Artifact/ArtifactData: (1) en el HTML del editor, `PAGINAS` pasa a
-  `['Inicio','Candidatos','Clientes','Común a todas']`, y se vuelve a publicar en la misma URL;
-  (2) un `batch set` de esas filas, `delete` de las de `Soluciones` y `Desarrollo Humano` (antes, guardar
-  una copia con `list`), y refrescar `original` de las demás con el código actual.
+- **Editor al día (2026-11-09):** pestañas Inicio · Candidatos · Clientes · Soluciones · Miembros · Común
+  a todas (Soluciones se queda porque `/soluciones` sigue publicada aunque no esté en el menú; Miembros
+  sale vacía hasta que Fernando dé su contenido). Se borraron los 104 textos de Desarrollo Humano, los 4 de
+  la tarjeta de postulación y la variante de Aventura del cliente; se refrescaron 3 que cambiaron en el
+  código y entraron 142 de Candidatos (claves `candidatos.*`, negritas como `**así**`, `orden` 29,001…).
+  Total 277. Copia previa y generador en `../respaldos-gcc/editor-textos/` (fuera del repo). Al aplicar un
+  texto de Candidatos que está en JSX, las `**` son `<strong style={strong}>`.
 - **Clientes ▸ Soluciones / Tickets (2026-10-31):** la tarjeta de la solución solo lleva su nombre y no es
   enlace; se elige el TALENTO (`/clientes/soluciones/<sol>/<talento>`, con sus productos y servicios y lo
   hecho); `/clientes/soluciones/<sol>` redirige a la lista. Cada talento tiene icono (migración 076).
