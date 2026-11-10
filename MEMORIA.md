@@ -226,7 +226,7 @@ base verbatim):
   todavía enseña Soluciones y Desarrollo Humano, que ya no existen. Fernando lo pidió al día con lo que
   existe hoy. Las 142 filas de Candidatos (presentación, los 8 apartados y el formulario; negritas como
   `**así**`) ya están generadas desde el código en `../respaldos-gcc/editor-textos/candidatos.json`
-  (con `generar.py`), fuera del repo. El HTML del editor ya corregido (`ORDEN_PAGINAS` = Inicio, Candidatos, Clientes,
+  (con `generar.py`), fuera del repo. El HTML del editor ya corregido (`ORDEN_PAGINAS` = Inicio, Candidatos, Clientes, Miembros,
   Común a todas) está en la misma carpeta: `textos-del-sitio.html`, listo para publicar en su URL. Faltan dos cosas, que solo pueden hacerse con las herramientas
   Artifact/ArtifactData: (1) en el HTML del editor, `PAGINAS` pasa a
   `['Inicio','Candidatos','Clientes','Común a todas']`, y se vuelve a publicar en la misma URL;
