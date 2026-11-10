@@ -28,7 +28,8 @@ const ICONO_RED: Record<Red, LucideIcon> = {
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
 /** Panel de Perfil: avatar, datos personales, redes y cuenta. Autónomo (usa el usuario actual). */
-export default function ProfilePanel() {
+/** `accion`: un botón a la derecha del título (p. ej. «Compartir CV», Fernando 2026-11-09). */
+export default function ProfilePanel({ accion }: { accion?: React.ReactNode } = {}) {
   const { user, refreshUser } = useAuth();
   const [firstName, setFirstName] = useState(user?.first_name || '');
   const [lastName, setLastName] = useState(user?.last_name || '');
@@ -197,7 +198,7 @@ export default function ProfilePanel() {
     <SettingsPanel
       /* Sin subtítulo «Tus datos personales y redes» (Fernando, 2026-10-23: bajo el título
          no van frases descriptivas; los campos ya lo dicen). */
-      Icon={User} title="Perfil"
+      Icon={User} title="Perfil" headerExtra={accion}
       bodyClassName="p-0" className="w-full xl:w-[400px] shrink-0 h-full"
       /* ⚠️ El botón vive en el PIE, fuera del `<form>`, así que se ata a él con
          `form="perfil-form"` — atributo HTML estándar. Es lo que permite tener la

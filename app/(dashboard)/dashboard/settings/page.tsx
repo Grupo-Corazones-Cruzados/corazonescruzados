@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState, useSyncExternalStore } from 'react';
+import { Suspense, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
 import ProfilePanel from '@/components/settings/ProfilePanel';
@@ -14,6 +14,7 @@ import CobrosPanel from '@/components/settings/CobrosPanel';
 import FacturacionPanel from '@/components/settings/FacturacionPanel';
 import DetailHeader from '@/components/ui/DetailHeader';
 import PortadaSecciones from '@/components/ui/PortadaSecciones';
+import MenuMas from '@/components/ui/MenuMas';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import { FileText, CalendarClock, Briefcase, Share2, Link2, Bell, User, ChevronRight, Wallet, Receipt, type LucideIcon } from 'lucide-react';
@@ -101,42 +102,19 @@ function Configuracion() {
         style={alto.style}
         className="flex flex-col xl:flex-row gap-4 items-stretch max-xl:!h-auto xl:min-h-0"
       >
-        <ProfilePanel />
+        <ProfilePanel accion={isMember ? (
+          // «Compartir CV» va con el Perfil (Fernando, 2026-11-09): la barra de pestañas queda para las pestañas.
+          <button onClick={() => setCompartir(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-accent text-accent text-[13px] font-medium rounded hover:bg-accent-light transition-colors whitespace-nowrap shrink-0" style={mf}>
+            <Share2 className="w-4 h-4" /> Compartir CV
+          </button>
+        ) : undefined} />
 
         {tabs.length > 0 && (
           <div className="flex-1 min-w-0 w-full h-full min-h-0 flex flex-col bg-digi-card border border-digi-border rounded-xl shadow-sm overflow-hidden">
-            {/* Barra de pestañas + «Compartir CV» a la derecha, como el «Compartir
-                acceso» de un proyecto.
-
-                ⚠️ **NADA DE `overflow-x-auto` AQUÍ.** La primera versión lo puso en
-                el grupo de pestañas «por si algún día no caben», y con tres pestañas
-                y sitio de sobra el navegador dibujaba igualmente su barra horizontal:
-                se comía alto y asomaba un cuadrito en la esquina. Lo vio Fernando.
-                Un contenedor de scroll que nunca desplaza nada solo estorba; si algún
-                día hicieran falta más pestañas, se envuelven (`flex-wrap`), que en
-                una barra ancha es mejor gesto que arrastrar de lado.
-
-                `justify-between` en vez del hueco `flex-1`: es la misma colocación con
-                un elemento menos. */}
-            <div className="flex items-stretch justify-between gap-2 border-b border-digi-border shrink-0">
-              <div className="flex items-stretch flex-wrap">
-                {tabs.map((t) => {
-                  const active = tabActiva === t.key;
-                  return (
-                    <button key={t.key} onClick={() => setTab(t.key)}
-                      className={`inline-flex items-center gap-2 px-4 py-3 text-[13px] font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${active ? 'border-accent text-accent bg-accent-light/40' : 'border-transparent text-digi-muted hover:text-digi-text'}`} style={mf}>
-                      <t.Icon className="w-4 h-4" /> {t.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {isMember && <div className="flex items-center shrink-0 px-2">
-                <button onClick={() => setCompartir(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-accent text-accent text-[13px] font-medium rounded hover:bg-accent-light transition-colors whitespace-nowrap" style={mf}>
-                  <Share2 className="w-4 h-4" /> Compartir CV
-                </button>
-              </div>}
-            </div>
+            {/* LAS PESTAÑAS QUE NO CABEN VAN AL «⋯» (Fernando, 2026-11-09): antes se partían en una
+                segunda fila (`flex-wrap`). Nunca `overflow-x-auto`: dibujaba su barra aunque cupieran. */}
+            <PestanasQueCaben tabs={tabs} activa={tabActiva} onElegir={setTab} />
 
             {/* ⚠️ Este hueco NO lleva `overflow` ni relleno: **cada panel decide** qué
                 parte suya se desplaza y qué parte queda fija al fondo. Si el scroll
@@ -158,6 +136,67 @@ function Configuracion() {
       {/* Panel lateral derecho con overlay: el mismo diseño que «Compartir acceso»
           de una cotización. */}
       <PanelCompartirCv open={compartir} onClose={() => setCompartir(false)} />
+    </div>
+  );
+}
+
+const ANCHO_MAS = 52; // el «⋯» con su margen
+
+/**
+ * La barra de pestañas de Configuración: las que caben en una fila y el resto en el menú «⋯»
+ * (`MenuMas`). Se mide con una copia invisible de todas, como `PixelTabs`, y se vuelve a medir
+ * al cambiar el ancho. La pestaña abierta se ve siempre: si le tocaba ir al menú, ocupa el
+ * último hueco visible.
+ */
+function PestanasQueCaben({ tabs, activa, onElegir }: {
+  tabs: typeof TABS; activa: TabKey | undefined; onElegir: (k: TabKey) => void;
+}) {
+  const barra = useRef<HTMLDivElement>(null);
+  const medida = useRef<HTMLDivElement>(null);
+  const [caben, setCaben] = useState(tabs.length);
+
+  useLayoutEffect(() => {
+    const calcular = () => {
+      const b = barra.current, m = medida.current;
+      if (!b || !m) return;
+      const anchos = Array.from(m.children).map((el) => (el as HTMLElement).offsetWidth);
+      const total = anchos.reduce((t, w) => t + w, 0);
+      if (total <= b.clientWidth) return setCaben(anchos.length);
+      let usado = ANCHO_MAS, n = 0;
+      while (n < anchos.length && usado + anchos[n] <= b.clientWidth) usado += anchos[n++];
+      setCaben(Math.max(1, n));
+    };
+    calcular();
+    const ro = new ResizeObserver(calcular);
+    if (barra.current) ro.observe(barra.current);
+    return () => ro.disconnect();
+  }, [tabs]);
+
+  let visibles = tabs.slice(0, caben);
+  const abierta = tabs.find((t) => t.key === activa);
+  if (abierta && !visibles.includes(abierta)) visibles = [...visibles.slice(0, -1), abierta];
+  const ocultas = tabs.filter((t) => !visibles.includes(t));
+  const pestana = (t: (typeof TABS)[number], medir = false) => {
+    const active = !medir && activa === t.key;
+    return (
+      <button key={t.key} type="button" tabIndex={medir ? -1 : undefined} onClick={medir ? undefined : () => onElegir(t.key)}
+        className={`inline-flex items-center gap-2 px-4 py-3 text-[13px] font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${active ? 'border-accent text-accent bg-accent-light/40' : 'border-transparent text-digi-muted hover:text-digi-text'}`} style={mf}>
+        <t.Icon className="w-4 h-4" /> {t.label}
+      </button>
+    );
+  };
+
+  return (
+    <div ref={barra} className="relative flex items-stretch border-b border-digi-border shrink-0 min-w-0">
+      {visibles.map((t) => pestana(t))}
+      {ocultas.length > 0 && (
+        <div className="flex items-center px-2 ml-auto">
+          <MenuMas label="Más pestañas" items={ocultas.map((t) => ({ label: t.label, icon: t.Icon, onClick: () => onElegir(t.key) }))} />
+        </div>
+      )}
+      <div ref={medida} aria-hidden className="absolute left-0 top-0 flex invisible pointer-events-none">
+        {tabs.map((t) => pestana(t, true))}
+      </div>
     </div>
   );
 }
