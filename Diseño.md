@@ -1990,6 +1990,17 @@ teléfono, y salió con la piel pixel antigua (Silkscreen, borde violeta, campo 
 - **Botón cerrar (X) junto a acciones:** ambos como botones **32×32** (`w-8 h-8 flex items-center
   justify-center rounded-md`) en un contenedor `flex items-center` para que queden a la misma altura.
 
+### ⭐ Menú 1: favoritos + lanzador «Todos» (Fernando, 2026-11-10) — ESTÁNDAR
+
+El menú 1 (`MenuAccesos`) ya no lista todos los productos y herramientas: enseña las **Apps**, los
+**productos y herramientas fijados** por la cuenta (y el que esté abierto aunque no lo esté) y un botón
+**«Todos»** (`LayoutGrid`, con la cuenta total) que abre `LanzadorAccesos`: panel de 22 rem a la derecha
+del raíl (pantalla completa en el teléfono), con buscador, productos y herramientas por categoría, y una
+**estrella** por elemento para fijarlo o quitarlo. Los favoritos se guardan en la cuenta
+(`/api/accesos/fijados`, tabla `gcc_world.accesos_fijados`), así son los mismos en la web, la Mac y el
+teléfono. Sin elegir, se fijan los 6 primeros (productos y luego herramientas). Un producto o herramienta
+nuevo no agranda el menú: aparece en «Todos».
+
 ### ⭐ Visor de archivos — `VisorArchivos` / `abrirArchivo()` (Fernando, 2026-11-09) — ESTÁNDAR
 
 Fernando lo aprobó como la forma de presentar archivos en toda la plataforma. **Un PDF, una imagen, un

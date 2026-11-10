@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { Eye, LogOut, Settings, Undo2 } from 'lucide-react';
+import { Eye, LayoutGrid, LogOut, Settings, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
@@ -15,6 +15,10 @@ import { definicionTema } from '@/lib/temas';
 import { iconoDeProducto, useAccesos } from './useAccesos';
 import { movimientoDelMenu } from './nivelMenu';
 import { tinteDe } from './tintes';
+import LanzadorAccesos, { claveHerramienta, claveProducto } from './LanzadorAccesos';
+
+/** Sin favoritos elegidos, el menú fija los primeros (productos y luego herramientas). */
+const FIJADOS_POR_DEFECTO = 6;
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -56,6 +60,36 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
     : pathname.startsWith('/dashboard/admin/espacio') ? 'entorno'
     : pathname.startsWith('/dashboard/tools') ? herramientaAbierta ?? undefined : undefined);
   const { apps, productos, herramientas, rutaHerramienta, abrirProducto } = useAccesos();
+
+  // ── FAVORITOS (Fernando, 2026-11-10): el menú enseña solo lo fijado; lo demás, en el lanzador «Todos».
+  // Se guardan en la cuenta (`/api/accesos/fijados`) y se copian en el navegador para no parpadear.
+  const llaveFijados = user?.id ? `gcc_accesos_fijados:${user.id}` : null;
+  const [guardados, setGuardados] = useState<string[] | null | undefined>(undefined);
+  const [lanzador, setLanzador] = useState(false);
+  useEffect(() => {
+    if (!llaveFijados) return;
+    try { const c = localStorage.getItem(llaveFijados); if (c) setGuardados(JSON.parse(c)); } catch { /* sin almacenamiento */ }
+    fetch('/api/accesos/fijados').then((r) => (r.ok ? r.json() : null)).then((j) => {
+      if (!j) return;
+      setGuardados(j.data);
+      try { if (j.data) localStorage.setItem(llaveFijados, JSON.stringify(j.data)); else localStorage.removeItem(llaveFijados); } catch { /* sin almacenamiento */ }
+    }).catch(() => {});
+  }, [llaveFijados]);
+  const todas = useMemo(() => [...(productos ?? []).map(claveProducto), ...herramientas.map(claveHerramienta)], [productos, herramientas]);
+  // La selección por defecto espera a los productos (`null` = aún cargando): si no, salían seis herramientas.
+  const fijados = useMemo(() => new Set(guardados ?? (productos === null ? [] : todas.slice(0, FIJADOS_POR_DEFECTO))), [guardados, todas, productos]);
+  const alternar = useCallback((clave: string) => {
+    const base = guardados ?? todas.slice(0, FIJADOS_POR_DEFECTO);
+    const nuevo = base.includes(clave) ? base.filter((c) => c !== clave) : [...base, clave];
+    setGuardados(nuevo);
+    try { if (llaveFijados) localStorage.setItem(llaveFijados, JSON.stringify(nuevo)); } catch { /* sin almacenamiento */ }
+    fetch('/api/accesos/fijados', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ claves: nuevo }) })
+      .then((r) => { if (!r.ok) toast.error('No se pudo guardar el favorito'); }).catch(() => toast.error('No se pudo guardar el favorito'));
+  }, [guardados, todas, llaveFijados]);
+  // Lo abierto se ve aunque no esté fijado (si no, el menú no diría dónde estás).
+  const productosMenu = (productos ?? []).filter((p) => fijados.has(claveProducto(p)) || activoReal === `${p.producto}/${p.slug}`);
+  const herramientasMenu = herramientas.filter((h) => fijados.has(claveHerramienta(h)) || activoReal === h.id);
+  const hayMas = todas.length > 0;
   const [sobreElMenu, setSobreElMenu] = useState(false);
   const telefono = useConsultaMedia('(max-width: 63.99rem)');
   // Con segunda capa, siempre estrecha: desplegada solo en Comunicados (Fernando, 2026-11-08).
@@ -115,9 +149,9 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
             ))}
           </Grupo>
 
-          {(productos?.length ?? 0) > 0 && (
+          {productosMenu.length > 0 && (
             <Grupo titulo="Productos">
-              {productos!.map((p) => (
+              {productosMenu.map((p) => (
                 <button key={p.url} type="button" onClick={() => abrirProducto(p)} title={estrecho ? p.productoNombre : undefined} className={fila(`${p.producto}/${p.slug}`)}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={iconoDeProducto(p.producto)} alt="" width={24} height={24} decoding="async" className="w-6 h-6 shrink-0 rounded-md" />
@@ -127,15 +161,26 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
             </Grupo>
           )}
 
-          {herramientas.length > 0 && (
+          {herramientasMenu.length > 0 && (
             <Grupo titulo="Herramientas">
-              {herramientas.map((h) => (
+              {herramientasMenu.map((h) => (
                 <Link key={h.id} href={rutaHerramienta(h)} title={estrecho ? h.name : undefined} className={fila(h.id)}>
                   <span className="w-6 h-6 shrink-0 grid place-items-center"><h.Icon className="w-[18px] h-[18px]" strokeWidth={2} /></span>
                   {!estrecho && <span className="truncate">{h.name}</span>}
                 </Link>
               ))}
             </Grupo>
+          )}
+          {/* «Todos»: el lanzador con buscador y estrellas para elegir qué queda en el menú. */}
+          {hayMas && (
+            <div className="mt-2 pt-2 border-t border-digi-border/60">
+              <button type="button" onClick={() => { setLanzador(true); setSobreElMenu(false); }} title={estrecho ? 'Todos los productos y herramientas' : undefined}
+                aria-label="Todos los productos y herramientas" className={fila(lanzador ? '__lanzador' : undefined)} style={mf}>
+                <span className="w-6 h-6 shrink-0 grid place-items-center"><LayoutGrid className="w-[18px] h-[18px]" strokeWidth={2} /></span>
+                {!estrecho && <span className="truncate">Todos</span>}
+                {!estrecho && <span className="ml-auto text-[11px] text-digi-muted tabular-nums">{todas.length}</span>}
+              </button>
+            </div>
           )}
         </nav>
 
@@ -171,6 +216,8 @@ export default function MenuAccesos({ capa = false, activo }: { capa?: boolean; 
           </button>
         </div>
       </aside>
+      <LanzadorAccesos abierto={lanzador} alCerrar={() => setLanzador(false)} productos={productos ?? []} herramientas={herramientas}
+        rutaHerramienta={rutaHerramienta} abrirProducto={abrirProducto} fijados={fijados} alternar={alternar} activo={activoReal} />
       {esAdmin && <DialogoVerComoOtro abierto={verComoOtro} alCerrar={() => setVerComoOtro(false)} />}
     </>
   );
