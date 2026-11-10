@@ -253,7 +253,9 @@ class SesionViva {
     this.aislada = proyecto.aislado === true || leerAisladas().has(id);
     const opciones = {
       cwd,
-      env: entornoLimpio(),
+      // Lanzado por el SDK, Claude Code apaga los artifacts («sdk_default_off») salvo con CLAUDE_CODE_ARTIFACT; la
+      // terminal los tiene. Una aislada nace de un mensaje de un desconocido: esa no publica páginas.
+      env: this.aislada ? entornoLimpio() : { ...entornoLimpio(), CLAUDE_CODE_ARTIFACT: '1' },
       pathToClaudeCodeExecutable: CLAUDE,
       settingSources: ['user', 'project', 'local'],
       permissionMode: modo,
