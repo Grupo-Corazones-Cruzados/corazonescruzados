@@ -18,7 +18,8 @@ export async function GET(req: NextRequest) {
     const tipo = (searchParams.get('tipo') || 'todos') as any;
     const isAdmin = user.role === 'admin';
     const memberId = isAdmin ? null : await memberIdDeUsuario(user.userId);
-    const data = await buscarReferencias(user.userId, memberId, isAdmin, q, tipo);
+    const cliente = Number(searchParams.get('cliente')) || null;
+    const data = await buscarReferencias(user.userId, memberId, isAdmin, q, tipo, { talento: searchParams.get('talento') || '', cliente });
     return NextResponse.json({ data });
   } catch (err: any) {
     console.error('Generación de contenido referencias error:', err.message);

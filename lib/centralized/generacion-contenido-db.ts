@@ -178,6 +178,7 @@ export async function listContenidos(userId: string, isAdmin: boolean) {
   await ensureGeneracionContenidoTables();
   const sql = `
     SELECT c.id, c.titulo, c.tema, c.estado, c.talento, c.created_at, c.updated_at,
+           v.id AS video_id, v.carpeta, v.sesion_id, v.nombre AS video_nombre, v.tamano::float8 AS video_tamano,
            COALESCE(e.cnt, 0)::int AS entregables_count,
            COALESCE(l.cnt, 0)::int AS laminas_count,
            COALESCE(l.con_imagen, 0)::int AS laminas_con_imagen
@@ -188,6 +189,7 @@ export async function listContenidos(userId: string, isAdmin: boolean) {
                         COUNT(*) FILTER (WHERE imagen_url IS NOT NULL) AS con_imagen
                    FROM gcc_world.gcont_laminas GROUP BY contenido_id) l
              ON l.contenido_id = c.id
+      LEFT JOIN LATERAL (SELECT id, carpeta, sesion_id, nombre, tamano FROM gcc_world.gcont_videos WHERE contenido_id = c.id ORDER BY created_at LIMIT 1) v ON true
      WHERE 1=1${ownerClause(userId, isAdmin, 'c.user_id').replace('$OWNER', '$1')}
      ORDER BY c.created_at DESC`;
   const { rows } = await pool.query(sql, isAdmin ? [] : [userId]);
@@ -515,52 +517,69 @@ export async function setPrompt(clave: string, texto: string, userId: string) {
  */
 export async function buscarReferencias(
   userId: string, memberId: number | null, isAdmin: boolean, q: string, tipo?: ReferenciaTipo | 'todos',
+  filtros: { talento?: string; cliente?: number | null } = {},
 ) {
   const like = `%${(q || '').trim()}%`;
   const quiere = (t: ReferenciaTipo) => !tipo || tipo === 'todos' || tipo === t;
-  const out: { tipo: ReferenciaTipo; ref_id: number; titulo: string; subtitulo: string }[] = [];
+  const talento = (filtros.talento || '').trim() || null;
+  const cliente = filtros.cliente ?? null;
+  const out: { tipo: ReferenciaTipo; ref_id: number; titulo: string; subtitulo: string; cliente_id: number | null; cliente: string | null }[] = [];
+  const nombreCliente = `COALESCE(NULLIF(cl.alias, ''), NULLIF(cl.company, ''), cl.name)`;
 
+  /* Solo lo TERMINADO (Fernando, 2026-11-10): un video cuenta un trabajo hecho, no uno a medias. El talento
+     de un proyecto sale de lo que pidió (`required_talents`) y de sus requerimientos. */
   if (quiere('proyecto')) {
+    // Con administrador, `$2` va igual en la consulta (tipado): un parámetro sin usar no tiene tipo y Postgres lo rechaza.
     const acceso = isAdmin
-      ? ''
+      ? ' AND $2::bigint IS NULL'
       : ` AND ($2::bigint IS NOT NULL AND (
             p.assigned_member_id = $2
             OR EXISTS (SELECT 1 FROM gcc_world.project_members pm WHERE pm.project_id = p.id AND pm.member_id = $2)
             OR EXISTS (SELECT 1 FROM gcc_world.project_bids pb WHERE pb.project_id = p.id AND pb.member_id = $2)
           ))`;
     const { rows } = await pool.query(
-      `SELECT p.id, p.title, p.status, p.description
+      `SELECT p.id, p.title, p.client_id, ${nombreCliente} AS cliente
          FROM gcc_world.projects p
-        WHERE (p.title ILIKE $1 OR p.description ILIKE $1)${acceso}
-        ORDER BY p.created_at DESC LIMIT 25`,
-      isAdmin ? [like] : [like, memberId],
+         LEFT JOIN gcc_world.clients cl ON cl.id = p.client_id
+        WHERE p.status = 'completed' AND (p.title ILIKE $1 OR p.description ILIKE $1)${acceso}
+          AND ($3::text IS NULL OR $3 = ANY(p.required_talents)
+               OR EXISTS (SELECT 1 FROM gcc_world.project_requirements pr WHERE pr.project_id = p.id AND $3 = ANY(pr.talents)))
+          AND ($4::bigint IS NULL OR p.client_id = $4)
+        ORDER BY COALESCE(p.completed_at, p.updated_at) DESC LIMIT 60`,
+      [like, isAdmin ? null : memberId, talento, cliente],
     );
-    for (const r of rows) out.push({ tipo: 'proyecto', ref_id: Number(r.id), titulo: r.title, subtitulo: r.status || '' });
+    for (const r of rows) out.push({ tipo: 'proyecto', ref_id: Number(r.id), titulo: r.title, subtitulo: r.cliente || '', cliente_id: r.client_id ? Number(r.client_id) : null, cliente: r.cliente });
   }
 
   if (quiere('ticket')) {
-    const acceso = isAdmin ? '' : ` AND (t.member_id = $2 OR t.user_id::text = $3)`;
+    const acceso = isAdmin ? ' AND $2::bigint IS NULL AND $5::text IS NOT NULL' : ` AND (t.member_id = $2 OR t.user_id::text = $5)`;
     const { rows } = await pool.query(
-      `SELECT t.id, t.title, t.status, t.description
+      `SELECT t.id, t.title, t.client_id, ${nombreCliente} AS cliente
          FROM gcc_world.tickets t
-        WHERE (t.title ILIKE $1 OR t.description ILIKE $1)${acceso}
-        ORDER BY t.created_at DESC LIMIT 25`,
-      isAdmin ? [like] : [like, memberId, userId],
+         LEFT JOIN gcc_world.clients cl ON cl.id = t.client_id
+         LEFT JOIN gcc_world.services s ON s.id = t.service_id
+        WHERE t.status = 'completed' AND (t.title ILIKE $1 OR t.description ILIKE $1)${acceso}
+          AND ($3::text IS NULL OR $3 = ANY(t.required_talents) OR s.talent = $3)
+          AND ($4::bigint IS NULL OR t.client_id = $4)
+        ORDER BY COALESCE(t.completed_at, t.updated_at) DESC LIMIT 60`,
+      [like, isAdmin ? null : memberId, talento, cliente, userId],
     );
-    for (const r of rows) out.push({ tipo: 'ticket', ref_id: Number(r.id), titulo: r.title, subtitulo: r.status || '' });
+    for (const r of rows) out.push({ tipo: 'ticket', ref_id: Number(r.id), titulo: r.title, subtitulo: r.cliente || '', cliente_id: r.client_id ? Number(r.client_id) : null, cliente: r.cliente });
   }
 
-  if (quiere('producto')) {
-    const acceso = isAdmin ? '' : ` AND i.member_id = $2`;
+  // Un producto no tiene cliente: con un cliente elegido no aparece.
+  if (quiere('producto') && !cliente) {
+    const acceso = isAdmin ? ' AND $2::bigint IS NULL' : ` AND i.member_id = $2`;
     const { rows } = await pool.query(
-      `SELECT pr.id, pr.name, pr.description, i.talent
+      `SELECT pr.id, pr.name, i.talent
          FROM gcc_world.products pr
          JOIN gcc_world.member_portfolio_items i ON i.id = pr.portfolio_item_id
-        WHERE (pr.name ILIKE $1 OR pr.description ILIKE $1)${acceso}
-        ORDER BY pr.updated_at DESC NULLS LAST, pr.id DESC LIMIT 25`,
-      isAdmin ? [like] : [like, memberId],
+        WHERE pr.is_active IS NOT FALSE AND (pr.name ILIKE $1 OR pr.description ILIKE $1)${acceso}
+          AND ($3::text IS NULL OR i.talent = $3)
+        ORDER BY pr.updated_at DESC NULLS LAST, pr.id DESC LIMIT 60`,
+      [like, isAdmin ? null : memberId, talento],
     );
-    for (const r of rows) out.push({ tipo: 'producto', ref_id: Number(r.id), titulo: r.name, subtitulo: r.talent || '' });
+    for (const r of rows) out.push({ tipo: 'producto', ref_id: Number(r.id), titulo: r.name, subtitulo: r.talent || '', cliente_id: null, cliente: null });
   }
 
   return out;

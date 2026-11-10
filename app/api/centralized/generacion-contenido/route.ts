@@ -5,6 +5,7 @@ import {
   createContenido, listContenidos, memberIdDeUsuario,
 } from '@/lib/centralized/generacion-contenido-db';
 import { isFuenteTipo, isReferenciaTipo } from '@/lib/centralized/generacion-contenido';
+import { talentosDeUsuario } from '@/lib/redes/talento';
 
 // Sistema «Generación de Contenido» (Centralizado · colaborador · gestión).
 // Las ideas son PRIVADAS por colaborador; el admin las ve todas. El alcance lo fuerza la
@@ -21,7 +22,9 @@ export async function GET(req: Request) {
   const g = await guard();
   if (!g) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   try {
-    return NextResponse.json({ data: await listContenidos(g.userId, g.isAdmin) });
+    // Los talentos de quien pregunta (con «Ver como», los del otro): son los que puede elegir una idea nueva.
+    const [data, talentos] = await Promise.all([listContenidos(g.userId, g.isAdmin), talentosDeUsuario(g.userId)]);
+    return NextResponse.json({ data, talentos });
   } catch (err: any) {
     console.error('Generación de contenido GET error:', err.message);
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -35,15 +38,19 @@ export async function POST(req: NextRequest) {
   if (!g) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
   try {
     const body = await req.json();
-    if (!body?.tema?.trim()) return NextResponse.json({ error: 'El tema es obligatorio.' }, { status: 400 });
+    // Desde 2026-11-10 la idea nace del talento, las referencias y el video: el nombre lo pone el agente.
+    const talento = String(body?.talento || '').trim();
+    if (!talento || !(await talentosDeUsuario(g.userId)).includes(talento)) {
+      return NextResponse.json({ error: 'Elige uno de tus talentos.' }, { status: 400 });
+    }
 
     const memberId = await memberIdDeUsuario(g.userId);
     const { id } = await createContenido(g.userId, memberId, {
-      tema: String(body.tema).trim(),
+      tema: String(body.tema ?? '').trim(),
       proposito_social: String(body.proposito_social ?? ''),
       proposito_monetario: String(body.proposito_monetario ?? ''),
       desarrollo: String(body.desarrollo ?? ''),
-      talento: body.talento ? String(body.talento) : null,
+      talento,
       tonos: Array.isArray(body.tonos) ? body.tonos.map(String) : [],
       referencias: (Array.isArray(body.referencias) ? body.referencias : [])
         .filter((r: any) => isReferenciaTipo(r?.tipo) && Number(r?.ref_id))

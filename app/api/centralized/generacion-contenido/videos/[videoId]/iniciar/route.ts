@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { usuarioLocal } from '@/lib/espacio-trabajo/guardia';
 import { llamarServicio, rechazo } from '@/lib/espacio-trabajo/guardia';
-import { fijarSesionVideo, getContenido, getVideo } from '@/lib/centralized/generacion-contenido-db';
+import { detalleReferencias, fijarSesionVideo, getContenido, getVideo } from '@/lib/centralized/generacion-contenido-db';
+import { cuentasDeUsuario } from '@/lib/redes/talento';
 import { contextoDeIdea } from '@/lib/centralized/generacion-contenido';
 
 export const dynamic = 'force-dynamic';
@@ -17,9 +18,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ videoId
   if (!v) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
   if (v.sesion_id) return NextResponse.json({ data: { ...v } });
   const c = await getContenido(v.contenido_id, user.userId, isAdmin);
+  // Lo que el agente necesita además de la idea: las cuentas del talento (para el cierre del carrusel) y
+  // lo que se hizo en cada trabajo de referencia.
+  const cuentas = (await cuentasDeUsuario(c.user_id)).filter((x) => x.talento === c.talento);
+  const refs = await detalleReferencias(c.referencias || []);
+  const contexto = [
+    contextoDeIdea(c),
+    cuentas.length ? `\n## Cuentas del talento\n${cuentas.map((x) => `- ${x.red}: ${x.nombre}${x.url ? ` (${x.url})` : ''}`).join('\n')}` : '\n## Cuentas del talento\nAún no hay redes conectadas: pregunta a Fernando qué cuenta va en el cierre.',
+    refs.length ? `\n## Trabajos de referencia (terminados)\n\n${refs.join('\n\n')}` : '',
+  ].join('\n');
   const r = await llamarServicio(`/videos/${encodeURIComponent(v.carpeta)}/iniciar`, {
     method: 'POST',
-    body: JSON.stringify({ nombre: v.nombre, tamano: v.tamano, tema: c.titulo || c.tema, titulo: v.nombre, contexto: contextoDeIdea(c) }),
+    body: JSON.stringify({ nombre: v.nombre, tamano: v.tamano, tema: c.titulo || c.tema || c.talento, titulo: c.titulo || `Idea de ${c.talento || 'contenido'}`, contexto }),
   }).catch(() => null);
   if (!r) return NextResponse.json({ error: 'El servicio local no está en marcha.' }, { status: 503 });
   const j = await r.json();

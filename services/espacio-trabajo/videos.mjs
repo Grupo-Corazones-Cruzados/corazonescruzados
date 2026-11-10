@@ -84,9 +84,10 @@ export function primerMensaje({ ruta, carpeta, tema }) {
   return [
     `/editar-video ${ruta}`,
     '',
-    `Este video pertenece a la idea «${tema}» de Generación de Contenido. Sesión dedicada a este video.`,
-    `- Usa \`--idea ${carpeta}\` y llama al proyecto \`${carpeta}-v1\`. El video ya está en esa carpeta.`,
-    `- En \`idea.md\` de esa carpeta están la idea y los guiones. Es lo que se quería decir: úsalo para entender el video, pero manda lo que se dice en él.`,
-    '- Fernando ya aplicó sus cortes. Si aun así encuentras silencios largos, frases repetidas o abandonadas, corrígelos con `cortes` y dile cuáles.',
+    `Sesión dedicada a la idea${tema ? ` «${tema}»` : ''} de Generación de Contenido. Es la única sesión de esta idea.`,
+    `- Usa \`--idea ${carpeta}\`. El video ya está en esa carpeta y ya viene editado por Fernando en CapCut.`,
+    `- En \`idea.md\` están el talento, sus cuentas y los trabajos de referencia.`,
+    '- Entrega las cuatro piezas de Generación de Contenido: `final.mp4` con `construir.mjs --final` (sin música), y la miniatura, el carrusel y la infografía con `entregables.mjs`. Pon tú el `titulo` de la idea.',
+    '- Si aun así encuentras silencios largos, frases repetidas o abandonadas, corrígelos con `cortes` y dile cuáles.',
   ].join('\n');
 }

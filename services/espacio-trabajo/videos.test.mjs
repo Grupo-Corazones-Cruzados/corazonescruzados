@@ -66,6 +66,8 @@ test('la primera orden lanza el agente con su carpeta y permite corregir el reco
   assert.match(m, /--idea video-3-x/);
   assert.match(m, /Procesos/);
   assert.match(m, /`cortes`/);
+  assert.match(m, /--final/);
+  assert.match(m, /entregables\.mjs/);
 });
 
 test('el JSON se recupera aunque venga envuelto', () => {

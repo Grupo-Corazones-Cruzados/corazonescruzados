@@ -318,8 +318,8 @@ export const PROMPT_LABEL: Record<string, string> = {
 /** Lo que el agente de edición lee para entender el video: la idea y los textos ya escritos. */
 export function contextoDeIdea(c: any): string {
   const partes = [
-    `# ${c.titulo || c.tema}`,
-    `- **Tema:** ${c.tema}`,
+    `# ${c.titulo || c.tema || `Idea de ${c.talento || 'contenido'}`}`,
+    c.tema && `- **Tema:** ${c.tema}`,
     c.proposito_social && `- **Propósito social:** ${c.proposito_social}`,
     c.proposito_monetario && `- **Propósito monetario:** ${c.proposito_monetario}`,
     c.desarrollo && `- **Desarrollo:** ${c.desarrollo}`,

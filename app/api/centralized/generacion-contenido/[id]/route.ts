@@ -4,6 +4,8 @@ import { usuarioLocal } from '@/lib/espacio-trabajo/guardia';
 import { NextRequest, NextResponse } from 'next/server';
 import { deleteContenido, listarVideos, getContenido, updateContenido } from '@/lib/centralized/generacion-contenido-db';
 import { isEstado, isFuenteTipo, isReferenciaTipo } from '@/lib/centralized/generacion-contenido';
+import { asegurarColumnasLocales } from '@/lib/centralized/contenido-local';
+import { pool } from '@/lib/db';
 
 async function guard() {
   const user = await usuarioLocal();
@@ -60,6 +62,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const ok = await updateContenido(Number(id), g.userId, g.isAdmin, patch);
     if (!ok) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
+    // Un nombre puesto a mano manda: el agente ya no lo cambia (Fernando, 2026-11-10).
+    if (patch.titulo !== undefined) {
+      await asegurarColumnasLocales();
+      await pool.query(`UPDATE gcc_world.gcont_contenidos SET titulo_fijado = true WHERE id = $1`, [Number(id)]);
+    }
     return NextResponse.json({ data: await getContenido(Number(id), g.userId, g.isAdmin) });
   } catch (err: any) {
     console.error('Generación de contenido PATCH error:', err.message);
