@@ -222,6 +222,15 @@ base verbatim):
   reemplazar en `archivo` el `original` por el `texto`, literal. Los marcadores `{fecha}` y `{destino}` de las
   opciones de acceso son variables del código. Después, volver a sembrar `original = texto` para que el editor
   muestre «0 cambiados».
+- **Pendiente (2026-11-09): el editor no tiene Candidatos.** Se sembró antes de que existiera la página y
+  todavía enseña Soluciones y Desarrollo Humano, que ya no existen. Fernando lo pidió al día con lo que
+  existe hoy. Las 142 filas de Candidatos (presentación, los 8 apartados y el formulario; negritas como
+  `**así**`) ya están generadas desde el código en `../respaldos-gcc/editor-textos/candidatos.json`
+  (con `generar.py`), fuera del repo. Faltan dos cosas, que solo pueden hacerse con las herramientas
+  Artifact/ArtifactData: (1) en el HTML del editor, `PAGINAS` pasa a
+  `['Inicio','Candidatos','Clientes','Común a todas']`, y se vuelve a publicar en la misma URL;
+  (2) un `batch set` de esas filas, `delete` de las de `Soluciones` y `Desarrollo Humano` (antes, guardar
+  una copia con `list`), y refrescar `original` de las demás con el código actual.
 - **Clientes ▸ Soluciones / Tickets (2026-10-31):** la tarjeta de la solución solo lleva su nombre y no es
   enlace; se elige el TALENTO (`/clientes/soluciones/<sol>/<talento>`, con sus productos y servicios y lo
   hecho); `/clientes/soluciones/<sol>` redirige a la lista. Cada talento tiene icono (migración 076).
