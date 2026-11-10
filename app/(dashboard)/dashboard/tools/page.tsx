@@ -18,6 +18,7 @@ import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { EditField, EDIT_INPUT } from '@/components/ui/EditDialog';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { ListaSubidas, useSubidaArchivos } from '@/components/ui/SubidaArchivos';
+import { MAX_BYTES_ENTREGA } from '@/lib/enlaces/tope';
 import {
   LayoutGrid, Wand2, Wrench,
   Briefcase, Plus, Table2, Smartphone, Share2, ExternalLink,
@@ -171,7 +172,7 @@ function Herramientas() {
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'No se pudo subir');
     return d.data.url;
-  });
+  }, MAX_BYTES_ENTREGA);
   useEffect(() => {
     if (!entregaOpen || clientesConCuenta) return;
     fetch('/api/enlaces/clientes').then((r) => r.json()).then((d) => setClientesConCuenta(d.data || [])).catch(() => setClientesConCuenta([]));
@@ -530,7 +531,7 @@ function Herramientas() {
           <AutoGrowTextarea value={entregaMensaje} onChange={(e) => setEntregaMensaje(e.target.value)} minRows={3} maxLength={20000}
             placeholder="La información que le compartes" className={EDIT_INPUT} style={mf} />
         </EditField>
-        <ListaSubidas items={subidaEntrega.items} agregar={subidaEntrega.agregar} quitar={subidaEntrega.quitar} />
+        <ListaSubidas items={subidaEntrega.items} agregar={subidaEntrega.agregar} quitar={subidaEntrega.quitar} tope={MAX_BYTES_ENTREGA} />
         <div className="flex items-center justify-between gap-3 py-1">
           <span className="text-[12px] font-semibold text-digi-text opacity-70" style={mf}>Pedir la cuenta del cliente</span>
           <Interruptor activo={entregaExigeCuenta} onChange={setEntregaExigeCuenta} etiqueta="Pedir la cuenta del cliente" />

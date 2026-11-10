@@ -40,7 +40,7 @@ function subir(url: string, archivo: File, onProgreso: (p: number) => void): Pro
  * `lib/enlaces`); los bytes van del navegador a Google, de uno en uno: diez de 100 MB a la vez
  * saturarían la conexión.
  */
-export function useSubidaArchivos(abrirSesion: (a: File) => Promise<string>) {
+export function useSubidaArchivos(abrirSesion: (a: File) => Promise<string>, tope = MAX_BYTES) {
   const [items, setItems] = useState<ItemSubida[]>([]);
   const abrir = useRef(abrirSesion);
   abrir.current = abrirSesion;
@@ -54,7 +54,7 @@ export function useSubidaArchivos(abrirSesion: (a: File) => Promise<string>) {
     if (elegidos.length > libres) toast.error(`Máximo ${MAX_ARCHIVOS} archivos`);
     const nuevos: ItemSubida[] = [];
     for (const archivo of elegidos.slice(0, Math.max(0, libres))) {
-      if (archivo.size > MAX_BYTES) { toast.error(`«${archivo.name}» pasa de 100 MB`); continue; }
+      if (archivo.size > tope) { toast.error(`«${archivo.name}» pasa de ${Math.round(tope / 1024 / 1024)} MB`); continue; }
       if (archivo.size === 0) { toast.error(`«${archivo.name}» está vacío`); continue; }
       nuevos.push({ clave: `${Date.now()}-${Math.random()}`, archivo, progreso: 0 });
     }
@@ -66,7 +66,7 @@ export function useSubidaArchivos(abrirSesion: (a: File) => Promise<string>) {
         cambiar(it.clave, { fileId, progreso: 100 });
       } catch (e: any) { cambiar(it.clave, { error: e.message || 'No se pudo subir' }); }
     }
-  }, []);
+  }, [tope]);
 
   const quitar = (clave: string) => setItems((p) => p.filter((y) => y.clave !== clave));
   const subiendo = items.some((x) => !x.fileId && !x.error);
@@ -75,17 +75,18 @@ export function useSubidaArchivos(abrirSesion: (a: File) => Promise<string>) {
 }
 
 /** La lista de archivos con su progreso y el botón para adjuntar más. */
-export function ListaSubidas({ items, agregar, quitar, etiqueta = 'Archivos' }: {
+export function ListaSubidas({ items, agregar, quitar, etiqueta = 'Archivos', tope = MAX_BYTES }: {
   items: ItemSubida[];
   agregar: (l: FileList | null, ocupados: number) => void;
   quitar: (clave: string) => void;
   etiqueta?: string;
+  tope?: number;
 }) {
   const input = useRef<HTMLInputElement>(null);
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-[12px] font-semibold text-digi-text opacity-70" style={mf}>
-        {etiqueta} <span className="font-normal">({items.length}/{MAX_ARCHIVOS} · hasta 100 MB cada uno)</span>
+        {etiqueta} <span className="font-normal">({items.length}/{MAX_ARCHIVOS} · hasta {Math.round(tope / 1024 / 1024)} MB cada uno)</span>
       </span>
       {items.map((x) => (
         <div key={x.clave} className="flex items-center gap-2 rounded-lg border border-digi-border px-3 py-2">

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { limpiarCarpeta, MAX_ARCHIVOS, MAX_TEXTO, verificarArchivos } from '@/lib/enlaces';
+import { limpiarCarpeta, MAX_ARCHIVOS, MAX_BYTES_ENTREGA, MAX_TEXTO, verificarArchivos } from '@/lib/enlaces';
 import { asegurarTablaEntregas, rutaEntrega, urlEntrega } from '@/lib/entregas';
 import { sendEntregaUnicaEmail } from '@/lib/integrations/email';
 
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!c) return NextResponse.json({ error: 'Ese cliente no tiene cuenta en GCC World' }, { status: 400 });
     }
     let archivos;
-    try { archivos = await verificarArchivos(rutaEntrega(e), ids); }
+    try { archivos = await verificarArchivos(rutaEntrega(e), ids, MAX_BYTES_ENTREGA); }
     catch (err: any) { return NextResponse.json({ error: err.message }, { status: 400 }); }
 
     const r = await pool.query(

@@ -8,7 +8,11 @@ import { dentroDeUnaApp } from '@/lib/sitio/appDeTelefono';
 import { useAparicion } from '@/lib/hooks/useAparicion';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 
-type Archivo = { url: string; nombre: string; tipo: string; blob: Blob | null; error?: string };
+/** `sinVista`: no se leyó el cuerpo (sin vista previa o muy grande); Descargar baja la dirección real. */
+type Archivo = { url: string; nombre: string; tipo: string; blob: Blob | null; error?: string; sinVista?: boolean };
+
+/** Más que esto no se carga en memoria para enseñarlo: un ZIP de 500 MB se descarga directo a disco. */
+const MAX_VISTA = 50 * 1024 * 1024;
 
 /** Lo que abre una ventana pero NO es un archivo: se deja pasar tal cual (OAuth, entrar a un producto…). */
 const NAVEGACION = /\/(conectar|entrar|auth|oauth|callback|login|logout)(\/|$|\?)/;
@@ -131,6 +135,13 @@ export default function VisorArchivos() {
       }
       // Una página, no un archivo: se abre como siempre.
       if (tipo === 'text/html') { cerrarSinHistoria(); location.href = url; return; }
+      const largo = Number(r.headers.get('content-length')) || 0;
+      const conVista = /^(application\/pdf|image\/|video\/|audio\/)/.test(tipo);
+      if (!url.startsWith('blob:') && !url.startsWith('data:') && (!conVista || largo > MAX_VISTA)) {
+        void r.body?.cancel().catch(() => {});
+        setArchivo((a) => a && a.url === url ? { url, nombre: nombreDe(r, url, sugerido), tipo, blob: null, sinVista: true } : a);
+        return;
+      }
       const blob = await r.blob();
       const nuevo: Archivo = { url, nombre: nombreDe(r, url, sugerido), tipo: tipo || blob.type, blob };
       setArchivo((a) => a && a.url === url ? nuevo : a);
@@ -197,7 +208,7 @@ export default function VisorArchivos() {
   }, [archivo, cerrar]);
 
   if (!montado || !mostrado || !destino) return null;
-  const listo = !!mostrado.blob;
+  const listo = !!mostrado.blob || !!mostrado.sinVista;
 
   return createPortal(
     <div role="dialog" aria-modal="true" aria-label={mostrado.nombre}
@@ -231,6 +242,8 @@ export default function VisorArchivos() {
           </div>
         ) : !listo ? (
           <div className="h-full grid place-items-center"><Loader2 className="w-7 h-7 animate-spin text-digi-muted" /></div>
+        ) : mostrado.sinVista ? (
+          <SinVista nombre={mostrado.nombre} alDescargar={() => descargar(mostrado)} />
         ) : mostrado.tipo === 'application/pdf' ? (
           <PaginasPdf blob={mostrado.blob!} zoom={zoom} />
         ) : mostrado.tipo.startsWith('image/') ? (
@@ -238,20 +251,26 @@ export default function VisorArchivos() {
         ) : /^(video|audio)\//.test(mostrado.tipo) ? (
           <ImagenOVideo blob={mostrado.blob!} video nombre={mostrado.nombre} />
         ) : (
-          // Sin vista previa (hoja de cálculo, ZIP, APK…): su nombre y el botón; descargar necesita el toque.
-          <div className="h-full grid place-items-center p-6 text-center">
-            <div>
-              <FileText className="w-10 h-10 mx-auto text-digi-muted mb-3" />
-              <p className="text-sm font-medium text-digi-text break-all mb-4">{mostrado.nombre}</p>
-              <button type="button" onClick={() => descargar(mostrado)} className={BTN_PRIMARY}>
-                <Download className="w-4 h-4" /> Descargar
-              </button>
-            </div>
-          </div>
+          <SinVista nombre={mostrado.nombre} alDescargar={() => descargar(mostrado)} />
         )}
       </div>
     </div>,
     destino,
+  );
+}
+
+/** Sin vista previa (hoja de cálculo, ZIP, APK…) o demasiado grande: su nombre y el botón. */
+function SinVista({ nombre, alDescargar }: { nombre: string; alDescargar: () => void }) {
+  return (
+    <div className="h-full grid place-items-center p-6 text-center">
+      <div>
+        <FileText className="w-10 h-10 mx-auto text-digi-muted mb-3" />
+        <p className="text-sm font-medium text-digi-text break-all mb-4">{nombre}</p>
+        <button type="button" onClick={alDescargar} className={BTN_PRIMARY}>
+          <Download className="w-4 h-4" /> Descargar
+        </button>
+      </div>
+    </div>
   );
 }
 

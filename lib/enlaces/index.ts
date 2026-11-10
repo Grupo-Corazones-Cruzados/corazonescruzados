@@ -24,6 +24,8 @@ import { limpiarNombre } from '@/lib/media';
 
 export const MAX_ARCHIVOS = 10;
 export const MAX_BYTES = 100 * 1024 * 1024;
+export { MAX_BYTES_ENTREGA, textoTope } from './tope';
+import { textoTope } from './tope';
 /** Sesiones de subida por enlace: 10 archivos y margen para reintentos, no un disco gratis. */
 export const MAX_SUBIDAS = 40;
 export const MAX_TEXTO = 20000;
@@ -151,7 +153,7 @@ export async function abrirSubida(o: {
  * Comprueba en Drive que cada archivo existe, vive en la carpeta `ruta` (la de ESTE enlace) y no pasa del
  * tope. Lo que manda el navegador no se cree: un id de otro enlace o de otra carpeta se rechaza.
  */
-export async function verificarArchivos(ruta: string[], ids: string[]): Promise<Archivo[]> {
+export async function verificarArchivos(ruta: string[], ids: string[], tope = MAX_BYTES): Promise<Archivo[]> {
   if (ids.length === 0) return [];
   const padre = await carpeta(ruta);
   const { token } = await authDrive().getAccessToken();
@@ -166,7 +168,7 @@ export async function verificarArchivos(ruta: string[], ids: string[]): Promise<
     const f = await r.json();
     if (f.trashed || !(f.parents || []).includes(padre)) throw new Error('Archivo no válido');
     const tamano = Number(f.size) || 0;
-    if (tamano > MAX_BYTES) throw new Error(`«${f.name}» pasa de 100 MB`);
+    if (tamano > tope) throw new Error(`«${f.name}» pasa de ${textoTope(tope)}`);
     out.push({ id: f.id, nombre: f.name, mime: f.mimeType || 'application/octet-stream', tamano });
   }
   return out;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
-import { abrirSubida, MAX_BYTES, MAX_SUBIDAS } from '@/lib/enlaces';
+import { abrirSubida, MAX_BYTES_ENTREGA, MAX_SUBIDAS, textoTope } from '@/lib/enlaces';
 import { asegurarTablaEntregas, rutaEntrega } from '@/lib/entregas';
 
 export const runtime = 'nodejs';
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const mime = String(b.tipo || '').trim() || 'application/octet-stream';
   const tamano = Math.floor(Number(b.tamano));
   if (!(tamano > 0)) return NextResponse.json({ error: 'El archivo está vacío' }, { status: 400 });
-  if (tamano > MAX_BYTES) return NextResponse.json({ error: `«${nombre}» pasa de 100 MB` }, { status: 400 });
+  if (tamano > MAX_BYTES_ENTREGA) return NextResponse.json({ error: `«${nombre}» pasa de ${textoTope(MAX_BYTES_ENTREGA)}` }, { status: 400 });
 
   const r = await pool.query(
     `UPDATE gcc_world.entregas_unicas SET subidas = subidas + 1
