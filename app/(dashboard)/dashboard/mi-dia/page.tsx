@@ -534,13 +534,13 @@ export default function MiDiaPage() {
             <span className="ml-auto tabular-nums"><span className="hidden sm:inline">Zona horaria: </span>América/Guayaquil (GMT-5)</span>
           </div>
         </div>
-
-        <ProposalsPanel onDecision={load} />
       </div>
 
       {/* Rail: tareas planificadas del RANGO de la vista (Horario de Vida) */}
       {/* Mismo alto fijo que el calendario (ver nota del panel de eventos). */}
       <aside className="w-full xl:w-[280px] shrink-0 bg-digi-card border border-digi-border rounded-xl overflow-hidden flex flex-col xl:h-[calc(100dvh-4.5rem)]">
+        {/* Arriba las tareas y abajo las propuestas, cada parte con su desplazamiento (Fernando, 2026-11-09). */}
+        <div className="flex flex-col flex-1 min-h-0">
         <div className="flex items-center gap-2 px-3 py-2.5 bg-digi-dark border-b border-digi-border shrink-0">
           <ListTodo className="w-4 h-4 text-digi-muted" />
           <span className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide" style={df}>Tareas · {view === 'day' ? 'Día' : view === 'week' ? 'Semana' : 'Mes'}</span>
@@ -619,6 +619,10 @@ export default function MiDiaPage() {
               </div>
             ))
           )}
+        </div>
+        </div>
+        <div className="flex flex-col xl:max-h-[45%] min-h-0 shrink-0">
+          <ProposalsPanel onDecision={load} />
         </div>
       </aside>
 
