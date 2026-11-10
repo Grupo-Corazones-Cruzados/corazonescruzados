@@ -308,6 +308,12 @@ La interfaz actual (pestañas, «Videos» y «Guiones») le resulta confusa. Lo 
   - **«Subir»:** sube el proyecto a su Drive (lfgonzalezm0@grupocc.org), en una carpeta dedicada, y trae los enlaces. Se puede seguir editando en la sesión, y otro botón actualiza Drive.
   - **«Publicar»:** pide título, descripción, visibilidad y programación, una sola vez para todas las redes, sin pedir canal. Publica y entonces borra el proyecto local.
 - **Hecho de inmediato:** sin música en el agente; `construir.mjs` la rechaza salvo que él la pida.
+- **Decisiones del mismo día:**
+  - Carrusel e infografía: diseño propio con textos exactos, más una ilustración de IA por lámina.
+  - **Sin CapCut:** él hace sus ediciones básicas y sube el video ya editado; el agente entrega el MP4 final y no se vuelve a editar a mano.
+  - Enlaces de Drive solo para cuentas `@grupocc.org`.
+  - Construirlo todo junto.
+  - **Publicar exige las cinco redes conectadas al talento:** Instagram, Facebook, LinkedIn, YouTube y TikTok. Si falta una, no se publica.
 
 ### Pruebas pendientes (necesitan a Fernando)
 - **P1 ✅ (2026-11-04):** proyecto creado o guardado por CapCut 9.5: `draft_info.json` sigue legible.
