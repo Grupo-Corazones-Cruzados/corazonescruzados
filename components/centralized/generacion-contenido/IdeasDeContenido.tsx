@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CheckCircle2, ChevronLeft, CloudUpload, ExternalLink, FileVideo, Film, Loader2, Pencil, Plus, RefreshCw, Send, Share2, Trash2, Upload, XCircle } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, CloudUpload, ExternalLink, FileVideo, Film, Loader2, Pencil, Plus, RefreshCw, Send, Share2, Trash2, Upload, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { BTN_ICONO_FILA, BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { EditField, EditPanel, EDIT_INPUT } from '@/components/ui/EditDialog';
@@ -353,19 +353,59 @@ function PanelPiezas({ ideaId, menu, version }: { ideaId: number; menu: React.Re
           <button type="button" onClick={() => setPublicar(true)} disabled={!!enCurso} className={BTN_PRIMARY}><Send className="w-4 h-4" /> Publicar</button>
         </div>
       )}
-      <VisorPieza pieza={viendo} url={viendo ? archivo(viendo) : ''} alCerrar={() => setViendo(null)} />
+      <VisorPieza pieza={viendo} grupo={viendo ? (d?.piezas.filter((x) => x.tipo === viendo.tipo) || []) : []} url={archivo} alElegir={setViendo} alCerrar={() => setViendo(null)} />
       <FormularioPublicar abierto={publicar} ideaId={ideaId} datos={d} alCerrar={() => setPublicar(false)} alPublicar={cargar} />
     </div>
   );
 }
 
-function VisorPieza({ pieza, url, alCerrar }: { pieza: Pieza | null; url: string; alCerrar: () => void }) {
+/**
+ * Ver una pieza. En el carrusel se pasa de lámina con las flechas, las teclas ← → o deslizando en el teléfono
+ * (Fernando, 2026-11-10: «controles para navegar de izquierda a derecha»).
+ */
+function VisorPieza({ pieza, grupo, url, alElegir, alCerrar }: {
+  pieza: Pieza | null; grupo: Pieza[]; url: (p: Pieza) => string; alElegir: (p: Pieza) => void; alCerrar: () => void;
+}) {
+  const i = pieza ? grupo.findIndex((x) => x.ruta === pieza.ruta) : -1;
+  const varias = grupo.length > 1 && i >= 0;
+  const ir = useCallback((paso: number) => {
+    if (!varias) return;
+    alElegir(grupo[(i + paso + grupo.length) % grupo.length]);
+  }, [varias, grupo, i, alElegir]);
+  useEffect(() => {
+    if (!varias) return;
+    const tecla = (e: KeyboardEvent) => { if (e.key === 'ArrowLeft') ir(-1); if (e.key === 'ArrowRight') ir(1); };
+    window.addEventListener('keydown', tecla);
+    return () => window.removeEventListener('keydown', tecla);
+  }, [varias, ir]);
+  const toque = useRef<number | null>(null);
+  const flecha = 'absolute top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/55 text-white flex items-center justify-center hover:bg-black/75 transition-colors';
   return (
-    <EditPanel open={!!pieza} onClose={alCerrar} title={pieza ? ETIQUETA_PIEZA[pieza.tipo] : ''} onSave={alCerrar} saveLabel="Cerrar" canSave>
+    <EditPanel open={!!pieza} onClose={alCerrar} title={pieza ? `${ETIQUETA_PIEZA[pieza.tipo]}${varias ? ` · ${i + 1} / ${grupo.length}` : ''}` : ''} onSave={alCerrar} saveLabel="Cerrar" canSave>
       {pieza && (pieza.tipo === 'video'
-        ? <video src={url} controls playsInline className="w-full max-h-[75vh] rounded-md bg-black" />
-        // eslint-disable-next-line @next/next/no-img-element
-        : <img src={url} alt={pieza.nombre} className="w-full rounded-md" />)}
+        ? <video src={url(pieza)} controls playsInline className="w-full max-h-[75vh] rounded-md bg-black" />
+        : (
+          <div className="relative select-none"
+            onTouchStart={(e) => { toque.current = e.touches[0].clientX; }}
+            onTouchEnd={(e) => { const x0 = toque.current; toque.current = null; if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) ir(dx < 0 ? 1 : -1); }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img key={pieza.ruta} src={url(pieza)} alt={pieza.nombre} className="w-full rounded-md" draggable={false} />
+            {varias && (
+              <>
+                <button type="button" onClick={() => ir(-1)} aria-label="Lámina anterior" title="Anterior" className={`${flecha} left-2`}><ChevronLeft className="w-6 h-6" /></button>
+                <button type="button" onClick={() => ir(1)} aria-label="Lámina siguiente" title="Siguiente" className={`${flecha} right-2`}><ChevronRight className="w-6 h-6" /></button>
+              </>
+            )}
+          </div>
+        ))}
+      {varias && (
+        <div className="mt-3 flex justify-center gap-1.5">
+          {grupo.map((g, k) => (
+            <button key={g.ruta} type="button" onClick={() => alElegir(g)} aria-label={`Lámina ${k + 1}`}
+              className={`h-2 rounded-full transition-all ${k === i ? 'w-5 bg-accent' : 'w-2 bg-digi-border hover:bg-digi-muted'}`} />
+          ))}
+        </div>
+      )}
     </EditPanel>
   );
 }
