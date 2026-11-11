@@ -458,7 +458,7 @@ export function BotonSecundario({ href, children }: { href: string; children: Re
  * cada URL tiene su propio título). Esto es el rótulo de la PÁGINA, que no cambia entre secciones.
  */
 export function PresentacionPagina({
-  etiqueta, titulo, texto, cifras, sello, visual,
+  etiqueta, titulo, texto, cifras, sello, visual, accion,
 }: {
   etiqueta: string;
   titulo: string;
@@ -469,6 +469,8 @@ export function PresentacionPagina({
   sello?: ReactNode;
   /** La pieza de la derecha, desde `lg` (el «toque» de cada página). */
   visual?: ReactNode;
+  /** Un botón bajo el texto (p. ej. «Postularme» en Candidatos). */
+  accion?: ReactNode;
 }) {
   const derecha = visual ?? (cifras && cifras.length > 0 ? (
     <dl className="presentacion-cifras">
@@ -489,6 +491,7 @@ export function PresentacionPagina({
         </p>
         <p className="presentacion-titulo">{titulo}</p>
         <p className="presentacion-texto">{texto}</p>
+        {accion && <div className="presentacion-accion">{accion}</div>}
       </div>
       {derecha && <div className="presentacion-visual">{derecha}</div>}
     </header>

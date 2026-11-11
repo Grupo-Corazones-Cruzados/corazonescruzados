@@ -939,7 +939,7 @@ export default function OnboardingSlidersModal({
                   <div className="mt-5">
                     <Captcha onCambio={setCaptcha} reinicio={reinicioCaptcha} tema="oscuro" />
                     {errorEnvio && (
-                      <p role="alert" className="mt-3 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-[13px] leading-relaxed text-red-300 onb-error">
+                      <p role="alert" className="mt-3 text-[13px] leading-relaxed text-red-300 onb-error">
                         {errorEnvio}
                       </p>
                     )}
@@ -1101,7 +1101,7 @@ export function PostulacionEnPagina() {
       <div>
         <Captcha onCambio={setCaptcha} reinicio={reinicioCaptcha} tema="claro" />
         {errorEnvio && (
-          <p role="alert" className="mt-3 rounded-lg border border-red-400/40 bg-red-500/10 px-3 py-2 text-[13px] leading-relaxed text-red-700">
+          <p role="alert" className="mt-3 text-[13px] leading-relaxed text-[#b42318]">
             {errorEnvio}
           </p>
         )}
