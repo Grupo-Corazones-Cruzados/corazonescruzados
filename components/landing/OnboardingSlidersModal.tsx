@@ -245,37 +245,39 @@ function SlideMotivos() {
 
 // Cada valor se asocia a un compromiso (el "no" que lo encarna).
 const VALORES: { valor: string; compromiso: string }[] = [
-  { valor: 'Determinación', compromiso: 'no nos rendimos.' },
-  { valor: 'Coraje', compromiso: 'no somos cobardes.' },
-  { valor: 'Pureza', compromiso: 'no actuamos con malas intenciones ni causamos daño a otros.' },
-  { valor: 'Fe', compromiso: 'no perdemos la fe ante lo que parece imposible.' },
-  { valor: 'Paciencia', compromiso: 'no caemos en la desesperación.' },
+  { valor: 'Determinación', compromiso: 'Nunca te rindas.' },
+  { valor: 'Coraje', compromiso: 'Enfrenta tus miedos.' },
+  { valor: 'Pureza', compromiso: 'Valórate por quién eres.' },
+  { valor: 'Fe', compromiso: 'Haz real, lo imposible.' },
+  { valor: 'Paciencia', compromiso: 'Los tiempos de Dios son perfectos.' },
   {
     valor: 'Seriedad',
-    compromiso: 'no postergamos nuestros objetivos ni traicionamos nuestra palabra.',
+    compromiso: 'Céntrate en cómo solucionar tus problemas.',
   },
-  { valor: 'Espontaneidad', compromiso: 'no manipulamos lo que mostramos.' },
-  { valor: 'Autonomía', compromiso: 'no esperamos a que otros resuelvan nuestros problemas.' },
-  { valor: 'Empatía', compromiso: 'no ignoramos los sentimientos de los demás.' },
+  { valor: 'Espontaneidad', compromiso: 'Vergüenza es ocultar quien realmente eres.' },
+  { valor: 'Autonomía', compromiso: 'Solo depende de ti, cambiar tu vida.' },
+  { valor: 'Empatía', compromiso: 'Recuerda valorar el corazón de las personas buenas.' },
 ];
 
 const REGLAS: AccordionItem[] = [
   {
-    name: 'Regla 1 · ¿Quiénes somos?',
+    name: 'Regla #1 · ¿Quiénes somos?',
     summary: 'Representamos lo que somos: un solo fallo a los valores nos deja fuera.',
     body: () => (
       <>
+        {/* Texto de Fernando (editor de textos, 2026-11-11), literal. */}
         <p style={cardDesc}>
-          Esta regla invita a comprender quién es la persona que representa al proyecto, porque cada
-          uno, con sus características, define <strong style={strong}>quiénes somos</strong> como
-          organización. Si un candidato fuera un delincuente, el grupo sería un delincuente; si
-          fuera un mentiroso, el grupo sería un mentiroso. Lo que somos se refleja en cada candidato
-          y en cada miembro.
+          La regla marca la importancia de comprender quién eres, y por qué representas a este
+          proyecto. Si un candidato fuera un delincuente, el grupo sería un delincuente, si fueses un
+          mentiroso, el grupo sería un mentiroso; lo que eres, maldice todo el esfuerzo que hace cada
+          candidato y cada miembro para cumplir sus objetivos frente a los demás, así que no
+          permitiremos tener en nuestra organización una sola persona que haga daño a otras
+          personas, o que no sostenga en sus relaciones sociales el esfuerzo constante de mostrar los
+          valores de la organización.
         </p>
         <p style={cardDesc}>
-          Por eso un solo fallo a los valores del Grupo Corazones Cruzados nos deja fuera. Todos los
-          candidatos están en desarrollo de estos valores y trabajan, día a día, en encarnar quiénes
-          somos. Cada valor se traduce en un compromiso concreto:
+          A continuación te presente los valores que deberás trabajar para convertirte en miembro de
+          la organización:
         </p>
         <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2 my-3">
           {VALORES.map((v) => (
@@ -290,10 +292,6 @@ const REGLAS: AccordionItem[] = [
             </div>
           ))}
         </div>
-        <p style={cardDesc}>
-          Cuando un candidato logra representarlos, un miembro <strong style={strong}>Global</strong>{' '}
-          del paso de <strong style={strong}>Implementación</strong> decide convertirlo en miembro.
-        </p>
       </>
     ),
   },
@@ -359,16 +357,12 @@ const REGLAS: AccordionItem[] = [
 function SlideOnboarding() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <p style={pStyle}>
-        Tres reglas rigen todo el proyecto y deben respetarse en cada paso. Toca cada una para
-        leerla.
-      </p>
+      <p style={pStyle}>Reglas del proyecto para todos los Candidatos y Miembros</p>
       <WarnBox>
-        <strong className="font-semibold">Estas reglas no se negocian.</strong> Cualquier intento de
-        faltar a una sola de ellas implica la <strong className="font-semibold">destitución</strong>{' '}
-        del candidato —y aplica igual a los miembros en cualquier rol—. Quien es destituido no tiene
-        una segunda oportunidad; solo los fallos <em>no intencionales</em> se evalúan y pueden no
-        acarrear destitución.
+        Cualquier intento de faltar a una sola de estas reglas implica la{' '}
+        <strong className="font-semibold">destitución</strong> del candidato y aplica igual a todos
+        los miembros en cualquier rol. Quien es destituido del proyecto no tiene segunda oportunidad;
+        solo los fallos <em>no intencionales</em> se evalúan y pueden no llevar destitución.
       </WarnBox>
       <Accordion items={REGLAS} />
     </div>
