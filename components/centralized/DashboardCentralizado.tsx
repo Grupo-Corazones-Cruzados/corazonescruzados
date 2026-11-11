@@ -2,10 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import {
-  Boxes, BellRing, ShieldAlert, Inbox, UserPlus, CalendarDays, Clapperboard, Camera, Database,
-  FlaskConical, SlidersHorizontal, Terminal, HeartHandshake, type LucideIcon,
-} from 'lucide-react';
+import { Boxes, BellRing } from 'lucide-react';
+import { ICONO_SISTEMA } from '@/components/centralized/iconos4P';
 import { Cifra, RejillaCifras } from '@/components/ui/Cifra';
 import Saludo from '@/components/dashboard/Saludo';
 
@@ -14,12 +12,7 @@ type SistemaResumen = {
   ruta: string; etiqueta: string | null; valor: number | null; atender: boolean;
 };
 
-const ICONO: Record<string, LucideIcon> = {
-  'control-psicosocial': ShieldAlert, 'solicitudes-y-denuncias': Inbox, 'reclutamiento-y-seleccion': UserPlus,
-  'gestion-social': CalendarDays, 'generacion-de-contenido': Clapperboard, 'percepcion-social': Camera,
-  'gestion-de-datos': Database, 'metodologia-condiciologica': FlaskConical, 'gestion-de-condiciones': SlidersHorizontal,
-  'comandos-violeta': Terminal, 'apoyo-y-autoayuda': HeartHandshake,
-};
+const ICONO = ICONO_SISTEMA;
 
 /** Los sistemas que viven en el servidor local de la Mac: se entra con la contraseña, por Tailscale. */
 const EN_SERVIDOR_LOCAL: Record<string, string> = {

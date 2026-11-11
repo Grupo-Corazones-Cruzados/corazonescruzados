@@ -5,6 +5,8 @@ import {
   GraduationCap, Cpu, Building2, Megaphone,
   BookOpen, Hammer, Target, Lightbulb,
   Microscope, Code2, CalendarRange, Flag,
+  ShieldAlert, Inbox, UserPlus, CalendarDays, Clapperboard, Camera, Database,
+  FlaskConical, SlidersHorizontal, Terminal, HeartHandshake, Clock, Waves, Frame,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -30,4 +32,13 @@ export const ICONO_CELDA: Record<string, Record<string, LucideIcon>> = {
   pilar: { fundamentacion: GraduationCap, creacion: Cpu, implementacion: Building2, gestion: Megaphone },
   controlador: { fundamentacion: BookOpen, creacion: Hammer, implementacion: Target, gestion: Lightbulb },
   colaborador: { fundamentacion: Microscope, creacion: Code2, implementacion: CalendarRange, gestion: Flag },
+};
+
+/** Cada sistema por su slug (el dashboard de Centralizado y el menú 2). Sin icono propio, el de su celda. */
+export const ICONO_SISTEMA: Record<string, LucideIcon> = {
+  'control-psicosocial': ShieldAlert, 'solicitudes-y-denuncias': Inbox, 'reclutamiento-y-seleccion': UserPlus,
+  'gestion-social': CalendarDays, 'generacion-de-contenido': Clapperboard, 'percepcion-social': Camera,
+  'gestion-de-datos': Database, 'metodologia-condiciologica': FlaskConical, 'gestion-de-condiciones': SlidersHorizontal,
+  'comandos-violeta': Terminal, 'apoyo-y-autoayuda': HeartHandshake, 'horario-de-vida': Clock,
+  'dinamica-condiciologica': Waves, 'encuadre-condiciologico': Frame,
 };
