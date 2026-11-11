@@ -375,16 +375,24 @@ function SlideOnboarding() {
 /* Slider 5 — Método de crecimiento (pirámide jerárquica)            */
 /* ------------------------------------------------------------------ */
 
+// Textos de Fernando (editor de textos, 2026-11-11), literales; cada nivel puede tener varios párrafos.
 const CRECIMIENTO: { n: number; title: string; tag: string; text: () => React.ReactNode }[] = [
   {
     n: 1,
     title: 'Talento',
-    tag: 'El origen del potencial',
+    tag: 'El origen de todo',
     text: () => (
       <>
-        Es lo más importante, porque es el <strong style={strong}>origen del potencial de
-        crecimiento</strong>: es lo que le da a una persona valor social y la acerca al éxito.
-        Cuando ese talento se reconoce y se aprovecha, todo lo demás tiene sobre qué construirse.
+        <p style={cardDesc}>
+          El talento es justo lo que hace de este proyecto una realidad, cuando una persona puede traer
+          a este mundo un valor agregado con su esfuerzo y capacidad, se convierte en una herramienta de
+          altísimo valor para el progreso del proyecto que lo requiera.
+        </p>
+        <p style={cardDesc}>
+          Nosotros queremos descubrir ese talento, y generar oportunidades en donde podamos sacar
+          beneficios por posicionarte dentro de una estrategia organizacional; cada movimiento va a
+          desarrollar tu talento y causar mayor interés en nuevos clientes que deseen tus servicios.
+        </p>
       </>
     ),
   },
@@ -394,10 +402,20 @@ const CRECIMIENTO: { n: number; title: string; tag: string; text: () => React.Re
     tag: 'Fortaleza ante el mundo',
     text: () => (
       <>
-        Ocupan el segundo lugar, porque son las <strong style={strong}>características que
-        fortalecen al sujeto</strong> frente al mundo. Al aceptar y mostrar su naturaleza con
-        valores sólidos, las personas a su alrededor se sienten más afines y confían más en apoyar
-        su talento.
+        <p style={cardDesc}>
+          La confianza de los clientes se mide en tus valores, cuando una persona no sostiene sus
+          valores puede tomar un requerimiento como algo sin importancia, y limitando incluso el
+          desarrollo de su talento; debido a eso, exigimos los valores organizacionales ya que son la
+          fuente principal para obtener oportunidades.
+        </p>
+        <p style={cardDesc}>
+          La lógica es la siguiente, según al nivel de confianza que tenga un cliente, se arriesga a
+          invertir su tiempo y dinero en cualquiera de nuestros servicios, talentos, y productos que
+          ofrecemos. Si demostramos alta calidad humana sin importar el tipo de cliente o el lugar en
+          donde estemos, nos podemos convertir en una organización ideal para encontrar personas que
+          puedan trabajar en un proyecto en donde van a representar bien lo que estamos dispuestos a
+          hacer por solucionar un problema.
+        </p>
       </>
     ),
   },
@@ -407,31 +425,42 @@ const CRECIMIENTO: { n: number; title: string; tag: string; text: () => React.Re
     tag: 'Laboral · Corporal · Social · Mental',
     text: () => (
       <>
-        En tercer lugar están las cuatro dimensiones del desarrollo humano —{' '}
-        <strong style={strong}>laboral, corporal, social y mental</strong>—. De forma natural, quien
-        tiene talento y buenos valores tiende a desarrollarlas. Cuando faltan esas dos bases, el
-        desarrollo se resiente y aparecen los problemas: malestar mental, físico, social o laboral.
-        Y si las bases están bien pero el desarrollo aun así falla, es señal de problemas o
-        estancamientos que no se están superando; entonces analizamos cada dimensión —sus problemas,
-        las situaciones asociadas y sus causas— y definimos logros y objetivos para resolverlos.
+        <p style={cardDesc}>
+          Evaluamos las cuatro dimensiones del desarrollo humano ({' '}
+          <strong style={strong}>laboral, corporal, social y mental</strong> ), cada una representa
+          un conjunto de problemas que al no ser abordados, aumentan el riesgo de tomar malas
+          decisiones, intenciones y malos comportamientos que terminen perjudicando a uno mismo, y a
+          los demás.
+        </p>
+        <p style={cardDesc}>
+          Estos riesgos se sostienen mediante los valores, y cuando el talento es muy competente,
+          aumenta las posibilidades de resolver sus problemas haciendo uso de los recursos que puede
+          obtener. Sin embargo existen problemas que se deben trabajar mediante estrategias
+          personalizadas que logren mejorar la calidad de vida. Si estos problemas son abordados
+          entonces el sujeto impulsará sus valores y talento en su entorno de trabajo.
+        </p>
       </>
     ),
   },
   {
     n: 4,
     title: 'Red de apoyo',
-    tag: 'Un complemento, no una base',
+    tag: 'El complemento vital',
     text: () => (
       <>
-        Es el aspecto de <strong style={strong}>menor peso</strong>, porque nadie necesita una red
-        de apoyo para tener éxito. Es común que, tras muchos fracasos, alguien culpe a la falta de
-        una red —para conseguir trabajo, estudiar o recibir consejos— y envidie a quienes sí la
-        tuvieron. Pero la red de apoyo es solo un <strong style={strong}>complemento</strong>: el
-        origen del crecimiento está, sobre todo, en el talento que quizá no se aprovecha, en los
-        valores que no se trabajan y en las dimensiones afectadas por ello. Aun así, una buena red
-        fortalece a quien ya tiene bases y ayuda a quien no las tiene; y quien no tiene ni red ni
-        bases parte de una situación de crecimiento muy baja, que justamente este método permite
-        abordar.
+        <p style={cardDesc}>
+          En la actualidad, cuando las dimensiones de desarrollo humano se ven muy afectadas por
+          problemas difíciles de resolver, la red de apoyo suele ser un factor vital para impulsar la
+          solución de problemas, además de ser un buen referente para sostener los valores, y así
+          obtener fuerzas para buscar oportunidades que, en caso de tener suerte, te permiten
+          aprovechar tu talento y mejorar tu situación.
+        </p>
+        <p style={cardDesc}>
+          Sin embargo para esta organización este factor vital tiene menor importancia porque los
+          valores organizacionales te enseñan que no necesitas una red de apoyo para abordar tus
+          problemas, sino que su importancia debe ser para nosotros un complemento que apoya nuestra
+          condición, y por lo tanto no podemos depender de ella para estar bien.
+        </p>
       </>
     ),
   },
@@ -449,7 +478,7 @@ function SlideMetodoCrecimiento() {
       {/* Texto de Fernando (editor de textos, 2026-11-11), literal. */}
       <p style={pStyle}>
         La prospección de cada persona, es un indicador que mide su intención de crecimiento según 4
-        aspectos  ordenados por la importancia que tienen para transformas su vida.
+        aspectos  ordenados por la importancia que tienen para transformar su vida.
       </p>
       <p style={pStyle}>
         A continuación te presento el método de evaluación continua del Grupo Corazones Cruzados:
@@ -516,7 +545,7 @@ function SlideMetodoCrecimiento() {
           <div style={{ ...kickerStyle, marginTop: 3, marginBottom: 8 }}>
             {a.n} de 4 · {rank(a.n)}
           </div>
-          <p style={cardDesc}>{a.text()}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{a.text()}</div>
         </div>
       </div>
     </div>
