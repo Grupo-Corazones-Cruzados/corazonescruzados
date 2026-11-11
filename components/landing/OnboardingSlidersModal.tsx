@@ -249,18 +249,18 @@ function SlideMotivos() {
 
 // Cada valor se asocia a un compromiso (el "no" que lo encarna).
 const VALORES: { valor: string; compromiso: string }[] = [
-  { valor: 'Determinación', compromiso: 'Nunca te rindas.' },
-  { valor: 'Coraje', compromiso: 'Enfrenta tus miedos.' },
-  { valor: 'Pureza', compromiso: 'Valórate por quién eres.' },
-  { valor: 'Fe', compromiso: 'Haz real, lo imposible.' },
-  { valor: 'Paciencia', compromiso: 'Los tiempos de Dios son perfectos.' },
+  { valor: 'Determinación', compromiso: 'Insiste hasta el cansancio, o levántate y no te rindas.' },
+  { valor: 'Coraje', compromiso: 'Confronta todo lo que está mal, y descubre un motivo para superar tus miedos.' },
+  { valor: 'Pureza', compromiso: 'Nunca olvides tus raíces y quien realmente eres.' },
+  { valor: 'Fe', compromiso: 'Confía en ti, y haz real lo que puede parecer imposible.' },
+  { valor: 'Paciencia', compromiso: 'Hay tantas cosas que puedes valorar, antes de caer en la desesperación.' },
   {
     valor: 'Seriedad',
-    compromiso: 'Céntrate en cómo solucionar tus problemas.',
+    compromiso: 'Prioriza tus necesidades, y céntrate en aprender a solucionar tus problemas.',
   },
   { valor: 'Espontaneidad', compromiso: 'Vergüenza es ocultar quien realmente eres.' },
-  { valor: 'Autonomía', compromiso: 'Solo depende de ti, cambiar tu vida.' },
-  { valor: 'Empatía', compromiso: 'Recuerda valorar el corazón de las personas buenas.' },
+  { valor: 'Autonomía', compromiso: 'Tu futuro, depende únicamente de ti.' },
+  { valor: 'Empatía', compromiso: 'Recuerda valorar el corazón de quienes valen la pena.' },
 ];
 
 const REGLAS: AccordionItem[] = [
@@ -271,17 +271,18 @@ const REGLAS: AccordionItem[] = [
       <>
         {/* Texto de Fernando (editor de textos, 2026-11-11), literal. */}
         <p style={cardDesc}>
-          La regla marca la importancia de comprender quién eres, y por qué representas a este
-          proyecto. Si un candidato fuera un delincuente, el grupo sería un delincuente, si fueses un
-          mentiroso, el grupo sería un mentiroso; lo que eres, maldice todo el esfuerzo que hace cada
-          candidato y cada miembro para cumplir sus objetivos frente a los demás, así que no
-          permitiremos tener en nuestra organización una sola persona que haga daño a otras
-          personas, o que no sostenga en sus relaciones sociales el esfuerzo constante de mostrar los
-          valores de la organización.
+          Es importante comprender quién eres, y cómo tus acciones representan a este proyecto. Si
+          como candidato eres un delincuente, el grupo queda representado por un delincuente, si
+          fueses un mentiroso, el grupo queda representado por un mentiroso; lo que eres, afecta todo
+          el esfuerzo que hacen los candidatos y los miembros para representar la organización, y los
+          beneficios de mantener la buena reputación y así aumentar nuestras oportunidades para
+          cumplir o alcanzar nuestros objetivos. Así que no permitiremos tener en nuestra organización
+          una sola persona que haga daño a otras personas, o que no sostenga en sus relaciones
+          sociales el esfuerzo constante por mostrar los valores de la organización.
         </p>
         <p style={cardDesc}>
-          A continuación te presente los valores que deberás trabajar para convertirte en miembro de
-          la organización:
+          A continuación te presento los valores que deberás trabajar para representar nuestra
+          organización:
         </p>
         <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2 my-3">
           {VALORES.map((v) => (
@@ -365,8 +366,8 @@ function SlideOnboarding() {
       <WarnBox>
         Cualquier intento de faltar a una sola de estas reglas implica la{' '}
         <strong className="font-semibold">destitución</strong> del candidato y aplica igual a todos
-        los miembros en cualquier rol. Quien es destituido del proyecto no tiene segunda oportunidad;
-        solo los fallos <em>no intencionales</em> se evalúan y pueden no llevar destitución.
+        los miembros en cualquier rol. Quien es destituido del proyecto no tiene otra oportunidad para
+        unirse; solo los fallos <em>no intencionales</em> se evalúan y pueden no llevar a la destitución.
       </WarnBox>
       <Accordion items={REGLAS} />
     </div>
