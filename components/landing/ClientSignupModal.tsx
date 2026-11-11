@@ -34,6 +34,86 @@ export default function ClientSignupModal({
   onClose: () => void;
   onLogin: () => void;
 }) {
+  const [creada, setCreada] = useState<string | null>(null);
+  // La pausa de 24 h se mira AL ABRIR (Fernando, 2026-10-29): se llegue por el enlace del inicio de
+  // sesión o por cualquier otro camino, si hay pausa no se enseña el formulario.
+  const registro = useEstadoRegistro();
+
+  /* ── En pausa: un registro desde este equipo en las últimas 24 h ─────────────── */
+  if (registro?.bloqueado) {
+    return (
+      <AuthDialog
+        Icon={Clock}
+        titulo="Crear cuenta: en pausa"
+        subtitulo="Desde este equipo ya se creó un registro hace poco."
+        onClose={onClose}
+        ancho="sm"
+        pie={<BotonAuth onClick={onLogin}>Iniciar sesión</BotonAuth>}
+      >
+        <p className="text-[13.5px] leading-relaxed text-digi-text" style={mf}>
+          Para evitar registros en cadena, cada equipo puede crear una cuenta cada 24 horas. Podrás
+          crear otra a partir del{' '}
+          <strong className="font-semibold text-digi-text">{horaDeReanudacion(registro.hasta)}</strong>.
+        </p>
+        <p className="mt-3 text-[12.5px] leading-relaxed text-digi-muted" style={mf}>
+          Si ya tienes una cuenta, puedes iniciar sesión ahora mismo.
+        </p>
+      </AuthDialog>
+    );
+  }
+
+  /* ── Confirmación ─────────────────────────────────────────────────────────── */
+  if (creada) return <CuentaClienteCreada email={creada} onClose={onClose} />;
+
+  /* ── Formulario ───────────────────────────────────────────────────────────── */
+  return (
+    <AuthDialog
+      Icon={UserPlus}
+      titulo="Crea tu cuenta de cliente"
+      subtitulo="Para pedir una cotización y seguir tus proyectos, tickets y facturas."
+      onClose={onClose}
+      ancho="lg"
+      pie={<EnlaceAuth onClick={onLogin}>¿Ya tienes cuenta? Inicia sesión</EnlaceAuth>}
+    >
+      <FormularioCliente onCreada={setCreada} />
+    </AuthDialog>
+  );
+}
+
+/** «Confirma tu correo»: lo que se enseña al crear la cuenta, venga de donde venga el alta. */
+export function CuentaClienteCreada({ email, onClose }: { email: string; onClose: () => void }) {
+  return (
+    <AuthDialog
+      Icon={MailCheck}
+      titulo="Confirma tu correo"
+      subtitulo="Falta un paso para activar la cuenta."
+      onClose={onClose}
+      ancho="sm"
+      pie={<BotonAuth onClick={onClose}>Entendido</BotonAuth>}
+    >
+      <p className="text-[13.5px] leading-relaxed text-digi-text" style={mf}>
+        Te enviamos un enlace a <strong className="text-digi-text font-semibold">{email}</strong>.
+        Ábrelo para activar tu cuenta y entrar a tu espacio de cliente.
+      </p>
+      <p className="mt-3 text-[12.5px] leading-relaxed text-digi-muted" style={mf}>
+        Si no lo ves en unos minutos, revisa la carpeta de correo no deseado.
+      </p>
+    </AuthDialog>
+  );
+}
+
+/**
+ * EL FORMULARIO DE ALTA DE CLIENTE, sin marco (2026-11-11): lo usan este diálogo, la ventana de
+ * pasos de Clientes (`VentanaCliente`) y el último paso de la página `/clientes`. Una sola
+ * definición, para que no haya tres altas que piden cosas distintas.
+ */
+export function FormularioCliente({
+  onCreada, tema = 'oscuro',
+}: {
+  onCreada: (email: string) => void;
+  /** El captcha en claro dentro de la página del sitio; oscuro en las ventanas. */
+  tema?: 'oscuro' | 'claro';
+}) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [country, setCountry] = useState('');
@@ -45,11 +125,8 @@ export default function ClientSignupModal({
   const [marketing, setMarketing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState(false);
   const [captcha, setCaptcha] = useState<string | null>(null);
   const [reinicioCaptcha, setReinicioCaptcha] = useState(0);
-  // La pausa de 24 h se mira AL ABRIR (Fernando, 2026-10-29): se llegue por el enlace del inicio de
-  // sesión o por cualquier otro camino, si hay pausa no se enseña el formulario.
   const registro = useEstadoRegistro();
 
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -95,7 +172,7 @@ export default function ClientSignupModal({
         setReinicioCaptcha((n) => n + 1);
         return;
       }
-      setSent(true);
+      onCreada(email.trim());
     } catch {
       setError('Error de red');
     } finally {
@@ -103,124 +180,79 @@ export default function ClientSignupModal({
     }
   };
 
-  /* ── En pausa: un registro desde este equipo en las últimas 24 h ─────────────── */
   if (registro?.bloqueado) {
     return (
-      <AuthDialog
-        Icon={Clock}
-        titulo="Crear cuenta: en pausa"
-        subtitulo="Desde este equipo ya se creó un registro hace poco."
-        onClose={onClose}
-        ancho="sm"
-        pie={<BotonAuth onClick={onLogin}>Iniciar sesión</BotonAuth>}
-      >
-        <p className="text-[13.5px] leading-relaxed text-digi-text" style={mf}>
-          Para evitar registros en cadena, cada equipo puede crear una cuenta cada 24 horas. Podrás
-          crear otra a partir del{' '}
-          <strong className="font-semibold text-digi-text">{horaDeReanudacion(registro.hasta)}</strong>.
-        </p>
-        <p className="mt-3 text-[12.5px] leading-relaxed text-digi-muted" style={mf}>
-          Si ya tienes una cuenta, puedes iniciar sesión ahora mismo.
-        </p>
-      </AuthDialog>
+      <p className="text-[13.5px] leading-relaxed text-digi-text" style={mf}>
+        Desde este equipo ya se creó un registro hace poco. Para evitar registros en cadena, cada
+        equipo puede crear una cuenta cada 24 horas. Podrás crear otra a partir del{' '}
+        <strong className="font-semibold text-digi-text">{horaDeReanudacion(registro.hasta)}</strong>.
+      </p>
     );
   }
 
-  /* ── Confirmación ─────────────────────────────────────────────────────────── */
-  if (sent) {
-    return (
-      <AuthDialog
-        Icon={MailCheck}
-        titulo="Confirma tu correo"
-        subtitulo="Falta un paso para activar la cuenta."
-        onClose={onClose}
-        ancho="sm"
-        pie={<BotonAuth onClick={onClose}>Entendido</BotonAuth>}
-      >
-        <p className="text-[13.5px] leading-relaxed text-digi-text" style={mf}>
-          Te enviamos un enlace a <strong className="text-digi-text font-semibold">{email}</strong>.
-          Ábrelo para activar tu cuenta y entrar a tu espacio de cliente.
-        </p>
-        <p className="mt-3 text-[12.5px] leading-relaxed text-digi-muted" style={mf}>
-          Si no lo ves en unos minutos, revisa la carpeta de correo no deseado.
-        </p>
-      </AuthDialog>
-    );
-  }
-
-  /* ── Formulario ───────────────────────────────────────────────────────────── */
   return (
-    <AuthDialog
-      Icon={UserPlus}
-      titulo="Crea tu cuenta de cliente"
-      subtitulo="Para pedir una cotización y seguir tus proyectos, tickets y facturas."
-      onClose={onClose}
-      ancho="lg"
-      pie={<EnlaceAuth onClick={onLogin}>¿Ya tienes cuenta? Inicia sesión</EnlaceAuth>}
-    >
-      <form onSubmit={submit} className="space-y-4">
-        {error && <ErrorAuth>{error}</ErrorAuth>}
+    <form onSubmit={submit} className="space-y-4">
+      {error && <ErrorAuth>{error}</ErrorAuth>}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Campo label="Nombre completo" requerido>
-            <input className={INPUT} value={fullName} onChange={(e) => setFullName(e.target.value)}
-              autoComplete="name" placeholder="Tu nombre y apellidos" />
-          </Campo>
-          <Campo label="Correo electrónico" requerido>
-            <input className={INPUT} type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email" placeholder="nombre@empresa.com" />
-          </Campo>
-          <Campo label="País" requerido>
-            <input className={INPUT} value={country} onChange={(e) => setCountry(e.target.value)}
-              autoComplete="country-name" placeholder="Ecuador" />
-          </Campo>
-          <Campo label="Teléfono" requerido>
-            <input className={INPUT} value={phone} onChange={(e) => setPhone(e.target.value)}
-              autoComplete="tel" placeholder="+593 99 000 0000" />
-          </Campo>
-        </div>
-
-        <Campo label="Dirección" requerido>
-          <input className={INPUT} value={address} onChange={(e) => setAddress(e.target.value)}
-            autoComplete="street-address" placeholder="Calle, número, ciudad" />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Campo label="Nombre completo" requerido>
+          <input className={INPUT} value={fullName} onChange={(e) => setFullName(e.target.value)}
+            autoComplete="name" placeholder="Tu nombre y apellidos" />
         </Campo>
+        <Campo label="Correo electrónico" requerido>
+          <input className={INPUT} type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email" placeholder="nombre@empresa.com" />
+        </Campo>
+        <Campo label="País" requerido>
+          <input className={INPUT} value={country} onChange={(e) => setCountry(e.target.value)}
+            autoComplete="country-name" placeholder="Ecuador" />
+        </Campo>
+        <Campo label="Teléfono" requerido>
+          <input className={INPUT} value={phone} onChange={(e) => setPhone(e.target.value)}
+            autoComplete="tel" placeholder="+593 99 000 0000" />
+        </Campo>
+      </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Campo label="Contraseña" hint="Mínimo 8 caracteres." requerido>
-            <input className={INPUT} type="password" value={pwd} onChange={(e) => setPwd(e.target.value)}
-              autoComplete="new-password" />
-          </Campo>
-          <Campo
-            label="Repite la contraseña"
-            requerido
-            // El aviso aparece MIENTRAS se escribe, no al enviar: descubrir que no coinciden
-            // después de pulsar el botón obliga a volver a los dos campos.
-            hint={pwd2.length > 0 && pwd !== pwd2 ? 'No coinciden.' : undefined}
-          >
-            <input className={INPUT} type="password" value={pwd2} onChange={(e) => setPwd2(e.target.value)}
-              autoComplete="new-password" />
-          </Campo>
-        </div>
+      <Campo label="Dirección" requerido>
+        <input className={INPUT} value={address} onChange={(e) => setAddress(e.target.value)}
+          autoComplete="street-address" placeholder="Calle, número, ciudad" />
+      </Campo>
 
-        <div className="space-y-2.5">
-          <Casilla checked={terms} onChange={setTerms}>
-            Acepto los{' '}
-            <a href="/legal" target="_blank" rel="noopener noreferrer"
-              className="text-accent hover:underline">términos y condiciones y la política de privacidad</a>
-            , y autorizo el tratamiento de mis datos conforme a ella.
-          </Casilla>
-          <Casilla checked={marketing} onChange={setMarketing}>
-            Quiero recibir información sobre productos y novedades del proyecto.{' '}
-            <span className="text-digi-muted">(opcional)</span>
-          </Casilla>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Campo label="Contraseña" hint="Mínimo 8 caracteres." requerido>
+          <input className={INPUT} type="password" value={pwd} onChange={(e) => setPwd(e.target.value)}
+            autoComplete="new-password" />
+        </Campo>
+        <Campo
+          label="Repite la contraseña"
+          requerido
+          // El aviso aparece MIENTRAS se escribe, no al enviar: descubrir que no coinciden
+          // después de pulsar el botón obliga a volver a los dos campos.
+          hint={pwd2.length > 0 && pwd !== pwd2 ? 'No coinciden.' : undefined}
+        >
+          <input className={INPUT} type="password" value={pwd2} onChange={(e) => setPwd2(e.target.value)}
+            autoComplete="new-password" />
+        </Campo>
+      </div>
 
-        <Captcha onCambio={setCaptcha} reinicio={reinicioCaptcha} tema="oscuro" />
+      <div className="space-y-2.5">
+        <Casilla checked={terms} onChange={setTerms}>
+          Acepto los{' '}
+          <a href="/legal" target="_blank" rel="noopener noreferrer"
+            className="text-accent hover:underline">términos y condiciones y la política de privacidad</a>
+          , y autorizo el tratamiento de mis datos conforme a ella.
+        </Casilla>
+        <Casilla checked={marketing} onChange={setMarketing}>
+          Quiero recibir información sobre productos y novedades del proyecto.{' '}
+          <span className="text-digi-muted">(opcional)</span>
+        </Casilla>
+      </div>
 
-        <BotonAuth tipo="submit" cargando={busy} deshabilitado={!ok}>
-          {busy ? 'Creando la cuenta…' : 'Crear cuenta'}
-        </BotonAuth>
-      </form>
-    </AuthDialog>
+      <Captcha onCambio={setCaptcha} reinicio={reinicioCaptcha} tema={tema} />
+
+      <BotonAuth tipo="submit" cargando={busy} deshabilitado={!ok}>
+        {busy ? 'Creando la cuenta…' : 'Crear cuenta'}
+      </BotonAuth>
+    </form>
   );
 }

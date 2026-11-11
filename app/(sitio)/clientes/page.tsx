@@ -55,6 +55,7 @@ import type { Metadata } from 'next';
 import { SITIO, REDES, OG_IMAGEN, TEMAS_CLIENTES } from '@/lib/sitio/contenido';
 import { Contenedor, PresentacionPagina } from '@/components/sitio/piezas';
 import TemasClientes from '@/components/sitio/TemasClientes';
+import BotonCrearCuentaCliente from '@/components/sitio/VentanaCliente';
 import { PRESENTACION_CLIENTES } from '@/components/sitio/presentaciones';
 
 /** En cada visita: el tema Soluciones lista las soluciones de la base (caché de 5 min). */
@@ -91,7 +92,7 @@ export default function ClientesPage() {
       <section className="flex-1 pt-6 sm:pt-10 pb-16">
         <Contenedor ancho="sitio">
           {/* La presentación y, debajo, los temas en pestañas numeradas (2026-10-31). */}
-          <PresentacionPagina {...PRESENTACION_CLIENTES} />
+          <PresentacionPagina {...PRESENTACION_CLIENTES} accion={<BotonCrearCuentaCliente />} />
           <TemasClientes inicial={TEMAS_CLIENTES[0].id} />
         </Contenedor>
       </section>

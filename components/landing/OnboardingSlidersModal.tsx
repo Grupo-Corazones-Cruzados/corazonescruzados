@@ -742,24 +742,14 @@ export default function OnboardingSlidersModal({
   /** Cancela el onboarding y vuelve a la landing. */
   onClose: () => void;
 }) {
-  // index 0..N-1 => sliders informativos; index === N => formulario de postulación.
-  const [index, setIndex] = useState(0);
-  const [dir, setDir] = useState<1 | -1>(1);
   // Postulación: correo + motivación + aceptaciones. (El resto de datos
   // personales se piden luego, en el formulario de creación de cuenta.)
   const [email, setEmail] = useState('');
   const [reason, setReason] = useState('');
   const [marketing, setMarketing] = useState(false);
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  // Aceptación de términos por cada slider; no se puede avanzar sin aceptar.
-  const [accepted, setAccepted] = useState<boolean[]>(() => SLIDES.map(() => false));
   // Aceptación final de términos y condiciones en el formulario de postulación.
   const [finalAccepted, setFinalAccepted] = useState(false);
-
-  const total = SLIDES.length;
-  const isForm = index === total;
-  const current = SLIDES[index];
-  const steps = total + 1; // sliders + postulación
   // «No soy un robot» (Fernando, 2026-10-29): sin la casilla resuelta no se envía.
   const [captcha, setCaptcha] = useState<string | null>(null);
   const [reinicioCaptcha, setReinicioCaptcha] = useState(0);
@@ -779,46 +769,7 @@ export default function OnboardingSlidersModal({
       setReinicioCaptcha((n) => n + 1);
     }
   };
-  const acceptedHere = isForm ? true : accepted[index];
 
-  const toggleAccept = () =>
-    setAccepted((prev) => {
-      const copy = [...prev];
-      copy[index] = !copy[index];
-      return copy;
-    });
-
-  const go = (next: number, d: 1 | -1) => {
-    setDir(d);
-    setIndex(next);
-  };
-
-  const next = () => {
-    if (index < total) go(index + 1, 1);
-  };
-  const back = () => {
-    if (index > 0) go(index - 1, -1);
-  };
-
-  /** Un paso es alcanzable si ya se visitó o si todos los anteriores están aceptados. */
-  const canGoTo = (i: number) => i <= index || SLIDES.slice(0, i).every((_, k) => accepted[k]);
-
-  const animName = dir === 1 ? 'onbInRight' : 'onbInLeft';
-  const SlideComponent = isForm ? null : current.Component;
-  const title = isForm ? '¿Por qué quieres ser candidato de este proyecto?' : current.title;
-
-  const porcentaje = Math.round(((index + (acceptedHere && !isForm ? 1 : 0)) / steps) * 100);
-
-  /*
-   * «LA TRAVESÍA» — el diseño del formulario de postulación (Fernando, 2026-10-26: «actualiza
-   * por completo el diseño… según tu creatividad»). Con el lenguaje de la portada:
-   * · a la izquierda, el CAMINO: los 8 pasos como nodos unidos por una línea (hecho = visto,
-   *   actual = brilla, bloqueado = candado), con un anillo de progreso arriba;
-   * · a la derecha, en su propia tarjeta separada del camino (2026-10-29), el contenido del paso
-   *   y, abajo, una barra con «Atrás», la aceptación como interruptor y «Siguiente».
-   * La lógica (pasos, aceptación, envío) no cambió. Desde 2026-10-29 con el estilo del inicio de
-   * sesión (`.corp dark`, tarjeta gris, radio 8 px, botón plano): `.onb-*` en globals.css.
-   */
   // La pausa de 24 h se mira AL ABRIR (Fernando, 2026-10-29): si desde este equipo ya se creó un
   // registro, no se recorre la postulación para acabar rechazada al enviar.
   if (registro?.bloqueado) {
@@ -841,10 +792,116 @@ export default function OnboardingSlidersModal({
   }
 
   return (
+    <VentanaRecorrido
+      marca="Postulación de candidato"
+      ariaLabel="Conoce el proyecto y postúlate"
+      pasos={SLIDES}
+      textoUltimoPaso="Postularme"
+      onClose={onClose}
+      final={{
+        label: 'Postulación',
+        Icon: Send,
+        titulo: '¿Por qué quieres ser candidato de este proyecto?',
+        contenido: (
+          <>
+            <CandidateForm
+              email={email}
+              setEmail={setEmail}
+              emailOk={emailOk}
+              reason={reason}
+              setReason={setReason}
+              termsAccepted={finalAccepted}
+              onToggleTerms={() => setFinalAccepted((v) => !v)}
+              marketing={marketing}
+              onToggleMarketing={() => setMarketing((v) => !v)}
+            />
+            <div className="mt-5">
+              <Captcha onCambio={setCaptcha} reinicio={reinicioCaptcha} tema="oscuro" />
+              {errorEnvio && (
+                <p role="alert" className="mt-3 text-[13px] leading-relaxed text-red-300 onb-error">
+                  {errorEnvio}
+                </p>
+              )}
+            </div>
+          </>
+        ),
+        boton: (
+          <button type="button" onClick={enviar} disabled={!formOk} className="onb-boton onb-boton-avanzar">
+            <Send />
+            Comenzar mi aventura
+          </button>
+        ),
+      }}
+    />
+  );
+}
+
+/** Un paso informativo de la ventana: se lee y se marca «Entendido» para seguir. */
+export type PasoVentana = { id: string; title: string; Icon: IconType; Component: React.FC };
+
+/**
+ * «LA TRAVESÍA» — LA VENTANA DE PASOS (Fernando, 2026-10-26; extraída el 2026-11-11 para que la usen
+ * la postulación de candidatos y el alta de clientes, la misma pieza y no una copia):
+ * · a la izquierda, el CAMINO: los pasos como nodos unidos por una línea (hecho = visto, actual =
+ *   brilla, bloqueado = candado), con un anillo de progreso arriba;
+ * · a la derecha, en su propia tarjeta, el contenido del paso y abajo una barra con «Atrás», la
+ *   aceptación «Entendido» como interruptor y «Siguiente»;
+ * · el último paso es el formulario (`final`), con su propio botón de envío (o dentro del
+ *   contenido, si `final.boton` no se pasa).
+ * Estilo `.corp dark` del inicio de sesión: `.onb-*` en globals.css.
+ */
+export function VentanaRecorrido({
+  marca, ariaLabel, pasos, final, textoUltimoPaso = 'Siguiente', onClose,
+}: {
+  /** La línea bajo «GCC World» en el camino (p. ej. «Postulación de candidato»). */
+  marca: string;
+  ariaLabel: string;
+  pasos: PasoVentana[];
+  final: { label: string; Icon: IconType; titulo: string; contenido: React.ReactNode; boton?: React.ReactNode };
+  /** El texto del botón en el último paso informativo («Postularme», «Crear mi cuenta»…). */
+  textoUltimoPaso?: string;
+  onClose: () => void;
+}) {
+  // index 0..N-1 => pasos informativos; index === N => formulario.
+  const [index, setIndex] = useState(0);
+  const [dir, setDir] = useState<1 | -1>(1);
+  // Aceptación por paso; no se puede avanzar sin aceptar.
+  const [accepted, setAccepted] = useState<boolean[]>(() => pasos.map(() => false));
+
+  const total = pasos.length;
+  const isForm = index === total;
+  const current = pasos[index];
+  const steps = total + 1;
+  const nodos = [...pasos.map((s) => ({ label: s.title, Icon: s.Icon })), { label: final.label, Icon: final.Icon }];
+  const acceptedHere = isForm ? true : accepted[index];
+
+  const toggleAccept = () =>
+    setAccepted((prev) => {
+      const copy = [...prev];
+      copy[index] = !copy[index];
+      return copy;
+    });
+
+  const go = (next: number, d: 1 | -1) => {
+    setDir(d);
+    setIndex(next);
+  };
+  const next = () => { if (index < total) go(index + 1, 1); };
+  const back = () => { if (index > 0) go(index - 1, -1); };
+
+  /** Un paso es alcanzable si ya se visitó o si todos los anteriores están aceptados. */
+  const canGoTo = (i: number) => i <= index || pasos.slice(0, i).every((_, k) => accepted[k]);
+
+  const animName = dir === 1 ? 'onbInRight' : 'onbInLeft';
+  const SlideComponent = isForm ? null : current.Component;
+  const title = isForm ? final.titulo : current.title;
+  const porcentaje = Math.round(((index + (acceptedHere && !isForm ? 1 : 0)) / steps) * 100);
+
+  return (
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Conoce el proyecto y postúlate"
+      aria-label={ariaLabel}
       className={`corp dark corp-overlay onboarding-portada fixed inset-0 z-[250] flex items-center justify-center p-0 sm:p-5`}
       style={{ animation: 'pixelFadeIn 0.35s ease-out' }}
     >
@@ -858,7 +915,7 @@ export default function OnboardingSlidersModal({
               <LogoGirando tamano={30} />
               <div className="min-w-0">
                 <div className="onb-marca">GCC World</div>
-                <div className="onb-marca-sub">Postulación de candidato</div>
+                <div className="onb-marca-sub">{marca}</div>
               </div>
             </div>
 
@@ -881,8 +938,8 @@ export default function OnboardingSlidersModal({
               </div>
             </div>
 
-            <nav className="onb-nodos flex-1 min-h-0 overflow-y-auto" aria-label="Pasos de la postulación">
-              {PASOS_POSTULACION.map((s, i) => {
+            <nav className="onb-nodos flex-1 min-h-0 overflow-y-auto" aria-label="Pasos">
+              {nodos.map((s, i) => {
                 const actual = i === index;
                 const hecho = i < total ? accepted[i] : false;
                 const enabled = canGoTo(i);
@@ -910,9 +967,8 @@ export default function OnboardingSlidersModal({
 
           {/* ── El paso ── */}
           <section className="onb-paso flex flex-col min-h-0">
-            {/* Sin «01», sin «Paso 1 de 8» y sin barras (Fernando, 2026-10-29): el camino de la
-                izquierda ya dice en qué paso se está. El nombre del paso solo se escribe aquí
-                cuando el camino no se ve (teléfono); la pregunta del último paso, siempre. */}
+            {/* El nombre del paso solo se escribe aquí cuando el camino no se ve (teléfono); la
+                pregunta del último paso, siempre. */}
             <header className={`onb-cabecera ${isForm ? '' : 'es-sin-titulo'}`}>
               <h2 className={`onb-titulo min-w-0 flex-1 ${isForm ? '' : 'lg:hidden'}`}>{title}</h2>
               <BotonCerrar onClick={onClose} />
@@ -920,31 +976,7 @@ export default function OnboardingSlidersModal({
 
             <div className="onb-cuerpo flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
               <div key={index} style={{ animation: `${animName} 0.45s cubic-bezier(0.22,1,0.36,1)` }}>
-                {isForm || !SlideComponent ? (
-                  <CandidateForm
-                    email={email}
-                    setEmail={setEmail}
-                    emailOk={emailOk}
-                    reason={reason}
-                    setReason={setReason}
-                    termsAccepted={finalAccepted}
-                    onToggleTerms={() => setFinalAccepted((v) => !v)}
-                    marketing={marketing}
-                    onToggleMarketing={() => setMarketing((v) => !v)}
-                  />
-                ) : (
-                  <SlideComponent />
-                )}
-                {(isForm || !SlideComponent) && (
-                  <div className="mt-5">
-                    <Captcha onCambio={setCaptcha} reinicio={reinicioCaptcha} tema="oscuro" />
-                    {errorEnvio && (
-                      <p role="alert" className="mt-3 text-[13px] leading-relaxed text-red-300 onb-error">
-                        {errorEnvio}
-                      </p>
-                    )}
-                  </div>
-                )}
+                {isForm || !SlideComponent ? final.contenido : <SlideComponent />}
               </div>
             </div>
 
@@ -962,15 +994,7 @@ export default function OnboardingSlidersModal({
                   Atrás
                 </button>
                 {isForm ? (
-                  <button
-                    type="button"
-                    onClick={enviar}
-                    disabled={!formOk}
-                    className="onb-boton onb-boton-avanzar"
-                  >
-                    <Send />
-                    Comenzar mi aventura
-                  </button>
+                  final.boton ?? null
                 ) : (
                   <button
                     type="button"
@@ -979,7 +1003,7 @@ export default function OnboardingSlidersModal({
                     title={acceptedHere ? undefined : 'Marca la casilla de este apartado para continuar'}
                     className="onb-boton onb-boton-avanzar"
                   >
-                    {index === total - 1 ? 'Postularme' : 'Siguiente'}
+                    {index === total - 1 ? textoUltimoPaso : 'Siguiente'}
                     <ArrowRight />
                   </button>
                 )}

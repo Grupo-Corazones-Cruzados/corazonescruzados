@@ -27,13 +27,23 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { SITIO, OG_IMAGEN, accesoPorId, TEMAS_CLIENTES, temaClientesPorId } from '@/lib/sitio/contenido';
 import { Contenedor, PresentacionPagina } from '@/components/sitio/piezas';
-import TemasClientes from '@/components/sitio/TemasClientes';
+import TemasClientes, { PASO_ALTA_CLIENTE } from '@/components/sitio/TemasClientes';
+import BotonCrearCuentaCliente from '@/components/sitio/VentanaCliente';
 import { ACCESOS as SECCIONES } from '@/lib/sitio/contenido';
 import { PRESENTACION_CLIENTES } from '@/components/sitio/presentaciones';
 import ExploradorSecciones from '@/components/sitio/ExploradorSecciones';
 import { faqsTolerantesAlBuild } from '../faqs-build';
 
 type Props = { params: Promise<{ necesidad: string }> };
+
+/** El último paso del recorrido de Clientes (2026-11-11): el alta de la cuenta, con su propia URL. */
+const ALTA = {
+  ...TEMAS_CLIENTES[0],
+  id: PASO_ALTA_CLIENTE,
+  titulo: 'Crear cuenta de cliente',
+  texto: 'Crea tu cuenta de cliente del Grupo Corazones Cruzados para pedir una cotización y seguir tus proyectos, tickets y facturas.',
+  descripcion: '',
+};
 
 /**
  * ⏱️ SE PINTA EN CADA VISITA desde el 2026-10-31: los temas de Clientes llevan la lista de
@@ -46,7 +56,7 @@ export const dynamic = 'force-dynamic';
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { necesidad } = await params;
-  const acceso = temaClientesPorId(necesidad) ?? accesoPorId(necesidad);
+  const acceso = necesidad === PASO_ALTA_CLIENTE ? ALTA : temaClientesPorId(necesidad) ?? accesoPorId(necesidad);
   if (!acceso) return {};
 
   return {
@@ -66,9 +76,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function DetalleNecesidadPage({ params }: Props) {
   const { necesidad } = await params;
-  const acceso = temaClientesPorId(necesidad) ?? accesoPorId(necesidad);
+  const acceso = necesidad === PASO_ALTA_CLIENTE ? ALTA : temaClientesPorId(necesidad) ?? accesoPorId(necesidad);
   if (!acceso) notFound();
-  const nuevo = TEMAS_CLIENTES.some((t) => t.id === acceso.id);
+  const nuevo = acceso === ALTA || TEMAS_CLIENTES.some((t) => t.id === acceso.id);
 
   // Se leen en el servidor, al generar la página: las preguntas y sus respuestas viajan ya
   // escritas dentro del HTML. Si se pidieran por red desde el navegador, el buscador —que es
@@ -94,7 +104,7 @@ export default async function DetalleNecesidadPage({ params }: Props) {
         <Contenedor ancho="sitio">
           {nuevo ? (
             <>
-              <PresentacionPagina {...PRESENTACION_CLIENTES} />
+              <PresentacionPagina {...PRESENTACION_CLIENTES} accion={<BotonCrearCuentaCliente />} />
               <TemasClientes inicial={acceso.id} />
             </>
           ) : (
