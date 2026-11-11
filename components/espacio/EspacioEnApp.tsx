@@ -68,8 +68,10 @@ export default function EspacioEnApp({ ruta = RUTA_EMBEBIDA, titulo = 'Espacio d
   return (
     // Toda la pantalla bajo la cabecera de la sección (`CabeceraSeccion`): en las apps es una herramienta
     // aparte de Progreso, sin pie ni márgenes (Fernando, 2026-11-08: «no está aprovechando el espacio»).
+    // ⚠️ Con un formulario abierto, la caja sube de capa con el marco: su `z-10` es un contexto propio y
+    // el marco `fixed` no podía pasar por encima del pie de la app, que tapaba los botones (2026-11-10).
     <div style={izquierda != null ? { left: izquierda } : undefined}
-      className="fixed inset-x-0 bottom-[var(--pie-panel)] top-[calc(3.5rem+var(--seguro-arriba))] lg:top-0 lg:left-16 z-10 bg-digi-card overflow-hidden">
+      className={`fixed inset-x-0 bottom-[var(--pie-panel)] top-[calc(3.5rem+var(--seguro-arriba))] lg:top-0 lg:left-16 ${completa ? 'z-[2147483000]' : 'z-10'} bg-digi-card overflow-hidden`}>
       {src && <iframe key={intento} src={src} title={titulo} allow="microphone; clipboard-read; clipboard-write" className={`border-0 ${completa ? 'fixed inset-0 z-[2147483000] w-screen h-dvh' : 'w-full h-full'} ${estado === 'listo' ? '' : 'invisible'}`} />}
       {estado === 'cargando' && <div className="absolute inset-0 flex items-center justify-center"><Loader2 className="w-5 h-5 animate-spin text-digi-muted" /></div>}
       {estado === 'sin-conexion' && (

@@ -45,8 +45,10 @@ export function FilaMarcable({
         ${marcada ? 'bg-accent border-accent text-white' : 'border-digi-border'}`}>
         {marcada && <Check className="w-3 h-3" />}
       </span>
-      <span className="truncate">{etiqueta}</span>
-      {nota !== undefined && <span className="ml-auto shrink-0 text-[11.5px] text-digi-muted">{nota}</span>}
+      <span className="truncate min-w-0">{etiqueta}</span>
+      {/* La nota cede antes que el nombre: una nota larga (un cliente con razón social) dejaba el nombre en
+          dos letras en el teléfono (2026-11-10). */}
+      {nota !== undefined && <span className="ml-auto min-w-0 max-w-[45%] truncate text-[11.5px] text-digi-muted" title={typeof nota === 'string' ? nota : undefined}>{nota}</span>}
     </button>
   );
 }

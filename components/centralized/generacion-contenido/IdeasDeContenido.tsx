@@ -435,7 +435,13 @@ function FormularioIdea({ modo, idea, talentos, alCerrar, alCrear, alGuardar }: 
   const [q, setQ] = useState('');
   const entrada = useRef<HTMLInputElement>(null);
 
+  /* Se prepara SOLO al abrirse. La lista se recarga cada 30 s y trae objetos nuevos: si dependiera de
+     ellos, el formulario se vaciaba mientras se escribía (Fernando, 2026-11-10). */
+  const abierto = useRef<string | null>(null);
   useEffect(() => {
+    const clave = modo ? `${modo}-${idea?.id ?? ''}` : null;
+    if (abierto.current === clave) return;
+    abierto.current = clave;
     if (!modo) return;
     setArchivo(null); setTipo('todos'); setCliente(''); setQ('');
     if (modo === 'editar' && idea) {
@@ -444,7 +450,7 @@ function FormularioIdea({ modo, idea, talentos, alCerrar, alCrear, alGuardar }: 
     } else {
       setTalento(talentos.length === 1 ? talentos[0] : ''); setTitulo(''); setElegidas([]);
     }
-  }, [modo, idea, talentos]);
+  }, [modo, idea, talentos]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!modo || !talento) { setResultados(null); return; }
