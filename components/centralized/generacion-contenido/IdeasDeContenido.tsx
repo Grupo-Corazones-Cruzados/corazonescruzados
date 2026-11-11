@@ -385,11 +385,11 @@ function VisorPieza({ pieza, grupo, url, alElegir, alCerrar }: {
       {pieza && (pieza.tipo === 'video'
         ? <video src={url(pieza)} controls playsInline className="w-full max-h-[75vh] rounded-md bg-black" />
         : (
-          <div className="relative select-none"
+          <div className="relative select-none w-fit max-w-full mx-auto"
             onTouchStart={(e) => { toque.current = e.touches[0].clientX; }}
             onTouchEnd={(e) => { const x0 = toque.current; toque.current = null; if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 40) ir(dx < 0 ? 1 : -1); }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img key={pieza.ruta} src={url(pieza)} alt={pieza.nombre} className="w-full rounded-md" draggable={false} />
+            <img key={pieza.ruta} src={url(pieza)} alt={pieza.nombre} className="block max-w-full max-h-[calc(100dvh-13rem)] w-auto h-auto rounded-md" draggable={false} />
             {varias && (
               <>
                 <button type="button" onClick={() => ir(-1)} aria-label="Lámina anterior" title="Anterior" className={`${flecha} left-2`}><ChevronLeft className="w-6 h-6" /></button>
