@@ -179,8 +179,8 @@ const MOTIVOS: AccordionItem[] = [
           Demasiadas veces los más jóvenes heredamos las consecuencias de problemas que otros
           prefirieron ignorar, convencidos de que era más fácil llamarlos imposibles que intentar
           resolverlos. Esa <strong style={strong}>realidad imposible</strong> donde los valores se
-          unen y la organización se fortalece por encima de la separación, solo puede enfrentarse
-          con una <strong style={strong}>disciplina centralizada</strong> en trabajar cada día en
+          unen y la organización se fortalece por encima de la separación, solo puede cumplirse
+          mediante una <strong style={strong}>disciplina centralizada</strong> en trabajar cada día por
           resolver las problemáticas sociales paso a paso hasta limpiar nuestras calles y el mundo,
           de aquello que está mal.
         </p>
@@ -445,9 +445,13 @@ function SlideMetodoCrecimiento() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Texto de Fernando (editor de textos, 2026-11-11), literal. */}
       <p style={pStyle}>
-        El crecimiento de cada persona se analiza con un método de cuatro aspectos clave, ordenados
-        por importancia. Toca cada nivel de la pirámide para conocer su justificación.
+        La prospección de cada persona, es un indicador que mide su intención de crecimiento según 4
+        aspectos  ordenados por la importancia que tienen para transformas su vida.
+      </p>
+      <p style={pStyle}>
+        A continuación te presento el método de evaluación continua del Grupo Corazones Cruzados:
       </p>
 
       {/* Pirámide */}
