@@ -188,34 +188,33 @@ const MOTIVOS: AccordionItem[] = [
     ),
   },
   {
-    name: 'El poder se construye, no se decide',
+    // Texto de Fernando (editor de textos, 2026-11-11), literal; quitó el cuarto párrafo.
+    name: 'El poder por convicción, y no por decisión',
     summary: 'El liderazgo legítimo se gana con acciones, no con votos.',
     body: () => (
       <>
         <p style={cardDesc}>
           Crecimos creyendo que la democracia, a través del voto, era la mejor forma de elegir a
-          quienes nos representan, pero con demasiada frecuencia ese camino ha terminado en
-          corrupción y en entregar el poder a quien no lo ha merecido.
+          quienes nos gobiernan, pero con demasiada frecuencia esa forma ha terminado en corrupción
+          y en entregar el poder a quien no se lo ha merecido, creando una clase política que es
+          incompetente para transformar la realidad que vivimos.
         </p>
         <p style={cardDesc}>
-          El verdadero poder no se debe obtener a través de las apariencias, sino que se{' '}
-          <strong style={strong}>construye</strong>, se <strong style={strong}>gana</strong> y se
-          sostiene cuando el liderazgo es reconocido y respetado por convicción de las personas. Hoy
-          estamos obligados a elegir entre el menos peor y ni siquiera el voto nulo ofrece una salida
-          o solución.
+          Debemos cambiar lo que siempre se ha hecho, empezando por el poder, ya que éste no se debe
+          entregar ni por convencimiento, ni por retórica. Los líderes se deben ganar su posición
+          mediante lo que realmente son capaces de <strong style={strong}>hacer</strong> y{' '}
+          <strong style={strong}>construir</strong> según sus logros, su propósito, y el impactos
+          real que han tenido en la sociedad sin depender de recursos previos.
         </p>
         <p style={cardDesc}>
-          Por eso creemos que el liderazgo debe surgir de una <strong style={strong}>causa social
-          genuina</strong>, nacida de la vida, las razones y las acciones de quien la encarna, no de
-          la pertenencia a un partido. Un líder se impone por naturaleza, y si es capaz de movilizar
-          a las personas y de habitar su corazón, es un líder nato; en caso contrario, simplemente no
-          lo es.
-        </p>
-        <p style={cardDesc}>
-          Cuando existen preferencias divididas, su tarea es ganarse el corazón de todos, y si eso
-          no es posible, entonces no existe un solo líder, sino dos. El liderazgo es vivo y
-          cambiante, pero siempre auténtico, se conquista con acciones reales, sin falsos positivos
-          ni voluntades compradas. Eso y no una votación es lo que da legitimidad al poder.
+          Hoy vivimos algo completamente diferente e incoherente con lo que necesitamos, porque
+          nuestros gobernantes nacen de cúpula de poder que se mueve e interesa por la política con
+          el fin de obtener más poder. El pueblo a causa de la incompetencia natural que vivimos,
+          aceptamos y nos conformamos  cada vez más con lo poco que nos dan, sin tener manera de
+          tomar acciones inmediatas para cambiar lo que nos afecta. Un verdadero líder no necesita
+          una posición para imponerse, porque alguien que es capaz de movilizar a personas, y
+          habitar su corazón mediante su ejemplo y sacrificio; entonces ése es un líder nato; caso
+          contrario, simplemente no lo es.
         </p>
       </>
     ),
