@@ -23,7 +23,7 @@
  * de página (ver globals.css). Para pasarlo a claro, quitar la clase `dark`.
  *
  * FUENTE ÚNICA DE ESTILO de este modal: las constantes del final del archivo
- * (`pStyle`, `cardBase`, `cardTitle`, `cardDesc`, `chip`, `noteBox`, `stepNum`,
+ * (`pStyle`, `cardBase`, `cardTitle`, `cardDesc`, `chip`, `stepNum`,
  * `kickerStyle`) — todas apuntan a los **tokens** `--color-digi-*` / `--color-accent*`,
  * así que cambiarlas (o cambiar los tokens de `.corp`) retematiza los 8 pasos y
  * funciona igual en claro y oscuro. NO usar hex crudos en los sliders.
@@ -46,6 +46,7 @@ import {
   ChevronRight,
   Gavel,
   Heart,
+  Info,
   Layers3,
   Lock,
   RefreshCw,
@@ -359,12 +360,12 @@ function SlideOnboarding() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <p style={pStyle}>Reglas del proyecto para todos los Candidatos y Miembros</p>
-      <WarnBox>
+      <Aviso tono="peligro" titulo="Advertencia">
         Cualquier intento de faltar a una sola de estas reglas implica la{' '}
-        <strong className="font-semibold">destitución</strong> del candidato y aplica igual a todos
+        <strong style={strong}>destitución</strong> del candidato y aplica igual a todos
         los miembros en cualquier rol. Quien es destituido del proyecto no tiene otra oportunidad para
         unirse; solo los fallos <em>no intencionales</em> se evalúan y pueden no llevar a la destitución.
-      </WarnBox>
+      </Aviso>
       <Accordion items={REGLAS} />
     </div>
   );
@@ -870,11 +871,11 @@ function SlideAfiliacion() {
         </div>
       </div>
 
-      <div style={noteBox}>
-        <strong style={strong}>Importante:</strong> desde tu afiliación recibes beneficios para tu
-        desarrollo humano, en todas sus dimensiones. No abusamos de tu tiempo ni te asignamos
-        trabajos no remunerados: toda acción tiene un propósito y un beneficio para ti.
-      </div>
+      <Aviso tono="info" titulo="Importante">
+        Desde tu afiliación recibes beneficios para tu desarrollo humano, en todas sus dimensiones.
+        No abusamos de tu tiempo ni te asignamos trabajos no remunerados: toda acción tiene un
+        propósito y un beneficio para ti.
+      </Aviso>
     </div>
   );
 }
@@ -1565,11 +1566,17 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 /** Aviso de advertencia (rojo corp) — reusa los literales semánticos del dashboard. */
-function WarnBox({ children }: { children: React.ReactNode }) {
+/**
+ * Un aviso (advertencia o «importante») SIN caja: Fernando, 2026-11-11, rechazó el fondo rojo con borde
+ * rojo («se ve feísimo»). Lo distingue un rótulo con icono en el color del aviso; el texto va en el
+ * color normal del párrafo. Estilos en `globals.css` (`.aviso-gcc`).
+ */
+function Aviso({ tono, titulo, children }: { tono: 'peligro' | 'info'; titulo: string; children: React.ReactNode }) {
+  const Icono = tono === 'peligro' ? AlertTriangle : Info;
   return (
-    <div className="flex items-start gap-2.5 rounded-lg border border-red-300 bg-red-50 p-3.5">
-      <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-600" />
-      <p className="text-[13px] leading-relaxed text-red-700 m-0">{children}</p>
+    <div role="note" className="aviso-gcc" data-tono={tono}>
+      <p className="aviso-gcc-titulo"><Icono aria-hidden />{titulo}</p>
+      <p className="aviso-gcc-texto">{children}</p>
     </div>
   );
 }
@@ -1635,16 +1642,6 @@ const chip: React.CSSProperties = {
   color: 'var(--color-accent-glow)',
 };
 
-const noteBox: React.CSSProperties = {
-  fontSize: '0.875rem',
-  lineHeight: 1.6,
-  color: 'var(--color-digi-text)',
-  background: 'var(--color-digi-darker)',
-  border: '1px solid var(--color-digi-border)',
-  borderLeft: '3px solid var(--color-accent)',
-  borderRadius: 6,
-  padding: '14px 16px',
-};
 
 const KEYFRAMES = `
 @keyframes onbInRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }

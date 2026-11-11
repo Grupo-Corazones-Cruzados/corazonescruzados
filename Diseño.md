@@ -5342,6 +5342,12 @@ pega al borde e ignora el relleno; en una cápsula (`rounded-full`) cae encima d
   (`--cabecera-tabla`): transparente, las filas pasaban por debajo de los títulos. Además: talentos en
   Experiencias y «Gestión Social» en Mi día como texto de color; «Aprobar/Rechazar» de una solicitud del
   proyecto como iconos ✓/✕. Regla general: `/diseno` §4-septies.
+- **2026-11-11 · Avisos en caja roja/morada en Candidatos** · **CORREGIDO + REGLA** (Fernando: «quita ese
+  fondo rojo y borde rojo… se ve feísimo»). La advertencia de Onboarding, la nota «Importante» de Afiliación
+  y el aviso de la postulación enviada/en pausa pierden la caja: rótulo con icono en el color del aviso
+  (`Aviso` + `.aviso-gcc`; rojo `#b42318` en el sitio claro, acento para «importante») y el texto en el color
+  del párrafo. Regla ampliada en `/diseno` §4-septies: ningún aviso con fondo tintado + borde. PENDIENTE:
+  auditar el resto del panel (`bg-red-50`/`bg-amber-50` con borde en ~20 pantallas).
 - **2026-10-29 · Filtros en el estado financiero mensual** · **NUEVO** (Fernando). Año (`<select>`) y
   resultado (`Segmentado` Todos · Ahorro · Pérdida), uno bajo otro en el teléfono. El AÑO también mueve las
   cifras de dinero (etiqueta «Ingresos 2026»…; Fernando, mismo día); el resultado solo filtra la tabla;
