@@ -252,33 +252,30 @@ const VALORES: { valor: string; compromiso: string }[] = [
   { valor: 'Determinación', compromiso: 'Insiste hasta el cansancio, o levántate y no te rindas.' },
   { valor: 'Coraje', compromiso: 'Confronta todo lo que está mal, y descubre un motivo para superar tus miedos.' },
   { valor: 'Pureza', compromiso: 'Nunca olvides tus raíces y quien realmente eres.' },
-  { valor: 'Fe', compromiso: 'Confía en ti, y haz real lo que puede parecer imposible.' },
-  { valor: 'Paciencia', compromiso: 'Hay tantas cosas que puedes valorar, antes de caer en la desesperación.' },
+  { valor: 'Fe', compromiso: 'Confía en ti, y convierte en real esos sueños que pueden parecer imposibles.' },
+  { valor: 'Paciencia', compromiso: 'Hay tantas cosas que puedes valorar en esta vida, antes de que te dejes llevar por la desesperación.' },
   {
     valor: 'Seriedad',
-    compromiso: 'Prioriza tus necesidades, y céntrate en aprender a solucionar tus problemas.',
+    compromiso: 'Prioriza tus necesidades, y céntrate en hacerte responsable para aprender a solucionar tus problemas.',
   },
-  { valor: 'Espontaneidad', compromiso: 'Vergüenza es ocultar quien realmente eres.' },
+  { valor: 'Espontaneidad', compromiso: 'Explora lo que sientes, y sin arrepentimientos a equivocarte.' },
   { valor: 'Autonomía', compromiso: 'Tu futuro, depende únicamente de ti.' },
-  { valor: 'Empatía', compromiso: 'Recuerda valorar el corazón de quienes valen la pena.' },
+  { valor: 'Empatía', compromiso: 'Recuerda valorar el corazón de quienes sí valen la pena.' },
 ];
 
 const REGLAS: AccordionItem[] = [
   {
     name: 'Regla #1 · ¿Quiénes somos?',
-    summary: 'Representamos lo que somos: un solo fallo a los valores nos deja fuera.',
+    summary: 'Representamos lo que somos.',
     body: () => (
       <>
         {/* Texto de Fernando (editor de textos, 2026-11-11), literal. */}
         <p style={cardDesc}>
-          Es importante comprender quién eres, y cómo tus acciones representan a este proyecto. Si
-          como candidato eres un delincuente, el grupo queda representado por un delincuente, si
-          fueses un mentiroso, el grupo queda representado por un mentiroso; lo que eres, afecta todo
-          el esfuerzo que hacen los candidatos y los miembros para representar la organización, y los
-          beneficios de mantener la buena reputación y así aumentar nuestras oportunidades para
-          cumplir o alcanzar nuestros objetivos. Así que no permitiremos tener en nuestra organización
-          una sola persona que haga daño a otras personas, o que no sostenga en sus relaciones
-          sociales el esfuerzo constante por mostrar los valores de la organización.
+          El proyecto del Grupo Corazones Cruzados es una organización que incluye en sus filas, solo
+          candidatos y miembros que tienen la prospección a representarnos. Aquellos que caigan de
+          delincuentes, mentirosos, o realicen cualquier mala intención u acción por mínima que sea, o
+          incluso olviden trabajar y sostener en sus relaciones sociales y en su vida diaria nuestros
+          valores organizacionales, serán des-agrupados del proyecto.
         </p>
         <p style={cardDesc}>
           A continuación te presento los valores que deberás trabajar para representar nuestra
@@ -302,57 +299,56 @@ const REGLAS: AccordionItem[] = [
   },
   {
     name: 'Regla 2 · Comandos',
-    summary: 'La gobernanza escucha, decide y corrige tras el resultado; los comandos se cumplen.',
+    summary: 'Los comandos de la estrategia organizacional se cumplen.',
     body: () => (
       <>
         <p style={cardDesc}>
-          Aquí la gobernanza <strong style={strong}>escucha, decide y recibe correcciones</strong>{' '}
-          después de ver un resultado. A diferencia de otras formas de gestión, en el Grupo
-          Corazones Cruzados usamos la metodología condiciológica para medir resultados y reconocer
-          las condiciones que más benefician al proyecto.
+          La gobernanza del Grupo Corazones Cruzados{' '}
+          <strong style={strong}>escucha, decide y analiza correcciones</strong> por cada estrategia
+          organizacional que se implementa  con el fin de progresar, y enfrentar una problemática.
         </p>
         <p style={cardDesc}>
-          Para aprovechar una condición, el líder toma una decisión tras escuchar las propuestas y
-          discusiones. Una vez decidida, la decisión se <strong style={strong}>ejecuta</strong>, se{' '}
-          <strong style={strong}>mide</strong> y solo se <strong style={strong}>cambia</strong> si
-          los resultados fueron negativos; si fueron positivos, avanzamos al siguiente paso de
-          crecimiento.
+          Antes de decidirse por una estrategia organizacional, el líder tuvo que escuchar las
+          propuestas y discusiones asociadas a esa problemática para que según las alternativas
+          posibles, se desarrolle un  mapa visual del proyecto, y luego se presente la opción más
+          viable a ejecutar y medir sus efectos.
         </p>
         <p style={cardDesc}>
-          La relación entre el líder, los miembros y los candidatos se sostiene en los comandos:
-          todos seguimos el comando enviado para cumplir el planteamiento de la decisión. Un comando
-          que no se acata distorsiona el cálculo de la metodología, y por eso quien no lo cumple
-          queda fuera del proyecto. Los comandos se ejecutan sin cuestionamientos y solo se
-          corrigen, en conjunto, después de ver su resultado.
+          La relación entre el líder, los miembros o los candidatos se sostiene principalmente a
+          través de los comandos que se solicitan ejecutar para cumplir el planteamiento de la
+          estrategia organizacional decidida.
+        </p>
+        <p style={cardDesc}>
+          Cualquier miembro o candidato que no se acata o afecta el cálculo de la estrategia, queda
+          fuera del proyecto en el acto, ya que los comandos se ejecutan sin cuestionamiento, y solo
+          se analizan y corrigen durante la etapa de corrección en donde todos sin excepción tienen la
+          obligación de votar y participar.
         </p>
       </>
     ),
   },
   {
     name: 'Regla 3 · Opciones de crecimiento',
-    summary: 'Creces desde el primer día; la confianza se gana con afinidad y no se traiciona.',
+    summary: 'La confianza se entrega, y no se traiciona.',
     body: () => (
       <>
         <p style={cardDesc}>
-          Todos los candidatos y miembros pueden crecer en el grupo{' '}
-          <strong style={strong}>desde el primer momento</strong> en que se unen. El crecimiento se
-          adapta a la necesidad de cada persona: valoramos su talento y buscamos darle los recursos
-          que necesita.
+          El Grupo Corazones Cruzados ofrece un sistema de &quot;Desarrollo Humano&quot; que permite
+          impulsar a los candidatos y miembros de la organización, y acceder a oportunidades para
+          avanzar en su progreso sin excepciones ni condiciones.
         </p>
         <p style={cardDesc}>
-          La confianza, en cambio, depende de la <strong style={strong}>proactividad</strong> y la{' '}
-          <strong style={strong}>afinidad</strong> con el proyecto: mientras más afín seas, más
-          confianza y más opciones de obtener recursos para alcanzar tus objetivos personales
-          recibirás. Es una confianza plena —sin reclamos ni sospechas, más allá del análisis que
-          hacemos a todos—.
+          La confianza que ofrecemos y el acceso a mayores recursos y beneficios, depende de la{' '}
+          <strong style={strong}>prospección</strong> y de los{' '}
+          <strong style={strong}>resultados</strong> o logros obtenidos. Esa confianza se entrega{' '}
+          <strong style={strong}>una sola vez</strong>, y si una opción de crecimiento se usa de forma
+          abusiva o para fines distintos a los acordados, la decisión es la destitución.
         </p>
         <p style={cardDesc}>
-          Esa confianza se entrega <strong style={strong}>una sola vez</strong>. Si una opción de
-          crecimiento se usa como abuso o para fines distintos a los acordados, la decisión es la
-          destitución, porque la confianza no se recupera tras una traición. Si surge una necesidad
-          que no sea de desarrollo humano o crecimiento, también puede solicitarse: por eso no hay
-          excusa para mentir o abusar de los recursos. Mantén las buenas intenciones, y las opciones
-          de crecimiento llegarán.
+          Para esta organización, la confianza no se recupera tras una traición, además que nosotros
+          abordamos todas las necesidades aunque no sean de interés personal o progreso, así que no
+          hay excusa para mentir o abusar de los recursos. Les pedimos mantener siempre las buenas
+          intenciones, y las opciones de crecimiento llegarán.
         </p>
       </>
     ),
