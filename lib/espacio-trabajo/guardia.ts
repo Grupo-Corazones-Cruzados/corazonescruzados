@@ -48,8 +48,12 @@ export async function emitirToken(): Promise<string> {
   return new SignJWT({ espacio: true }).setProtectedHeader({ alg: 'HS256' }).setIssuedAt().setExpirationTime('30d').sign(secreto());
 }
 
-export async function sesionValida(): Promise<boolean> {
-  const c = (await cookies()).get(COOKIE)?.value || (await headers()).get('x-espacio-token');
+/**
+ * `enUrl`: el token del marco cuando llega en la dirección. Solo para lo que el navegador pide sin poder
+ * añadir cabeceras (un `<img>` o un `<video>` dentro del marco de la app); lo usa una ruta que lo pida.
+ */
+export async function sesionValida(enUrl?: string | null): Promise<boolean> {
+  const c = (await cookies()).get(COOKIE)?.value || (await headers()).get('x-espacio-token') || enUrl;
   if (!c) return false;
   try { await jwtVerify(c, secreto()); return true; } catch { return false; }
 }
@@ -59,11 +63,11 @@ export async function sesionValida(): Promise<boolean> {
  * Espacio de trabajo es del administrador: la misma equivalencia que hace `/api/espacio-trabajo/acceso`.
  * En la web no cambia nada, porque ahí `espacioHabilitado()` es falso.
  */
-export async function usuarioLocal(): Promise<TokenPayload | null> {
+export async function usuarioLocal(enUrl?: string | null): Promise<TokenPayload | null> {
   const usuario = await getCurrentUser();
   if (usuario) return usuario;
   const email = process.env['ESPACIO_ADMIN_EMAIL'];
-  if (!espacioHabilitado() || !email || !(await sesionValida())) return null;
+  if (!espacioHabilitado() || !email || !(await sesionValida(enUrl))) return null;
   const { rows: [u] } = await pool.query(`SELECT id, email, role FROM gcc_world.users WHERE lower(email) = lower($1) AND role = 'admin'`, [email]);
   return u ? { userId: String(u.id), email: u.email, role: u.role } : null;
 }
@@ -79,11 +83,11 @@ export function mismoOrigen(req: Request, h: Headers): boolean {
 }
 
 /** Devuelve la respuesta de rechazo, o null si puede pasar. */
-export async function rechazo(req: Request, { sinSesion = false } = {}): Promise<Response | null> {
+export async function rechazo(req: Request, { sinSesion = false, enUrl = null as string | null } = {}): Promise<Response | null> {
   if (!espacioHabilitado()) return NO_EXISTE();
   const h = await headers();
   if (req.method !== 'GET' && !mismoOrigen(req, h)) return NextResponse.json({ error: 'Origen no permitido.' }, { status: 403 });
-  if (!sinSesion && !(await sesionValida())) return NextResponse.json({ error: 'Hay que entrar con la contraseña.' }, { status: 401 });
+  if (!sinSesion && !(await sesionValida(enUrl))) return NextResponse.json({ error: 'Hay que entrar con la contraseña.' }, { status: 401 });
   return null;
 }
 

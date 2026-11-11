@@ -6,10 +6,11 @@ import { getContenido, listarVideos } from '@/lib/centralized/generacion-conteni
  * Lo común a las rutas de una idea: solo en la Mac, con sesión, y solo sobre una idea propia (el
  * administrador, sobre todas; con «Ver como», la sesión ES la del otro). Devuelve la idea y su video (uno).
  */
-export async function ideaDe(req: Request, id: string) {
-  const fuera = await rechazo(req);
+export async function ideaDe(req: Request, id: string, { tokenEnUrl = false } = {}) {
+  const enUrl = tokenEnUrl && req.method === 'GET' ? new URL(req.url).searchParams.get('t') : null;
+  const fuera = await rechazo(req, { enUrl });
   if (fuera) return { fuera };
-  const user = await usuarioLocal();
+  const user = await usuarioLocal(enUrl);
   if (!user || !['admin', 'member'].includes(user.role)) return { fuera: NextResponse.json({ error: 'No autorizado' }, { status: 403 }) };
   const isAdmin = user.role === 'admin';
   const c = await getContenido(Number(id), user.userId, isAdmin);

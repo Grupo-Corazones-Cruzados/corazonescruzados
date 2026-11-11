@@ -9,7 +9,8 @@ const MIME: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg'
 
 /** GET ?ruta= — una pieza para verla en el panel. Solo las del manifiesto, nunca otra ruta. */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const r = await ideaDe(req, (await params).id);
+  // Lo pide un `<img>` o un `<video>`: dentro del marco de la app no hay cookie ni cabecera, el token va en `t`.
+  const r = await ideaDe(req, (await params).id, { tokenEnUrl: true });
   if (r.fuera) return r.fuera;
   if (!r.video) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
   const rel = new URL(req.url).searchParams.get('ruta') || '';

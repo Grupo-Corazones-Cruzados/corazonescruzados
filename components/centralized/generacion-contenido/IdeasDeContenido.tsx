@@ -14,7 +14,7 @@ import { useConsultaMedia, PANTALLA_LG } from '@/lib/hooks/useConsultaMedia';
 import { useAltoHastaElPie } from '@/lib/hooks/useAltoHastaElPie';
 import Conversacion from '@/components/espacio/Conversacion';
 import { FilaSesion } from '@/components/espacio/RailProyectos';
-import { api, EVENTO_TITULO, type Proyecto } from '@/components/espacio/api';
+import { api, EVENTO_TITULO, tokenGuardado, type Proyecto } from '@/components/espacio/api';
 import { subirArchivo } from './subida';
 
 const API = '/api/centralized/generacion-contenido';
@@ -289,7 +289,9 @@ function PanelPiezas({ ideaId, menu, version }: { ideaId: number; menu: React.Re
     } catch (e) { toast.error(e instanceof Error ? e.message : 'No se pudo subir.'); } finally { setSubiendo(false); }
   }
 
-  const archivo = (p: Pieza) => `${API}/${ideaId}/piezas/archivo?ruta=${encodeURIComponent(p.ruta)}`;
+  // En el marco de la app la sesión es un token en cabecera, que un <img> no manda: va en la dirección.
+  const token = tokenGuardado();
+  const archivo = (p: Pieza) => `${API}/${ideaId}/piezas/archivo?ruta=${encodeURIComponent(p.ruta)}${token ? `&t=${encodeURIComponent(token)}` : ''}`;
   const grupos = (['video', 'miniatura', 'carrusel', 'infografia'] as const).map((t) => ({ tipo: t, piezas: d?.piezas.filter((p) => p.tipo === t) || [] }));
   const enDrive = !!d?.drive?.subido_en;
 
