@@ -253,6 +253,15 @@ base verbatim):
   `enviarPostulacion` compartida con la portada) con la MISMA pausa por equipo (`useEstadoRegistro`, un
   registro cada 24 h; el servidor la vuelve a comprobar). El diálogo `OnboardingSlidersModal` sigue en el
   código pero ya nada de la portada lo abre.
+- **Candidatos y Clientes con la misma forma (2026-11-11):** las dos páginas usan `RecorridoPagina`
+  (camino vertical, Anterior/Siguiente, URL por apartado) y las dos tienen un botón en la presentación
+  que abre la ventana de pasos `VentanaRecorrido` (la de la postulación, extraída; `.onb-*`):
+  «Postularme» (`BotonPostularme`) y «Crear mi cuenta» (`VentanaCliente`: Soluciones · Tickets ·
+  Proyectos + el alta). El alta es UNA pieza, `FormularioCliente` (diálogo de la portada, ventana y
+  `/clientes/crear-cuenta`). Las ventanas van por portal al `body`: dentro del sitio, el contenedor las
+  recortaba y su CSS claro teñía la tabla del Modelo 4P. Lideración se quitó; `/candidatos/lideracion`
+  redirige a Onboarding. Pasar de candidato a miembro es manual (admin, Reclutamiento ▸ «Convertir
+  en miembro»), sin umbral de prospección.
 - **Fecha de finalización de un ticket (2026-10-31, migración 077):** un disparador en `gcc_world.tickets`
   pone `completed_at = now()` al pasar a `completed` (por cualquier vía: panel, factura, factura manual)
   y lo vacía si deja de estarlo. Los 23 completados antes sin fecha no se rellenaron (sería un dato
