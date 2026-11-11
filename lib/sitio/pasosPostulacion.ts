@@ -8,7 +8,7 @@ export const PASOS_POSTULACION_IDS = [
   { id: 'herramientas', titulo: 'Herramientas' },
   { id: 'motivos', titulo: 'Motivos' },
   { id: 'onboarding', titulo: 'Onboarding' },
-  { id: 'metodo-crecimiento', titulo: 'Método de crecimiento' },
+  { id: 'metodo-crecimiento', titulo: 'Prospección' }, // Fernando, 2026-11-11 (la URL se mantiene)
   { id: 'lideracion', titulo: 'Lideración sobre Acciones' },
   { id: 'afiliacion', titulo: 'Afiliación' },
   // El formulario en sí: solo en la página Candidatos (2026-11-01); el diálogo lo pinta aparte.
