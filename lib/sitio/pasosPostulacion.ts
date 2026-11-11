@@ -9,7 +9,8 @@ export const PASOS_POSTULACION_IDS = [
   { id: 'motivos', titulo: 'Motivos' },
   { id: 'onboarding', titulo: 'Onboarding' },
   { id: 'metodo-crecimiento', titulo: 'Prospección' }, // Fernando, 2026-11-11 (la URL se mantiene)
-  { id: 'lideracion', titulo: 'Lideración sobre Acciones' },
+  // «Lideración sobre Acciones» se quitó el 2026-11-11 (Fernando: Onboarding ya lo explica);
+  // `/candidatos/lideracion` redirige a Onboarding desde next.config.ts.
   { id: 'afiliacion', titulo: 'Afiliación' },
   // El formulario en sí: solo en la página Candidatos (2026-11-01); el diálogo lo pinta aparte.
   { id: 'postulacion', titulo: 'Postulación' },

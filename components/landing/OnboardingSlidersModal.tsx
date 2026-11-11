@@ -23,7 +23,7 @@
  * de página (ver globals.css). Para pasarlo a claro, quitar la clase `dark`.
  *
  * FUENTE ÚNICA DE ESTILO de este modal: las constantes del final del archivo
- * (`pStyle`, `cardBase`, `cardTitle`, `cardDesc`, `chip`, `stepNum`,
+ * (`pStyle`, `cardBase`, `cardTitle`, `cardDesc`, `stepNum`,
  * `kickerStyle`) — todas apuntan a los **tokens** `--color-digi-*` / `--color-accent*`,
  * así que cambiarlas (o cambiar los tokens de `.corp`) retematiza los 8 pasos y
  * funciona igual en claro y oscuro. NO usar hex crudos en los sliders.
@@ -49,7 +49,6 @@ import {
   Info,
   Layers3,
   Lock,
-  RefreshCw,
   Send,
   TrendingUp,
   Wrench,
@@ -566,204 +565,11 @@ function GrowthCaption({ children, dim = false }: { children: React.ReactNode; d
 }
 
 /* ------------------------------------------------------------------ */
-/* Slider 6 — Lideración sobre Acciones (diagrama triangular)         */
-/* ------------------------------------------------------------------ */
-
-/** Nodo del diagrama: tarjeta Fluent (blanca o rellena de accent para el líder). */
-function CycleNode({
-  x,
-  y,
-  w,
-  h,
-  title,
-  lines,
-  filled = false,
-}: {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  title: string;
-  lines: string[];
-  filled?: boolean;
-}) {
-  const cx = x + w / 2;
-  return (
-    <g>
-      <rect
-        x={x}
-        y={y}
-        width={w}
-        height={h}
-        rx={8}
-        style={
-          filled
-            ? { fill: 'var(--color-accent)', stroke: 'var(--color-accent)' }
-            : { fill: 'var(--color-digi-card)', stroke: 'var(--color-digi-border)' }
-        }
-        strokeWidth={1.5}
-      />
-      <text
-        x={cx}
-        y={y + 22}
-        textAnchor="middle"
-        fontSize={13}
-        fontWeight={600}
-        style={{ fill: filled ? '#ffffff' : 'var(--color-digi-text)' }}
-      >
-        {title}
-      </text>
-      {lines.map((l, i) => (
-        <text
-          key={l}
-          x={cx}
-          y={y + 38 + i * 13}
-          textAnchor="middle"
-          fontSize={11}
-          style={{ fill: filled ? 'rgba(255,255,255,0.85)' : 'var(--color-digi-muted)' }}
-        >
-          {l}
-        </text>
-      ))}
-    </g>
-  );
-}
-
-function SlideLideracion() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <p style={pStyle}>
-        El liderazgo en el Grupo Corazones Cruzados gira en torno a las acciones, en un ciclo
-        continuo entre el líder, el grupo y sus miembros.
-      </p>
-
-      <div className="rounded-lg border border-digi-border bg-digi-card p-4">
-        <svg
-          viewBox="0 0 380 320"
-          width="100%"
-          style={{
-            maxWidth: 480,
-            height: 'auto',
-            display: 'block',
-            margin: '0 auto',
-            fontFamily: 'var(--font-body)',
-          }}
-          role="img"
-          aria-label="Ciclo: el Líder escucha y decide; GCC ejecuta sin cuestionamientos; los Miembros discuten y corrigen; el ciclo vuelve al líder."
-        >
-          <defs>
-            <marker
-              id="lid-arrow"
-              markerWidth="10"
-              markerHeight="10"
-              refX="7"
-              refY="3.2"
-              orient="auto"
-              markerUnits="userSpaceOnUse"
-            >
-              <path d="M0,0 L7,3.2 L0,6.4 Z" style={{ fill: 'var(--color-accent)' }} />
-            </marker>
-          </defs>
-
-          {/* Medallón central — el ciclo gira en torno a las acciones */}
-          <circle
-            cx={190}
-            cy={186}
-            r={35}
-            style={{ fill: 'var(--color-accent-light)', stroke: 'var(--color-accent)' }}
-            strokeWidth={1}
-            strokeDasharray="3 3"
-          />
-          <text
-            x={190}
-            y={183}
-            textAnchor="middle"
-            fontSize={9}
-            fontWeight={600}
-            style={{ fill: 'var(--color-accent)', letterSpacing: '0.08em' }}
-          >
-            ACCIONES
-          </text>
-          <text
-            x={190}
-            y={196}
-            textAnchor="middle"
-            fontSize={8}
-            style={{ fill: 'var(--color-digi-muted)' }}
-          >
-            ciclo continuo
-          </text>
-
-          {/* Flechas curvas del ciclo: Líder → GCC → Miembros → Líder */}
-          <g
-            fill="none"
-            style={{ stroke: 'var(--color-accent)' }}
-            strokeWidth={2}
-            strokeLinecap="round"
-            markerEnd="url(#lid-arrow)"
-          >
-            <path d="M240 92 Q 326 150 296 224" />
-            <path d="M224 264 Q 190 300 156 264" />
-            <path d="M84 224 Q 54 150 144 92" />
-          </g>
-
-          {/* Badges de orden sobre el ciclo */}
-          {[
-            { x: 300, y: 154, n: 1 },
-            { x: 190, y: 286, n: 2 },
-            { x: 84, y: 154, n: 3 },
-          ].map((b) => (
-            <g key={b.n}>
-              <circle cx={b.x} cy={b.y} r={10} style={{ fill: 'var(--color-accent)' }} />
-              <text
-                x={b.x}
-                y={b.y + 3.4}
-                textAnchor="middle"
-                fontSize={10}
-                fontWeight={600}
-                fill="#ffffff"
-              >
-                {b.n}
-              </text>
-            </g>
-          ))}
-
-          {/* Nodos del ciclo */}
-          <CycleNode
-            x={124}
-            y={28}
-            w={132}
-            h={58}
-            title="Líder"
-            lines={['Escucha y', 'Decide']}
-            filled
-          />
-          <CycleNode
-            x={228}
-            y={228}
-            w={132}
-            h={60}
-            title="GCC"
-            lines={['Ejecuta sin', 'cuestionamientos']}
-          />
-          <CycleNode
-            x={20}
-            y={228}
-            w={132}
-            h={60}
-            title="Miembros"
-            lines={['Discuten y', 'Corrigen']}
-          />
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* Slider 7 — Afiliación (indicaciones del proceso)                  */
 /* ------------------------------------------------------------------ */
 
+// Fernando, 2026-11-11: fuera la pulsera gris y la pizarra; «Demuestra los valores» pasa a la
+// prospección (lo que mide Reclutamiento: `ProspeccionBar` / `CriteriaSections`).
 const AFIL_STEPS: { n: string; name: string; desc: () => React.ReactNode }[] = [
   {
     n: '01',
@@ -777,12 +583,11 @@ const AFIL_STEPS: { n: string; name: string; desc: () => React.ReactNode }[] = [
   },
   {
     n: '02',
-    name: 'Recibe tu acceso y tu pulsera gris',
+    name: 'Recibe tu acceso',
     desc: () => (
       <>
-        Como candidato recibirás una invitación, acceso al sitio web como{' '}
-        <strong style={strong}>usuario candidato</strong> y la <strong style={strong}>pulsera gris
-        del GCC</strong>, que representa tu grado de afiliación. Desde ese momento puedes usar las
+        Como candidato recibirás una invitación y acceso al sitio web como{' '}
+        <strong style={strong}>usuario candidato</strong>. Desde ese momento puedes usar las
         herramientas del grupo para tu desarrollo humano; encontrarás todos sus detalles dentro del
         sitio web.
       </>
@@ -790,17 +595,6 @@ const AFIL_STEPS: { n: string; name: string; desc: () => React.ReactNode }[] = [
   },
   {
     n: '03',
-    name: 'Lleva tu pizarra de visión personal',
-    desc: () => (
-      <>
-        Los candidatos aceptados reciben una <strong style={strong}>pizarra de visión personal</strong>{' '}
-        que deberán llevar a todas las reuniones semanales —siempre presenciales— con los miembros
-        controladores del proyecto.
-      </>
-    ),
-  },
-  {
-    n: '04',
     name: 'Asiste a las reuniones semanales',
     desc: () => (
       <>
@@ -810,19 +604,20 @@ const AFIL_STEPS: { n: string; name: string; desc: () => React.ReactNode }[] = [
     ),
   },
   {
-    n: '05',
-    name: 'Demuestra los valores',
+    n: '04',
+    name: 'Eleva tu prospección',
     desc: () => (
       <>
-        Tu objetivo es demostrar y representar los valores esperados. La afiliación{' '}
-        <strong style={strong}>no se mide en puntos</strong> ni en ninguna cuantificación: es una
-        cualificación basada en los logros y resultados positivos de las acciones que ejecutes en
-        los comandos indicados por los controladores.
+        Tu avance se mide con la <strong style={strong}>evaluación continua de la
+        prospección</strong>: cada tarea que cumples suma y cada una que no cumples resta en el
+        valor al que corresponde, y además se evalúan tus talentos, tus cuatro dimensiones de
+        desarrollo humano y tu red de apoyo. Cuando tu prospección alcanza un nivel alto, tu caso
+        se revisa para convertirte en miembro.
       </>
     ),
   },
   {
-    n: '06',
+    n: '05',
     name: 'Conviértete en miembro',
     desc: () => (
       <>
@@ -833,8 +628,6 @@ const AFIL_STEPS: { n: string; name: string; desc: () => React.ReactNode }[] = [
     ),
   },
 ];
-
-const GRADOS = ['Candidato', 'Colaborador', 'Controlador', 'Pilar', 'Global', 'Líder'];
 
 function SlideAfiliacion() {
   return (
@@ -862,49 +655,6 @@ function SlideAfiliacion() {
           </li>
         ))}
       </ol>
-
-      <div>
-        <SectionLabel>Tu pulsera = tu grado de afiliación</SectionLabel>
-        <p style={{ ...cardDesc, margin: '8px 0 10px' }}>
-          El tipo de pulsera del GCC representa tu grado dentro del proyecto. Empiezas como
-          Candidato, con la pulsera gris:
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          {GRADOS.map((g, i) => (
-            <span key={g} className="inline-flex items-center gap-2">
-              {i === 0 ? (
-                <span
-                  style={{
-                    ...chip,
-                    color: 'var(--color-digi-text)',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
-                  <span
-                    aria-hidden
-                    className="w-2 h-2 rounded-full"
-                    style={{ background: '#9aa0aa' }}
-                  />
-                  {g}
-                </span>
-              ) : (
-                <span style={chip}>{g}</span>
-              )}
-              {i < GRADOS.length - 1 && (
-                <ChevronRight className="w-3.5 h-3.5 text-digi-muted/70" />
-              )}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <Aviso tono="info" titulo="Importante">
-        Desde tu afiliación recibes beneficios para tu desarrollo humano, en todas sus dimensiones.
-        No abusamos de tu tiempo ni te asignamos trabajos no remunerados: toda acción tiene un
-        propósito y un beneficio para ti.
-      </Aviso>
     </div>
   );
 }
@@ -949,13 +699,6 @@ export const SLIDES: Slide[] = [
     kicker: 'Slider 5',
     Icon: TrendingUp,
     Component: SlideMetodoCrecimiento,
-  },
-  {
-    id: 'lideracion',
-    title: tituloDePaso('lideracion'),
-    kicker: 'Slider 6',
-    Icon: RefreshCw,
-    Component: SlideLideracion,
   },
   {
     id: 'afiliacion',
@@ -1586,14 +1329,6 @@ function Accordion({ items }: { items: AccordionItem[] }) {
 }
 
 /** Encabezado de sub-sección dentro de un slider (icono/barra accent + título). */
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="border-l-2 border-accent pl-2.5 text-[12.5px] font-semibold text-digi-text">
-      {children}
-    </div>
-  );
-}
-
 /** Aviso de advertencia (rojo corp) — reusa los literales semánticos del dashboard. */
 /**
  * Un aviso (advertencia o «importante») SIN caja: Fernando, 2026-11-11, rechazó el fondo rojo con borde
@@ -1665,13 +1400,6 @@ const stepNum: React.CSSProperties = {
 
 // Solo color de texto: sin relleno ni borde (Fernando, 2026-10-29: las etiquetas con fondo y
 // borde «no me gustan y no las quiero ver en otras partes»).
-const chip: React.CSSProperties = {
-  fontSize: '0.8rem',
-  fontWeight: 600,
-  color: 'var(--color-accent-glow)',
-};
-
-
 const KEYFRAMES = `
 @keyframes onbInRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes onbInLeft { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
