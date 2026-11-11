@@ -6,7 +6,7 @@ import { ChevronDown, LayoutDashboard, Network } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 import type { SistemaMapa } from '@/components/centralized/Mapa4P';
-import { ICONO_CELDA, ICONO_PISO, ICONO_SISTEMA } from '@/components/centralized/iconos4P';
+import { ICONO_CELDA, ICONO_PASO, ICONO_PISO, ICONO_SISTEMA } from '@/components/centralized/iconos4P';
 import { PISOS, PASOS, systemPath } from '@/lib/centralized/systems';
 import { useConsultaMedia } from '@/lib/hooks/useConsultaMedia';
 import { TINTE_CENTRALIZADO } from '@/components/accesos/tintes';
@@ -97,6 +97,7 @@ export default function MenuCentralizado() {
 }
 
 const LLAVE_CERRADOS = 'gcc_menu_centralizado_cerrados';
+const LLAVE_PASO = 'gcc_menu_centralizado_paso';
 
 /**
  * EL MENÚ 2 EN VERTICAL (Fernando, 2026-11-11: «que el menú sea más vertical, ya no tipo tabla o
@@ -110,6 +111,15 @@ function ListaVertical({ sistemas, pathname }: { sistemas: SistemaMapa[] | null;
   useEffect(() => {
     try { const c = localStorage.getItem(LLAVE_CERRADOS); if (c) setCerrados(JSON.parse(c)); } catch { /* sin almacenamiento */ }
   }, []);
+  // FILTRO POR PASO (Fernando, 2026-11-11): «Todos» o un paso del 4P; se recuerda en el navegador.
+  const [filtro, setFiltro] = useState<string>('todos');
+  useEffect(() => {
+    try { const g = localStorage.getItem(LLAVE_PASO); if (g && (g === 'todos' || PASOS.some((p) => p.key === g))) setFiltro(g); } catch { /* sin almacenamiento */ }
+  }, []);
+  const elegirPaso = (k: string) => {
+    setFiltro(k);
+    try { localStorage.setItem(LLAVE_PASO, k); } catch { /* sin almacenamiento */ }
+  };
   const alternar = (piso: string) => setCerrados((c) => {
     const nuevo = c.includes(piso) ? c.filter((x) => x !== piso) : [...c, piso];
     try { localStorage.setItem(LLAVE_CERRADOS, JSON.stringify(nuevo)); } catch { /* sin almacenamiento */ }
@@ -128,12 +138,34 @@ function ListaVertical({ sistemas, pathname }: { sistemas: SistemaMapa[] | null;
         <span className="truncate">Resumen</span>
       </Link>
 
+      {/* Un solo control segmentado (Diseño.md §4-ter): «Todos» y los cuatro pasos por su icono. */}
+      <div role="radiogroup" aria-label="Filtrar por paso" className="mx-0.5 mt-1 grid grid-cols-5 gap-0.5 rounded-md border border-digi-border bg-black/10 p-0.5">
+        {[{ key: 'todos', label: 'Todos' }, ...PASOS].map((x) => {
+          const elegido = filtro === x.key;
+          const Icono = x.key === 'todos' ? null : ICONO_PASO[x.key];
+          const n = x.key === 'todos' ? sistemas?.length : sistemas?.filter((s) => s.paso === x.key).length;
+          return (
+            <button key={x.key} type="button" role="radio" aria-checked={elegido} onClick={() => elegirPaso(x.key)}
+              title={`${x.label}${n != null ? ` · ${n}` : ''}`} aria-label={x.label}
+              className={`h-8 rounded inline-flex items-center justify-center text-[11px] font-medium transition-colors ${
+                elegido ? 'bg-digi-card text-accent shadow-sm ring-1 ring-digi-border' : 'text-digi-muted hover:text-digi-text'} ${n === 0 ? 'opacity-40' : ''}`}>
+              {Icono ? <Icono className="w-4 h-4" strokeWidth={2} /> : 'Todos'}
+            </button>
+          );
+        })}
+      </div>
+      {filtro !== 'todos' && (
+        <p className="px-2.5 pt-0.5 text-[11px] text-digi-muted">Paso: <span className="text-digi-text font-medium">{PASOS.find((p) => p.key === filtro)?.label}</span></p>
+      )}
+
       {sistemas === null ? (
         <p className="px-2.5 py-3 text-[12px] text-digi-muted">Cargando…</p>
       ) : !sistemas.length ? (
         <p className="px-2.5 py-3 text-[12px] text-digi-muted">Aún no tienes acceso a ningún sistema.</p>
+      ) : filtro !== 'todos' && !sistemas.some((s) => s.paso === filtro) ? (
+        <p className="px-2.5 py-3 text-[12px] text-digi-muted">No tienes sistemas en este paso.</p>
       ) : PISOS.map((p) => {
-        const delPiso = sistemas.filter((s) => s.piso === p.key).sort((a, b) => ordenPaso(a.paso) - ordenPaso(b.paso) || a.name.localeCompare(b.name));
+        const delPiso = sistemas.filter((s) => s.piso === p.key && (filtro === 'todos' || s.paso === filtro)).sort((a, b) => ordenPaso(a.paso) - ordenPaso(b.paso) || a.name.localeCompare(b.name));
         if (!delPiso.length) return null;
         const IconoPiso = ICONO_PISO[p.key];
         const abierto = !cerrados.includes(p.key) || p.key === pisoAbierto;
@@ -159,7 +191,8 @@ function ListaVertical({ sistemas, pathname }: { sistemas: SistemaMapa[] | null;
                       <Icono className="w-[18px] h-[18px] shrink-0" strokeWidth={2} />
                       <span className="min-w-0">
                         <span className={`block truncate text-[13px] font-medium ${activo ? '' : 'text-digi-text'}`}>{s.name}</span>
-                        <span className="block truncate text-[11px] text-digi-muted">{paso}</span>
+                        {/* Con un paso elegido, repetirlo en cada sistema sobra. */}
+                        {filtro === 'todos' && <span className="block truncate text-[11px] text-digi-muted">{paso}</span>}
                       </span>
                     </Link>
                   );
