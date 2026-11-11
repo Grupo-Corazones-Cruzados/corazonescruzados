@@ -197,14 +197,18 @@ const MOTIVOS: AccordionItem[] = [
           Crecimos creyendo que la democracia, a través del voto, era la mejor forma de elegir a
           quienes nos gobiernan, pero con demasiada frecuencia esa forma ha terminado en corrupción
           y en entregar el poder a quien no se lo ha merecido, creando una clase política que es
-          incompetente para transformar la realidad que vivimos.
+          capaz de todo por convencer a las masas, mientras ignoramos todas las incompetencias que
+          éstos tienen para transformar la realidad que vivimos.
         </p>
         <p style={cardDesc}>
           Debemos cambiar lo que siempre se ha hecho, empezando por el poder, ya que éste no se debe
           entregar ni por convencimiento, ni por retórica. Los líderes se deben ganar su posición
           mediante lo que realmente son capaces de <strong style={strong}>hacer</strong> y{' '}
-          <strong style={strong}>construir</strong> según sus logros, su propósito, y el impactos
-          real que han tenido en la sociedad sin depender de recursos previos.
+          <strong style={strong}>construir</strong> según sus logros, su propósito, y el impacto
+          real que han tenido en la sociedad sin depender de los recursos de otros. &quot;Porque sino
+          puede cambiar su vida, peor va a poder cambiar la vida de otras personas&quot;. Así que
+          tener o no tener recursos, solo es una excusa y una mentira que no podemos volver a
+          aceptar.
         </p>
         <p style={cardDesc}>
           Hoy vivimos algo completamente diferente e incoherente con lo que necesitamos, porque
