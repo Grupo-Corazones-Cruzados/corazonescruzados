@@ -102,7 +102,7 @@ En la misma página:
 **Si no se encuentra una opción:** mandar a Claude una captura del menú. Apagar UPnP no afecta al M1: no recibe
 nada desde internet.
 
-### ☐ C4. Dominio: terminar la transferencia de `grupocc.org` (lo que bloquea la mudanza)
+### ✅ C4. Dominio: transferencia de `grupocc.org` a Namecheap (terminó el 2026-11-12; vence 2027-11-15)
 **Estado el 2026-11-08:** **«pending transfer»** (sigue en Wild West Domains, con los servidores de Microsoft).
 Vence el **2026-11-15**.
 1. **No cancelar Microsoft 365** hasta que Claude confirme que el dominio está en Namecheap y con los servidores
@@ -128,7 +128,7 @@ En dash.cloudflare.com → `grupocc.org` → **DNS → Records**, borrar (**Edit
   `_railway-verify.planificaciones`, `_railway-verify.automatizaciones`
 **NO borrar** `_railway-verify.www`, `www` ni `app`. Deben quedar 17 registros.
 
-### ☐ C5. Después, con Claude: poner esos servidores de nombres en Namecheap
+### ✅ C5. Servidores de nombres de Cloudflare en Namecheap (hecho por Fernando, 2026-11-11; zona activa a la hora)
 Se hace juntos al terminar C4: crear la cuenta de Cloudflare (o entrar) y cambiar en Namecheap los dos servidores
 de nombres que dé Cloudflare. Claude prepara antes todos los registros (correo, `www`, productos, passkeys) para
 que no se caiga nada. Detrás vienen el túnel al M1, el cortafuegos web y los avisos de caída (fase 3).
@@ -137,3 +137,20 @@ que no se caiga nada. Detrás vienen el túnel al M1, el cortafuegos web y los a
 
 **Orden recomendado:** hoy, cuando haya 5 minutos, C1, C2 y B1. C3 cuando se pueda. A1 y A2 con tiempo libre en
 casa. C4 estos días, y luego C5 con Claude.
+
+---
+
+## D. Después de la mudanza al M1 (2026-11-11)
+
+### ☐ D1. Cancelar Microsoft 365 — no antes del 2026-11-14
+El dominio ya no depende de Microsoft (está en Namecheap y lo sirve Cloudflare). Se espera 48 h a que todos los
+resolvedores de internet suelten los servidores viejos. Claude avisa cuándo; antes, comprobar que ningún correo o
+servicio siga usando la cuenta.
+
+### ☐ D2. Probar la passkey en la app de Android
+Actualizar GCC World, Android System WebView y Servicios de Google Play; entrar con código; Configuración → Perfil →
+Passkey → **Añadir**; cerrar sesión y entrar con **Entrar con passkey**.
+
+### ☐ D3. Cuenta de desarrollador de Apple (99 $/año)
+Hace falta para las passkeys dentro de las apps de iPhone, iPad y Mac (decisión de Fernando del 2026-11-11: esperar a
+la cuenta en vez de usar la ventana del sistema). Con ella, Claude añade el permiso de dominios asociados.

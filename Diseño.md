@@ -6365,6 +6365,7 @@ Pantalla de alto completo con `PanelHastaElPie desdeAncho={0}`: raíl de 300 px 
 
 ## Aviso de mantenimiento (2026-11-07)
 `components/providers/AvisoMantenimiento.tsx` y la página del Worker (`services/mantenimiento/worker.js`) se ven igual que la pantalla sin conexión de la app móvil (`movil/www/error.html`): fondo `#faf9f8` (oscuro `#1f1f1f` por `prefers-color-scheme`), cuadro de marca `#4B2D8E` de 64 px, título «Mantenimiento» y el texto de Fernando, literal. Colores escritos a mano a propósito, como en `error.html`: tiene que verse igual dentro y fuera del tema del panel. Sin botones: se recarga sola cada 30 s al volver el servidor.
+- **En producción desde el 2026-11-11:** la pantalla la sirve el Worker `gcc-entrada` de Cloudflare (`MANTENIMIENTO=1`), y la app abierta enseña el mismo aviso con `AvisoMantenimiento` al recibir 503 con `x-gcc-mantenimiento`. Se usó en la mudanza al M1 (7 min). No se añade ninguna pantalla nueva de Cloudflare: sus desafíos de bots no se activan, porque bloquearían a Meta, PayPhone y las apps.
 
 ## Control Psicosocial — el mapa ES la pantalla (Fernando, 2026-11-05)
 `components/centralized/systems/ControlPsicosocialSystem.tsx`. *«Principalmente centradas en el mapa […] dentro del mapa controles […] botones de más que al hacer clic aparecen las opciones, y luego así la navegación según la opción elegida.»* Vale para teléfono y computador; sustituye a las columnas de tarjeta, tabla y detalle del 2026-11-04.

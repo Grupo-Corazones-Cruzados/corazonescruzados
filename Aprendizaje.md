@@ -12018,7 +12018,7 @@ Causa de Postgres, causa del crecimiento de la app, memoria real de los producto
 
 ---
 
-# SEGURIDAD DEL SERVIDOR PROPIO (M1) Y DE LA PLATAFORMA (2026-11-07) · 80 %
+# SEGURIDAD DEL SERVIDOR PROPIO (M1) Y DE LA PLATAFORMA (2026-11-07) · 98 %
 **Objetivo:** tratar todos los riesgos y tipos de ataque del servidor local antes y después de la mudanza. **Rol:** responsable de seguridad e infraestructura. **Fuente:** auditoría de solo lectura del M1, de la Mac de desarrollo, de la tailnet y `npm audit`. Nada se cambió.
 
 ## Hallazgos (2026-11-07)
@@ -12371,3 +12371,13 @@ API de Gemini solo como apoyo puntual. Primero, una prueba local gratuita con su
   recordatorios guardan etapa y `last_email_at`; lo demás «sin novedades»). Se desconectaron del repo los 8 servicios
   (`serviceDisconnect`), se paró el cron y se canceló la compilación. Quedan dormidos con su última versión; solo
   Postgres sigue encendido (recibe el respaldo del M1).
+
+## Estado al cerrar el 2026-11-11 · 98 %
+- **Hecho:** fases 1 y 2 (claves, dependencias, puertas de entrada con límite, M1 endurecido y actualizado), dominio en
+  Namecheap + Cloudflare, productos sin subdominio, mudanza al M1 (7 min de mantenimiento), publicación automática tras
+  cada push, Railway de reserva desconectado del repo.
+- **Probado por Fernando:** inicio de sesión y passkey en la web, panel actualizado, navegación rápida.
+- **Passkeys en apps:** iPhone/iPad/Mac esperan la cuenta de Apple (decisión de Fernando); Android preparado, falta probar.
+- **Abierto:** protecciones de Cloudflare (tope de intentos en `/api/auth`, sin «Bot Fight Mode»: bloquearía a Meta,
+  PayPhone y las apps), aviso si el M1 cae, vigilar los respaldos (03:30 M1→Railway y SSD), disco Sabrent a 12 Mb/s,
+  Microsoft 365 a partir del 2026-11-14, fase 1b de dependencias (puppeteer 25, zod 4, next 16).
