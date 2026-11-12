@@ -18,7 +18,7 @@ export const BENEFICIOS_INTRO = {
   etiqueta: 'Beneficios',
   titulo: 'Beneficios de los candidatos',
   texto:
-    'Los candidatos que son aceptados en el proyecto del Grupo Corazones Cruzados, reciben acceso a los módulos de la plataforma "Progreso", al videojuego "GCC World" y a las herramientas públicas, con el fin de impulsar su "Desarrollo Humano" mientras demuestran los valores de la organización. A continuación te presento los beneficios que tendrás como candidato:',
+    'Los candidatos que son aceptados en el proyecto del Grupo Corazones Cruzados, reciben acceso a los módulos de la plataforma "Progreso", al videojuego "GCC World" y a las herramientas públicas, con el fin de impulsar su "Desarrollo Humano" mientras demuestran los valores de la organización. Algunos de estos beneficios se encuentran en desarrollo, y se indican como "Próximamente". A continuación te presento los beneficios que tendrás como candidato:',
 };
 
 export const GRUPOS_BENEFICIOS: GrupoBeneficios[] = [
@@ -61,6 +61,53 @@ export const GRUPOS_BENEFICIOS: GrupoBeneficios[] = [
       { icono: 'Captions', titulo: 'Transcribir audio', texto: 'Transcribe archivos de audio a texto usando inteligencia artificial.' },
       { icono: 'Printer', titulo: 'Formatos de impresión para Excel', texto: 'Corrige la impresión de un libro de Excel (papel, márgenes, títulos y número de página) y lo descarga en Excel o PDF.' },
       { icono: 'QrCode', titulo: 'Enlace a código QR', texto: 'Convierte un enlace en un código QR para descargarlo en PNG o SVG.' },
+    ],
+  },
+  {
+    id: 'ingresos',
+    etiqueta: 'Crecimiento profesional',
+    titulo: 'Crecimiento profesional',
+    texto: 'El Grupo Corazones Cruzados es una organización en donde cada candidato demuestra mediante sus resultados lo que es capaz de hacer, y recibe las herramientas para presentarse como parte del proyecto.',
+    beneficios: [
+      { icono: 'Award', titulo: 'Talentos demostrados', texto: 'Los talentos de cada candidato se miden según las tareas, tickets y proyectos que completa, y no según lo que declara.' },
+      { icono: 'Gauge', titulo: 'Evaluación continua', texto: 'La prospección de cada candidato muestra su avance en valores, talentos, dimensiones de desarrollo humano y red de apoyo.' },
+      { icono: 'Mail', titulo: 'Correo corporativo', texto: 'Una cuenta de correo con el dominio @grupocc.org, que el aprobador asigna al aceptar la postulación.' },
+      { icono: 'Smartphone', titulo: 'App GCC World', texto: 'La aplicación para el teléfono, con acceso mediante llave de seguridad (passkey) sin necesidad de contraseña.' },
+    ],
+  },
+  {
+    id: 'acompanamiento',
+    etiqueta: 'Acompañamiento',
+    titulo: 'Acompañamiento y seguridad',
+    texto: 'Son los sistemas que el Grupo Corazones Cruzados va a abrir a sus candidatos para acompañar su desarrollo humano y proteger su integridad.',
+    proximamente: true,
+    beneficios: [
+      { icono: 'ShieldCheck', titulo: 'Control Psicosocial', texto: 'Un botón de auxilio, puntos de reunión y el recorrido compartido con consentimiento, para la seguridad física de cada candidato.' },
+      { icono: 'UserCheck', titulo: 'Mentoría', texto: 'Un miembro con el mismo talento que acompaña al candidato en su proceso dentro del proyecto.' },
+    ],
+  },
+  {
+    id: 'emprendimiento',
+    etiqueta: 'Emprendimiento',
+    titulo: 'Recursos para emprender',
+    texto: 'Las soluciones que el Grupo Corazones Cruzados ofrece a sus clientes, también van a estar disponibles para que los candidatos organicen y automaticen sus propios negocios.',
+    proximamente: true,
+    beneficios: [
+      { icono: 'Store', titulo: 'Productos del grupo', texto: 'Gestión de Reservas, Pedidos, Catering y Planificación de Clases, para el negocio o el trabajo de cada candidato.' },
+      { icono: 'Workflow', titulo: 'Automatizaciones', texto: 'Los flujos de trabajo y el agente de inteligencia artificial para WhatsApp, para automatizar los procesos de cada candidato.' },
+      { icono: 'Lightbulb', titulo: 'Impulso a tus ideas', texto: 'Presentar una idea de negocio como un proyecto, y si es viable, trabajarla con la metodología del "Progreso Horizontal".' },
+    ],
+  },
+  {
+    id: 'aprendizaje',
+    etiqueta: 'Aprendizaje',
+    titulo: 'Orientación y aprendizaje',
+    texto: 'Nosotros queremos que cada conocimiento que tiene una persona pueda ser aprendido por otras, demostrado, y luego ofrecido en un mercado.',
+    proximamente: true,
+    beneficios: [
+      { icono: 'Compass', titulo: 'Orientación vocacional', texto: 'Un informe que según los talentos demostrados, el horario de vida y la prospección, indica en qué piso y paso del Modelo 4P encaja cada candidato.' },
+      { icono: 'GraduationCap', titulo: 'Sistema de aprendizaje', texto: 'Quien domina un conocimiento crea un curso, otros lo aprenden y lo demuestran con prácticas, y luego lo ofrecen como servicio en el Marketplace.' },
+      { icono: 'Coins', titulo: 'Ganar enseñando', texto: 'Cada curso funciona como una suscripción, y quien lo enseña recibe los ingresos de las personas que lo toman.' },
     ],
   },
   {

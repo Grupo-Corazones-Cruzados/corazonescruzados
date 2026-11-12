@@ -1,6 +1,6 @@
 /**
- * LOS BENEFICIOS BAJO «POSTULARME» (Fernando, 2026-11-12). Cuatro bloques —módulos de Progreso,
- * videojuego, herramientas y, al final, lo que abre ser miembro—, cada uno con su rótulo y una rejilla de tarjetas (icono, nombre, una línea).
+ * LOS BENEFICIOS BAJO «POSTULARME» (Fernando, 2026-11-12). Bloques —módulos de Progreso,
+ * videojuego, herramientas, crecimiento, acompañamiento, emprendimiento, aprendizaje y, al final, lo que abre ser miembro—, cada uno con su rótulo y una rejilla de tarjetas (icono, nombre, una línea).
  * Los textos viven en `lib/sitio/beneficiosCandidatos.ts`. Sin cápsulas con relleno: «Próximamente» es
  * texto en color (regla de /diseno §4-septies).
  */
@@ -9,6 +9,7 @@ import {
   Repeat2, Captions, Printer, QrCode, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Ticket,
   ReceiptText, Store, IdCard, Swords, Coins, Users, Sparkles, Wrench, LayoutDashboard, Gamepad2,
   HeartHandshake, Clapperboard, Wallet, Calculator, MessagesSquare, BadgeCheck,
+  Award, Gauge, Mail, Smartphone, ShieldCheck, UserCheck, Workflow, Lightbulb, Compass, GraduationCap, Rocket,
   type LucideIcon,
 } from 'lucide-react';
 import { BENEFICIOS_INTRO, GRUPOS_BENEFICIOS } from '@/lib/sitio/beneficiosCandidatos';
@@ -18,8 +19,12 @@ const ICONOS: Record<string, LucideIcon> = {
   Repeat2, Captions, Printer, QrCode, CalendarDays, PartyPopper, BrainCircuit, AlarmClock, Ticket,
   ReceiptText, Store, IdCard, Swords, Coins, Users, Sparkles,
   HeartHandshake, Clapperboard, Wallet, Calculator, MessagesSquare,
+  Award, Gauge, Mail, Smartphone, ShieldCheck, UserCheck, Workflow, Lightbulb, Compass, GraduationCap,
 };
-const ICONO_GRUPO: Record<string, LucideIcon> = { herramientas: Wrench, progreso: LayoutDashboard, videojuego: Gamepad2, miembros: BadgeCheck };
+const ICONO_GRUPO: Record<string, LucideIcon> = {
+  herramientas: Wrench, progreso: LayoutDashboard, videojuego: Gamepad2, miembros: BadgeCheck,
+  ingresos: Award, acompanamiento: ShieldCheck, emprendimiento: Rocket, aprendizaje: GraduationCap,
+};
 
 export default function BeneficiosCandidatos() {
   return (
