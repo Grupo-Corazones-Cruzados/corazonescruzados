@@ -63,7 +63,9 @@ export default function RailDesplegable({ desde, etiqueta = 'Propiedades · Inci
       onMouseLeave={() => setSobre(false)}
       onFocus={(e) => { if (esCampo(e.target)) setEscribiendo(true); }}
       onBlur={(e) => { if (esCampo(e.target)) setEscribiendo(false); }}
-      className="absolute inset-y-0 right-0 z-30 flex"
+      // z-20, por DEBAJO del velo del menú (z-30): con z-30 el raíl, pintado después, quedaba encendido
+      // sobre el velo al pasar el puntero por el menú (Fernando, 2026-11-12). Sigue por encima del contenido.
+      className="absolute inset-y-0 right-0 z-20 flex"
     >
       {/* `transition-[width]`: lo único que cambia al abrirse es el ancho (como el menú). */}
       <div inert={!abierto} className={`h-full overflow-hidden transition-[width] duration-200 ${abierto ? 'w-[324px]' : 'w-0'}`}>
