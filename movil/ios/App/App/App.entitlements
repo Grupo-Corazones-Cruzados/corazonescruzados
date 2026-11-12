@@ -4,6 +4,12 @@
 <dict>
 	<!-- Push (APNs): arrancar y terminar la Actividad en Vivo del reloj con la app cerrada.
 	     Xcode lo cambia a «production» al exportar para TestFlight. -->
+	<!-- Passkeys dentro de la app: grupocc.org publica /.well-known/apple-app-site-association con estas
+	     apps (repositorio grupocc-dominio). Es el RP ID de las passkeys de GCC. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>webcredentials:grupocc.org</string>
+	</array>
 	<key>aps-environment</key>
 	<string>development</string>
 </dict>

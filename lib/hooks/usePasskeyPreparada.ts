@@ -95,15 +95,16 @@ export function usePasskeyPreparada(activo: boolean, pedir: () => Promise<Respon
 /**
  * ¿Puede este aparato usar una passkey? Un botón que solo sabe fallar no se ofrece.
  * · Android: la WebView de las apps instaladas antes de la versión 1.8 no trae WebAuthn.
- * · Apps de iPhone, iPad y Mac (`movil/escritorio-mac`, puente `gccEscritorio`): necesitan `webcredentials` en
- *   sus entitlements y hoy no los llevan; llegan con la cuenta propia de Apple (Fernando, 2026-11-11). La Mac
- *   ofrecía el botón y solo fallaba. Safari sí puede.
+ * · Apps de iPhone y iPad: necesitan `webcredentials:grupocc.org` en sus entitlements. Lo llevan desde la cuenta
+ *   propia de Apple (2026-11-12) y lo avisan con `window.GCC_PASSKEY_NATIVA`; las versiones viejas, no.
+ * · App de la Mac (`movil/escritorio-mac`, puente `gccEscritorio`): todavía sin ese derecho. Safari sí puede.
  */
 export function passkeyDisponible(): boolean {
   if (typeof window === 'undefined' || !browserSupportsWebAuthn()) return false;
   const w = window as unknown as { Capacitor?: { getPlatform?: () => string }; webkit?: { messageHandlers?: { gccEscritorio?: unknown } } };
   if (w.webkit?.messageHandlers?.gccEscritorio) return false;
-  return w.Capacitor?.getPlatform?.() !== 'ios';
+  if (w.Capacitor?.getPlatform?.() === 'ios') return (window as { GCC_PASSKEY_NATIVA?: boolean }).GCC_PASSKEY_NATIVA === true;
+  return true;
 }
 
 /** Qué decirle a la persona cuando la passkey no se completó. El sistema no distingue cancelar de rechazar. */

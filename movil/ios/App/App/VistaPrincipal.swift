@@ -10,6 +10,10 @@ class VistaPrincipal: CAPBridgeViewController {
         bridge?.registerPluginInstance(ControlPsicosocialPlugin())
         #endif
         marcarApp()
+        // Passkeys (2026-11-12): esta app lleva `webcredentials:grupocc.org`, así que la web puede ofrecerla.
+        // Las versiones viejas (firmadas sin ese derecho) no dejan este aviso y la web la sigue escondiendo.
+        webView?.configuration.userContentController.addUserScript(WKUserScript(
+            source: "window.GCC_PASSKEY_NATIVA = true;", injectionTime: .atDocumentStart, forMainFrameOnly: true))
         // Los productos se abren dentro (Accesos); deslizar desde el borde vuelve, como en Android con «atrás».
         webView?.allowsBackForwardNavigationGestures = true
     }
