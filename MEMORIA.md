@@ -8622,6 +8622,12 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
   arreglar lo primero salió lo segundo. **Un rechazo del SRI puede estar tapando otro**: tras
   corregir uno, no dar por hecho que ya pasa.
 
+## Formulario de postulación: un texto por paso (2026-11-12)
+
+- Fernando: «prefiero que se conviertan en otros pasos adicionales del formulario para asegurarme que lean cada texto». Ya no hay listas plegables: Herramientas, Motivos, Onboarding y Prospección son una entrada + un paso por texto (`apartado()` en `OnboardingSlidersModal.tsx`); en el camino los textos cuelgan del apartado con punto pequeño. 22 pasos + Postulación. La pirámide de Prospección ya no se pulsa: cada nivel es un paso que la marca.
+- Cada paso lleva su **título tema centrado** arriba del contenido (`.onb-tema`), y el texto centrado (`centrado`). La cabecera solo tiene la «×».
+- **App de iPhone:** la ventana ocupa la pantalla entera en el teléfono y la «×» quedaba bajo la hora; la cabecera suma `--seguro-arriba`. Las tablas del Modelo 4P siguen con descripciones en `title` (al pasar el puntero).
+
 ## Beneficios de pertenecer y la hoja de vida que cotiza (2026-11-12)
 
 - **Candidatos ▸ Beneficios** (`lib/sitio/beneficiosCandidatos.ts`, desde 2026-11-12): **una galería horizontal por grupo** (`components/sitio/GaleriaBeneficios.tsx`: título con icono y cuenta, flechas ‹ › en escritorio, deslizar con imán en el teléfono). Grupos y tarjetas: Progreso 8 · Videojuego 3 · Herramientas 3 · Crecimiento profesional 4 · Emprendimiento 3 · Aprendizaje 3 · **Desarrollo Humano** 5 (antes «Miembros»: Fernando dijo que también son para candidatos). Quitadas a pedido suyo: Personaje del videojuego, Formatos de impresión para Excel («temporal»), Control Psicosocial y Mentoría («tienen que ver más con los miembros»). Sin «Próximamente» en ninguna. Los textos son de Fernando, vienen del editor de textos (filas `candidatos.beneficios.*`).
