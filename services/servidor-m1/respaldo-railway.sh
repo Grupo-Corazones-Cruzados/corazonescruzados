@@ -29,13 +29,23 @@ fi
 
 D=$(mktemp /tmp/gcc-respaldo.XXXXXX)
 trap 'rm -f "$D"' EXIT
+# La base del M1 sigue viva mientras se copia (entran mensajes de WhatsApp): se cuenta antes y después, y la copia
+# vale si cada cifra queda entre las dos. Comparar solo con el «después» daba un fallo falso (2026-11-12).
+cuenta() { "$B/psql" "$@" -Atc "SELECT (SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema'))||'|'||(SELECT count(*) FROM gcc_world.users)||'|'||(SELECT count(*) FROM gcc_world.tickets)||'|'||(SELECT count(*) FROM automatizaciones.mensajes)"; }
+a0=$(cuenta "${ORIGEN[@]}")
 "$B/pg_dump" "${ORIGEN[@]}" -Fc -Z 6 -f "$D" || fin fallo "pg_dump del M1"
 # --clean recrea todo: la base de Railway queda igual que la del M1, sin restos de la anterior.
 "$B/pg_restore" -d "$DESTINO" --clean --if-exists --no-owner --no-privileges -j 2 "$D" 2>"$D.err"
-errores=$(grep -c -i "error" "$D.err" 2>/dev/null || true); tail -5 "$D.err"; rm -f "$D.err"
+# «already exists»: un índice que la app crea sola al arrancar (CREATE … IF NOT EXISTS) y que --clean no borra. Inofensivo.
+errores=$(grep -i "error" "$D.err" 2>/dev/null | grep -vc "already exists" || true); tail -5 "$D.err"; rm -f "$D.err"
 
-# Comprobación: mismas tablas y mismas filas en las tablas que más importan.
-cuenta() { "$B/psql" "$@" -Atc "SELECT (SELECT count(*) FROM pg_tables WHERE schemaname NOT IN ('pg_catalog','information_schema'))||'|'||(SELECT count(*) FROM gcc_world.users)||'|'||(SELECT count(*) FROM gcc_world.tickets)||'|'||(SELECT count(*) FROM automatizaciones.mensajes)"; }
-a=$(cuenta "${ORIGEN[@]}"); b=$(cuenta "$DESTINO")
-[ -n "$a" ] && [ "$a" = "$b" ] || fin fallo "no coincide: M1 $a · destino $b · errores $errores"
-fin ok "tablas|usuarios|tickets|mensajes = $a · $(du -h "$D" | cut -f1) · avisos de pg_restore $errores"
+# Comprobación: cada cifra del destino entre la del M1 antes de copiar y la de después.
+a1=$(cuenta "${ORIGEN[@]}"); b=$(cuenta "$DESTINO")
+[ -n "$a0" ] && [ -n "$a1" ] && [ -n "$b" ] || fin fallo "no se pudo contar"
+IFS='|' read -r -a A0 <<<"$a0"; IFS='|' read -r -a A1 <<<"$a1"; IFS='|' read -r -a BB <<<"$b"
+for i in 0 1 2 3; do
+  lo=${A0[$i]}; hi=${A1[$i]}; [ "$lo" -gt "$hi" ] && { t=$lo; lo=$hi; hi=$t; }
+  [ "${BB[$i]}" -ge "$lo" ] && [ "${BB[$i]}" -le "$hi" ] || fin fallo "no coincide: M1 $a0 → $a1 · destino $b · errores $errores"
+done
+[ "$errores" = 0 ] || fin fallo "pg_restore con $errores errores · destino $b"
+fin ok "tablas|usuarios|tickets|mensajes = $b (M1 $a0 → $a1) · $(du -h "$D" | cut -f1)"
