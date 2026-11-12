@@ -12366,3 +12366,8 @@ API de Gemini solo como apoyo puntual. Primero, una prueba local gratuita con su
 - El M1 servía la versión del 2026-11-08 (100 commits atrás): las demás sesiones seguían haciendo push a Railway. Se
   publicó la actual y se instaló `publicar-tras-push.sh` (hook `pre-push`): cada push a main se publica solo en el M1.
   Probado: publicó 6839fc7b solo en ~2,5 min.
+- **Railway seguía conectado al repo:** cada push volvía a compilar la app (gasto) y a desplegar el cron, que corrió
+  2 veces tras el cambio (02:42 y 02:53 UTC) contra `app.grupocc.org` = el M1. Sin duplicados en la práctica (los
+  recordatorios guardan etapa y `last_email_at`; lo demás «sin novedades»). Se desconectaron del repo los 8 servicios
+  (`serviceDisconnect`), se paró el cron y se canceló la compilación. Quedan dormidos con su última versión; solo
+  Postgres sigue encendido (recibe el respaldo del M1).

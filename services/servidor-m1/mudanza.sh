@@ -12,7 +12,8 @@
 #
 # Orden de la noche del cambio: estado → preparar → mantenimiento on → copiar → activar-m1 → dns m1
 # → (comprobar) → mantenimiento off → railway-reserva. Volver atrás: mantenimiento on → dns railway →
-# mantenimiento off (y volver a desplegar en Railway el cron y el worker).
+# mantenimiento off. Antes, en Railway: reconectar al repo los servicios (están desconectados desde el
+# 2026-11-11 para no gastar con cada push), desplegar la versión actual y volver a desplegar el cron y el worker.
 #
 # Necesita: ~/.cloudflare-token (DNS, Zone Settings, WAF, Tunnel, Workers), ~/.gcc-tunel-id, ~/.gcc-servidor.env.
 set -eo pipefail
