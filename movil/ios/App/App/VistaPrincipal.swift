@@ -6,7 +6,9 @@ import WebKit
 class VistaPrincipal: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(RelojTicketPlugin())
+        #if MIEMBROS
         bridge?.registerPluginInstance(ControlPsicosocialPlugin())
+        #endif
         marcarApp()
         // Los productos se abren dentro (Accesos); deslizar desde el borde vuelve, como en Android con «atrás».
         webView?.allowsBackForwardNavigationGestures = true

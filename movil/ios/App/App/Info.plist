@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>GCC World</string>
+	<string>$(GCC_DISPLAY_NAME)</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -35,23 +35,33 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>GCCApp</key>
 	<string>$(GCC_APP)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+#ifdef MIEMBROS
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Si eres miembro y activas Control Psicosocial, tu ubicación se comparte también con la app cerrada, para poder ayudarte en una emergencia.</string>
+#endif
+#ifdef MIEMBROS
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Si eres miembro y activas Control Psicosocial, tu ubicación se comparte para poder ayudarte en una emergencia.</string>
+#endif
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Para dictar mensajes en el espacio de trabajo y, si eres miembro y lo activas, detectar tu frase de auxilio. El audio no se graba ni sale del teléfono.</string>
+	<string>Para dictar con tu voz y grabar audio cuando tú lo pides.</string>
+#ifdef MIEMBROS
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Para detectar tu frase de auxilio dentro del teléfono, si eres miembro y activas esa función.</string>
+#endif
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+#ifdef MIEMBROS
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
 		<string>location</string>
 	</array>
+#endif
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -77,7 +87,7 @@
 	<string>Main</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
 	<key>UIStatusBarStyle</key>
 	<string>UIStatusBarStyleLightContent</string>

@@ -1,3 +1,7 @@
+// Solo en GCC Miembros (`MIEMBROS` en SWIFT_ACTIVE_COMPILATION_CONDITIONS): GCC World, la app de la tienda, no lleva
+// ubicación en segundo plano ni frase de auxilio (el contrato de Apple, 3.3.3(F)(i), prohíbe apps con ubicación
+// pensadas para emergencias). Ver movil/ios/README-apps.md.
+#if MIEMBROS
 import AVFoundation
 import AudioToolbox
 import Capacitor
@@ -467,3 +471,4 @@ public class ControlPsicosocialPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 }
+#endif
