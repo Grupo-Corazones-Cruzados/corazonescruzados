@@ -256,9 +256,10 @@ base verbatim):
 - **Candidatos y Clientes con la misma forma (2026-11-11):** las dos páginas usan `RecorridoPagina`
   (camino vertical, Anterior/Siguiente, URL por apartado) y las dos tienen un botón en la presentación
   que abre la ventana de pasos `VentanaRecorrido` (la de la postulación, extraída; `.onb-*`):
-  «Postularme» (`BotonPostularme`) y «Crear mi cuenta» (`VentanaCliente`: Soluciones · Tickets ·
-  Proyectos + el alta). El alta es UNA pieza, `FormularioCliente` (diálogo de la portada, ventana y
-  `/clientes/crear-cuenta`). Las ventanas van por portal al `body`: dentro del sitio, el contenedor las
+  «Postularme» (`BotonPostularme`) y «Crear mi cuenta» (`VentanaCliente`: Soluciones, Tickets y
+  Proyectos JUNTOS en un paso + el alta). Los formularios NO van en las páginas (Fernando: «ese
+  contenido ya está en el botón»); `/candidatos/postulacion` y `/clientes/crear-cuenta` redirigen. El
+  alta es UNA pieza, `FormularioCliente` (diálogo de la portada y ventana). Las ventanas van por portal al `body`: dentro del sitio, el contenedor las
   recortaba y su CSS claro teñía la tabla del Modelo 4P. Lideración se quitó; `/candidatos/lideracion`
   redirige a Onboarding. Pasar de candidato a miembro es manual (admin, Reclutamiento ▸ «Convertir
   en miembro»), sin umbral de prospección.
