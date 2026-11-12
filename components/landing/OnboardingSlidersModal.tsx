@@ -68,6 +68,7 @@ import { tituloDePaso, type PasoPostulacionId } from '@/lib/sitio/pasosPostulaci
 import { sonarInterruptor } from '@/lib/sitio/sonidoSeleccion';
 import LogoGirando from '@/components/ui/LogoGirando';
 import MiembrosGaleria from '@/components/landing/MiembrosGaleria';
+import AnimacionPaso from '@/components/landing/AnimacionPaso';
 import PixelInput from '@/components/ui/PixelInput';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
@@ -173,6 +174,11 @@ const MOTIVOS: AccordionItem[] = [
           de un sistema que represente lo que de verdad necesitamos. Y lo que más necesitamos hoy
           es una <strong style={strong}>razón para trabajar juntos</strong> por un futuro mejor.
         </p>
+        {/* Blender (2026-11-12): el logo cruza el mundo y une los puntos. Escena: scripts/animaciones/motivos-1.py */}
+        <AnimacionPaso
+          src="/animaciones/motivos-1.webp"
+          alt="El logo del Grupo Corazones Cruzados cruza el mundo y une sus puntos"
+        />
       </>
     ),
   },

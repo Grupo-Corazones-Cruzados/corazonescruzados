@@ -2926,6 +2926,11 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .onb-miembros-rejilla[data-compacta] .onb-miembro-piso { font-size: clamp(8.5px, calc(var(--lado) * 0.085), 11px); }
 @media (prefers-reduced-motion: reduce) { .onb-miembro { animation: none; } }
 
+/* Una animación de Blender en un paso (`AnimacionPaso`): 16:9 con el sitio reservado desde el principio,
+   para que el texto no salte cuando llega la imagen. */
+.onb-animacion { width: 100%; max-width: 600px; margin: 4px auto 0; aspect-ratio: 16 / 9; }
+.onb-animacion > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
 /* COMO QUIEN CUENTA UN CUENTO: cada pieza entra por turno (`--cuento-retardo`, lo pone la ventana) y
    cada párrafo se descubre de arriba abajo durante `--cuento-duracion`. */
 .onb-cuento-pieza { animation: onbCuento 0.75s cubic-bezier(0.22, 1, 0.36, 1) var(--cuento-retardo, 0s) both; }
