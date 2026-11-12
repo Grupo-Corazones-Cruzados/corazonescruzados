@@ -395,7 +395,7 @@ const CRECIMIENTO: { n: number; title: string; tag: string; text: () => React.Re
         </p>
         <p style={cardDesc}>
           Nosotros queremos descubrir ese talento, y generar oportunidades en donde podamos sacar
-          beneficios por posicionarte dentro de una estrategia organizacional; cada movimiento va a
+          beneficios por posicionarte dentro de una estrategia organizacional, donde cada movimiento va a
           desarrollar tu talento y causar mayor interés en nuevos clientes que deseen tus servicios.
         </p>
       </>
