@@ -253,6 +253,9 @@ base verbatim):
   `enviarPostulacion` compartida con la portada) con la MISMA pausa por equipo (`useEstadoRegistro`, un
   registro cada 24 h; el servidor la vuelve a comprobar). El diálogo `OnboardingSlidersModal` sigue en el
   código pero ya nada de la portada lo abre.
+- **Candidatos = solo presentación + «Postularme» (2026-11-11, Fernando: «debería estar solo el botón
+  de postularme»):** sin recorrido en la página; los apartados se leen en la ventana; `/candidatos/:paso`
+  redirige a `/candidatos`. Lo de abajo sobre `RecorridoPagina` vale hoy solo para Clientes.
 - **Candidatos y Clientes con la misma forma (2026-11-11):** las dos páginas usan `RecorridoPagina`
   (camino vertical, Anterior/Siguiente, URL por apartado) y las dos tienen un botón en la presentación
   que abre la ventana de pasos `VentanaRecorrido` (la de la postulación, extraída; `.onb-*`):
