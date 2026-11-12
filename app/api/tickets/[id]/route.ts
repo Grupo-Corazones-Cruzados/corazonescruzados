@@ -25,7 +25,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
               (SELECT json_agg(ts ORDER BY ts.date) FROM gcc_world.ticket_time_slots ts WHERE ts.ticket_id = t.id) as time_slots,
               (SELECT json_agg(ta ORDER BY ta.work_date NULLS LAST, ta.created_at) FROM (
                  -- Cada registro dice si ya está facturado y en qué factura (lib/tickets/facturacion.ts).
-                 SELECT a.*, (fi.id IS NOT NULL) AS facturada, COALESCE(fi.invoice_number, '#' || fi.id) AS factura_numero,
+                 SELECT a.*, (fi.id IS NOT NULL) AS facturada, COALESCE(fi.invoice_number, '#' || fi.id) AS factura_numero, fi.status AS factura_estado,
                         -- Lo abonado por cobros que no lo cubrieron entero (lib/tickets/reparto-pagos.ts, 2026-11-12).
                         COALESCE((SELECT SUM(p.monto) FROM gcc_world.ticket_registro_pagos p
                                    LEFT JOIN gcc_world.invoices pi ON pi.id = p.invoice_id

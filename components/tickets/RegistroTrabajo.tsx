@@ -84,8 +84,11 @@ export function segundosDe(r: any, ahora = Date.now()): number {
  * reloj, tiempo y eliminar quedan bloqueados; renombrarlo y anotarlo, no. Ver
  * `lib/tickets/facturacion.ts`.
  */
+/** «120» en vez de «120,00»: el estado a medias va corto (Fernando, 2026-11-12). */
+const corto = (n: number) => fmt2(n).replace(/,00$/, '');
+
 export default function RegistroTrabajo({
-  ticketId, registros, dia, tarifa, puede, bloqueo, onCambio, avanceEtapas,
+  ticketId, registros, dia, tarifa, puede, bloqueo, onCambio,
 }: {
   ticketId: string;
   registros: any[];
@@ -101,7 +104,6 @@ export default function RegistroTrabajo({
   avanceEtapas?: { facturadas: number; total: number };
 }) {
   const editable = puede && !bloqueo;
-  const parcial = !!avanceEtapas && avanceEtapas.facturadas > 0 && avanceEtapas.facturadas < avanceEtapas.total;
   /** Por qué no se puede tocar el TIEMPO de un registro: el del ticket o su factura. */
   const bloqueoTiempo = (r: any): string | undefined =>
     bloqueo || (r?.facturada ? `Ya facturado en ${r.factura_numero}: su tiempo no cambia` : undefined);
@@ -277,14 +279,15 @@ export default function RegistroTrabajo({
                     {r.timer_started_at && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" aria-label="Reloj en marcha" />}
                     <span className="text-digi-muted">{fmtTiempo(seg)}</span>
                     <span className="text-accent font-semibold">${fmt2(r.timer_started_at ? (seg / 3600) * tarifa : Number(r.cost))}</span>
-                    {/* Un cobro que no lo cubrió entero (2026-11-12): cuánto lleva pagado. */}
+                    {/* ⇒ EL ESTADO DE PAGO DE CADA REGISTRO (Fernando, 2026-11-12): «Pagado» si su factura está cobrada,
+                        «Facturado» si se facturó sin cobro todavía, y uno a medias solo con «44,30/120». Ya no se cuenta
+                        «Facturado 1/2» por etapas: lo pagado se reparte registro a registro (lib/tickets/reparto-pagos.ts). */}
                     {!r.facturada && Number(r.abonado) > 0 && (
-                      <span title="Pagado en parte: el resto queda pendiente" className="text-amber-600" style={mf}>· Pagado ${fmt2(Number(r.abonado))} de ${fmt2(Number(r.cost))}</span>
+                      <span title={`Pagado $${fmt2(Number(r.abonado))} de $${fmt2(Number(r.cost))}`} className="text-amber-600" style={mf}>· {corto(Number(r.abonado))}/{corto(Number(r.cost))}</span>
                     )}
-                    {r.facturada && (
-                      parcial
-                        ? <span title={`Facturado en ${r.factura_numero}. Van ${avanceEtapas!.facturadas} de ${avanceEtapas!.total} etapas: falta por cobrar`} className="text-amber-600" style={mf}>· Facturado {avanceEtapas!.facturadas}/{avanceEtapas!.total}</span>
-                        : <span title={`Facturado en ${r.factura_numero}`} className="text-green-600" style={mf}>· Facturado</span>
+                    {r.facturada && (r.factura_estado === 'paid'
+                      ? <span title={`Pagado · factura ${r.factura_numero}`} className="text-green-600" style={mf}>· Pagado</span>
+                      : <span title={`Facturado en ${r.factura_numero}, sin cobrar todavía`} className="text-digi-muted" style={mf}>· Facturado</span>
                     )}
                   </p>
                 </button>
