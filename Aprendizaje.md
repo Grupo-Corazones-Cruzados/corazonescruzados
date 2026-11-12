@@ -12381,3 +12381,6 @@ API de Gemini solo como apoyo puntual. Primero, una prueba local gratuita con su
 - **Abierto:** protecciones de Cloudflare (tope de intentos en `/api/auth`, sin «Bot Fight Mode»: bloquearía a Meta,
   PayPhone y las apps), aviso si el M1 cae, vigilar los respaldos (03:30 M1→Railway y SSD), disco Sabrent a 12 Mb/s,
   Microsoft 365 a partir del 2026-11-14, fase 1b de dependencias (puppeteer 25, zod 4, next 16).
+- ✅ **Passkey en Android probada (2026-11-12):** GCC World y GCC Miembros 2.0 instaladas por cable (adb) en un Galaxy
+  S10+ (Android 12, WebView 156); Fernando creó la passkey desde la pantalla de inicio de sesión y entró con ella.
+  Para compilar las APK hace falta `JAVA_HOME` del JBR de Android Studio (`/Applications/Android Studio.app/Contents/jbr/Contents/Home`).

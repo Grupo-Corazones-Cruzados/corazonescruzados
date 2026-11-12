@@ -147,7 +147,7 @@ El dominio ya no depende de Microsoft (está en Namecheap y lo sirve Cloudflare)
 resolvedores de internet suelten los servidores viejos. Claude avisa cuándo; antes, comprobar que ningún correo o
 servicio siga usando la cuenta.
 
-### ☐ D2. Probar la passkey en la app de Android
+### ✅ D2. Probar la passkey en la app de Android (hecho por Fernando, 2026-11-12: Galaxy S10+ con Android 12; la creó desde la pantalla de inicio de sesión y entró con ella)
 Actualizar GCC World, Android System WebView y Servicios de Google Play; entrar con código; Configuración → Perfil →
 Passkey → **Añadir**; cerrar sesión y entrar con **Entrar con passkey**.
 
