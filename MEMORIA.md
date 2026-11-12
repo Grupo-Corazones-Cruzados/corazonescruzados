@@ -253,11 +253,10 @@ base verbatim):
   `enviarPostulacion` compartida con la portada) con la MISMA pausa por equipo (`useEstadoRegistro`, un
   registro cada 24 h; el servidor la vuelve a comprobar). El diálogo `OnboardingSlidersModal` sigue en el
   código pero ya nada de la portada lo abre.
-- **⏳ CUENTA DE CANDIDATO DE PRUEBA (2026-11-12, pedida por Fernando, TEMPORAL):** `candidato.prueba@grupocc.org`
-  en la base del M1: `clients.id=55`, `users.id=1b38a483-10a9-44be-97a8-b5dc4fd0ceea` y el perfil de miembro que
-  `/api/auth/me` enlaza a todo candidato (`members.id=10`). Ese buzón no existe: el código de acceso se lee de
-  `clients.recovery_code`. Borrar las tres filas, por id, cuando Fernando diga que ya no hace falta. (Se creó primero
-  en Railway por error —el `.env` local apunta a la base de reserva— y se borró de allí.)
+- **Cuenta de candidato de prueba (2026-11-12): creada y BORRADA el mismo día** a pedido de Fernando. Lección: los
+  datos de producción viven en la base del M1 (por SSH, `~/Applications/Postgres.app/.../psql`, URL de `~/gcc/env/app`
+  sin `?schema=`); el `.env` local apunta a la de RESERVA en Railway. Un candidato arrastra 3 filas (`clients`, `users`
+  y el `members` que le enlaza `/api/auth/me`) y, si un admin lo suplantó, una fila en `suplantaciones`.
 - **Candidatos = solo presentación + «Postularme» (2026-11-11, Fernando: «debería estar solo el botón
   de postularme»):** sin recorrido en la página; los apartados se leen en la ventana; `/candidatos/:paso`
   redirige a `/candidatos`. Lo de abajo sobre `RecorridoPagina` vale hoy solo para Clientes.
