@@ -34,7 +34,7 @@ import { horaDeReanudacion, useEstadoRegistro } from '@/components/landing/estad
 import { AuthDialog, BotonAuth } from '@/components/landing/AuthSurface';
 import { Fragment, useState } from 'react';
 import Modelo4P, { PasosCondiciologia, ReglasModelo4P } from '@/components/landing/Modelo4P';
-import { HERRAMIENTAS, HERRAMIENTAS_INTRO, MODELO_INTRO, trozosNegrita } from '@/lib/sitio/modeloGcc';
+import { HERRAMIENTAS, HERRAMIENTAS_INTRO, MODELO_PROYECTO, MODELO_4P_INTRO, trozosNegrita } from '@/lib/sitio/modeloGcc';
 import {
   AlertTriangle,
   Clock,
@@ -45,6 +45,7 @@ import {
   ChevronDown,
   ChevronRight,
   Gavel,
+  Grid3x3,
   Heart,
   Info,
   Layers3,
@@ -89,9 +90,14 @@ type Slide = {
 /* ------------------------------------------------------------------ */
 
 function SlideModelo() {
+  return <p style={pStyle}><Negritas texto={MODELO_PROYECTO} /></p>;
+}
+
+/** El Modelo 4P en su propio paso (Fernando, 2026-11-11): su entrada, la tabla y sus reglas. */
+function SlideModelo4P() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <p style={pStyle}><Negritas texto={MODELO_INTRO} /></p>
+      <p style={pStyle}><Negritas texto={MODELO_4P_INTRO} /></p>
 
       <Modelo4P />
 
@@ -671,6 +677,13 @@ export const SLIDES: Slide[] = [
     kicker: 'Slider 1',
     Icon: Layers3,
     Component: SlideModelo,
+  },
+  {
+    id: 'modelo-4p',
+    title: tituloDePaso('modelo-4p'),
+    kicker: 'Slider 1b',
+    Icon: Grid3x3,
+    Component: SlideModelo4P,
   },
   {
     id: 'herramientas',

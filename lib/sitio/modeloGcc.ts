@@ -12,8 +12,16 @@
 
 /* ── Paso 1 · Modelo de Grupo ─────────────────────────────────────────────── */
 
-export const MODELO_INTRO =
-  'Este es el **proyecto de desarrollo humano** del **Grupo Corazones Cruzados**. Estamos aquí para luchar por un sueño, que es transformar el mundo, y construir un futuro mejor. Lo que queremos impulsar es el reconocimiento y aprovechamiento de las condiciones de los sujetos, para lograr estrategias organizacionales que logren resolver nuestras problemáticas sociales. Para alcanzar un objetivo tan grande como éste, trabajaremos usando como base el **Modelo Organizacional 4P**: el cual consiste en descubrir el talento de cada sujeto para posicionarlo en determinado rol y función de cualquier proyecto. Dicho esto, el modelo se distribuye de la siguiente manera:';
+/** La presentación del proyecto (paso «Modelo de Grupo»). Desde 2026-11-11, separada del Modelo 4P. */
+export const MODELO_PROYECTO =
+  'Este es el **proyecto de desarrollo humano** del **Grupo Corazones Cruzados**. Estamos aquí para luchar por un sueño, que es transformar el mundo, y construir un futuro mejor. Lo que queremos impulsar es el reconocimiento y aprovechamiento de las condiciones de los sujetos, para lograr estrategias organizacionales que logren resolver nuestras problemáticas sociales.';
+
+/** La entrada del Modelo 4P (su propio paso desde 2026-11-11, Fernando). */
+export const MODELO_4P_INTRO =
+  'Para alcanzar un objetivo tan grande como éste, trabajaremos usando como base el **Modelo Organizacional 4P**: el cual consiste en descubrir el talento de cada sujeto para posicionarlo en determinado rol y función de cualquier proyecto. Dicho esto, el modelo se distribuye de la siguiente manera:';
+
+/** El texto completo, para `/llms.txt` y el agente de presupuestos. */
+export const MODELO_INTRO = `${MODELO_PROYECTO} ${MODELO_4P_INTRO}`;
 
 export const PISOS: { name: string; desc: string }[] = [
   {

@@ -5,6 +5,8 @@
  */
 export const PASOS_POSTULACION_IDS = [
   { id: 'modelo', titulo: 'Modelo de Grupo' },
+  // El Modelo 4P pasa a su propio paso (Fernando, 2026-11-11).
+  { id: 'modelo-4p', titulo: 'Modelo Organizacional 4P' },
   { id: 'herramientas', titulo: 'Herramientas' },
   { id: 'motivos', titulo: 'Motivos' },
   { id: 'onboarding', titulo: 'Onboarding' },

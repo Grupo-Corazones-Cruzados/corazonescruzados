@@ -2959,13 +2959,10 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+/* La conclusión se destaca por el número relleno y la negrita, SIN caja (2026-11-11, regla de /diseno
+   §4-septies: nada de fondo + borde alrededor de un texto). */
 .m4p-reglas > li.es-conclusion {
   margin-top: 4px;
-  padding: 12px 14px;
-  border-radius: 6px;
-  border: 1px solid var(--color-digi-border);
-  border-left: 3px solid var(--color-accent);
-  background: var(--color-digi-darker);
   font-weight: 600;
 }
 .m4p-reglas > li.es-conclusion .m4p-regla-num { background: var(--color-accent); color: #fff; }
