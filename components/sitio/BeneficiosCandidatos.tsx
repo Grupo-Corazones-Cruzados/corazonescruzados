@@ -1,8 +1,7 @@
 /**
  * LOS BENEFICIOS BAJO «POSTULARME» (Fernando, 2026-11-12). Una sola rejilla con todas las tarjetas
  * (icono, categoría, nombre, una línea); la categoría sale del grupo de `beneficiosCandidatos.ts`.
- * Los textos viven en `lib/sitio/beneficiosCandidatos.ts`. Sin cápsulas con relleno: «Próximamente» es
- * texto en color (regla de /diseno §4-septies).
+ * Los textos viven en `lib/sitio/beneficiosCandidatos.ts`. Sin «Próximamente» (Fernando, 2026-11-12).
  */
 
 import {
@@ -32,19 +31,15 @@ export default function BeneficiosCandidatos() {
       </header>
 
       {/* UNA SOLA LISTA (Fernando, 2026-11-12: «que sea una sola lista con todos los beneficios»): cada
-          tarjeta lleva arriba su categoría (y «Próximamente» si aún no está), en vez de bloques con título. */}
+          tarjeta lleva arriba su categoría, en vez de bloques con título. */}
       <ul className="beneficios-rejilla">
         {GRUPOS_BENEFICIOS.flatMap((g) =>
           g.beneficios.map((b) => {
             const Icono = ICONOS[b.icono] ?? Sparkles;
-            const proximo = g.proximamente || b.proximamente;
             return (
               <li key={`${g.id}-${b.titulo}`} className="beneficio">
                 <span className="beneficio-icono" aria-hidden><Icono /></span>
-                <p className="beneficio-categoria">
-                  {g.etiqueta}
-                  {proximo && <span className="beneficios-proximamente"> · Próximamente</span>}
-                </p>
+                <p className="beneficio-categoria">{g.etiqueta}</p>
                 <p className="beneficio-titulo">{b.titulo}</p>
                 <p className="beneficio-texto">{b.texto}</p>
               </li>

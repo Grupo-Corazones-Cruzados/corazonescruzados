@@ -9,18 +9,19 @@
  * es esperar a ser aceptado. Fernando los corrige y se trasladan literales.
  *
  * `icono` es el nombre de un icono de lucide; lo resuelve `BeneficiosCandidatos`. Desde 2026-11-12 la página
- * pinta UNA sola lista: del grupo solo se usa `etiqueta` (la categoría de cada tarjeta) y `proximamente`;
- * `titulo` y `texto` del grupo ya no se ven.
+ * pinta UNA sola lista: del grupo solo se usa `etiqueta` (la categoría de cada tarjeta);
+ * `titulo` y `texto` del grupo ya no se ven. Sin «Próximamente» (Fernando, 2026-11-12: no se da acceso aún;
+ * todo se tendrá listo antes de publicar).
  */
 
-export interface Beneficio { titulo: string; texto: string; icono: string; proximamente?: boolean }
-export interface GrupoBeneficios { id: string; etiqueta: string; titulo: string; texto: string; beneficios: Beneficio[]; proximamente?: boolean }
+export interface Beneficio { titulo: string; texto: string; icono: string }
+export interface GrupoBeneficios { id: string; etiqueta: string; titulo: string; texto: string; beneficios: Beneficio[] }
 
 export const BENEFICIOS_INTRO = {
   etiqueta: 'Beneficios',
   titulo: 'Beneficios de los candidatos',
   texto:
-    'Los candidatos que son aceptados en el proyecto del Grupo Corazones Cruzados, reciben acceso a los módulos de la plataforma "Progreso", al videojuego "GCC World" y a las herramientas públicas, con el fin de impulsar su "Desarrollo Humano" mientras demuestran los valores de la organización. Algunos de estos beneficios se encuentran en desarrollo, y se indican como "Próximamente". A continuación te presento los beneficios que tendrás como candidato:',
+    'Los candidatos que son aceptados en el proyecto del Grupo Corazones Cruzados, reciben acceso a los módulos de la plataforma "Progreso", al videojuego "GCC World" y a las herramientas públicas, con el fin de impulsar su "Desarrollo Humano" mientras demuestran los valores de la organización. A continuación te presento los beneficios que tendrás como candidato:',
 };
 
 export const GRUPOS_BENEFICIOS: GrupoBeneficios[] = [
@@ -45,7 +46,6 @@ export const GRUPOS_BENEFICIOS: GrupoBeneficios[] = [
     etiqueta: 'Videojuego',
     titulo: 'Videojuego GCC World',
     texto: '"GCC World" es un videojuego que se encuentra en desarrollo, y que va a permitir a los candidatos y miembros participar en el proyecto mediante retos, misiones y eventos. Esto es lo que se tiene pensado ofrecer:',
-    proximamente: true,
     beneficios: [
       { icono: 'Swords', titulo: 'Misiones cooperativas', texto: 'Cumplir un rol en el progreso de misiones, enfrentar pruebas de estrategia, puzzles y decisiones difíciles junto a otros candidatos y miembros.' },
       { icono: 'Coins', titulo: 'GCC Coins', texto: 'Participar para obtener GCC Coins, y ganar acceso a servicios y productos gratuitos.' },
@@ -82,7 +82,6 @@ export const GRUPOS_BENEFICIOS: GrupoBeneficios[] = [
     etiqueta: 'Acompañamiento',
     titulo: 'Acompañamiento y seguridad',
     texto: 'Son los sistemas que el Grupo Corazones Cruzados va a abrir a sus candidatos para acompañar su desarrollo humano y proteger su integridad.',
-    proximamente: true,
     beneficios: [
       { icono: 'ShieldCheck', titulo: 'Control Psicosocial', texto: 'Un botón de auxilio, puntos de reunión y el recorrido compartido con consentimiento, para la seguridad física de cada candidato.' },
       { icono: 'UserCheck', titulo: 'Mentoría', texto: 'Un miembro con el mismo talento que acompaña al candidato en su proceso dentro del proyecto.' },
@@ -93,7 +92,6 @@ export const GRUPOS_BENEFICIOS: GrupoBeneficios[] = [
     etiqueta: 'Emprendimiento',
     titulo: 'Recursos para emprender',
     texto: 'Las soluciones que el Grupo Corazones Cruzados ofrece a sus clientes, también van a estar disponibles para que los candidatos las contraten, y organicen y automaticen sus propios negocios.',
-    proximamente: true,
     beneficios: [
       { icono: 'Store', titulo: 'Productos del grupo', texto: 'Gestión de Reservas, Pedidos, Catering y Planificación de Clases, que cada candidato puede contratar para su negocio o su trabajo.' },
       { icono: 'Workflow', titulo: 'Automatizaciones', texto: 'Los flujos de trabajo y el agente de inteligencia artificial para WhatsApp, que cada candidato puede contratar para automatizar sus procesos.' },
@@ -105,7 +103,6 @@ export const GRUPOS_BENEFICIOS: GrupoBeneficios[] = [
     etiqueta: 'Aprendizaje',
     titulo: 'Orientación y aprendizaje',
     texto: 'Nosotros queremos que cada conocimiento que tiene una persona pueda ser aprendido por otras, demostrado, y luego ofrecido en un mercado.',
-    proximamente: true,
     beneficios: [
       { icono: 'Compass', titulo: 'Orientación vocacional', texto: 'Un informe que según los talentos demostrados, el horario de vida y la prospección, indica en qué piso y paso del Modelo 4P encaja cada candidato.' },
       { icono: 'GraduationCap', titulo: 'Sistema de aprendizaje', texto: 'Quien domina un conocimiento crea un curso, otros lo aprenden y lo demuestran con prácticas, y luego lo ofrecen como servicio en el Marketplace.' },
@@ -123,7 +120,7 @@ export const GRUPOS_BENEFICIOS: GrupoBeneficios[] = [
       { icono: 'Clapperboard', titulo: 'Generación de contenido', texto: 'Integras las cuentas de tu negocio para automatizar la generación y la publicación de tu contenido.' },
       { icono: 'Wallet', titulo: 'Ingresos, gastos y oportunidades', texto: 'Gestionas tus ingresos y tus gastos, y recibes oportunidades de trabajo en tickets y proyectos.' },
       { icono: 'Calculator', titulo: 'Cotizaciones con tu historial', texto: 'Los clientes cotizan desde la página de Soluciones con base en los registros históricos de tu trabajo.' },
-      { icono: 'MessagesSquare', titulo: 'Consultas y cotizaciones en tu hoja de vida', texto: 'Desde el enlace de tu hoja de vida, los clientes consultan sobre tu perfil y te cotizan directamente; las cotizaciones o tickets que crean los aceptas desde tu perfil.', proximamente: true },
+      { icono: 'MessagesSquare', titulo: 'Consultas y cotizaciones en tu hoja de vida', texto: 'Desde el enlace de tu hoja de vida, los clientes consultan sobre tu perfil y te cotizan directamente; las cotizaciones o tickets que crean los aceptas desde tu perfil.' },
     ],
   },
 ];

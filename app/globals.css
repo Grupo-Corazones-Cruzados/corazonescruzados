@@ -4681,7 +4681,7 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .postulacion-enviar svg { width: 17px; height: 17px; }
 .presentacion-accion { margin-top: 22px; }
 /* LOS BENEFICIOS DE SER CANDIDATO (2026-11-12), bajo «Postularme». Rótulo + título + texto, y por
-   grupo una rejilla de tarjetas blancas con su icono. «Próximamente» es texto en color, sin cápsula. */
+   grupo una rejilla de tarjetas blancas con su icono. Sin «Próximamente» (2026-11-12). */
 .beneficios { margin-top: 72px; display: grid; gap: 56px; }
 .beneficios-cabecera { max-width: 760px; }
 .beneficios-etiqueta { margin: 0 0 12px; font: 700 0.75rem/1 'Inter', system-ui, sans-serif; letter-spacing: 0.22em; text-transform: uppercase; color: var(--violeta-txt); }
@@ -4692,7 +4692,6 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .beneficios-grupo-icono { flex-shrink: 0; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; color: #fff; background: linear-gradient(135deg, #7c3aed, #c026d3); box-shadow: 0 10px 22px -12px rgba(124, 58, 237, 0.8); }
 .beneficios-grupo-icono svg { width: 22px; height: 22px; }
 .beneficios-grupo-num { margin: 0 0 4px; font: 600 0.72rem/1.2 'Inter', system-ui, sans-serif; letter-spacing: 0.14em; text-transform: uppercase; color: var(--violeta-txt); }
-.beneficios-proximamente { color: #b45309; }
 .beneficios-grupo-titulo { margin: 0; font: 700 1.35rem/1.25 'Space Grotesk', 'Inter', system-ui, sans-serif; color: var(--texto); }
 .beneficios-grupo-texto { margin: 6px 0 0; font-size: 0.97rem; line-height: 1.6; color: var(--suave); }
 .beneficios-rejilla { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
