@@ -119,19 +119,31 @@ function SlideModelo4P() {
 
 // Textos de Fernando (2026-10-29), literales, en `lib/sitio/modeloGcc.ts`: los comparten las
 // página Candidatos. La Metodología lleva su recorrido tras el primer párrafo.
+// Las animaciones de Blender de cada herramienta (2026-11-12): escenas en `scripts/animaciones/<id>.py`.
+const ANIMACION_HERRAMIENTA: Record<string, { id: string; alt: string }> = {
+  'Metodología Condiciológica': { id: 'herramienta-metodologia', alt: 'Seis pasos en ciclo, recorridos por un pulso de luz' },
+  'Sistema de Control Psicosocial': { id: 'herramienta-control', alt: 'Una ciudad bajo una cúpula que recoge las señales de sus casas' },
+  'Proyecto Centralizado': { id: 'herramienta-centralizado', alt: 'Las áreas de un negocio unidas a un centro por el que va y viene el trabajo' },
+  Violeta: { id: 'herramienta-violeta', alt: 'El logo del grupo envuelto en aros de luz violeta' },
+};
+
 const TOOLS: AccordionItem[] = HERRAMIENTAS.map((h) => ({
   name: h.nombre,
   summary: h.resumen,
-  body: () => (
-    <>
-      {h.parrafos.map((texto, i) => (
-        <Fragment key={i}>
-          <p style={pStyle}><Negritas texto={texto} /></p>
-          {h.conPasos && i === 0 && <PasosCondiciologia />}
-        </Fragment>
-      ))}
-    </>
-  ),
+  body: () => {
+    const anim = ANIMACION_HERRAMIENTA[h.nombre];
+    return (
+      <>
+        {h.parrafos.map((texto, i) => (
+          <Fragment key={i}>
+            <p style={pStyle}><Negritas texto={texto} /></p>
+            {h.conPasos && i === 0 && <PasosCondiciologia />}
+          </Fragment>
+        ))}
+        {anim && <AnimacionPaso src={`/animaciones/${anim.id}.webp`} alt={anim.alt} />}
+      </>
+    );
+  },
 }));
 
 /** Los `**dobles asteriscos**` de los textos compartidos, en la negrita del formulario. */
@@ -201,6 +213,7 @@ const MOTIVOS: AccordionItem[] = [
           resolver las problemáticas sociales paso a paso hasta limpiar nuestras calles y el mundo,
           de aquello que está mal.
         </p>
+        <AnimacionPaso src="/animaciones/motivos-2.webp" alt="Una luz sube una escalera paso a paso y limpia los problemas hasta llegar al logo" />
       </>
     ),
   },
@@ -237,6 +250,7 @@ const MOTIVOS: AccordionItem[] = [
           habitar su corazón mediante su ejemplo y sacrificio; entonces ése es un líder nato; caso
           contrario, simplemente no lo es.
         </p>
+        <AnimacionPaso src="/animaciones/motivos-3.webp" alt="El logo en el centro y anillos de personas que giran unidas a él" />
       </>
     ),
   },
@@ -310,6 +324,7 @@ const REGLAS: AccordionItem[] = [
             </div>
           ))}
         </div>
+        <AnimacionPaso src="/animaciones/regla-1.webp" alt="Nueve valores alrededor del logo que se encienden uno a uno" />
       </>
     ),
   },
@@ -340,6 +355,7 @@ const REGLAS: AccordionItem[] = [
           se analizan y corrigen durante la etapa de corrección en donde todos sin excepción tienen la
           obligación de votar y participar.
         </p>
+        <AnimacionPaso src="/animaciones/regla-2.webp" alt="Desde el logo bajan los comandos a los miembros y sube la corrección" />
       </>
     ),
   },
@@ -366,6 +382,7 @@ const REGLAS: AccordionItem[] = [
           hay excusa para mentir o abusar de los recursos. Les pedimos mantener siempre las buenas
           intenciones, y las opciones de crecimiento llegarán.
         </p>
+        <AnimacionPaso src="/animaciones/regla-3.webp" alt="Un árbol por el que sube la energía hasta abrir sus brotes" />
       </>
     ),
   },

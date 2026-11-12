@@ -45,8 +45,11 @@ const chicos = join(tmp, 'chicos');
 spawnSync('mkdir', ['-p', chicos]);
 const f = spawnSync('ffmpeg', ['-y', '-v', 'error', '-start_number', '1', '-i', join(tmp, 'f_%04d.png'), '-vf', 'scale=640:-1:flags=lanczos', join(chicos, 'c_%04d.png')], { encoding: 'utf8' });
 if (f.status !== 0) { console.error(f.stderr); process.exit(1); }
-const cuadros = readdirSync(chicos).filter((x) => x.endsWith('.png')).sort().map((x) => join(chicos, x));
-const w = spawnSync('img2webp', ['-loop', '0', '-min_size', '-lossy', '-q', '66', '-d', String(Math.round(1000 / fps)), ...cuadros, '-o', salida], { encoding: 'utf8', maxBuffer: 1 << 26 });
+// `--salto 2` se queda con uno de cada dos cuadros (15 fps): en las escenas donde se mueve todo el cuadro
+// el WebP pesa la mitad y un giro lento no lo nota. El bucle sigue empalmando (240 es par).
+const salto = Number(op('salto', 1));
+const cuadros = readdirSync(chicos).filter((x) => x.endsWith('.png')).sort().filter((_, i) => i % salto === 0).map((x) => join(chicos, x));
+const w = spawnSync('img2webp', ['-loop', '0', '-min_size', '-lossy', '-q', op('calidad', '66'), '-d', String(Math.round((1000 * salto) / fps)), ...cuadros, '-o', salida], { encoding: 'utf8', maxBuffer: 1 << 26 });
 if (w.status !== 0) { console.error(w.stderr); process.exit(1); }
 rmSync(tmp, { recursive: true, force: true });
 console.log(JSON.stringify({ salida, kb: Math.round(statSync(salida).size / 1024), segundos: Math.round((Date.now() - inicio) / 1000) }));
