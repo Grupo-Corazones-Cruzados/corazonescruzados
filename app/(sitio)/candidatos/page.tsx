@@ -1,14 +1,11 @@
 /**
- * CANDIDATOS — `/candidatos` y `/candidatos/<apartado>` (Fernando, 2026-11-01).
- *
- * Arriba, la presentación (titular con el cruce del corazón y su texto); debajo,
- * los apartados del formulario de postulación en su orden, uno por pestaña (`TemasCandidatos`), para
- * revisar todo el contenido desde aquí. Hasta que Fernando lo dé por bueno no se indexa.
+ * CANDIDATOS — `/candidatos` (Fernando, 2026-11-01; desde 2026-11-11 solo la presentación y el botón
+ * «Postularme», que abre la ventana con los apartados y el formulario). Hasta que Fernando la dé por
+ * buena no se indexa.
  */
 
 import type { Metadata } from 'next';
 import PaginaCandidatos from '@/components/sitio/PaginaCandidatos';
-import { PASOS_POSTULACION_IDS } from '@/lib/sitio/pasosPostulacion';
 
 export const metadata: Metadata = {
   title: 'Candidatos',
@@ -17,5 +14,5 @@ export const metadata: Metadata = {
 };
 
 export default function CandidatosPage() {
-  return <PaginaCandidatos paso={PASOS_POSTULACION_IDS[0].id} />;
+  return <PaginaCandidatos />;
 }
