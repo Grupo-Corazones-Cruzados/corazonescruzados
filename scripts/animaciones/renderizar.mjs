@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Renderiza una animación de Blender del formulario de postulación a `public/animaciones/<id>.webp`
- * (WebP animado con transparencia, se reproduce una vez y se queda en el último cuadro).
+ * (WebP animado con transparencia y EN BUCLE: la escena debe empalmar su último cuadro con el primero).
  *   node scripts/animaciones/renderizar.mjs <id> [--solo 2.5] [--duracion 6]
  * Usa las piezas de marca de la skill `editar-video` (`blender/gcc.py`, `blender/ejecutar.py`).
  * Con --solo deja un cuadro de muestra en /tmp para revisarlo antes de renderizar todo.
@@ -19,7 +19,7 @@ const a = process.argv.slice(2);
 const id = a[0];
 const op = (n, d) => { const i = a.indexOf(`--${n}`); return i >= 0 ? a[i + 1] : d; };
 const solo = op('solo');
-const duracion = Number(op('duracion', 6));
+const duracion = Number(op('duracion', 8));
 const [ancho, alto, fps] = [960, 540, 30];
 
 const tmp = op('cuadros') ?? mkdtempSync(join(tmpdir(), `anim-${id}-`));
@@ -43,10 +43,10 @@ spawnSync('mkdir', ['-p', dirname(salida)]);
 // El ffmpeg de Homebrew no trae libwebp: se escalan los cuadros con ffmpeg y los junta `img2webp`.
 const chicos = join(tmp, 'chicos');
 spawnSync('mkdir', ['-p', chicos]);
-const f = spawnSync('ffmpeg', ['-y', '-v', 'error', '-start_number', '1', '-i', join(tmp, 'f_%04d.png'), '-vf', 'scale=720:-1:flags=lanczos', join(chicos, 'c_%04d.png')], { encoding: 'utf8' });
+const f = spawnSync('ffmpeg', ['-y', '-v', 'error', '-start_number', '1', '-i', join(tmp, 'f_%04d.png'), '-vf', 'scale=640:-1:flags=lanczos', join(chicos, 'c_%04d.png')], { encoding: 'utf8' });
 if (f.status !== 0) { console.error(f.stderr); process.exit(1); }
 const cuadros = readdirSync(chicos).filter((x) => x.endsWith('.png')).sort().map((x) => join(chicos, x));
-const w = spawnSync('img2webp', ['-loop', '1', '-min_size', '-lossy', '-q', '72', '-d', String(Math.round(1000 / fps)), ...cuadros, '-o', salida], { encoding: 'utf8', maxBuffer: 1 << 26 });
+const w = spawnSync('img2webp', ['-loop', '0', '-min_size', '-lossy', '-q', '66', '-d', String(Math.round(1000 / fps)), ...cuadros, '-o', salida], { encoding: 'utf8', maxBuffer: 1 << 26 });
 if (w.status !== 0) { console.error(w.stderr); process.exit(1); }
 rmSync(tmp, { recursive: true, force: true });
 console.log(JSON.stringify({ salida, kb: Math.round(statSync(salida).size / 1024), segundos: Math.round((Date.now() - inicio) / 1000) }));

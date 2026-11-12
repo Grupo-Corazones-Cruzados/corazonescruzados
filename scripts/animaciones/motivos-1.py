@@ -3,6 +3,10 @@
 Lo que cuenta el texto, en orden: sociedades separadas (puntos sueltos sobre el mundo) → un corazón (el logo
 de la casa, los dos corazones cruzados) cruza el mundo dejando su estela → la alianza que ya existe (todos
 los puntos quedan unidos). Fondo transparente; se pinta sobre la tarjeta oscura del formulario.
+
+EN BUCLE (Fernando, 2026-11-12): el logo recorre un circuito cerrado entre los puntos y su estela se recoge
+detrás de él; la red del mundo gira justo un hueco de su malla. El último cuadro empalma con el primero.
+Todo va levantado sobre la superficie para que el logo no se entierre en la esfera (se veía cortado).
 Se renderiza con `node scripts/animaciones/renderizar.mjs motivos-1`.
 """
 import math
@@ -80,104 +84,106 @@ def material_logo():
     return m
 
 
+DURACION = 8.0
+SEGMENTOS = 28                     # meridianos de la red: girar 360/28 grados deja la malla igual
+LEVANTE = 0.24                     # el circuito va por encima de la superficie
+
+
 def en_esfera(lat, lon, r=R):
     la, lo = math.radians(lat), math.radians(lon)
     return Vector((r * math.cos(la) * math.sin(lo), -r * math.cos(la) * math.cos(lo), r * math.sin(la)))
 
 
-def arco(a, b, alto, mat, grosor=0.012, puntos=48):
-    """Un arco sobre la esfera de `a` a `b`, levantado `alto` en el medio, como curva con grosor."""
-    d = bpy.data.curves.new("Arco", "CURVE")
+def tramo(a, b, alto, puntos=40):
+    """Puntos de un arco sobre la esfera de `a` a `b`, a `LEVANTE` de la superficie y `alto` más en el medio."""
+    va, vb = a.normalized(), b.normalized()
+    angulo = va.angle(vb)
+    salida = []
+    for i in range(puntos):
+        f = i / (puntos - 1)
+        v = (va * math.sin((1 - f) * angulo) + vb * math.sin(f * angulo)) / math.sin(angulo)
+        salida.append(v.normalized() * (R + LEVANTE + alto * math.sin(math.pi * f)))
+    return salida
+
+
+def curva(puntos, mat, grosor):
+    d = bpy.data.curves.new("Curva", "CURVE")
     d.dimensions = "3D"
     d.bevel_depth = grosor
     d.bevel_resolution = 3
     d.use_fill_caps = True
     s = d.splines.new("POLY")
-    s.points.add(puntos - 1)
-    va, vb = a.normalized(), b.normalized()
-    angulo = va.angle(vb)
-    for i in range(puntos):
-        f = i / (puntos - 1)
-        v = (va * math.sin((1 - f) * angulo) + vb * math.sin(f * angulo)) / math.sin(angulo)
-        p = v.normalized() * (R + alto * math.sin(math.pi * f))
+    s.points.add(len(puntos) - 1)
+    for i, p in enumerate(puntos):
         s.points[i].co = (*p, 1)
     d.materials.append(mat)
-    o = bpy.data.objects.new("Arco", d)
+    o = bpy.data.objects.new("Curva", d)
     bpy.context.collection.objects.link(o)
     return o
 
 
-def crecer(curva, t0, t1):
-    curva.data.bevel_factor_end = 0
-    curva.data.keyframe_insert("bevel_factor_end", frame=gcc.seg(t0))
-    curva.data.bevel_factor_end = 1
-    curva.data.keyframe_insert("bevel_factor_end", frame=gcc.seg(t1))
+def lineal(obj_o_dato):
+    ad = obj_o_dato.animation_data
+    for c in gcc.iter_curvas(ad) if ad else []:
+        for k in c.keyframe_points:
+            k.interpolation = "LINEAR"
 
 
 def construir(escena):
-    camara = gcc.camara(pos=(0, -11.5, 0.6), mira=(0, 0, 0.2), lente=50)
+    fin = gcc.seg(DURACION)
+    escena.frame_end = fin - 1          # el cuadro `fin` sería igual al primero: se deja fuera
+    camara = gcc.camara(pos=(0, -11.5, 0.6), mira=(0, 0, 0.15), lente=50)
 
-    raiz = bpy.data.objects.new("Mundo", None)
-    bpy.context.collection.objects.link(raiz)
-
-    # El mundo: un núcleo oscuro y su red de paralelos y meridianos.
-    nucleo = gcc.esfera(radio=R * 0.985, mat=emisivo("Nucleo", (0.018, 0.010, 0.050), 1.0))
-    bpy.ops.mesh.primitive_uv_sphere_add(radius=R, segments=28, ring_count=14)
+    # El mundo: núcleo oscuro y su red, que gira un hueco de malla por vuelta.
+    gcc.esfera(radio=R * 0.985, mat=emisivo("Nucleo", (0.018, 0.010, 0.050), 1.0))
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=R, segments=SEGMENTOS, ring_count=14)
     red = gcc.asignar(bpy.context.active_object, emisivo("Red", gcc.VIOLETA, 0.9, alfa=0.45))
-    bpy.ops.object.select_all(action="DESELECT")
-    w = red.modifiers.new("red", "WIREFRAME")
-    w.thickness = 0.008
-    for o in (nucleo, red):
-        o.parent = raiz
+    red.modifiers.new("red", "WIREFRAME").thickness = 0.008
+    red.rotation_euler = (0, 0, 0)
+    red.keyframe_insert("rotation_euler", frame=1)
+    red.rotation_euler = (0, 0, math.radians(360 / SEGMENTOS))
+    red.keyframe_insert("rotation_euler", frame=fin)
+    lineal(red)
 
-    # Las sociedades separadas: puntos sueltos que aparecen uno a uno.
+    # Las sociedades: puntos sobre la cara que mira a la cámara.
     luz = emisivo("Punto", gcc.LILA, 1.0)
-    lugares = [(28, -62), (-8, -38), (40, -8), (-30, 6), (14, 30), (-4, 64), (34, 52)]
-    puntos = []
-    for i, (la, lo) in enumerate(lugares):
-        p = gcc.esfera(pos=en_esfera(la, lo, R + 0.02), radio=0.055, mat=luz)
-        p.parent = raiz
-        gcc.entrar(p, t=0.55 + i * 0.12, dur=0.4)
-        puntos.append(en_esfera(la, lo))
+    lugares = [(30, -48), (-12, -34), (36, 2), (-30, 4), (10, 30), (-8, 50), (32, 44)]
+    sitios = [en_esfera(la, lo) for la, lo in lugares]
+    for p in sitios:
+        gcc.esfera(pos=p.normalized() * (R + 0.02), radio=0.055, mat=luz)
+        # Un hilo une cada punto con el circuito que pasa por encima.
+        curva([p.normalized() * (R + 0.02), p.normalized() * (R + LEVANTE)], emisivo("Hilo", gcc.VIOLETA, 0.8), 0.006)
 
-    # El corazón cruza el mundo: el logo recorre el arco largo y deja su estela.
-    estela = emisivo("Estela", gcc.LILA, 0.95)
-    cruce = arco(puntos[0], puntos[4], 0.75, estela, grosor=0.016)
-    cruce.parent = raiz
-    cruce.data.path_duration = 100
-    crecer(cruce, 1.5, 3.3)
-    cruce.data.eval_time = 0
-    cruce.data.keyframe_insert("eval_time", frame=gcc.seg(1.5))
-    cruce.data.eval_time = 100
-    cruce.data.keyframe_insert("eval_time", frame=gcc.seg(3.3))
+    # La alianza: la red de uniones, fija y tenue.
+    union = emisivo("Union", gcc.VIOLETA, 0.9)
+    for a, b in [(0, 1), (1, 3), (3, 4), (4, 6), (6, 5), (2, 4), (1, 2), (2, 0), (5, 4)]:
+        curva(tramo(sitios[a], sitios[b], 0.12), union, 0.006)
 
-    bpy.ops.mesh.primitive_plane_add(size=0.8)
+    # El circuito del corazón, cerrado, recorrido DOS veces en la misma curva: el logo va por la segunda
+    # vuelta y la estela (un tramo que lo sigue) cabe siempre dentro de la curva, también al empalmar.
+    orden = [0, 2, 6, 5, 4, 3, 1, 0]
+    vuelta = []
+    for a, b in zip(orden, orden[1:]):
+        vuelta.extend(tramo(sitios[a], sitios[b], 0.32)[:-1])
+    doble = vuelta + vuelta + [vuelta[0]]
+    estela = curva(doble, emisivo("Estela", gcc.LILA, 0.95), 0.016)
+    largo_estela = 0.09                # de la curva doble (≈18 % de una vuelta)
+    d = estela.data
+    d.bevel_factor_mapping_start = d.bevel_factor_mapping_end = "SPLINE"
+    d.path_duration = 1000
+    for cuadro, f in ((1, 0.5), (fin, 1.0)):
+        d.bevel_factor_end = f
+        d.bevel_factor_start = f - largo_estela
+        d.eval_time = f * 1000
+        for prop in ("bevel_factor_end", "bevel_factor_start", "eval_time"):
+            d.keyframe_insert(prop, frame=cuadro)
+    lineal(d)
+
+    bpy.ops.mesh.primitive_plane_add(size=0.62)
     logo = bpy.context.active_object
     gcc.asignar(logo, material_logo())
     seguir = logo.constraints.new("FOLLOW_PATH")
-    seguir.target = cruce
-    seguir.use_fixed_location = False
+    seguir.target = estela
     mirar = logo.constraints.new("TRACK_TO")
     mirar.target = camara
     mirar.track_axis, mirar.up_axis = "TRACK_Z", "UP_Y"
-    gcc.entrar(logo, t=1.15, dur=0.45)
-
-    # La alianza que ya existe: los demás puntos quedan unidos.
-    union = emisivo("Union", gcc.VIOLETA, 1.2)
-    pares = [(0, 1), (1, 3), (3, 4), (4, 6), (6, 5), (2, 4), (1, 2), (2, 0)]
-    for k, (a, b) in enumerate(pares):
-        c = arco(puntos[a], puntos[b], 0.28, union, grosor=0.008)
-        c.parent = raiz
-        t = 3.2 + k * 0.16
-        crecer(c, t, t + 0.55)
-
-    # El mundo entra con rebote y gira despacio todo el tiempo.
-    gcc.entrar(raiz, t=0.0, dur=0.6, desde=0.6)
-    raiz.rotation_euler = (0, 0, math.radians(-10))
-    raiz.keyframe_insert("rotation_euler", frame=gcc.seg(0))
-    raiz.rotation_euler = (0, 0, math.radians(14))
-    raiz.keyframe_insert("rotation_euler", frame=gcc.seg(6))
-    for curva in gcc.iter_curvas(raiz.animation_data):
-        if curva.data_path == "rotation_euler":
-            for k in curva.keyframe_points:
-                k.interpolation = "LINEAR"

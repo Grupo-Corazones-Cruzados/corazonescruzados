@@ -11,10 +11,10 @@ const blobDe = (src: string) => {
 
 /**
  * UNA ANIMACIÓN HECHA EN BLENDER dentro de un paso del formulario (Fernando, 2026-11-12: «llenar esos
- * huecos»). Es un WebP animado con transparencia que se reproduce una vez y se queda en su último
- * cuadro. Arranca cuando le toca en el «cuento» del paso (el `animationstart` de su entrada) y vuelve a
- * empezar cada vez que se entra al paso: un navegador comparte la animación entre imágenes de la misma
- * URL, por eso cada vez se le da una URL propia del mismo blob, sin volver a descargarlo.
+ * huecos»). Es un WebP animado con transparencia EN BUCLE (la escena empalma su último cuadro con el
+ * primero). Arranca cuando le toca en el «cuento» del paso (el `animationstart` de su entrada) y empieza
+ * desde el principio cada vez que se entra al paso: un navegador comparte la animación entre imágenes de
+ * la misma URL, por eso cada vez se le da una URL propia del mismo blob, sin volver a descargarlo.
  * Las escenas viven en `scripts/animaciones/<id>.py` y se renderizan con `renderizar.mjs`.
  */
 export default function AnimacionPaso({ src, alt }: { src: string; alt: string }) {
