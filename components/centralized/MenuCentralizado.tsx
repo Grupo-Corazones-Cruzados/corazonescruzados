@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, LayoutDashboard, Network } from 'lucide-react';
+import { LayoutDashboard, Network } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useMenuMovil } from '@/components/dashboard/MenuMovil';
 import type { SistemaMapa } from '@/components/centralized/Mapa4P';
@@ -96,21 +96,19 @@ export default function MenuCentralizado() {
   );
 }
 
-const LLAVE_CERRADOS = 'gcc_menu_centralizado_cerrados';
 const LLAVE_PASO = 'gcc_menu_centralizado_paso';
 
 /**
  * EL MENÚ 2 EN VERTICAL (Fernando, 2026-11-11: «que el menú sea más vertical, ya no tipo tabla o
  * modelo 4P»). Antes era la tabla piso × paso. Ahora: «Resumen» (el dashboard) y debajo cada PISO
- * como una sección que se abre y se cierra, con sus sistemas uno debajo de otro —su icono, su nombre
- * y el paso en pequeño—, ordenados por paso. El del sistema abierto se marca y su piso se abre solo.
- * Lo que se cierra se recuerda en el navegador.
+ * con sus sistemas uno debajo de otro —su icono, su nombre y el paso en pequeño—, ordenados por paso.
+ * El del sistema abierto se marca. ⇒ LOS PISOS SIEMPRE ABIERTOS (Fernando, 2026-11-12: «deja
+ * expandido los pisos»): eran plegables y quedaban cerrados de una visita a otra; ahora el piso es un
+ * rótulo y no se pliega.
  */
 function ListaVertical({ sistemas, pathname }: { sistemas: SistemaMapa[] | null; pathname: string }) {
-  const [cerrados, setCerrados] = useState<string[]>([]);
-  useEffect(() => {
-    try { const c = localStorage.getItem(LLAVE_CERRADOS); if (c) setCerrados(JSON.parse(c)); } catch { /* sin almacenamiento */ }
-  }, []);
+  // Lo que guardaba los pisos cerrados ya no se usa: se borra para no dejar restos.
+  useEffect(() => { try { localStorage.removeItem('gcc_menu_centralizado_cerrados'); } catch { /* sin almacenamiento */ } }, []);
   // FILTRO POR PASO (Fernando, 2026-11-11): «Todos» o un paso del 4P; se recuerda en el navegador.
   const [filtro, setFiltro] = useState<string>('todos');
   useEffect(() => {
@@ -120,14 +118,8 @@ function ListaVertical({ sistemas, pathname }: { sistemas: SistemaMapa[] | null;
     setFiltro(k);
     try { localStorage.setItem(LLAVE_PASO, k); } catch { /* sin almacenamiento */ }
   };
-  const alternar = (piso: string) => setCerrados((c) => {
-    const nuevo = c.includes(piso) ? c.filter((x) => x !== piso) : [...c, piso];
-    try { localStorage.setItem(LLAVE_CERRADOS, JSON.stringify(nuevo)); } catch { /* sin almacenamiento */ }
-    return nuevo;
-  });
 
   const ordenPaso = (k: string) => PASOS.findIndex((p) => p.key === k);
-  const pisoAbierto = pathname.split('/')[3];
   const fila = (activo: boolean) =>
     `relative flex items-center gap-2.5 rounded-md px-2.5 w-full text-left transition-colors ${activo ? 'bg-accent-light text-accent' : 'text-digi-muted hover:text-digi-text hover:bg-white/[0.06]'}`;
 
@@ -168,17 +160,14 @@ function ListaVertical({ sistemas, pathname }: { sistemas: SistemaMapa[] | null;
         const delPiso = sistemas.filter((s) => s.piso === p.key && (filtro === 'todos' || s.paso === filtro)).sort((a, b) => ordenPaso(a.paso) - ordenPaso(b.paso) || a.name.localeCompare(b.name));
         if (!delPiso.length) return null;
         const IconoPiso = ICONO_PISO[p.key];
-        const abierto = !cerrados.includes(p.key) || p.key === pisoAbierto;
         return (
           <div key={p.key} className="pt-1">
-            <button type="button" onClick={() => alternar(p.key)} aria-expanded={abierto}
-              className="w-full h-8 flex items-center gap-2 px-2.5 rounded-md text-[11px] font-semibold uppercase tracking-wide text-digi-muted/80 hover:text-digi-text transition-colors">
+            <p className="h-8 flex items-center gap-2 px-2.5 text-[11px] font-semibold uppercase tracking-wide text-digi-muted/80">
               <IconoPiso className="w-3.5 h-3.5 shrink-0" strokeWidth={2} />
               <span className="truncate">{p.label}</span>
               <span className="ml-auto tabular-nums font-medium normal-case">{delPiso.length}</span>
-              <ChevronDown className={`w-3.5 h-3.5 shrink-0 transition-transform duration-200 ${abierto ? '' : '-rotate-90'}`} />
-            </button>
-            {abierto && (
+            </p>
+            {(
               <div className="mt-0.5 space-y-0.5">
                 {delPiso.map((s) => {
                   const ruta = systemPath(s);
