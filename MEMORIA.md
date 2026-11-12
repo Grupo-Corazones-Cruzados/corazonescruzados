@@ -8622,6 +8622,13 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
   arreglar lo primero salió lo segundo. **Un rechazo del SRI puede estar tapando otro**: tras
   corregir uno, no dar por hecho que ya pasa.
 
+## Beneficios de pertenecer y la hoja de vida que cotiza (2026-11-12)
+
+- **Candidatos ▸ Beneficios** (`lib/sitio/beneficiosCandidatos.ts`): orden Progreso → Videojuego → Herramientas públicas → **Miembros**. El bloque Miembros ofrece: Apoyo y Autoayuda (tareas para mejorar su situación), generación de contenido con sus cuentas de negocio integradas, gestión de ingresos/gastos y oportunidades, y cotizaciones de clientes con su historial desde Soluciones. Textos de partida: los corrige Fernando.
+- **Planeado:** en el enlace del CV, consultas de clientes sobre el perfil y cotizaciones directas sobre la cuenta del miembro (filas de cotización o tickets que el miembro acepta desde su perfil). Sale como «Próximamente».
+- **Pendiente de decisión:** en `/pagar` de un ticket, panel para elegir qué etapas pendientes pagar. Propuesta: elegir etapas (con sus registros a la vista o no), una factura con una línea por etapa, el pago apunta a varias etapas manteniendo el candado por etapa; tickets sin plan siguen con «todo lo pendiente»; enlaces de una etapa sin panel.
+- **Cómo hablarle a Fernando en lo delicado:** cómo funciona hoy + lo que propongo + lo que necesito que decidas (numerado, con opción por defecto). Él lo aprobó: «ahora sí te estás expresando como yo».
+
 ## Pendientes / preguntas abiertas
 - **🔑 2026-10-29 — El agente de Peter Tours respondía en la bandeja pero NADA llegaba al WhatsApp
   del cliente (Automatizaciones, canal 11).** Las respuestas salían marcadas «no salió» con

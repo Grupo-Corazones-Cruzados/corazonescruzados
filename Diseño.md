@@ -1990,6 +1990,12 @@ teléfono, y salió con la piel pixel antigua (Silkscreen, borde violeta, campo 
 - **Botón cerrar (X) junto a acciones:** ambos como botones **32×32** (`w-8 h-8 flex items-center
   justify-center rounded-md`) en un contenedor `flex items-center` para que queden a la misma altura.
 
+### Beneficios del sitio: «Próximamente» también por tarjeta (2026-11-12)
+
+En `BeneficiosCandidatos`, un grupo entero puede ser «Próximamente» (videojuego) y ahora también **una sola
+tarjeta** (`proximamente` en el beneficio): va como texto en color tras el título («· Próximamente»), sin
+cápsula ni relleno, igual que el del grupo.
+
 ### Cuadro de texto largo en un panel: hasta abajo y sin estirar (Fernando, 2026-11-11) — REGLA
 
 Un `<textarea>` que es lo último de un panel de alto fijo (p. ej. «Observaciones» del registro de trabajo
