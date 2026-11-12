@@ -101,7 +101,7 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
   const etapas = proyecto.etapas || [];
   const totalPlan = etapas.reduce((s: number, e: any) => s + Number(e.importe || 0), 0);
   const elegir = base.current?.elegir || null;
-  // Con elección, el panel «Cómo quieres pagar» sustituye a la lista del plan.
+  // Con elección, el panel «Modalidad de pago» sustituye a la lista del plan.
   const hayPlan = etapas.length > 0 && !elegir;
   const hayDetalle = (datos.detalle || []).length > 0;
 
@@ -207,7 +207,7 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
               2026-08-26). Nunca costos internos ni reparto del trabajo. */}
           {!hayPlan && hayDetalle && (
             <div className="mt-6 border-t border-[var(--linea)] pt-5">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--violeta-txt)]">Qué estás pagando</p>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--violeta-txt)]">Detalle</p>
               <dl className="mt-2 divide-y divide-[var(--linea)]">
                 {(datos.detalle || []).map((d: any) => (
                   <div key={d.etiqueta} className="flex items-start justify-between gap-4 py-3">

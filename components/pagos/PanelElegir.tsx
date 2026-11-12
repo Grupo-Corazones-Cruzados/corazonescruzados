@@ -6,7 +6,7 @@ import { fmt2 } from '@/lib/format';
 type Modo = 'completo' | 'etapas' | 'requerimientos';
 
 /**
- * «CÓMO QUIERES PAGAR» (Fernando, 2026-11-12). En el enlace de pago de un ticket, el cliente elige el
+ * «MODALIDAD DE PAGO» (Fernando, 2026-11-12; el rótulo «Cómo quieres pagar» lo rechazó por sonar a IA). En el enlace de pago de un ticket, el cliente elige el
  * formato: el pago completo de lo pendiente, unas ETAPAS o unos REQUERIMIENTOS (los registros de trabajo).
  * Lo pagado se reparte después sobre los requerimientos de más antiguo a más nuevo; uno a medias dice
  * cuánto lleva («Pagado $100 de $200»). Mismo lenguaje que el resto de la pantalla de pago: rótulo violeta
@@ -51,7 +51,7 @@ export default function PanelElegir({ elegir, modo, marcadas, onModo, onAlternar
   return (
     <div className="mt-6 border-t border-[var(--linea)] pt-5">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--violeta-txt)]">Cómo quieres pagar</p>
+        <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--violeta-txt)]">Modalidad de pago</p>
         <p className="text-[13px] text-[var(--tenue)]">Pendiente: <span className="font-semibold tabular-nums text-[var(--texto)]">${fmt2(elegir.pendiente)}</span></p>
       </div>
 
@@ -83,14 +83,11 @@ export default function PanelElegir({ elegir, modo, marcadas, onModo, onAlternar
           ))}
         </ul>
       )}
-      {modo === 'completo' && (
-        <p className="mt-3 text-[14px] text-[var(--suave)]">Pagas todo lo que queda pendiente de este ticket.</p>
-      )}
 
       {modo !== 'completo' && (
         <div className="mt-3 flex items-center justify-between gap-3 border-t border-[var(--linea)] pt-3">
           <p className={`text-[13.5px] ${bloqueo ? 'text-red-700' : 'text-[var(--tenue)]'}`}>
-            {bloqueo || (recalculando ? 'Calculando…' : `${marcadas.length} elegido${marcadas.length === 1 ? '' : 's'}`)}
+            {bloqueo || (recalculando ? 'Calculando…' : 'Total seleccionado')}
           </p>
           <p className="text-[15px] font-semibold tabular-nums text-[var(--texto)]">{total != null && !recalculando ? `$${fmt2(total)}` : '—'}</p>
         </div>

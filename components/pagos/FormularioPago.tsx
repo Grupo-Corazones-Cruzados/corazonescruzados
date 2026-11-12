@@ -84,7 +84,7 @@ function LogoBanco({ cuenta, tamano = 'md' }: { cuenta: CuentaBancaria; tamano?:
  */
 type IdPaso = 'metodo' | 'cuenta' | 'factura' | 'pago' | 'comprobante';
 const PASOS: Record<IdPaso, { nombre: string; titulo: string; Icon: LucideIcon }> = {
-  metodo: { nombre: 'Método', titulo: '¿Cómo quieres pagar?', Icon: Wallet },
+  metodo: { nombre: 'Método', titulo: 'Método de pago', Icon: Wallet },
   cuenta: { nombre: 'Cuenta', titulo: 'Transfiere a nuestra cuenta', Icon: Landmark },
   factura: { nombre: 'Factura', titulo: 'Datos para tu factura', Icon: FileText },
   pago: { nombre: 'Pago', titulo: 'Confirma y paga', Icon: Lock },
