@@ -195,8 +195,9 @@ export default function RegistroTrabajo({
 
   // ── El trabajo del registro elegido: reloj, tiempo y observaciones. Lo mismo en la tarjeta
   //    de tableta/escritorio y en el panel del teléfono.
-  const detalle = (r: any) => (
-    <div className="space-y-3.5">
+  // `llenar` (tarjeta de tableta/escritorio): las observaciones ocupan hasta el botón Guardar.
+  const detalle = (r: any, llenar = false) => (
+    <div className={llenar ? 'flex flex-col gap-3.5 flex-1 min-h-0' : 'space-y-3.5'}>
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-black/[0.03] px-4 py-3">
         <div>
           <p className={`text-[26px] font-bold tabular-nums leading-none ${r.timer_started_at ? 'text-accent' : 'text-digi-text'}`} style={df}>{reloj(segSel)}</p>
@@ -234,10 +235,15 @@ export default function RegistroTrabajo({
         </button>
       </div>
 
-      <EditField label="Observaciones">
-        <textarea value={notas} onChange={(e) => setNotas(e.target.value)} disabled={!editable} rows={4}
-          className={`${EDIT_INPUT} resize-y`} style={mf} />
-      </EditField>
+      {/* ALTO FIJO Y HASTA ABAJO (Fernando, 2026-11-11): el cuadro llena el espacio libre del panel y no se
+          estira a mano —al arrastrarlo, la tarjeta sacaba su propia barra de desplazamiento—. Si el texto
+          es más largo, se desplaza dentro del cuadro. */}
+      <div className={llenar ? 'flex-1 min-h-0 flex flex-col [&>div]:flex-1 [&>div]:min-h-0' : ''}>
+        <EditField label="Observaciones">
+          <textarea value={notas} onChange={(e) => setNotas(e.target.value)} disabled={!editable} rows={llenar ? undefined : 6}
+            className={`${EDIT_INPUT} resize-none ${llenar ? 'flex-1 min-h-[7rem] !h-auto' : ''}`} style={mf} />
+        </EditField>
+      </div>
       {editable && (
         <div className="flex justify-end">
           <button type="button" onClick={guardarNotas} disabled={ocupado || !cambiosNotas} className={`${BTN_PRIMARY} h-11 sm:h-auto`}>
@@ -315,8 +321,8 @@ export default function RegistroTrabajo({
 
         {/* ── El registro elegido (tableta y escritorio) ── */}
         {!enTelefono && (sel ? (
-          <div className="rounded-lg border border-digi-border bg-white p-3.5 lg:@xl:min-h-0 lg:@xl:overflow-y-auto">
-            {detalle(sel)}
+          <div className="rounded-lg border border-digi-border bg-white p-3.5 flex flex-col lg:@xl:min-h-0 lg:@xl:overflow-y-auto">
+            {detalle(sel, true)}
           </div>
         ) : (
           <div className="rounded-lg border border-dashed border-digi-border p-6 text-center text-[12px] text-digi-muted" style={mf}>

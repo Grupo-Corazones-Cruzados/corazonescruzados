@@ -1990,6 +1990,14 @@ teléfono, y salió con la piel pixel antigua (Silkscreen, borde violeta, campo 
 - **Botón cerrar (X) junto a acciones:** ambos como botones **32×32** (`w-8 h-8 flex items-center
   justify-center rounded-md`) en un contenedor `flex items-center` para que queden a la misma altura.
 
+### Cuadro de texto largo en un panel: hasta abajo y sin estirar (Fernando, 2026-11-11) — REGLA
+
+Un `<textarea>` que es lo último de un panel de alto fijo (p. ej. «Observaciones» del registro de trabajo
+de un ticket) **llena el espacio libre hasta su botón** (`flex-1 min-h-[7rem]` dentro de una columna
+`flex-1 min-h-0`) y lleva **`resize-none`**: estirarlo a mano hacía que la tarjeta sacara su propia barra
+de desplazamiento. Si el texto no cabe, se desplaza dentro del cuadro. En el teléfono, alto fijo
+(`rows={6}`) y también `resize-none`.
+
 ### ⭐ Menú 1: favoritos + lanzador «Todos» (Fernando, 2026-11-10) — ESTÁNDAR
 
 El menú 1 (`MenuAccesos`) ya no lista todos los productos y herramientas: enseña las **Apps**, los
