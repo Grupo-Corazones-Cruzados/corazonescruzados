@@ -13,7 +13,7 @@ import { createReadStream, statSync } from 'fs';
 import { homedir } from 'os';
 import { google } from 'googleapis';
 
-const PAQUETE = 'org.grupocc.progreso';
+const PAQUETE = 'org.grupocc.gccworld';
 const CANALES = ['internal', 'alpha'];
 const [ruta, canal] = process.argv.slice(2);
 if (ruta && !CANALES.includes(canal)) throw new Error(`Canal no válido: usa ${CANALES.join(' o ')}`);

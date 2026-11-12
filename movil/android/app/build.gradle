@@ -40,13 +40,13 @@ android {
             }
         }
     }
-    // GCC Progreso: la de las tiendas, sin permisos delicados. GCC Centralizado: la de los miembros,
+    // GCC World (org.grupocc.gccworld desde 2026-11-12; antes org.grupocc.progreso, app de Play abandonada): la de las tiendas, sin permisos delicados. GCC Centralizado: la de los miembros,
     // con Control Psicosocial y fuera de las tiendas. Ambas salen de este mismo proyecto.
     flavorDimensions = ['app']
     productFlavors {
         progreso {
             dimension 'app'
-            applicationId 'org.grupocc.progreso'
+            applicationId 'org.grupocc.gccworld'
             if (firmaSubida) signingConfig signingConfigs.subida
         }
         centralizado {
