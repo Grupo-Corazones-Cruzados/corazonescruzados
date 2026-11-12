@@ -11,29 +11,17 @@
  * `icono` es el nombre de un icono de lucide; lo resuelve `BeneficiosCandidatos`.
  */
 
-export interface Beneficio { titulo: string; texto: string; icono: string }
+export interface Beneficio { titulo: string; texto: string; icono: string; proximamente?: boolean }
 export interface GrupoBeneficios { id: string; etiqueta: string; titulo: string; texto: string; beneficios: Beneficio[]; proximamente?: boolean }
 
 export const BENEFICIOS_INTRO = {
   etiqueta: 'Beneficios',
   titulo: 'Beneficios de los candidatos',
   texto:
-    'Los candidatos que son aceptados en el proyecto del Grupo Corazones Cruzados, reciben acceso a las herramientas públicas, a los módulos de la plataforma "Progreso" y al videojuego "GCC World", con el fin de impulsar su "Desarrollo Humano" mientras demuestran los valores de la organización. A continuación te presento los beneficios que tendrás como candidato:',
+    'Los candidatos que son aceptados en el proyecto del Grupo Corazones Cruzados, reciben acceso a los módulos de la plataforma "Progreso", al videojuego "GCC World" y a las herramientas públicas, con el fin de impulsar su "Desarrollo Humano" mientras demuestran los valores de la organización. A continuación te presento los beneficios que tendrás como candidato:',
 };
 
 export const GRUPOS_BENEFICIOS: GrupoBeneficios[] = [
-  {
-    id: 'herramientas',
-    etiqueta: 'Herramientas',
-    titulo: 'Herramientas públicas',
-    texto: 'Son las herramientas que el Grupo Corazones Cruzados ofrece sin costo a sus candidatos y miembros, para resolver tareas que se presentan en el trabajo y en la vida diaria.',
-    beneficios: [
-      { icono: 'Repeat2', titulo: 'Convertir archivos', texto: 'Convierte archivos de audio y video (M4A, MP4, WAV, OGG) a MP3 y a otros formatos.' },
-      { icono: 'Captions', titulo: 'Transcribir audio', texto: 'Transcribe archivos de audio a texto usando inteligencia artificial.' },
-      { icono: 'Printer', titulo: 'Formatos de impresión para Excel', texto: 'Corrige la impresión de un libro de Excel (papel, márgenes, títulos y número de página) y lo descarga en Excel o PDF.' },
-      { icono: 'QrCode', titulo: 'Enlace a código QR', texto: 'Convierte un enlace en un código QR para descargarlo en PNG o SVG.' },
-    ],
-  },
   {
     id: 'progreso',
     etiqueta: 'Progreso',
@@ -61,6 +49,32 @@ export const GRUPOS_BENEFICIOS: GrupoBeneficios[] = [
       { icono: 'Coins', titulo: 'GCC Coins', texto: 'Participar para obtener GCC Coins, y ganar acceso a servicios y productos gratuitos.' },
       { icono: 'Users', titulo: 'Eventos comunitarios', texto: 'Participar en eventos comunitarios del videojuego para ganar puntos, conocer perfiles, y socializar con nuestros talentos.' },
       { icono: 'Sparkles', titulo: 'Personaje', texto: 'El personaje del videojuego es la misma cuenta de la plataforma, y lo que se logra jugando acompaña el progreso dentro del proyecto.' },
+    ],
+  },
+  {
+    id: 'herramientas',
+    etiqueta: 'Herramientas',
+    titulo: 'Herramientas públicas',
+    texto: 'Son las herramientas que el Grupo Corazones Cruzados ofrece sin costo a sus candidatos y miembros, para resolver tareas que se presentan en el trabajo y en la vida diaria.',
+    beneficios: [
+      { icono: 'Repeat2', titulo: 'Convertir archivos', texto: 'Convierte archivos de audio y video (M4A, MP4, WAV, OGG) a MP3 y a otros formatos.' },
+      { icono: 'Captions', titulo: 'Transcribir audio', texto: 'Transcribe archivos de audio a texto usando inteligencia artificial.' },
+      { icono: 'Printer', titulo: 'Formatos de impresión para Excel', texto: 'Corrige la impresión de un libro de Excel (papel, márgenes, títulos y número de página) y lo descarga en Excel o PDF.' },
+      { icono: 'QrCode', titulo: 'Enlace a código QR', texto: 'Convierte un enlace en un código QR para descargarlo en PNG o SVG.' },
+    ],
+  },
+  {
+    // ⇒ PERTENECER AL GRUPO (Fernando, 2026-11-12). Textos de partida: los corrige Fernando y se trasladan literales.
+    id: 'miembros',
+    etiqueta: 'Miembros',
+    titulo: 'Beneficios de los miembros',
+    texto: 'Al ser aceptado como miembro del Grupo Corazones Cruzados, tu cuenta abre los sistemas de Centralizado y las herramientas para hacer crecer tu negocio:',
+    beneficios: [
+      { icono: 'HeartHandshake', titulo: 'Apoyo y Autoayuda', texto: 'Un sistema en donde recibes tareas para mejorar tu situación personal y profesional.' },
+      { icono: 'Clapperboard', titulo: 'Generación de contenido', texto: 'Integras las cuentas de tu negocio para automatizar la generación y la publicación de tu contenido.' },
+      { icono: 'Wallet', titulo: 'Ingresos, gastos y oportunidades', texto: 'Gestionas tus ingresos y tus gastos, y recibes oportunidades de trabajo en tickets y proyectos.' },
+      { icono: 'Calculator', titulo: 'Cotizaciones con tu historial', texto: 'Los clientes cotizan desde la página de Soluciones con base en los registros históricos de tu trabajo.' },
+      { icono: 'MessagesSquare', titulo: 'Consultas y cotizaciones en tu hoja de vida', texto: 'Desde el enlace de tu hoja de vida, los clientes consultan sobre tu perfil y te cotizan directamente; las cotizaciones o tickets que crean los aceptas desde tu perfil.', proximamente: true },
     ],
   },
 ];
