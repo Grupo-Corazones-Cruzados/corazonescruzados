@@ -67,6 +67,7 @@ import {
 import { tituloDePaso, type PasoPostulacionId } from '@/lib/sitio/pasosPostulacion';
 import { sonarInterruptor } from '@/lib/sitio/sonidoSeleccion';
 import LogoGirando from '@/components/ui/LogoGirando';
+import MiembrosGaleria from '@/components/landing/MiembrosGaleria';
 import PixelInput from '@/components/ui/PixelInput';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
@@ -89,7 +90,13 @@ type Slide = PasoVentana;
 /* ------------------------------------------------------------------ */
 
 function SlideModelo() {
-  return <p style={pStyle}><Negritas texto={MODELO_PROYECTO} /></p>;
+  return (
+    <div data-cuento-hijos style={{ display: 'flex', flexDirection: 'column', gap: 30 }}>
+      <p style={pStyle}><Negritas texto={MODELO_PROYECTO} /></p>
+      {/* Quiénes ya forman parte (Fernando, 2026-11-12). */}
+      <MiembrosGaleria />
+    </div>
+  );
 }
 
 /** El Modelo 4P en su propio paso (Fernando, 2026-11-11): su entrada, la tabla y sus reglas. */
