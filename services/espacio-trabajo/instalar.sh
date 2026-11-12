@@ -37,6 +37,17 @@ AHORA="$(git -C "$APP" rev-parse HEAD)"
 cp "$REPO/.env" "$APP/.env"
 cp "$REPO/.env.local" "$APP/.env.local"
 chmod 600 "$APP/.env" "$APP/.env.local"
+# ⚠️ PRODUCCIÓN VIVE EN EL M1 desde el 2026-11-11 y la base de Railway es solo su copia de reserva, que se
+# reemplaza entera. Si la web de la Mac escribiera ahí, lo creado aquí (ideas de Generación de Contenido…)
+# desaparecería con la siguiente copia: pasó el 2026-11-12. Con el túnel `org.grupocc.tunel-bd-m1` y la clave
+# en ~/.gcc-espacio/.bd-m1-clave, la base es la del M1.
+if [[ -s "$DATOS/.bd-m1-clave" ]]; then
+  CLAVE_BD="$(tr -d '\n' < "$DATOS/.bd-m1-clave")"
+  CLAVE_BD_URL="$(python3 -c 'import sys,urllib.parse;print(urllib.parse.quote(sys.argv[1],safe=""))' "$CLAVE_BD")"
+  grep -v '^DATABASE_URL=' "$APP/.env" > "$APP/.env.tmp" || true
+  echo "DATABASE_URL=\"postgresql://gcc:${CLAVE_BD_URL}@127.0.0.1:55433/railway?schema=gcc_world\"" >> "$APP/.env.tmp"
+  mv "$APP/.env.tmp" "$APP/.env"; chmod 600 "$APP/.env"
+fi
 # La clave de Google va por ruta relativa y git no la trae: sin ella, aquí no sale ningún correo.
 CLAVE_GOOGLE="$(sed -n 's/^GOOGLE_SA_KEY_PATH=//p' "$REPO/.env.local" | tr -d '"')"
 if [[ -n "$CLAVE_GOOGLE" && "$CLAVE_GOOGLE" != /* && -f "$REPO/$CLAVE_GOOGLE" ]]; then
