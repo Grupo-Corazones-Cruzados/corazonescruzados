@@ -8626,6 +8626,7 @@ proceso, a la misma dirección y con la misma cadena**, comprobado entre dos int
 
 - Fernando: «prefiero que se conviertan en otros pasos adicionales del formulario para asegurarme que lean cada texto». Ya no hay listas plegables: Herramientas, Motivos, Onboarding y Prospección son una entrada + un paso por texto (`apartado()` en `OnboardingSlidersModal.tsx`); en el camino los textos cuelgan del apartado con punto pequeño. 22 pasos + Postulación. La pirámide de Prospección ya no se pulsa: cada nivel es un paso que la marca.
 - Cada paso lleva su **título tema centrado** arriba del contenido (`.onb-tema`), y el texto centrado (`centrado`). La cabecera solo tiene la «×».
+- **Desglose y cuento (Fernando, 2026-11-12):** la entrada de Herramientas, Motivos y Onboarding enseña el desglose de lo que viene (`Desglose`: nodos con icono en degradado unidos por una línea que se dibuja; en fila en escritorio, en columna en el teléfono). Prospección ya lo hace con la pirámide. Todo paso se «cuenta como un cuento»: las piezas entran por turno y cada párrafo se descubre de arriba abajo, más despacio cuanto más largo (`useLayoutEffect` en `VentanaRecorrido` + `data-cuento-hijos`; `.onb-cuento-*` en globals.css). Sin movimiento con «reducir movimiento».
 - **App de iPhone:** la ventana ocupa la pantalla entera en el teléfono y la «×» quedaba bajo la hora; la cabecera suma `--seguro-arriba`. Las tablas del Modelo 4P siguen con descripciones en `title` (al pasar el puntero).
 
 ## Beneficios de pertenecer y la hoja de vida que cotiza (2026-11-12)
