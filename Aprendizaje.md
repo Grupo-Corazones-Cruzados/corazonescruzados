@@ -12345,3 +12345,16 @@ API de Gemini solo como apoyo puntual. Primero, una prueba local gratuita con su
 - Worker `gcc-entrada` subido (MANTENIMIENTO=0, sin rutas). Guion `services/servidor-m1/mudanza.sh` con las fases.
   Trampa: los despliegues recientes del cron y del worker de Railway son todos SKIPPED; el activo se busca con
   `status:{in:[SUCCESS,SLEEPING]}`. Sin parar el cron de Railway, cada tarea correría dos veces tras el cambio.
+
+## La noche del cambio (2026-11-11, hecho)
+- Zona activa a los 62 min del cambio de servidores. Al poner el proxy, `www` falló ~5 min (21:25-21:30): el
+  certificado universal (`grupocc.org` y `*.grupocc.org`) aún no existía; se quitó el proxy, se emitió solo y se volvió
+  a poner. **Lección:** con una zona recién activada, comprobar el certificado del borde (`openssl s_client`) ANTES
+  de activar el proxy.
+- Cambiar las variables de un Worker por API exige multipart (`-F settings=…`); con JSON da el error 10001.
+- Mantenimiento 21:28-21:35 (7 min): copia 36 MB en 189 s sin errores, entornos reales, cotizador y cron encendidos,
+  respaldo al SSD desde la base del M1, `es-primario` creado, DNS al túnel, cron y worker de Railway parados.
+- Comprobado: todas las rutas por el túnel (0,15-0,6 s), 0 errores del túnel, verificación de Meta en el M1 con el
+  token real. Railway: app y productos se duermen sin tráfico; solo la base sigue encendida.
+- Falta: que Fernando pruebe con su sesión; vigilar el respaldo de las 03:30 (M1 → Railway) y el del SSD; protecciones
+  de Cloudflare (tope de intentos en /api/auth) y aviso de caída; cancelar Microsoft 365 tras 48 h.

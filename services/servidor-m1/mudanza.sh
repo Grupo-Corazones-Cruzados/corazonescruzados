@@ -44,7 +44,9 @@ preparar)
 mantenimiento)
   v=$([ "$2" = on ] && echo 1 || echo 0)
   echo "▶ MANTENIMIENTO=$v"
-  api PATCH "/accounts/$A/workers/scripts/gcc-entrada/settings" "{\"bindings\":[{\"type\":\"plain_text\",\"name\":\"MANTENIMIENTO\",\"text\":\"$v\"},{\"type\":\"plain_text\",\"name\":\"DESTINO\",\"text\":\"m1\"}]}" | ok ;;
+  # Los ajustes de un Worker solo se cambian como multipart (con JSON da el error 10001).
+  curl -s -X PATCH "https://api.cloudflare.com/client/v4/accounts/$A/workers/scripts/gcc-entrada/settings" -H "Authorization: Bearer $CF" \
+    -F "settings={\"bindings\":[{\"type\":\"plain_text\",\"name\":\"MANTENIMIENTO\",\"text\":\"$v\"},{\"type\":\"plain_text\",\"name\":\"DESTINO\",\"text\":\"m1\"}]};type=application/json" | ok ;;
 copiar)
   echo "▶ producción → M1 (base real, sin limpiar)"
   m1 'bash -s' <<'REMOTO'
