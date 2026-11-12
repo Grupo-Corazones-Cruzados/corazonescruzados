@@ -8,7 +8,9 @@
  * recibes desde el primer día», «no es esperar a ser aceptado: …») y decía algo falso: ser candidato SÍ
  * es esperar a ser aceptado. Fernando los corrige y se trasladan literales.
  *
- * `icono` es el nombre de un icono de lucide; lo resuelve `BeneficiosCandidatos`.
+ * `icono` es el nombre de un icono de lucide; lo resuelve `BeneficiosCandidatos`. Desde 2026-11-12 la página
+ * pinta UNA sola lista: del grupo solo se usa `etiqueta` (la categoría de cada tarjeta) y `proximamente`;
+ * `titulo` y `texto` del grupo ya no se ven.
  */
 
 export interface Beneficio { titulo: string; texto: string; icono: string; proximamente?: boolean }
@@ -90,11 +92,11 @@ export const GRUPOS_BENEFICIOS: GrupoBeneficios[] = [
     id: 'emprendimiento',
     etiqueta: 'Emprendimiento',
     titulo: 'Recursos para emprender',
-    texto: 'Las soluciones que el Grupo Corazones Cruzados ofrece a sus clientes, también van a estar disponibles para que los candidatos organicen y automaticen sus propios negocios.',
+    texto: 'Las soluciones que el Grupo Corazones Cruzados ofrece a sus clientes, también van a estar disponibles para que los candidatos las contraten, y organicen y automaticen sus propios negocios.',
     proximamente: true,
     beneficios: [
-      { icono: 'Store', titulo: 'Productos del grupo', texto: 'Gestión de Reservas, Pedidos, Catering y Planificación de Clases, para el negocio o el trabajo de cada candidato.' },
-      { icono: 'Workflow', titulo: 'Automatizaciones', texto: 'Los flujos de trabajo y el agente de inteligencia artificial para WhatsApp, para automatizar los procesos de cada candidato.' },
+      { icono: 'Store', titulo: 'Productos del grupo', texto: 'Gestión de Reservas, Pedidos, Catering y Planificación de Clases, que cada candidato puede contratar para su negocio o su trabajo.' },
+      { icono: 'Workflow', titulo: 'Automatizaciones', texto: 'Los flujos de trabajo y el agente de inteligencia artificial para WhatsApp, que cada candidato puede contratar para automatizar sus procesos.' },
       { icono: 'Lightbulb', titulo: 'Impulso a tus ideas', texto: 'Presentar una idea de negocio como un proyecto, y si es viable, trabajarla con la metodología del "Progreso Horizontal".' },
     ],
   },
