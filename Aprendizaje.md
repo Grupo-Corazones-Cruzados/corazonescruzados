@@ -12329,3 +12329,19 @@ Code (una herramienta local de un proveedor, con suscripción).
 **Propuesta:** las 4 vistas, a mano en la app de Gemini con la suscripción (como ahora). Los
 fotogramas de las animaciones, en local con Qwen-Image-Edit en ComfyUI + la limpieza automática. La
 API de Gemini solo como apoyo puntual. Primero, una prueba local gratuita con su monstruo.
+
+# MUDANZA AL M1 — preparación (2026-11-11)
+- Dominio en Namecheap desde 2026-11-12 (vence 2027-11-15); servidores `dante`/`dell` de Cloudflare publicados en .org
+  a las 01:19 UTC; la zona seguía «pending» al menos 1 h después (sin DNSSEC; solo espera de Cloudflare).
+- Token «GCC mudanza M1» en `~/.cloudflare-token` (1 año): Tunnel y Workers Scripts de la cuenta; DNS, Zone Settings,
+  WAF, Zone y Workers Routes de `grupocc.org`. `activation_check` por API devuelve «Unauthorized» igual: botón del panel.
+- M1: `cloudflared` 2026.10.7 en `~/gcc/runtime/` (la suma de la nota de versión es la del binario, no del .tgz; firmado
+  por Cloudflare 68WVV388M8). Túnel `gcc-m1` (`~/.gcc-tunel-id` en la M4) gestionado desde Cloudflare: app y www →
+  `http://127.0.0.1:3100`; servicio `org.grupocc.tunel`, la llave en `~/gcc/env-real/tunel-token` (no en la línea de
+  órdenes). 4 conexiones (Miami y Quito), sin abrir puertos.
+- Entornos reales en `~/gcc/env-real/` (app, 5 productos, worker, cron, cotizador) desde las variables de Railway, con
+  base local y servicios por 127.0.0.1; cotizador (puerto 3106) y cron (cada 600 s) añadidos a `correr.sh` y sus
+  LaunchAgents, apagados hasta el cambio.
+- Worker `gcc-entrada` subido (MANTENIMIENTO=0, sin rutas). Guion `services/servidor-m1/mudanza.sh` con las fases.
+  Trampa: los despliegues recientes del cron y del worker de Railway son todos SKIPPED; el activo se busca con
+  `status:{in:[SUCCESS,SLEEPING]}`. Sin parar el cron de Railway, cada tarea correría dos veces tras el cambio.
