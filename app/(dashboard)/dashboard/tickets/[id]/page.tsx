@@ -23,7 +23,7 @@ import { useSondeo } from '@/lib/hooks/useSondeo';
 import PixelConfirm from '@/components/ui/PixelConfirm';
 import PanelEnlacePago from '@/components/pagos/PanelEnlacePago';
 import BrandLoader from '@/components/ui/BrandLoader';
-import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock, Plus, AlertTriangle, ChevronDown, Building2, DollarSign, CalendarClock, Ban, Trash2, CircleCheck, Clock, BadgeDollarSign } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, LayoutList, ListChecks, Pencil, Check, Receipt, Send, DoorOpen, Sparkles, CalendarDays, Share2, Lock, Plus, AlertTriangle, ChevronDown, Building2, DollarSign, CalendarClock, Ban, Trash2, CircleCheck, Clock, BadgeDollarSign, Video } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_ICONO_PRIMARIO, BTN_ICONO_SECUNDARIO, BTN_ICONO_ACENTO } from '@/components/ui/Button';
 import ClientPicker from '@/components/clients/ClientPicker';
 import AssigneePicker from '@/components/tickets/AssigneePicker';
@@ -746,6 +746,17 @@ export default function TicketDetailPage() {
     );
   };
 
+  // ⇒ «SESIÓN CON MEET» EN LA CABECERA (Fernando, 2026-11-11): icono a la izquierda de Editar, con las mismas
+  // condiciones que tenía en el registro de trabajo (quién registra, ticket no bloqueado, sin reloj en
+  // marcha y servicio con precio por hora).
+  const puedeRegistrarTicket = isAdmin || (isMember && !!user?.member_id && ticket.member_id === user.member_id);
+  const bloqueoRegistro = isClosed ? 'El ticket está cerrado: lo consumido ya está facturado'
+    : ticket.status === 'draft' ? 'Es un borrador: envíalo antes de registrar trabajo'
+    : isRequestForMe ? 'Acepta la solicitud antes de registrar trabajo' : undefined;
+  const sinTarifa = !(Number(ticket.service_base_price) > 0);
+  const motivoMeet = bloqueoRegistro || (sessionBusy || relojEnMarcha ? 'Ya hay un reloj en marcha'
+    : sinTarifa ? 'El servicio del ticket no tiene precio por hora' : 'Sesión con Meet: crea la reunión y un registro con el reloj en marcha');
+
   return (
     <div>
       <DetailHeader
@@ -772,6 +783,8 @@ export default function TicketDetailPage() {
           ]} />
         ) : <PixelBadge variant={STATUS_V[ticket.status] || 'default'}>{STATUS_LABEL[ticket.status] || ticket.status}</PixelBadge>}
         detalles={[
+          // La descripción vive en la burbuja (i) del título (Fernando, 2026-11-11): así sube el registro.
+          ...(ticket.description ? [{ icono: LayoutList, etiqueta: 'Descripción', valor: <span className="whitespace-pre-wrap">{ticket.description}</span> }] : []),
           ...(ticket.client_name ? [{ icono: Building2, etiqueta: 'Cliente', valor: ticket.client_name }] : []),
           ...(ticket.estimated_cost != null && ticket.estimated_cost !== '' ? [{ icono: DollarSign, etiqueta: 'Costo estimado', valor: `$${fmt2(Number(ticket.estimated_cost))}` }] : []),
           ...(ticket.deadline ? [{ icono: CalendarClock, etiqueta: 'Fecha límite', valor: new Date(ticket.deadline).toLocaleDateString() }] : []),
@@ -796,6 +809,13 @@ export default function TicketDetailPage() {
             )}
             {canCompleteTicket && (
               <button onClick={openCompleteModal} className={BTN_ICONO_PRIMARIO} title="Completar y facturar" aria-label="Completar y facturar"><Receipt className="w-4 h-4" /></button>
+            )}
+            {showActions && puedeRegistrarTicket && (
+              <span title={motivoMeet} className="inline-flex">
+                <button onClick={async () => { await handleStartSession(); setDiaSel(hoyEcuadorCliente()); }}
+                  disabled={!!bloqueoRegistro || sessionBusy || relojEnMarcha || sinTarifa}
+                  className={BTN_ICONO_SECUNDARIO} aria-label="Sesión con Meet"><Video className="w-4 h-4" /></button>
+              </span>
             )}
             {canEdit && <button onClick={startEdit} className={BTN_ICONO_SECUNDARIO} title="Editar" aria-label="Editar"><Pencil className="w-4 h-4" /></button>}
           </>
@@ -871,19 +891,12 @@ export default function TicketDetailPage() {
               const serviceRate = Number(ticket.service_base_price) || 0;
               // Días de trabajo se movió al panel izquierdo; esta tarjeta solo agrupa
               // Descripción + Registro. Si no hay ninguno, no se renderiza (evita caja vacía).
-              if (!ticket.description && !showActions) return null;
+              if (!showActions) return null;
               return (
                 // ⇒ ALTO FIJO AL DE LA PANTALLA (Fernando, 2026-09-30): ocupa lo que queda de la
                 // columna —que ya mide hasta el pie— y dentro se desplazan la lista y el registro.
                 // `min-h` para que con otras tarjetas encima no quede reducida a una franja.
                 <div className="bg-digi-card border border-digi-border rounded-lg shadow-sm overflow-hidden flex flex-col lg:flex-1 lg:min-h-[420px]">
-                  {/* Descripción */}
-                  {ticket.description && (
-                    <div className="p-4 border-b border-digi-border shrink-0 max-h-40 overflow-y-auto">
-                      <SectionHead Icon={LayoutList} title="Descripción" />
-                      <p className="text-xs text-digi-text leading-relaxed whitespace-pre-wrap" style={mf}>{ticket.description}</p>
-                    </div>
-                  )}
 
                   {/* ⇒ REGISTRO DE TRABAJO DEL DÍA ELEGIDO (Fernando, 2026-09-30): depende del día
                       marcado en «Días de trabajo», en dos partes —lista y registro elegido con
@@ -900,8 +913,6 @@ export default function TicketDetailPage() {
                           puede={!!puedeRegistrar}
                           bloqueo={isClosed ? 'El ticket está cerrado: lo consumido ya está facturado' : ticket.status === 'draft' ? 'Es un borrador: envíalo antes de registrar trabajo' : isRequestForMe ? 'Acepta la solicitud antes de registrar trabajo' : undefined}
                           onCambio={fetchTicket}
-                          onSesionMeet={async () => { await handleStartSession(); setDiaSel(hoyEcuadorCliente()); }}
-                          sesionOcupada={sessionBusy}
                           avanceEtapas={avanceEtapas}
                         />
                       ) : (

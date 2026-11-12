@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { Play, Square, Video, Plus, Save } from 'lucide-react';
+import { Play, Square, Plus, Save } from 'lucide-react';
 import { BTN_PRIMARY, BTN_SECONDARY } from '@/components/ui/Button';
 import { EditField, EDIT_INPUT, QuickEditDialog } from '@/components/ui/EditDialog';
 import BotonQuitar from '@/components/ui/BotonQuitar';
@@ -85,7 +85,7 @@ export function segundosDe(r: any, ahora = Date.now()): number {
  * `lib/tickets/facturacion.ts`.
  */
 export default function RegistroTrabajo({
-  ticketId, registros, dia, tarifa, puede, bloqueo, onCambio, onSesionMeet, sesionOcupada, avanceEtapas,
+  ticketId, registros, dia, tarifa, puede, bloqueo, onCambio, avanceEtapas,
 }: {
   ticketId: string;
   registros: any[];
@@ -97,8 +97,6 @@ export default function RegistroTrabajo({
   /** Si no se puede tocar aunque se pueda gestionar (ticket cerrado), el porqué. */
   bloqueo?: string;
   onCambio: () => void;
-  onSesionMeet?: () => void;
-  sesionOcupada?: boolean;
   /** Con plan de etapas: cuántas lleva facturadas. Un registro «Facturado» aún no está pagado entero. */
   avanceEtapas?: { facturadas: number; total: number };
 }) {
@@ -191,7 +189,6 @@ export default function RegistroTrabajo({
 
   const segSel = sel ? segundosDe(sel, ahora) : 0;
   const cambiosNotas = !!sel && notas.trim() !== (sel.notes || '');
-  const fechaLarga = new Date(dia + 'T12:00:00').toLocaleDateString('es-EC', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
   // ── El trabajo del registro elegido: reloj, tiempo y observaciones. Lo mismo en la tarjeta
   //    de tableta/escritorio y en el panel del teléfono.
@@ -256,16 +253,8 @@ export default function RegistroTrabajo({
 
   return (
     <div className="@container flex flex-col gap-3 lg:min-h-0 lg:flex-1">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[12.5px] text-digi-text first-letter:uppercase" style={mf}>{fechaLarga}</p>
-        {onSesionMeet && puede && (
-          <span title={bloqueo || (sesionOcupada ? 'Ya hay un reloj en marcha' : 'Crea la reunión de Meet y un registro con el reloj en marcha')} className="inline-flex">
-            <button type="button" onClick={onSesionMeet} disabled={!editable || sesionOcupada || enMarcha || tarifa <= 0} className={`${BTN_SECONDARY} h-11 sm:h-auto`}>
-              <Video className="w-4 h-4" /> Sesión con Meet
-            </button>
-          </span>
-        )}
-      </div>
+      {/* Sin la fecha (ya la dice «Días de trabajo») ni «Sesión con Meet» (va en la cabecera del ticket):
+          la lista de registros sube (Fernando, 2026-11-11). */}
 
       {/* `grid-rows-[minmax(0,1fr)]`: sin esto la fila mide lo que su contenido y la lista y el
           registro no se desplazan por dentro —empujan la tarjeta más allá del pie—. Solo con
