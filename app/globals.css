@@ -2807,6 +2807,85 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .onb-centrado { max-width: 640px; margin: 0 auto; text-align: center; }
 .onb-centrado .aviso-gcc-titulo { justify-content: center; }
 
+/* EL DESGLOSE DE UN APARTADO (Fernando, 2026-11-12): sus textos como nodos de un camino. Un círculo con
+   el degradado de la portada y su icono, la línea que los une (se dibuja cuando aparece el primero),
+   y debajo número, título y resumen. Sin cápsulas: el texto solo lleva color. */
+.onb-desglose { position: relative; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 18px; max-width: 760px; margin: 0 auto; }
+.onb-desglose::before {
+  content: '';
+  position: absolute;
+  top: 30px;
+  left: calc(100% / var(--n) / 2);
+  right: calc(100% / var(--n) / 2);
+  height: 2px;
+  background: linear-gradient(90deg, var(--color-accent), var(--color-accent-glow), var(--color-accent));
+  opacity: 0.55;
+  transform-origin: left center;
+  animation: onbLinea 1.4s cubic-bezier(0.22, 1, 0.36, 1) var(--cuento-retardo, 0s) both;
+}
+.onb-desglose-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+.onb-desglose-icono {
+  position: relative;
+  z-index: 1;
+  width: 60px;
+  height: 60px;
+  flex: none;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: radial-gradient(circle at 30% 25%, var(--color-accent-glow), var(--color-accent) 70%);
+  box-shadow: 0 0 0 6px var(--color-digi-card), 0 10px 30px color-mix(in srgb, var(--color-accent) 45%, transparent);
+}
+.onb-desglose-icono svg { width: 24px; height: 24px; }
+/* Un halo que respira, a destiempo en cada nodo. */
+.onb-desglose-icono::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  border: 1px solid var(--color-accent-glow);
+  opacity: 0;
+  animation: onbHalo 3.2s ease-out calc(var(--cuento-retardo, 0s) + 0.8s) infinite;
+}
+.onb-desglose-texto { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.onb-desglose-num { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em; color: var(--color-accent-glow); font-variant-numeric: tabular-nums; }
+.onb-desglose-titulo { font-family: var(--font-display); font-size: 0.98rem; font-weight: 700; line-height: 1.25; letter-spacing: -0.01em; color: var(--color-digi-text); text-wrap: balance; }
+.onb-desglose-resumen { font-size: 0.8rem; line-height: 1.5; color: var(--color-digi-muted); text-wrap: pretty; }
+.onb-desglose-item.onb-cuento-pieza { animation-name: onbNodo; }
+@media (max-width: 639.98px) {
+  .onb-desglose { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .onb-desglose::before { top: 30px; bottom: 30px; left: 29px; right: auto; width: 2px; height: auto; transform-origin: center top; animation-name: onbLineaVertical; }
+  .onb-desglose-item { flex-direction: row; align-items: flex-start; text-align: left; gap: 16px; }
+  .onb-desglose-texto { align-items: flex-start; padding-top: 6px; }
+}
+
+/* COMO QUIEN CUENTA UN CUENTO: cada pieza entra por turno (`--cuento-retardo`, lo pone la ventana) y
+   cada párrafo se descubre de arriba abajo durante `--cuento-duracion`. */
+.onb-cuento-pieza { animation: onbCuento 0.75s cubic-bezier(0.22, 1, 0.36, 1) var(--cuento-retardo, 0s) both; }
+.onb-cuento-texto {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 40%, transparent 60%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 40%, transparent 60%, transparent 100%);
+  -webkit-mask-size: 100% 250%;
+  mask-size: 100% 250%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: onbRelato var(--cuento-duracion, 1s) cubic-bezier(0.45, 0, 0.25, 1) var(--cuento-retardo, 0s) both;
+}
+@keyframes onbCuento { from { opacity: 0; transform: translateY(14px); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes onbRelato {
+  from { -webkit-mask-position: 0 100%; mask-position: 0 100%; opacity: 0.2; transform: translateY(6px); }
+  to { -webkit-mask-position: 0 0; mask-position: 0 0; opacity: 1; transform: none; }
+}
+@keyframes onbNodo { 0% { opacity: 0; transform: translateY(18px) scale(0.85); } 60% { opacity: 1; transform: translateY(-3px) scale(1.03); } 100% { opacity: 1; transform: none; } }
+@keyframes onbLinea { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes onbLineaVertical { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes onbHalo { 0% { opacity: 0.7; transform: scale(1); } 70%, 100% { opacity: 0; transform: scale(1.35); } }
+@media (prefers-reduced-motion: reduce) {
+  .onb-cuento-pieza, .onb-cuento-texto, .onb-desglose::before, .onb-desglose-icono::after { animation: none; -webkit-mask-image: none; mask-image: none; }
+}
+
 /* Los textos de un apartado cuelgan de él en el camino: punto pequeño con su número sobre la misma
    línea (centro a 38 px, como el de los apartados) y el nombre más pequeño. */
 .onb-nodo.es-sub { padding: 4px 10px 4px 15px; gap: 10px; }

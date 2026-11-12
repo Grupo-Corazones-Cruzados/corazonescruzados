@@ -32,7 +32,7 @@
 import Captcha from '@/components/landing/Captcha';
 import { horaDeReanudacion, useEstadoRegistro } from '@/components/landing/estadoRegistro';
 import { AuthDialog, BotonAuth } from '@/components/landing/AuthSurface';
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Modelo4P, { PasosCondiciologia, ReglasModelo4P } from '@/components/landing/Modelo4P';
 import { HERRAMIENTAS, HERRAMIENTAS_INTRO, MODELO_PROYECTO, MODELO_4P_INTRO, trozosNegrita } from '@/lib/sitio/modeloGcc';
 import {
@@ -42,6 +42,16 @@ import {
   ArrowRight,
   BadgeCheck,
   Check,
+  Crown,
+  FlaskConical,
+  Flag,
+  Globe2,
+  Mountain,
+  ShieldCheck,
+  Sparkles,
+  Sprout,
+  Users,
+  Workflow,
   ChevronDown,
   Gavel,
   Grid3x3,
@@ -85,7 +95,7 @@ function SlideModelo() {
 /** El Modelo 4P en su propio paso (Fernando, 2026-11-11): su entrada, la tabla y sus reglas. */
 function SlideModelo4P() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div data-cuento-hijos style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       <p style={pStyle}><Negritas texto={MODELO_4P_INTRO} /></p>
 
       <Modelo4P />
@@ -127,7 +137,7 @@ function Negritas({ texto }: { texto: string }) {
 
 function SlideHerramientas() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div data-cuento-hijos style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <p style={pStyle}><Negritas texto={HERRAMIENTAS_INTRO} /></p>
     </div>
   );
@@ -228,7 +238,7 @@ const MOTIVOS_ENTRADA = [
 
 function SlideMotivos() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div data-cuento-hijos style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Texto de Fernando (2026-11-01, 2.ª versión), literal y en sus cuatro párrafos. Sustituye a
           la entrada genérica («Más allá del cómo, importa el porqué…»). */}
       {MOTIVOS_ENTRADA.map((t, i) => <p key={i} style={pStyle}>{t}</p>)}
@@ -350,7 +360,7 @@ const REGLAS: AccordionItem[] = [
 
 function SlideOnboarding() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div data-cuento-hijos style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <p style={pStyle}>Reglas del proyecto para todos los Candidatos y Miembros</p>
       <Aviso tono="peligro" titulo="Advertencia">
         Cualquier intento de faltar a una sola de estas reglas implica la{' '}
@@ -463,7 +473,7 @@ const CRECIMIENTO: { n: number; title: string; tag: string; text: () => React.Re
  */
 function SlideMetodoCrecimiento() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div data-cuento-hijos style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Texto de Fernando (editor de textos, 2026-11-11), literal. */}
       <p style={pStyle}>
         La prospección de cada persona, es un indicador que mide su intención de crecimiento según 4
@@ -479,9 +489,9 @@ function SlideMetodoCrecimiento() {
 
 function NivelCrecimiento({ i }: { i: number }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <div data-cuento-hijos style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       <Piramide activo={i} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>{CRECIMIENTO[i].text()}</div>
+      <div data-cuento-hijos style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>{CRECIMIENTO[i].text()}</div>
     </div>
   );
 }
@@ -490,7 +500,7 @@ function NivelCrecimiento({ i }: { i: number }) {
 function Piramide({ activo = -1 }: { activo?: number }) {
   const widths = ['58%', '72%', '86%', '100%'];
   return (
-    <div className="flex flex-col items-center gap-2 text-left">
+    <div data-cuento-hijos className="flex flex-col items-center gap-2 text-left">
       <GrowthCaption>Mayor importancia</GrowthCaption>
       {CRECIMIENTO.map((s, i) => {
         const on = activo === i;
@@ -604,7 +614,7 @@ const AFIL_STEPS: { n: string; name: string; desc: () => React.ReactNode }[] = [
 
 function SlideAfiliacion() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div data-cuento-hijos style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <p style={pStyle}>
         La <strong style={strong}>afiliación</strong> es el proceso por el que un candidato se
         convierte en miembro, demostrando y representando los valores esperados. Sigue estas
@@ -612,7 +622,7 @@ function SlideAfiliacion() {
       </p>
 
       {/* Indicaciones como línea de tiempo numerada (6 pasos, en orden) */}
-      <ol className="flex flex-col">
+      <ol data-cuento-hijos className="flex flex-col">
         {AFIL_STEPS.map((s, i) => (
           <li key={s.name} className="relative flex gap-3 pb-3 last:pb-0">
             {i < AFIL_STEPS.length - 1 && (
@@ -639,7 +649,7 @@ function SlideAfiliacion() {
 /** Convierte el cuerpo de un texto en el componente de su propio paso. */
 function pasoDeTexto(cuerpo: () => React.ReactNode): React.FC {
   function PasoTexto() {
-    return <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>{cuerpo()}</div>;
+    return <div data-cuento-hijos style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>{cuerpo()}</div>;
   }
   return PasoTexto;
 }
@@ -654,10 +664,23 @@ function apartado(
   Icon: IconType,
   Entrada: React.FC,
   textos: { title: string; resumen?: string; Component: React.FC }[],
+  /** El icono de cada texto en el desglose de la entrada; sin iconos, la entrada no lleva desglose. */
+  iconos?: IconType[],
 ): Slide[] {
   const grupo = tituloDePaso(id);
+  // La entrada enseña el desglose de lo que viene (Fernando, 2026-11-12: «para que esta parte no se
+  // vea vacía»); con «Siguiente» se entra a cada uno.
+  const items = iconos ? textos.map((t, i) => ({ title: t.title, resumen: t.resumen, Icon: iconos[i] ?? Icon })) : null;
+  function EntradaConDesglose() {
+    return (
+      <div data-cuento-hijos style={{ display: 'flex', flexDirection: 'column', gap: 30 }}>
+        <Entrada />
+        {items && <Desglose items={items} />}
+      </div>
+    );
+  }
   return [
-    { id, title: grupo, Icon, Component: Entrada, centrado: true },
+    { id, title: grupo, Icon, Component: items ? EntradaConDesglose : Entrada, centrado: true },
     ...textos.map((t, i) => ({
       id: `${id}-${i + 1}`,
       title: t.title,
@@ -683,12 +706,35 @@ const NIVELES = CRECIMIENTO.map((c, i) => {
 export const SLIDES: Slide[] = [
   { id: 'modelo', title: tituloDePaso('modelo'), Icon: Layers3, Component: SlideModelo, centrado: true },
   { id: 'modelo-4p', title: tituloDePaso('modelo-4p'), Icon: Grid3x3, Component: SlideModelo4P, centrado: true },
-  ...apartado('herramientas', Wrench, SlideHerramientas, deLista(TOOLS)),
-  ...apartado('motivos', Heart, SlideMotivos, deLista(MOTIVOS)),
-  ...apartado('onboarding', Gavel, SlideOnboarding, deLista(REGLAS)),
+  ...apartado('herramientas', Wrench, SlideHerramientas, deLista(TOOLS), [FlaskConical, ShieldCheck, Workflow, Sparkles]),
+  ...apartado('motivos', Heart, SlideMotivos, deLista(MOTIVOS), [Globe2, Mountain, Crown]),
+  ...apartado('onboarding', Gavel, SlideOnboarding, deLista(REGLAS), [Users, Flag, Sprout]),
   ...apartado('metodo-crecimiento', TrendingUp, SlideMetodoCrecimiento, NIVELES),
   { id: 'afiliacion', title: tituloDePaso('afiliacion'), Icon: BadgeCheck, Component: SlideAfiliacion },
 ];
+
+/**
+ * EL DESGLOSE de un apartado: sus textos como un camino de nodos unidos por una línea que se dibuja, cada
+ * uno con su icono, número, título y resumen. En escritorio, en fila; en el teléfono, en columna.
+ */
+function Desglose({ items }: { items: { title: string; resumen?: string; Icon: IconType }[] }) {
+  return (
+    <div data-cuento-hijos className="onb-desglose" style={{ '--n': items.length } as React.CSSProperties}>
+      {items.map((t, i) => (
+        <div key={t.title} className="onb-desglose-item">
+          <span className="onb-desglose-icono" aria-hidden>
+            <t.Icon />
+          </span>
+          <span className="onb-desglose-texto">
+            <span className="onb-desglose-num">{String(i + 1).padStart(2, '0')}</span>
+            <span className="onb-desglose-titulo">{t.title}</span>
+            {t.resumen && <span className="onb-desglose-resumen">{t.resumen}</span>}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 /* ------------------------------------------------------------------ */
 /* Componente principal                                               */
@@ -870,6 +916,34 @@ export function VentanaRecorrido({
   ];
   // «Paso N» cuenta los apartados; los textos de un apartado cuelgan de él sin número propio.
   const numeros = nodos.reduce<number[]>((acc, n, i) => [...acc, (acc[i - 1] ?? 0) + (n.sub ? 0 : 1)], []);
+  /*
+   * COMO QUIEN CUENTA UN CUENTO (Fernando, 2026-11-12): el contenido del paso no aparece de golpe. Va
+   * pieza por pieza —el título, luego cada párrafo, cada nodo del desglose—, y cada párrafo se descubre
+   * de arriba abajo, más despacio cuanto más largo es, como si se fuera contando. Lo que lleva
+   * `data-cuento-hijos` se reparte en sus hijos; lo demás entra como una pieza. Antes de pintar, para
+   * que nada parpadee; sin movimiento si el sistema pide reducirlo.
+   */
+  const cuentoRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const raiz = cuentoRef.current;
+    if (!raiz || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    let t = 0.1;
+    const recorrer = (el: HTMLElement) => {
+      el.style.setProperty('--cuento-retardo', `${t.toFixed(2)}s`);
+      for (const h of Array.from(el.children)) {
+        if (!(h instanceof HTMLElement)) continue;
+        if (h.hasAttribute('data-cuento-hijos')) { recorrer(h); continue; }
+        const texto = h.tagName === 'P';
+        const duracion = texto ? Math.min(2, Math.max(0.8, (h.textContent?.length ?? 0) / 240)) : 0.75;
+        h.style.setProperty('--cuento-retardo', `${t.toFixed(2)}s`);
+        h.style.setProperty('--cuento-duracion', `${duracion.toFixed(2)}s`);
+        h.classList.add(texto ? 'onb-cuento-texto' : 'onb-cuento-pieza');
+        t += texto ? duracion * 0.7 : 0.25;
+      }
+    };
+    recorrer(raiz);
+  }, [index]);
+
   // Con tantos pasos el camino se desplaza: el actual siempre a la vista.
   const caminoRef = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -976,7 +1050,8 @@ export function VentanaRecorrido({
 
             <div className="onb-cuerpo flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
               <div key={index} style={{ animation: `${animName} 0.45s cubic-bezier(0.22,1,0.36,1)` }}>
-                <div className="onb-tema">
+                <div ref={cuentoRef} data-cuento-hijos>
+                <div className="onb-tema" data-cuento-hijos>
                   {!isForm && current.sub && (
                     <p className="onb-tema-grupo">
                       {current.sub.grupo} · {current.sub.n} de {current.sub.de}
@@ -985,8 +1060,9 @@ export function VentanaRecorrido({
                   <h2 className="onb-tema-titulo">{title}</h2>
                   {!isForm && current.resumen && <p className="onb-tema-resumen">{current.resumen}</p>}
                 </div>
-                <div className={!isForm && current.centrado ? 'onb-centrado' : undefined}>
+                <div data-cuento-hijos className={!isForm && current.centrado ? 'onb-centrado' : undefined}>
                   {isForm || !SlideComponent ? final.contenido : <SlideComponent />}
+                </div>
                 </div>
               </div>
             </div>
