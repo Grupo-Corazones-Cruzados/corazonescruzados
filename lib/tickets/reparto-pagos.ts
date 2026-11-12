@@ -32,7 +32,47 @@ export const prepararRepartoPagos = () => (preparada ??= pool.query(`
   );
   CREATE INDEX IF NOT EXISTS idx_ticket_registro_pagos_action ON gcc_world.ticket_registro_pagos (action_id);
   ALTER TABLE gcc_world.payment_intents ADD COLUMN IF NOT EXISTS seleccion JSONB;
-`).catch((e: unknown) => { preparada = null; throw e; }));
+`).then(() => corregirCobrosAntiguos().catch((e: any) => console.error('[pagos] corrección de cobros antiguos:', e?.message)))
+  .catch((e: unknown) => { preparada = null; throw e; }));
+
+/**
+ * ⇒ CORRECCIÓN DE LOS COBROS ANTERIORES A ESTA REGLA (Fernando, 2026-11-12, ticket #62). Antes, el cobro de UNA
+ * etapa dejaba facturados TODOS los registros que había: en el #62 un pago de $81,80 dio por pagados registros por
+ * $157,50. Para cada cobro pagado de etapa (o con selección) que todavía no tiene reparto, se reparte su importe
+ * sobre los registros que se llevó, de más antiguo a más nuevo: los que cubre enteros siguen facturados; los demás
+ * vuelven a estar sin facturar, con su abono parcial si lo hay. Solo toca cobros sin filas en esta tabla, así que
+ * correrla otra vez no cambia nada.
+ */
+async function corregirCobrosAntiguos(): Promise<void> {
+  const { rows: cobros } = await pool.query(
+    `SELECT pi.id, pi.source_id, pi.net_amount::float AS neto, pi.invoice_id
+       FROM gcc_world.payment_intents pi
+      WHERE pi.source_type = 'ticket' AND pi.status = 'paid' AND pi.invoice_id IS NOT NULL
+        AND (pi.stage_id IS NOT NULL OR pi.seleccion IS NOT NULL)
+        AND NOT EXISTS (SELECT 1 FROM gcc_world.ticket_registro_pagos p WHERE p.intent_id = pi.id)
+      ORDER BY pi.id`,
+  );
+  for (const c of cobros) {
+    const { rows: regs } = await pool.query(
+      `SELECT a.id, COALESCE(a.cost, 0)::float AS costo FROM gcc_world.ticket_actions a
+        WHERE a.invoice_id = $1 AND a.ticket_id = ($2)::int
+        ORDER BY COALESCE(a.work_date, a.created_at::date), a.created_at, a.id`,
+      [c.invoice_id, c.source_id],
+    );
+    if (!regs.length) continue;
+    const { completos, parcial } = repartir(regs.map((r: any) => ({ id: Number(r.id), restante: r2(Number(r.costo)) })), Number(c.neto));
+    const enteros = new Set(completos.map((x) => x.id));
+    for (const x of [...completos, ...(parcial ? [parcial] : [])]) {
+      await pool.query(`INSERT INTO gcc_world.ticket_registro_pagos (intent_id, action_id, monto, invoice_id) VALUES ($1, $2, $3, $4)`,
+        [c.id, x.id, x.monto, c.invoice_id]);
+    }
+    const sueltos = regs.map((r: any) => Number(r.id)).filter((id: number) => !enteros.has(id));
+    if (sueltos.length) {
+      await pool.query(`UPDATE gcc_world.ticket_actions SET invoice_id = NULL WHERE id = ANY($1::int[]) AND invoice_id = $2`, [sueltos, c.invoice_id]);
+      console.log(`[pagos] cobro ${c.id} (ticket ${c.source_id}): ${completos.length} registro(s) pagados enteros, ${sueltos.length} vuelven a pendiente${parcial ? ' (uno con abono parcial)' : ''}`);
+    }
+  }
+}
 
 /** Lo que eligió el cliente en el enlace. Sin ella, el cobro es el de siempre (una etapa o todo). */
 export type SeleccionCobro =
