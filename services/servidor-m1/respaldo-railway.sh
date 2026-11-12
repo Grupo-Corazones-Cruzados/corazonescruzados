@@ -37,7 +37,7 @@ a0=$(cuenta "${ORIGEN[@]}")
 # --clean recrea todo: la base de Railway queda igual que la del M1, sin restos de la anterior.
 "$B/pg_restore" -d "$DESTINO" --clean --if-exists --no-owner --no-privileges -j 2 "$D" 2>"$D.err"
 # «already exists»: un índice que la app crea sola al arrancar (CREATE … IF NOT EXISTS) y que --clean no borra. Inofensivo.
-errores=$(grep -i "error" "$D.err" 2>/dev/null | grep -vc "already exists" || true); tail -5 "$D.err"; rm -f "$D.err"
+errores=$(grep -i "error" "$D.err" 2>/dev/null | grep -v "errors ignored on restore" | grep -vc "already exists" || true); tail -5 "$D.err"; rm -f "$D.err"
 
 # Comprobación: cada cifra del destino entre la del M1 antes de copiar y la de después.
 a1=$(cuenta "${ORIGEN[@]}"); b=$(cuenta "$DESTINO")
