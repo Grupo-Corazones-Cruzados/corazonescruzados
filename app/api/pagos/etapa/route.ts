@@ -15,6 +15,7 @@ import { cotizarCobro, cobroPagadoDe, idMesSuscripcion, partesMesSuscripcion, pa
 import { proveedorActivo } from '@/lib/pagos';
 import { getDatosFacturacionCliente } from '@/lib/billing-clients';
 import { getTicketBilling } from '@/lib/payments';
+import { estadoPagoRegistros, leerSeleccion } from '@/lib/tickets/reparto-pagos';
 import { CUENTAS_BANCARIAS } from '@/lib/pagos/cuentas';
 
 export async function GET(req: NextRequest) {
@@ -38,7 +39,12 @@ export async function GET(req: NextRequest) {
     });
 
     const proveedor = proveedorActivo();
-    const etapa = await cotizarCobro(auth, proveedor.nombre);
+    // ⇒ EL CLIENTE ELIGE EL FORMATO (Fernando, 2026-11-12): en un ticket sin etapa fija puede pagar todo, unas
+    // etapas o unos requerimientos. Con `seleccion` se responde el importe de lo elegido.
+    const puedeElegir = auth.sourceType === 'ticket' && auth.stageId == null;
+    let seleccion = null;
+    if (puedeElegir && sp.get('seleccion')) { try { seleccion = leerSeleccion(JSON.parse(sp.get('seleccion')!)); } catch { seleccion = null; } }
+    const etapa = await cotizarCobro(auth, proveedor.nombre, seleccion);
 
     // Si ya está pagada se responde 200 con el aviso, no un error: la pantalla tiene que
     // poder decir «esto ya se pagó» en vez de romperse, sobre todo cuando el cliente
@@ -176,7 +182,21 @@ export async function GET(req: NextRequest) {
         ?? (linkToken ? `/${auth.sourceType === 'ticket' ? 'ticket' : 'proyecto'}/${auth.sourceId}?link=${encodeURIComponent(linkToken)}` : null)
       : null;
 
+    // Lo que se puede elegir: las etapas pendientes y los requerimientos (registros) con lo que les falta.
+    let elegir: any = null;
+    if (puedeElegir) {
+      const tb = await getTicketBilling(auth.sourceId);
+      const registros = (await estadoPagoRegistros(auth.sourceId)).filter((r) => !r.enMarcha && r.costo > 0);
+      elegir = {
+        pendiente: tb?.pending ?? 0,
+        etapas: (tb?.etapas || []).map((e) => ({ id: e.id, nombre: e.name, importe: e.amount, pagada: !!(e.invoiceId || e.cobro) })),
+        requerimientos: registros.map((r) => ({ id: r.id, nombre: r.descripcion, fecha: r.fecha, costo: r.costo, pagado: r.pagado, restante: r.restante, estado: r.estado })),
+      };
+    }
+
     return NextResponse.json({
+      elegir,
+      seleccion,
       detalle,
       detalleUrl,
       // Los dos importes, para que el cliente elija con el número delante: la transferencia

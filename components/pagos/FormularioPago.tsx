@@ -38,6 +38,8 @@ export type DatosPago = {
   proyecto: { id: number; tipo?: 'project' | 'ticket' | 'subscription' | 'product'; titulo: string; descripcion: string | null; estado: string | null; cliente: string | null; etapas: any[] };
   etapa: { id: number; nombre: string };
   importes: { neto: number; recargo: number; total: number };
+  /** Lo que el cliente puede elegir en un ticket sin etapa fija (etapas y requerimientos). */
+  elegir?: any;
   pasarela: { proveedor: string; metodos: string[]; cobraEnCliente?: boolean; clavePublica: string | null; entorno: string | null };
   facturacion: any;
   /** Todos los datos de facturación guardados del cliente (hasta 3), los predeterminados primero. */
@@ -163,7 +165,7 @@ function useKushki(clavePublica: string | null, entorno: string) {
 }
 
 export default function FormularioPago({
-  datos, link, sourceType, sourceId, stageId, periodo, onPagado,
+  datos, link, sourceType, sourceId, stageId, periodo, onPagado, seleccion, bloqueo,
 }: {
   datos: DatosPago;
   /** Canal 3: el token del enlace. Sin él manda la sesión (canal 2). */
@@ -174,6 +176,10 @@ export default function FormularioPago({
   /** El mes que se paga, en suscripciones (`AAAA-MM`). */
   periodo?: string;
   onPagado?: (invoiceId: number | null) => void;
+  /** Lo que eligió el cliente (etapas o requerimientos de un ticket); el servidor recalcula el importe. */
+  seleccion?: unknown;
+  /** Si hay algo que impide pagar lo elegido (nada marcado, importe inválido), el botón no avanza. */
+  bloqueo?: string;
 }) {
   const { importes, pasarela } = datos;
   const esSimulado = pasarela.proveedor === 'simulado';
@@ -357,6 +363,7 @@ export default function FormularioPago({
           producto_id: sourceType === 'product' ? sourceId : undefined,
           periodo: sourceType === 'subscription' ? periodo : undefined,
           stage_id: stageId,
+          seleccion: seleccion ?? undefined,
           token, metodo, facturacion: f,
           meses: metodo === 'card' && meses > 1 ? meses : undefined,
         }),
@@ -465,6 +472,7 @@ export default function FormularioPago({
   /** Lo que hace el botón principal en cada paso. */
   async function avanzar(e: React.FormEvent) {
     e.preventDefault();
+    if (bloqueo) return;
     if (paso === 'metodo') return ir(pasos[iPaso + 1]);
     if (paso === 'cuenta') return ir(transferIntent ? 'comprobante' : 'factura');
     // La factura de una transferencia crea el cobro y, si sale bien, `pagar` lleva al comprobante.
@@ -804,7 +812,7 @@ export default function FormularioPago({
             </button>
           ) : <span />}
           {principal && (
-            <button type="submit" disabled={principal.desactivado || enviando}
+            <button type="submit" disabled={principal.desactivado || enviando || !!bloqueo} title={bloqueo || undefined}
               className="inline-flex items-center justify-center gap-2 h-11 px-5 rounded-lg bg-[var(--violeta)] hover:bg-[#3f2578] text-[15px] font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed max-sm:flex-1">
               {enviando
                 ? <><Loader2 className="w-[18px] h-[18px] animate-spin" /> Procesando…</>

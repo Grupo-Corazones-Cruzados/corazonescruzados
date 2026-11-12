@@ -8,9 +8,11 @@ import { pool } from '@/lib/db';
  * facturable sin tocar nada más, como ya pasa con las etapas del plan.
  *
  * La regla: AL FACTURAR UN TICKET ENTRAN TODOS LOS REGISTROS SIN FACTURAR — por «Completar y
- * facturar», por un cobro en línea (de todo lo pendiente o de UNA etapa: el cobro de una etapa
- * consume también todos los registros que existen en ese momento) y por una refactura. Un abono
- * no consume registros: es dinero a cuenta, no un trabajo concreto.
+ * facturar», por un cobro en línea de TODO lo pendiente y por una refactura. Un abono no consume
+ * registros: es dinero a cuenta, no un trabajo concreto.
+ * ⇒ Desde el 2026-11-12 un cobro de UNA o VARIAS etapas, o de requerimientos elegidos, ya no se los
+ * lleva todos: lo pagado se REPARTE (lib/tickets/reparto-pagos.ts) y solo quedan facturados los que
+ * cubrió enteros; el resto lleva su abono parcial en `ticket_registro_pagos`.
  *
  * Un registro con el reloj en marcha no entra: su costo aún no es el final.
  */

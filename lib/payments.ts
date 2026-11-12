@@ -1,4 +1,5 @@
 import { pool } from '@/lib/db';
+import { prepararRepartoPagos } from '@/lib/tickets/reparto-pagos';
 
 export type PaymentInvoice = {
   id: number;
@@ -510,6 +511,8 @@ export type TicketBilling = {
  */
 export async function getTicketBilling(ticketId: string | number): Promise<TicketBilling | null> {
   await ensureStageBilling();
+  // `payment_intents.seleccion` (cobro de varias etapas elegidas por el cliente) tiene que existir antes de mirarla.
+  await prepararRepartoPagos();
   const { rows: [t] } = await pool.query(
     `SELECT t.id, t.title, t.status,
             COALESCE((SELECT SUM(cost) FROM gcc_world.ticket_actions WHERE ticket_id = t.id), 0) AS consumido
@@ -527,7 +530,8 @@ export async function getTicketBilling(ticketId: string | number): Promise<Ticke
   const { rows: filas } = await pool.query(
     `SELECT e.id, e.name, e.amount, e.sort_order, i.id AS invoice_id, i.invoice_number,
             (SELECT pi.status FROM gcc_world.payment_intents pi
-              WHERE pi.stage_id = e.id AND pi.status IN ('paid','awaiting') LIMIT 1) AS cobro
+              WHERE (pi.stage_id = e.id OR pi.seleccion->'etapas' @> to_jsonb(e.id))
+                AND pi.status IN ('paid','awaiting') LIMIT 1) AS cobro
        FROM gcc_world.project_stages e
        LEFT JOIN gcc_world.invoices i ON i.id = e.invoice_id AND i.status <> 'cancelled'
       WHERE e.ticket_id = ($1)::bigint

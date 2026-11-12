@@ -17,6 +17,7 @@ import { proveedorActivo } from '@/lib/pagos';
 import { deducirIdentificacion, errorRazonSocial } from '@/lib/pagos/identificacion';
 import { CUENTAS_BANCARIAS } from '@/lib/pagos/cuentas';
 import { pool } from '@/lib/db';
+import { leerSeleccion } from '@/lib/tickets/reparto-pagos';
 
 /**
  * Valida lo que el cliente escribió y **deduce** su tipo de identificación.
@@ -88,7 +89,9 @@ export async function POST(req: NextRequest) {
     // El importe se recalcula SIEMPRE aquí. Y `cotizarEtapa` vuelve a comprobar contra la
     // base que la etapa siga sin facturar: entre abrir la pantalla y pulsar «pagar» pudo
     // facturarla alguien desde el módulo de facturas.
-    const etapa = await cotizarCobro(auth, proveedor.nombre);
+    // El formato elegido por el cliente (2026-11-12): solo en un ticket sin etapa fija; el importe lo calcula el servidor.
+    const seleccion = auth.sourceType === 'ticket' && auth.stageId == null ? leerSeleccion(cuerpo.seleccion) : null;
+    const etapa = await cotizarCobro(auth, proveedor.nombre, seleccion);
 
     const intento = await crearIntento({
       etapa,

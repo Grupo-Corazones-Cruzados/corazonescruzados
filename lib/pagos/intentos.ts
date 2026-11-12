@@ -29,6 +29,7 @@ import { addInvoiceIncomeToFinance, addSubscriptionIncomeToFinance } from '@/lib
 import { registrarCobro } from '@/lib/ganancias';
 import { upsertBillingForClient } from '@/lib/billing-clients';
 import { calcularRecargo, tarifaAlCliente, CONCEPTO_RECARGO } from './comision';
+import { estadoPagoRegistros, prepararRepartoPagos, type SeleccionCobro } from '@/lib/tickets/reparto-pagos';
 import { TARIFA_TRANSFERENCIA } from './cuentas';
 import { FORMA_PAGO_SRI, FORMA_PAGO_DEBITO, type MetodoPago } from './tipos';
 import { PUBLICAR_AL_COMPLETAR_SQL } from '@/lib/projects/permisos';
@@ -122,6 +123,8 @@ export type Cobrable = {
    */
   importes: Record<MetodoPago, { recargo: number; total: number }>;
   proveedor: string;
+  /** Lo que eligió el cliente en el enlace (varias etapas o requerimientos). Solo tickets. */
+  seleccion?: SeleccionCobro | null;
 };
 
 /** Alias histórico: el cobro de una etapa de proyecto es un `Cobrable` como cualquier otro. */
@@ -316,6 +319,57 @@ export async function cotizarTicket(
 }
 
 /**
+ * ⇒ EL CLIENTE ELIGE QUÉ PAGA (Fernando, 2026-11-12): varias ETAPAS pendientes o varios REQUERIMIENTOS
+ * (registros de trabajo) pendientes o a medias. El importe se calcula AQUÍ desde la base —el navegador solo
+ * manda ids— y nunca pasa de lo que el ticket debe. Al confirmarse, lo pagado se reparte sobre los
+ * registros (`repartirPagoEnRegistros`).
+ */
+export async function cotizarTicketElegido(ticketId: string | number, proveedor: string, seleccion: SeleccionCobro): Promise<Cobrable> {
+  const billing = await getTicketBilling(ticketId);
+  if (!billing) throw new Error('El ticket no existe.');
+  if (billing.status === 'cancelled') throw new Error('Este ticket está cancelado. Escríbenos antes de pagar.');
+  const enEspera = await cobroPagadoDeOrigen('ticket', String(billing.ticketId));
+  if (enEspera?.status === 'awaiting') {
+    throw new Error('Este ticket ya tiene un pago por transferencia esperando confirmación. No hace falta pagar otra vez.');
+  }
+
+  let neto = 0;
+  let concepto = '';
+  if (seleccion.modo === 'etapas') {
+    const nombres: string[] = [];
+    for (const id of seleccion.etapas) {
+      const e = billing.etapas.find((x) => x.id === id);
+      if (!e) throw new Error('Una de las etapas no pertenece a este ticket.');
+      if (e.invoiceId || e.cobro) throw new Error(`La etapa «${e.name}» ya está pagada.`);
+      if (!(e.amount > 0)) throw new Error(`La etapa «${e.name}» no tiene importe todavía.`);
+      neto += e.amount; nombres.push(e.name);
+    }
+    concepto = nombres.length === 1 ? nombres[0] : `Etapas: ${nombres.join(', ')}`;
+  } else {
+    const estado = await estadoPagoRegistros(billing.ticketId);
+    const nombres: string[] = [];
+    for (const id of seleccion.requerimientos) {
+      const r = estado.find((x) => x.id === id);
+      if (!r) throw new Error('Uno de los requerimientos no pertenece a este ticket.');
+      if (r.enMarcha) throw new Error(`«${r.descripcion}» tiene el reloj en marcha: aún no tiene su costo final.`);
+      if (!(r.restante > 0)) throw new Error(`«${r.descripcion}» ya está pagado.`);
+      neto += r.restante; nombres.push(r.descripcion);
+    }
+    concepto = nombres.length === 1 ? nombres[0] : `Requerimientos: ${nombres.join(', ')}`;
+  }
+  neto = Math.round(neto * 100) / 100;
+  if (!(neto > 0)) throw new Error('Elige al menos algo que pagar.');
+  if (neto > billing.pending + 0.009) throw new Error(`Lo elegido ($${neto.toFixed(2)}) pasa de lo que queda por pagar ($${billing.pending.toFixed(2)}).`);
+  const { recargo, total } = calcularRecargo(neto, tarifaAlCliente(proveedor));
+  return {
+    importes: importesPorMetodo(neto, proveedor),
+    sourceType: 'ticket', sourceId: String(billing.ticketId), title: billing.title,
+    stageId: null, conceptName: concepto.length > 280 ? concepto.slice(0, 277) + '…' : concepto,
+    neto, recargo, total, proveedor, seleccion,
+  };
+}
+
+/**
  * Un cobro ya pagado de esta etapa, si lo hay.
  *
  * Se consulta ANTES de crear nada. El índice único de la base es el candado final, pero
@@ -462,6 +516,8 @@ export async function cotizarProducto(
 export async function cotizarCobro(
   destino: { sourceType: OrigenCobro; sourceId: string; stageId: number | null },
   proveedor: string,
+  /** El formato que eligió el cliente (Fernando, 2026-11-12). Solo en tickets y sin etapa fija. */
+  seleccion: SeleccionCobro | null = null,
 ): Promise<Cobrable> {
   if (destino.sourceType === 'subscription') {
     const { subId, periodo } = partesMesSuscripcion(destino.sourceId);
@@ -471,7 +527,11 @@ export async function cotizarCobro(
     const { itemId, userId } = partesAltaProducto(destino.sourceId);
     return cotizarProducto(itemId, userId, proveedor);
   }
-  if (destino.sourceType === 'ticket') return cotizarTicket(destino.sourceId, proveedor, destino.stageId);
+  if (destino.sourceType === 'ticket') {
+    return seleccion && destino.stageId == null
+      ? cotizarTicketElegido(destino.sourceId, proveedor, seleccion)
+      : cotizarTicket(destino.sourceId, proveedor, destino.stageId);
+  }
   // Sin etapa ya no es un error: es un proyecto sin plan, y se cobra entero de una vez.
   if (destino.stageId == null) return cotizarProyectoSinEtapas(destino.sourceId, proveedor);
   return cotizarEtapa(destino.sourceId, destino.stageId, proveedor);
@@ -512,9 +572,11 @@ export async function cobroPagadoDeOrigen(
 }
 
 export async function cobroPagadoDeEtapa(stageId: number): Promise<{ id: number; invoice_id: number | null; status: string } | null> {
+  // También cuenta la etapa pagada DENTRO de un cobro de varias etapas elegidas (`seleccion`, 2026-11-12).
+  await prepararRepartoPagos();
   const { rows } = await pool.query(
     `SELECT id, invoice_id, status FROM gcc_world.payment_intents
-      WHERE stage_id = $1 AND status IN ('paid','awaiting') LIMIT 1`,
+      WHERE (stage_id = $1 OR seleccion->'etapas' @> to_jsonb($1::int)) AND status IN ('paid','awaiting') LIMIT 1`,
     [stageId],
   );
   return rows[0] || null;
@@ -536,6 +598,9 @@ export async function crearIntento(opts: {
   // comisión que nadie va a cobrar.
   const delMetodo = opts.etapa.importes[metodo];
   const etapa: Cobrable = { ...opts.etapa, recargo: delMetodo.recargo, total: delMetodo.total };
+  // La selección del cliente (etapas o requerimientos) viaja con el intento: al confirmarse decide qué se marca.
+  await prepararRepartoPagos();
+  const seleccion = etapa.seleccion ? JSON.stringify(etapa.seleccion) : null;
 
   const yaPagada = etapa.stageId != null
     ? await cobroPagadoDeEtapa(etapa.stageId)
@@ -558,7 +623,7 @@ export async function crearIntento(opts: {
     `UPDATE gcc_world.payment_intents
         SET billing_snapshot = $3, payer_email = $4, net_amount = $5, fee_amount = $6,
             charge_amount = $7, provider = $8, channel = $9, status = 'pending',
-            provider_status = NULL, failure_reason = NULL, updated_at = NOW()
+            provider_status = NULL, failure_reason = NULL, seleccion = $11::jsonb, updated_at = NOW()
       WHERE id = (
         SELECT id FROM gcc_world.payment_intents
          WHERE source_id = $2 AND source_type = $10
@@ -570,7 +635,7 @@ export async function crearIntento(opts: {
       RETURNING id`,
     [
       etapa.stageId, etapa.sourceId, JSON.stringify(facturacion), payerEmail,
-      etapa.neto, etapa.recargo, etapa.total, etapa.proveedor, canal, etapa.sourceType,
+      etapa.neto, etapa.recargo, etapa.total, etapa.proveedor, canal, etapa.sourceType, seleccion,
     ],
   );
   if (vivo) {
@@ -580,13 +645,13 @@ export async function crearIntento(opts: {
   const { rows: [fila] } = await pool.query(
     `INSERT INTO gcc_world.payment_intents
        (source_type, source_id, stage_id, channel, provider,
-        net_amount, fee_amount, charge_amount, billing_snapshot, payer_email, created_by)
-     VALUES ($11, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        net_amount, fee_amount, charge_amount, billing_snapshot, payer_email, created_by, seleccion)
+     VALUES ($11, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $12::jsonb)
      RETURNING id`,
     [
       etapa.sourceId, etapa.stageId, canal, etapa.proveedor,
       etapa.neto, etapa.recargo, etapa.total,
-      JSON.stringify(facturacion), payerEmail, createdBy ?? null, etapa.sourceType,
+      JSON.stringify(facturacion), payerEmail, createdBy ?? null, etapa.sourceType, seleccion,
     ],
   );
   return { id: Number(fila.id), total: etapa.total, neto: etapa.neto, recargo: etapa.recargo };

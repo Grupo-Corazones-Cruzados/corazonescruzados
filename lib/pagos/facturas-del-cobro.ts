@@ -30,7 +30,7 @@ import { cargarEmisor, emisorHabilitadoDe, numeracionPorAmbiente, esGcc, type Em
 import { importesDelCobro, esCobroDeEnsayo, partesDeTerceros, registrarCobro } from '@/lib/ganancias';
 import { DUENO_FINANZAS_GCC, addInvoiceIncomeToFinance, addSubscriptionIncomeToFinance } from '@/lib/finance';
 import { getTicketBilling } from '@/lib/payments';
-import { marcarRegistrosFacturados } from '@/lib/tickets/facturacion';
+import { leerSeleccion, prepararRepartoPagos, repartirPagoEnRegistros, type SeleccionCobro } from '@/lib/tickets/reparto-pagos';
 import { completarOrigenCobrado } from '@/lib/pagos/completar-origen';
 import { nombrarTrasPago } from '@/lib/pagos/nombre-estandar';
 import { upsertBillingForClient } from '@/lib/billing-clients';
@@ -625,6 +625,13 @@ export async function anotarFacturaUnica(intentId: number, invoiceId: number, au
  * había sin facturar. Ver lib/tickets/facturacion.ts.
  */
 export async function marcarTicketCobrado(intentId: number, sourceId: string, stageId: number | null, neto: number, invoiceId: number): Promise<void> {
+  // Lo que eligió el cliente en el enlace, guardado con el cobro (null = el cobro de siempre).
+  let seleccion: SeleccionCobro | null = null;
+  try {
+    await prepararRepartoPagos();
+    const { rows: [pi] } = await pool.query(`SELECT seleccion FROM gcc_world.payment_intents WHERE id = $1`, [intentId]);
+    seleccion = leerSeleccion(pi?.seleccion);
+  } catch (e: any) { console.error('[pagos] cobro', intentId, 'no se pudo leer su selección:', e.message); }
   try {
     if (stageId != null) {
       await pool.query(
@@ -632,6 +639,18 @@ export async function marcarTicketCobrado(intentId: number, sourceId: string, st
           WHERE id = $3 AND ticket_id = ($4)::bigint`,
         [invoiceId, neto.toFixed(2), stageId, sourceId],
       );
+    } else if (seleccion?.modo === 'etapas') {
+      // Varias etapas elegidas por el cliente (2026-11-12): solo esas, con su importe de ese momento.
+      const tb = await getTicketBilling(sourceId);
+      for (const e of (tb?.etapas || []).filter((x) => seleccion.etapas.includes(x.id) && !x.invoiceId)) {
+        await pool.query(
+          `UPDATE gcc_world.project_stages SET invoice_id = $1, amount = $2, updated_at = NOW()
+            WHERE id = $3 AND ticket_id = ($4)::bigint`,
+          [invoiceId, e.amount.toFixed(2), e.id, sourceId],
+        );
+      }
+    } else if (seleccion?.modo === 'requerimientos') {
+      // Por requerimientos no se toca el plan de etapas: lo pagado baja de lo pendiente del ticket.
     } else {
       const tb = await getTicketBilling(sourceId);
       for (const e of (tb?.etapas || []).filter((x) => !x.invoiceId && !x.cobro)) {
@@ -645,8 +664,10 @@ export async function marcarTicketCobrado(intentId: number, sourceId: string, st
   } catch (e: any) {
     console.error('[pagos] cobro', intentId, 'no pudo marcar las etapas del ticket:', e.message);
   }
-  try { await marcarRegistrosFacturados(sourceId, invoiceId); }
-  catch (e: any) { console.error('[pagos] cobro', intentId, 'no pudo marcar los registros del ticket:', e.message); }
+  // ⇒ LO PAGADO SE REPARTE SOBRE LOS REGISTROS (Fernando, 2026-11-12): enteros los que caben, de más antiguo a
+  // más nuevo, y el resto como abono parcial. «Todo lo pendiente» los deja todos pagados, como antes.
+  try { await repartirPagoEnRegistros({ intentId, ticketId: sourceId, neto, invoiceId, seleccion, stageId }); }
+  catch (e: any) { console.error('[pagos] cobro', intentId, 'no pudo repartir el pago en los registros del ticket:', e.message); }
 }
 
 /**

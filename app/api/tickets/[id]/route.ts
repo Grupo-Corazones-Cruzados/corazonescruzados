@@ -1,3 +1,4 @@
+import { prepararRepartoPagos } from '@/lib/tickets/reparto-pagos';
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
@@ -16,6 +17,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     await ensureTicketSlotColumns();
     await ensureTicketActionColumns();
+    await prepararRepartoPagos();
     const { rows } = await pool.query(
       `SELECT t.*, c.name as client_name, c.email as client_email,
               c.phone as client_phone, c.ruc as client_ruc, c.address as client_address,
@@ -23,7 +25,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
               (SELECT json_agg(ts ORDER BY ts.date) FROM gcc_world.ticket_time_slots ts WHERE ts.ticket_id = t.id) as time_slots,
               (SELECT json_agg(ta ORDER BY ta.work_date NULLS LAST, ta.created_at) FROM (
                  -- Cada registro dice si ya está facturado y en qué factura (lib/tickets/facturacion.ts).
-                 SELECT a.*, (fi.id IS NOT NULL) AS facturada, COALESCE(fi.invoice_number, '#' || fi.id) AS factura_numero
+                 SELECT a.*, (fi.id IS NOT NULL) AS facturada, COALESCE(fi.invoice_number, '#' || fi.id) AS factura_numero,
+                        -- Lo abonado por cobros que no lo cubrieron entero (lib/tickets/reparto-pagos.ts, 2026-11-12).
+                        COALESCE((SELECT SUM(p.monto) FROM gcc_world.ticket_registro_pagos p
+                                   LEFT JOIN gcc_world.invoices pi ON pi.id = p.invoice_id
+                                  WHERE p.action_id = a.id AND (p.invoice_id IS NULL OR pi.status IS DISTINCT FROM 'cancelled')), 0)::float AS abonado
                    FROM gcc_world.ticket_actions a
                    LEFT JOIN gcc_world.invoices fi ON fi.id = a.invoice_id AND fi.status <> 'cancelled'
                   WHERE a.ticket_id = t.id) ta) as actions,

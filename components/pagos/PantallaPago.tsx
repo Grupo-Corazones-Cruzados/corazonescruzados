@@ -17,15 +17,17 @@
  * reconocer que son de la misma casa. Por eso reusa `Contenedor` y `Tarjeta` y repite su
  * forma de listar las etapas, en vez de inventarse un lenguaje propio.
  *
- * Y hereda también su línea roja: **enseña el acuerdo, no la cocina**. Ni requerimientos,
- * ni miembros, ni costos internos.
+ * Y hereda también su línea roja: **enseña el acuerdo, no la cocina**. Ni miembros ni costos
+ * internos. ⇒ Excepción decidida por Fernando (2026-11-12): en un TICKET el cliente ve sus etapas y
+ * sus requerimientos (registros de trabajo, con su importe) para elegir qué paga (`PanelElegir`).
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, ChevronDown, Eye } from 'lucide-react';
 import { Contenedor, Tarjeta } from '@/components/sitio/piezas';
 import { CargandoDetalle, ErrorEnlace } from '@/components/sitio/DetallePublico';
 import FormularioPago, { type DatosPago } from '@/components/pagos/FormularioPago';
+import PanelElegir from '@/components/pagos/PanelElegir';
 import { fmt2 } from '@/lib/format';
 
 export default function PantallaPago({ consulta, link, sourceId, stageId, sourceType, periodo }: {
@@ -43,14 +45,52 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [verTodo, setVerTodo] = useState(false);
+  // ⇒ EL CLIENTE ELIGE EL FORMATO (Fernando, 2026-11-12): completo, por etapas o por requerimientos.
+  const base = useRef<DatosPago | null>(null);
+  const [modo, setModo] = useState<'completo' | 'etapas' | 'requerimientos'>('completo');
+  const [marcadas, setMarcadas] = useState<number[]>([]);
+  const [bloqueo, setBloqueo] = useState('');
+  const [recalculando, setRecalculando] = useState(false);
 
   useEffect(() => {
     fetch(`/api/pagos/etapa?${consulta}`)
       .then(r => r.json())
-      .then(d => { if (d.error) setError(d.error); else setDatos(d); })
+      .then(d => { if (d.error) setError(d.error); else { base.current = d; setDatos(d); } })
       .catch(() => setError('No se pudo cargar el pago.'))
       .finally(() => setCargando(false));
   }, [consulta]);
+
+  const seleccion = modo === 'etapas' ? { modo, etapas: marcadas } : modo === 'requerimientos' ? { modo, requerimientos: marcadas } : null;
+
+  // Lo elegido se cotiza en el servidor (el navegador solo manda ids); el formulario muestra ese total.
+  useEffect(() => {
+    if (!base.current) return;
+    if (!seleccion) { setBloqueo(''); setDatos(base.current); return; }
+    if (!marcadas.length) { setBloqueo(modo === 'etapas' ? 'Elige al menos una etapa.' : 'Elige al menos un requerimiento.'); return; }
+    let vigente = true;
+    setRecalculando(true);
+    fetch(`/api/pagos/etapa?${consulta}&seleccion=${encodeURIComponent(JSON.stringify(seleccion))}`)
+      .then(r => r.json())
+      .then(d => {
+        if (!vigente) return;
+        if (d.error) { setBloqueo(d.error); return; }
+        setBloqueo('');
+        setDatos(d);
+      })
+      .catch(() => vigente && setBloqueo('No se pudo calcular el importe.'))
+      .finally(() => vigente && setRecalculando(false));
+    return () => { vigente = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modo, marcadas.join(','), consulta]);
+
+  const elegirModo = (m: typeof modo) => {
+    const e = base.current?.elegir;
+    setModo(m);
+    // Al cambiar de formato se marca todo lo pendiente; el cliente quita lo que no quiere pagar ahora.
+    setMarcadas(m === 'etapas' ? (e?.etapas || []).filter((x: any) => !x.pagada && x.importe > 0).map((x: any) => x.id)
+      : m === 'requerimientos' ? (e?.requerimientos || []).filter((x: any) => x.restante > 0).map((x: any) => x.id) : []);
+  };
+  const alternar = (id: number) => setMarcadas((a) => a.includes(id) ? a.filter((x) => x !== id) : [...a, id]);
 
   if (cargando) return <Contenedor ancho="amplio" className="py-24"><CargandoDetalle /></Contenedor>;
   if (error || !datos) {
@@ -60,7 +100,9 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
   const { proyecto, etapa } = datos;
   const etapas = proyecto.etapas || [];
   const totalPlan = etapas.reduce((s: number, e: any) => s + Number(e.importe || 0), 0);
-  const hayPlan = etapas.length > 0;
+  const elegir = base.current?.elegir || null;
+  // Con elección, el panel «Cómo quieres pagar» sustituye a la lista del plan.
+  const hayPlan = etapas.length > 0 && !elegir;
   const hayDetalle = (datos.detalle || []).length > 0;
 
   const tipo = proyecto.tipo === 'ticket' ? 'ticket' : 'proyecto';
@@ -154,6 +196,12 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
             </div>
           )}
 
+          {/* ── CÓMO QUIERES PAGAR ── (ticket sin etapa fija) */}
+          {elegir && (
+            <PanelElegir elegir={elegir} modo={modo} marcadas={marcadas} onModo={elegirModo} onAlternar={alternar}
+              total={bloqueo ? null : datos.importes.neto} recalculando={recalculando} bloqueo={bloqueo} />
+          )}
+
           {/* ── QUÉ SE ESTÁ PAGANDO ── (ticket, suscripción, producto: no hay plan de etapas)
               «una página que muestre el contenido de cada cosa que se vaya a pagar» (Fernando,
               2026-08-26). Nunca costos internos ni reparto del trabajo. */}
@@ -182,6 +230,8 @@ export default function PantallaPago({ consulta, link, sourceId, stageId, source
             sourceId={sourceId}
             stageId={stageId ?? undefined}
             periodo={periodo}
+            seleccion={seleccion}
+            bloqueo={bloqueo || (recalculando ? 'Calculando el importe…' : undefined)}
           />
         </Tarjeta>
       </div>

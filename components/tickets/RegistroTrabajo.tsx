@@ -277,6 +277,10 @@ export default function RegistroTrabajo({
                     {r.timer_started_at && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" aria-label="Reloj en marcha" />}
                     <span className="text-digi-muted">{fmtTiempo(seg)}</span>
                     <span className="text-accent font-semibold">${fmt2(r.timer_started_at ? (seg / 3600) * tarifa : Number(r.cost))}</span>
+                    {/* Un cobro que no lo cubrió entero (2026-11-12): cuánto lleva pagado. */}
+                    {!r.facturada && Number(r.abonado) > 0 && (
+                      <span title="Pagado en parte: el resto queda pendiente" className="text-amber-600" style={mf}>· Pagado ${fmt2(Number(r.abonado))} de ${fmt2(Number(r.cost))}</span>
+                    )}
                     {r.facturada && (
                       parcial
                         ? <span title={`Facturado en ${r.factura_numero}. Van ${avanceEtapas!.facturadas} de ${avanceEtapas!.total} etapas: falta por cobrar`} className="text-amber-600" style={mf}>· Facturado {avanceEtapas!.facturadas}/{avanceEtapas!.total}</span>
