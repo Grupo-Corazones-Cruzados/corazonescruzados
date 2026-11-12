@@ -12358,3 +12358,11 @@ API de Gemini solo como apoyo puntual. Primero, una prueba local gratuita con su
   token real. Railway: app y productos se duermen sin tráfico; solo la base sigue encendida.
 - Falta: que Fernando pruebe con su sesión; vigilar el respaldo de las 03:30 (M1 → Railway) y el del SSD; protecciones
   de Cloudflare (tope de intentos en /api/auth) y aviso de caída; cancelar Microsoft 365 tras 48 h.
+- ⚠️ **Tras el cambio, el inicio de sesión llevaba a `localhost:3100`** (lo vio Fernando a las 21:49): en el M1 la
+  app arrancaba con `next start -H 127.0.0.1`, y con esa opción Next arma `request.url` (y las redirecciones del
+  middleware) con «localhost» en vez del Host que manda el túnel. En Railway arrancaba sin `-H`. Arreglado en
+  `~/gcc/correr.sh` (sin `-H` para la app; el puerto 3100 sigue cerrado hacia fuera por el filtro pf). **Lección:**
+  probar una redirección por el dominio público antes de quitar el mantenimiento.
+- El M1 servía la versión del 2026-11-08 (100 commits atrás): las demás sesiones seguían haciendo push a Railway. Se
+  publicó la actual y se instaló `publicar-tras-push.sh` (hook `pre-push`): cada push a main se publica solo en el M1.
+  Probado: publicó 6839fc7b solo en ~2,5 min.
