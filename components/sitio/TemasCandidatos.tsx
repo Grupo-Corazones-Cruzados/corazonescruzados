@@ -6,19 +6,15 @@
  * el contenido desde esta página»). El recorrido es `RecorridoPagina`, el mismo que Clientes.
  *
  * El contenido es **el mismo componente** que pinta el formulario (`SLIDES` de
- * `OnboardingSlidersModal`): cambiar un texto allí lo cambia aquí. El último paso es el formulario
- * de postulación (`PostulacionEnPagina`), con la misma pausa por equipo que tenía en la portada.
+ * `OnboardingSlidersModal`): cambiar un texto allí lo cambia aquí. El formulario de postulación ya NO
+ * va en la página (Fernando, 2026-11-11: «ese contenido ya está en el botón de postularme»): se
+ * postula desde la ventana del botón «Postularme».
  */
 
-import { Send } from 'lucide-react';
-import { SLIDES, PostulacionEnPagina } from '@/components/landing/OnboardingSlidersModal';
-import { tituloDePaso } from '@/lib/sitio/pasosPostulacion';
+import { SLIDES } from '@/components/landing/OnboardingSlidersModal';
 import RecorridoPagina from './RecorridoPagina';
 
-const PASOS = [
-  ...SLIDES,
-  { id: 'postulacion' as const, title: tituloDePaso('postulacion'), Icon: Send, Component: PostulacionEnPagina },
-].map(({ id, title, Icon, Component }) => ({
+const PASOS = SLIDES.map(({ id, title, Icon, Component }) => ({
   id,
   title,
   icono: <Icon className="h-4 w-4" />,

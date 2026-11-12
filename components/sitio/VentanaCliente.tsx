@@ -18,18 +18,35 @@ import { ICONOS, conNegritas } from './piezas';
 import { VentanaRecorrido, type PasoVentana } from '@/components/landing/OnboardingSlidersModal';
 import { FormularioCliente, CuentaClienteCreada } from '@/components/landing/ClientSignupModal';
 
-/** Los temas de Clientes como pasos de la ventana: su texto, tal cual lo escribió Fernando. */
-export const PASOS_CLIENTE: PasoVentana[] = TEMAS_CLIENTES.map((t) => {
-  const texto = t.descripcion || t.texto || '';
-  return {
-    id: t.id,
-    title: t.titulo,
-    Icon: ICONOS[t.icono] ?? ICONOS.capas,
-    Component: function PasoTemaCliente() {
-      return <p className="text-[0.9375rem] leading-[1.65] text-digi-text m-0">{conNegritas(texto)}</p>;
-    },
-  };
-});
+/**
+ * Los tres temas de Clientes en UN SOLO paso (Fernando, 2026-11-11: «elimina que sean diferentes pasos
+ * y solo muestra lo que se da para los 3 puntos en uno solo»): cada uno con su icono, su nombre y su
+ * texto de `TEMAS_CLIENTES`, tal cual. Después, el alta.
+ */
+export const PASOS_CLIENTE: PasoVentana[] = [{
+  id: 'propuestas',
+  title: 'Soluciones, Tickets y Proyectos',
+  Icon: ICONOS.capas,
+  Component: function PasoPropuestas() {
+    return (
+      <div className="flex flex-col gap-6">
+        {TEMAS_CLIENTES.map((t) => {
+          const Icono = ICONOS[t.icono] ?? ICONOS.capas;
+          const texto = t.descripcion || t.texto || '';
+          return (
+            <section key={t.id} className="flex flex-col gap-2">
+              <h3 className="m-0 flex items-center gap-2 text-[1rem] font-semibold text-digi-text">
+                <Icono className="h-4 w-4 text-accent" aria-hidden />
+                {t.titulo}
+              </h3>
+              <p className="m-0 text-[0.9375rem] leading-[1.65] text-digi-text">{conNegritas(texto)}</p>
+            </section>
+          );
+        })}
+      </div>
+    );
+  },
+}];
 
 export default function BotonCrearCuentaCliente() {
   const [abierta, setAbierta] = useState(false);
@@ -71,22 +88,3 @@ export default function BotonCrearCuentaCliente() {
   );
 }
 
-/** El último paso de la página `/clientes`: el mismo alta, en claro, y su confirmación en el sitio. */
-export function AltaClienteEnPagina() {
-  const [creada, setCreada] = useState<string | null>(null);
-  if (creada) {
-    return (
-      <div className="postulacion-aviso" role="status">
-        <UserPlus aria-hidden />
-        <div>
-          <p className="postulacion-aviso-titulo">Confirma tu correo</p>
-          <p className="m-0 text-[0.9375rem] leading-[1.65] text-digi-text">
-            Te enviamos un enlace a <strong>{creada}</strong>. Ábrelo para activar tu cuenta y entrar a tu
-            espacio de cliente. Si no lo ves en unos minutos, revisa la carpeta de correo no deseado.
-          </p>
-        </div>
-      </div>
-    );
-  }
-  return <FormularioCliente tema="claro" onCreada={setCreada} />;
-}

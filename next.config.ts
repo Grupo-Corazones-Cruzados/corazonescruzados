@@ -70,6 +70,9 @@ const nextConfig: NextConfig = {
       { source: '/negocio', destination: '/clientes', permanent: true },
       // El apartado Lideración de Candidatos se quitó (2026-11-11): Onboarding ya lo explica.
       { source: '/candidatos/lideracion', destination: '/candidatos/onboarding', permanent: true },
+      // Los formularios salieron de las páginas (2026-11-11): se llega por los botones de la presentación.
+      { source: '/candidatos/postulacion', destination: '/candidatos', permanent: true },
+      { source: '/clientes/crear-cuenta', destination: '/clientes', permanent: true },
       // El módulo «Borradores» pasó a ser el estado «Sin conexión» de Tickets (2026-10-16).
       { source: '/borradores', destination: '/sin-conexion', permanent: false },
       { source: '/tickets-sin-conexion', destination: '/sin-conexion', permanent: false },

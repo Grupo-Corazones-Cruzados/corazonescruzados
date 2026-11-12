@@ -10,8 +10,6 @@ import { TEMAS_CLIENTES } from '@/lib/sitio/contenido';
 import { cargarSolucionesCacheadas, cargarTicketsCacheados, cargarProyectosCacheados, cargarProductosCacheados } from '@/app/(sitio)/soluciones/datos';
 import { ICONOS, conNegritas } from './piezas';
 import RecorridoPagina from './RecorridoPagina';
-import { AltaClienteEnPagina } from './VentanaCliente';
-import { UserPlus } from 'lucide-react';
 import ListaTrabajos from './ListaTrabajos';
 import ListaProductos from './ListaProductos';
 
@@ -23,7 +21,7 @@ export default async function TemasClientes({ inicial }: { inicial: string }) {
   const solucionDe = Object.fromEntries(soluciones.flatMap((s) => s.talentos.map((t) => [t.talento, s.nombre])));
   const slugDe = Object.fromEntries(soluciones.map((s) => [s.nombre, s.slug]));
   // Desde 2026-11-11, el mismo recorrido que Candidatos (Fernando): cada tema con su texto en la
-  // tarjeta y su lista debajo, y al final el alta de la cuenta de cliente.
+  // tarjeta y su lista debajo. El alta va en la ventana del botón «Crear mi cuenta», no aquí.
   const pasos = TEMAS_CLIENTES.map((t) => {
     const Icono = ICONOS[t.icono] ?? ICONOS.capas;
     const texto = t.descripcion ?? t.texto;
@@ -43,14 +41,6 @@ export default async function TemasClientes({ inicial }: { inicial: string }) {
       ),
     };
   });
-  pasos.push({
-    id: PASO_ALTA_CLIENTE,
-    title: 'Crear cuenta',
-    icono: <UserPlus className="h-4 w-4" />,
-    contenido: <div className="paso-candidato"><AltaClienteEnPagina /></div>,
-  });
   return <RecorridoPagina pasos={pasos} inicial={inicial} base="/clientes" etiqueta="Temas de Clientes" />;
 }
 
-/** El último paso de `/clientes`: el alta de la cuenta, con su propia URL. */
-export const PASO_ALTA_CLIENTE = 'crear-cuenta';
