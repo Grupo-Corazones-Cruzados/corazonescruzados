@@ -23,8 +23,8 @@
  * de página (ver globals.css). Para pasarlo a claro, quitar la clase `dark`.
  *
  * FUENTE ÚNICA DE ESTILO de este modal: las constantes del final del archivo
- * (`pStyle`, `cardBase`, `cardTitle`, `cardDesc`, `stepNum`,
- * `kickerStyle`) — todas apuntan a los **tokens** `--color-digi-*` / `--color-accent*`,
+ * (`pStyle`, `cardBase`, `cardTitle`, `cardDesc`,
+ * …) — todas apuntan a los **tokens** `--color-digi-*` / `--color-accent*`,
  * así que cambiarlas (o cambiar los tokens de `.corp`) retematiza los 8 pasos y
  * funciona igual en claro y oscuro. NO usar hex crudos en los sliders.
  */
@@ -32,7 +32,7 @@
 import Captcha from '@/components/landing/Captcha';
 import { horaDeReanudacion, useEstadoRegistro } from '@/components/landing/estadoRegistro';
 import { AuthDialog, BotonAuth } from '@/components/landing/AuthSurface';
-import { Fragment, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
 import Modelo4P, { PasosCondiciologia, ReglasModelo4P } from '@/components/landing/Modelo4P';
 import { HERRAMIENTAS, HERRAMIENTAS_INTRO, MODELO_PROYECTO, MODELO_4P_INTRO, trozosNegrita } from '@/lib/sitio/modeloGcc';
 import {
@@ -43,7 +43,6 @@ import {
   BadgeCheck,
   Check,
   ChevronDown,
-  ChevronRight,
   Gavel,
   Grid3x3,
   Heart,
@@ -72,18 +71,8 @@ export type PostulacionData = {
 
 type IconType = React.ComponentType<{ className?: string }>;
 
-type Slide = {
-  id: PasoPostulacionId;
-  kicker: string;
-  title: string;
-  /** Icono del paso en el rail y en la cabecera (lucide, estándar del dashboard). */
-  Icon: IconType;
-  // Componente (no función llamada en render) para que sus hooks corran al nivel
-  // superior del propio slider, no anidados dentro del padre.
-  Component: React.FC;
-  // Todos los pasos se aceptan igual: «Entendido. He leído y comprendido la información de este
-  // apartado.» (Fernando, 2026-10-29). Ya no hay pasos con «Acepto lo indicado…: <resumen>».
-};
+/** Un paso del formulario (ver `PasoVentana`). */
+type Slide = PasoVentana;
 
 /* ------------------------------------------------------------------ */
 /* Slider 1 — Modelo de Grupo (Modelo 4P)                             */
@@ -119,7 +108,7 @@ const TOOLS: AccordionItem[] = HERRAMIENTAS.map((h) => ({
     <>
       {h.parrafos.map((texto, i) => (
         <Fragment key={i}>
-          <p style={cardDesc}><Negritas texto={texto} /></p>
+          <p style={pStyle}><Negritas texto={texto} /></p>
           {h.conPasos && i === 0 && <PasosCondiciologia />}
         </Fragment>
       ))}
@@ -140,7 +129,6 @@ function SlideHerramientas() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <p style={pStyle}><Negritas texto={HERRAMIENTAS_INTRO} /></p>
-      <Accordion items={TOOLS} />
     </div>
   );
 }
@@ -155,13 +143,13 @@ const MOTIVOS: AccordionItem[] = [
     summary: 'Los valores que de verdad importan son los mismos en todo el mundo.',
     body: () => (
       <>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Vivimos en sociedades separadas por fronteras y representadas por símbolos que, con el
           tiempo, nos han enseñado a mirarnos como distintos. Es cierto que crecemos en entornos
           diferentes, pero los valores que de verdad importan son los mismos en todas partes.
         </p>
         {/* Texto de Fernando (editor de textos, 2026-11-10), literal. */}
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Creemos que un corazón  y una organización puede representar esa{' '}
           <strong style={strong}>alianza que ya existe</strong>, silenciosa, en el fondo de la
           humanidad. El Grupo Corazones Cruzados nace para unir al mundo a través de sus valores y
@@ -176,12 +164,12 @@ const MOTIVOS: AccordionItem[] = [
     summary: 'Frente a lo que parece imposible, un sueño compartido y disciplinado.',
     body: () => (
       <>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Sueño con un futuro en el que la humanidad trabaje unida por objetivos más grandes; un
           mundo donde las próximas generaciones no tengan que crecer entre la corrupción y las
           mafias que dañan, sin reparo, a quienes tienen el potencial de cambiarlo todo.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Demasiadas veces los más jóvenes heredamos las consecuencias de problemas que otros
           prefirieron ignorar, convencidos de que era más fácil llamarlos imposibles que intentar
           resolverlos. Esa <strong style={strong}>realidad imposible</strong> donde los valores se
@@ -199,14 +187,14 @@ const MOTIVOS: AccordionItem[] = [
     summary: 'El liderazgo legítimo se gana con acciones, no con votos.',
     body: () => (
       <>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Crecimos creyendo que la democracia, a través del voto, era la mejor forma de elegir a
           quienes nos gobiernan, pero con demasiada frecuencia esa forma ha terminado en corrupción
           y en entregar el poder a quien no se lo ha merecido, creando una clase política que es
           capaz de todo por convencer a las masas, mientras ignoramos todas las incompetencias que
           éstos tienen para transformar la realidad que vivimos.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Debemos cambiar lo que siempre se ha hecho, empezando por el poder, ya que éste no se debe
           entregar ni por convencimiento, ni por retórica. Los líderes se deben ganar su posición
           mediante lo que realmente son capaces de <strong style={strong}>hacer</strong> y{' '}
@@ -216,7 +204,7 @@ const MOTIVOS: AccordionItem[] = [
           tener o no tener recursos, solo es una excusa y una mentira que no podemos volver a
           aceptar.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Hoy vivimos algo completamente diferente e incoherente con lo que necesitamos, porque
           nuestros gobernantes nacen de cúpula de poder que se mueve e interesa por la política con
           el fin de obtener más poder. El pueblo a causa de la incompetencia natural que vivimos,
@@ -244,7 +232,6 @@ function SlideMotivos() {
       {/* Texto de Fernando (2026-11-01, 2.ª versión), literal y en sus cuatro párrafos. Sustituye a
           la entrada genérica («Más allá del cómo, importa el porqué…»). */}
       {MOTIVOS_ENTRADA.map((t, i) => <p key={i} style={pStyle}>{t}</p>)}
-      <Accordion items={MOTIVOS} />
     </div>
   );
 }
@@ -276,25 +263,25 @@ const REGLAS: AccordionItem[] = [
     body: () => (
       <>
         {/* Texto de Fernando (editor de textos, 2026-11-11), literal. */}
-        <p style={cardDesc}>
+        <p style={pStyle}>
           El proyecto del Grupo Corazones Cruzados es una organización que incluye en sus filas, solo
           candidatos y miembros que tienen la prospección a representarnos. Aquellos que caigan de
           delincuentes, mentirosos, o realicen cualquier mala intención u acción por mínima que sea, o
           incluso olviden trabajar y sostener en sus relaciones sociales y en su vida diaria nuestros
           valores organizacionales, serán des-agrupados del proyecto.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           A continuación te presento los valores que deberás trabajar para representar nuestra
           organización:
         </p>
-        <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2 my-3">
+        <div className="grid sm:grid-cols-2 gap-x-4 gap-y-2 my-3 text-left">
           {VALORES.map((v) => (
             <div key={v.valor} className="flex items-start gap-2.5">
               <span
                 aria-hidden
                 className="shrink-0 mt-[7px] w-1.5 h-1.5 rounded-full bg-accent"
               />
-              <span style={cardDesc}>
+              <span style={pStyle}>
                 <strong style={strong}>{v.valor}:</strong> {v.compromiso}
               </span>
             </div>
@@ -308,23 +295,23 @@ const REGLAS: AccordionItem[] = [
     summary: 'Los comandos de la estrategia organizacional se cumplen.',
     body: () => (
       <>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           La gobernanza del Grupo Corazones Cruzados{' '}
           <strong style={strong}>escucha, decide y analiza correcciones</strong> por cada estrategia
           organizacional que se implementa  con el fin de progresar, y enfrentar una problemática.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Antes de decidirse por una estrategia organizacional, el líder tuvo que escuchar las
           propuestas y discusiones asociadas a esa problemática para que según las alternativas
           posibles, se desarrolle un  mapa visual del proyecto, y luego se presente la opción más
           viable a ejecutar y medir sus efectos.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           La relación entre el líder, los miembros o los candidatos se sostiene principalmente a
           través de los comandos que se solicitan ejecutar para cumplir el planteamiento de la
           estrategia organizacional decidida.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Cualquier miembro o candidato que no se acata o afecta el cálculo de la estrategia, queda
           fuera del proyecto en el acto, ya que los comandos se ejecutan sin cuestionamiento, y solo
           se analizan y corrigen durante la etapa de corrección en donde todos sin excepción tienen la
@@ -338,19 +325,19 @@ const REGLAS: AccordionItem[] = [
     summary: 'La confianza se entrega, y no se traiciona.',
     body: () => (
       <>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           El Grupo Corazones Cruzados ofrece un sistema de &quot;Desarrollo Humano&quot; que permite
           impulsar a los candidatos y miembros de la organización, y acceder a oportunidades para
           avanzar en su progreso sin excepciones ni condiciones.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           La confianza que ofrecemos y el acceso a mayores recursos y beneficios, depende de la{' '}
           <strong style={strong}>prospección</strong> y de los{' '}
           <strong style={strong}>resultados</strong> o logros obtenidos. Esa confianza se entrega{' '}
           <strong style={strong}>una sola vez</strong>, y si una opción de crecimiento se usa de forma
           abusiva o para fines distintos a los acordados, la decisión es la destitución.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Para esta organización, la confianza no se recupera tras una traición, además que nosotros
           abordamos todas las necesidades aunque no sean de interés personal o progreso, así que no
           hay excusa para mentir o abusar de los recursos. Les pedimos mantener siempre las buenas
@@ -371,7 +358,6 @@ function SlideOnboarding() {
         los miembros en cualquier rol. Quien es destituido del proyecto no tiene otra oportunidad para
         unirse; solo los fallos <em>no intencionales</em> se evalúan y pueden no llevar a la destitución.
       </Aviso>
-      <Accordion items={REGLAS} />
     </div>
   );
 }
@@ -388,12 +374,12 @@ const CRECIMIENTO: { n: number; title: string; tag: string; text: () => React.Re
     tag: 'El origen de todo',
     text: () => (
       <>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           El talento es justo lo que hace de este proyecto una realidad, cuando una persona puede traer
           a este mundo un valor agregado con su esfuerzo y capacidad, se convierte en una herramienta de
           altísimo valor para el progreso del proyecto que lo requiera.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Nosotros queremos descubrir ese talento, y generar oportunidades en donde podamos sacar
           beneficios por posicionarte dentro de una estrategia organizacional, donde cada movimiento va a
           desarrollar tu talento y causar mayor interés en nuevos clientes que deseen tus servicios.
@@ -407,13 +393,13 @@ const CRECIMIENTO: { n: number; title: string; tag: string; text: () => React.Re
     tag: 'Fortaleza ante el mundo',
     text: () => (
       <>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           La confianza de los clientes se mide en tus valores, cuando una persona no sostiene sus
           valores puede tomar un requerimiento como algo sin importancia, y limitando incluso el
           desarrollo de su talento; debido a eso, exigimos los valores organizacionales ya que son la
           fuente principal para obtener oportunidades.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           La lógica es la siguiente, según al nivel de confianza que tenga un cliente, se arriesga a
           invertir su tiempo y dinero en cualquiera de nuestros servicios, talentos, y productos que
           ofrecemos. Si demostramos alta calidad humana sin importar el tipo de cliente o el lugar en
@@ -430,14 +416,14 @@ const CRECIMIENTO: { n: number; title: string; tag: string; text: () => React.Re
     tag: 'Laboral · Corporal · Social · Mental',
     text: () => (
       <>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Evaluamos las cuatro dimensiones del desarrollo humano ({' '}
           <strong style={strong}>laboral, corporal, social y mental</strong> ), cada una representa
           un conjunto de problemas que al no ser abordados, aumentan el riesgo de tomar malas
           decisiones, intenciones y malos comportamientos que terminen perjudicando a uno mismo, y a
           los demás.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Estos riesgos se sostienen mediante los valores, y cuando el talento es muy competente,
           aumenta las posibilidades de resolver sus problemas haciendo uso de los recursos que puede
           obtener. Sin embargo existen problemas que se deben trabajar mediante estrategias
@@ -453,14 +439,14 @@ const CRECIMIENTO: { n: number; title: string; tag: string; text: () => React.Re
     tag: 'El complemento vital',
     text: () => (
       <>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           En la actualidad, cuando las dimensiones de desarrollo humano se ven muy afectadas por
           problemas difíciles de resolver, la red de apoyo suele ser un factor vital para impulsar la
           solución de problemas, además de ser un buen referente para sostener los valores, y así
           obtener fuerzas para buscar oportunidades que, en caso de tener suerte, te permiten
           aprovechar tu talento y mejorar tu situación.
         </p>
-        <p style={cardDesc}>
+        <p style={pStyle}>
           Sin embargo para esta organización este factor vital tiene menor importancia porque los
           valores organizacionales te enseñan que no necesitas una red de apoyo para abordar tus
           problemas, sino que su importancia debe ser para nosotros un complemento que apoya nuestra
@@ -471,13 +457,11 @@ const CRECIMIENTO: { n: number; title: string; tag: string; text: () => React.Re
   },
 ];
 
+/**
+ * La prospección se lee en cinco pasos (Fernando, 2026-11-12: que ningún texto quede escondido): la
+ * entrada con la pirámide, y un paso por nivel con la pirámide marcando ese nivel y su texto debajo.
+ */
 function SlideMetodoCrecimiento() {
-  const [active, setActive] = useState(0);
-  const widths = ['58%', '72%', '86%', '100%'];
-  const a = CRECIMIENTO[active];
-  const rank = (n: number) =>
-    n === 1 ? 'mayor importancia' : n === 4 ? 'menor importancia' : 'importancia intermedia';
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {/* Texto de Fernando (editor de textos, 2026-11-11), literal. */}
@@ -488,71 +472,54 @@ function SlideMetodoCrecimiento() {
       <p style={pStyle}>
         A continuación te presento el método de evaluación continua del Grupo Corazones Cruzados:
       </p>
+      <Piramide />
+    </div>
+  );
+}
 
-      {/* Pirámide */}
-      <div className="flex flex-col items-center gap-2">
-        <GrowthCaption>Mayor importancia</GrowthCaption>
-        {CRECIMIENTO.map((s, i) => {
-          const on = active === i;
-          return (
-            <button
-              key={s.title}
-              type="button"
-              onClick={() => setActive(i)}
-              style={{ width: widths[i] }}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border text-left transition-colors ${
-                on
-                  ? 'bg-accent border-accent'
-                  : 'bg-digi-card border-digi-border hover:border-accent'
+function NivelCrecimiento({ i }: { i: number }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <Piramide activo={i} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>{CRECIMIENTO[i].text()}</div>
+    </div>
+  );
+}
+
+/** La pirámide de los 4 niveles; sin botones: el paso decide cuál se marca. */
+function Piramide({ activo = -1 }: { activo?: number }) {
+  const widths = ['58%', '72%', '86%', '100%'];
+  return (
+    <div className="flex flex-col items-center gap-2 text-left">
+      <GrowthCaption>Mayor importancia</GrowthCaption>
+      {CRECIMIENTO.map((s, i) => {
+        const on = activo === i;
+        return (
+          <div
+            key={s.title}
+            aria-current={on ? 'step' : undefined}
+            style={{ width: widths[i] }}
+            className={`flex items-center gap-3 px-4 py-2.5 rounded-lg border transition-colors ${
+              on ? 'bg-accent border-accent' : 'bg-digi-card border-digi-border'
+            } ${activo >= 0 && !on ? 'opacity-60' : ''}`}
+          >
+            <span
+              className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold ${
+                on ? 'bg-white text-accent' : 'bg-accent-light text-accent'
               }`}
             >
-              <span
-                className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-[11px] font-semibold ${
-                  on ? 'bg-white text-accent' : 'bg-accent-light text-accent'
-                }`}
-              >
-                {s.n}
+              {s.n}
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className={`block text-[13px] font-semibold leading-tight ${on ? 'text-white' : 'text-digi-text'}`}>
+                {s.title}
               </span>
-              <span className="flex-1 min-w-0">
-                <span
-                  className={`block text-[13px] font-semibold leading-tight ${
-                    on ? 'text-white' : 'text-digi-text'
-                  }`}
-                >
-                  {s.title}
-                </span>
-                <span
-                  className={`block text-[11.5px] mt-0.5 ${on ? 'text-white/80' : 'text-digi-muted'}`}
-                >
-                  {s.tag}
-                </span>
-              </span>
-              <ChevronRight
-                className={`w-4 h-4 shrink-0 ${on ? 'text-white' : 'text-digi-muted'}`}
-              />
-            </button>
-          );
-        })}
-        <GrowthCaption dim>Menor importancia</GrowthCaption>
-      </div>
-
-      {/* Detalle del nivel seleccionado */}
-      <div
-        key={active}
-        className="flex items-start gap-3.5 rounded-lg border border-digi-border bg-digi-card p-4"
-        style={{ animation: 'onbFadeUp 0.3s ease-out' }}
-      >
-        <div className="w-11 h-11 shrink-0 rounded-lg bg-accent-light text-accent flex items-center justify-center text-[17px] font-semibold">
-          {a.n}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div style={cardTitle}>{a.title}</div>
-          <div style={{ ...kickerStyle, marginTop: 3, marginBottom: 8 }}>
-            {a.n} de 4 · {rank(a.n)}
+              <span className={`block text-[11.5px] mt-0.5 ${on ? 'text-white/80' : 'text-digi-muted'}`}>{s.tag}</span>
+            </span>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>{a.text()}</div>
-        </div>
-      </div>
+        );
+      })}
+      <GrowthCaption dim>Menor importancia</GrowthCaption>
     </div>
   );
 }
@@ -669,58 +636,58 @@ function SlideAfiliacion() {
 /* Lista de sliders (crecerá hasta 8)                                 */
 /* ------------------------------------------------------------------ */
 
-/** Exportada: la página Candidatos enseña estos mismos apartados, uno por pestaña. */
+/** Convierte el cuerpo de un texto en el componente de su propio paso. */
+function pasoDeTexto(cuerpo: () => React.ReactNode): React.FC {
+  function PasoTexto() {
+    return <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>{cuerpo()}</div>;
+  }
+  return PasoTexto;
+}
+
+/**
+ * Un apartado con varios textos: su entrada y luego UN PASO POR TEXTO (Fernando, 2026-11-12: «prefiero
+ * que se conviertan en otros pasos adicionales del formulario para asegurarme que lean cada texto»).
+ * Antes iban plegados en una lista y se podía aceptar el apartado sin abrirlos.
+ */
+function apartado(
+  id: PasoPostulacionId,
+  Icon: IconType,
+  Entrada: React.FC,
+  textos: { title: string; resumen?: string; Component: React.FC }[],
+): Slide[] {
+  const grupo = tituloDePaso(id);
+  return [
+    { id, title: grupo, Icon, Component: Entrada, centrado: true },
+    ...textos.map((t, i) => ({
+      id: `${id}-${i + 1}`,
+      title: t.title,
+      resumen: t.resumen,
+      Icon,
+      Component: t.Component,
+      sub: { grupo, n: i + 1, de: textos.length },
+      centrado: true,
+    })),
+  ];
+}
+
+const deLista = (items: AccordionItem[]) =>
+  items.map((t) => ({ title: t.name, resumen: t.summary, Component: pasoDeTexto(t.body) }));
+
+const NIVELES = CRECIMIENTO.map((c, i) => {
+  function Nivel() {
+    return <NivelCrecimiento i={i} />;
+  }
+  return { title: c.title, resumen: c.tag, Component: Nivel };
+});
+
 export const SLIDES: Slide[] = [
-  {
-    id: 'modelo',
-    title: tituloDePaso('modelo'),
-    kicker: 'Slider 1',
-    Icon: Layers3,
-    Component: SlideModelo,
-  },
-  {
-    id: 'modelo-4p',
-    title: tituloDePaso('modelo-4p'),
-    kicker: 'Slider 1b',
-    Icon: Grid3x3,
-    Component: SlideModelo4P,
-  },
-  {
-    id: 'herramientas',
-    title: tituloDePaso('herramientas'),
-    kicker: 'Slider 2',
-    Icon: Wrench,
-    Component: SlideHerramientas,
-  },
-  {
-    id: 'motivos',
-    title: tituloDePaso('motivos'),
-    kicker: 'Slider 3',
-    Icon: Heart,
-    Component: SlideMotivos,
-  },
-  {
-    id: 'onboarding',
-    title: tituloDePaso('onboarding'),
-    kicker: 'Slider 4',
-    Icon: Gavel,
-    Component: SlideOnboarding,
-  },
-  {
-    id: 'metodo-crecimiento',
-    title: tituloDePaso('metodo-crecimiento'),
-    kicker: 'Slider 5',
-    Icon: TrendingUp,
-    Component: SlideMetodoCrecimiento,
-  },
-  {
-    id: 'afiliacion',
-    title: tituloDePaso('afiliacion'),
-    kicker: 'Slider 7',
-    Icon: BadgeCheck,
-    Component: SlideAfiliacion,
-  },
-  // Slider 8: pendiente de contenido del usuario.
+  { id: 'modelo', title: tituloDePaso('modelo'), Icon: Layers3, Component: SlideModelo, centrado: true },
+  { id: 'modelo-4p', title: tituloDePaso('modelo-4p'), Icon: Grid3x3, Component: SlideModelo4P, centrado: true },
+  ...apartado('herramientas', Wrench, SlideHerramientas, deLista(TOOLS)),
+  ...apartado('motivos', Heart, SlideMotivos, deLista(MOTIVOS)),
+  ...apartado('onboarding', Gavel, SlideOnboarding, deLista(REGLAS)),
+  ...apartado('metodo-crecimiento', TrendingUp, SlideMetodoCrecimiento, NIVELES),
+  { id: 'afiliacion', title: tituloDePaso('afiliacion'), Icon: BadgeCheck, Component: SlideAfiliacion },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -733,7 +700,7 @@ export const SLIDES: Slide[] = [
  * antes de empezarlo.
  */
 export const PASOS_POSTULACION: { label: string; Icon: IconType }[] = [
-  ...SLIDES.map((s) => ({ label: s.title, Icon: s.Icon })),
+  ...SLIDES.filter((s) => !s.sub).map((s) => ({ label: s.title, Icon: s.Icon })),
   { label: 'Postulación', Icon: Send },
 ];
 
@@ -850,7 +817,19 @@ export default function OnboardingSlidersModal({
 }
 
 /** Un paso informativo de la ventana: se lee y se marca «Entendido» para seguir. */
-export type PasoVentana = { id: string; title: string; Icon: IconType; Component: React.FC };
+export type PasoVentana = {
+  id: string;
+  /** El título tema del paso: se escribe centrado arriba del contenido. */
+  title: string;
+  Icon: IconType;
+  Component: React.FC;
+  /** La línea bajo el título (p. ej. el resumen de un motivo). */
+  resumen?: string;
+  /** Si es uno de los textos de un apartado: en el camino va colgado de él, más pequeño. */
+  sub?: { grupo: string; n: number; de: number };
+  /** Texto centrado (Fernando, 2026-11-12); los pasos con listas o formularios no lo llevan. */
+  centrado?: boolean;
+};
 
 /**
  * «LA TRAVESÍA» — LA VENTANA DE PASOS (Fernando, 2026-10-26; extraída el 2026-11-11 para que la usen
@@ -885,7 +864,17 @@ export function VentanaRecorrido({
   const isForm = index === total;
   const current = pasos[index];
   const steps = total + 1;
-  const nodos = [...pasos.map((s) => ({ label: s.title, Icon: s.Icon })), { label: final.label, Icon: final.Icon }];
+  const nodos = [
+    ...pasos.map((s) => ({ label: s.title, Icon: s.Icon, sub: s.sub })),
+    { label: final.label, Icon: final.Icon, sub: undefined },
+  ];
+  // «Paso N» cuenta los apartados; los textos de un apartado cuelgan de él sin número propio.
+  const numeros = nodos.reduce<number[]>((acc, n, i) => [...acc, (acc[i - 1] ?? 0) + (n.sub ? 0 : 1)], []);
+  // Con tantos pasos el camino se desplaza: el actual siempre a la vista.
+  const caminoRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    caminoRef.current?.querySelector('[aria-current="step"]')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [index]);
   const acceptedHere = isForm ? true : accepted[index];
 
   const toggleAccept = () =>
@@ -915,7 +904,7 @@ export function VentanaRecorrido({
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
-      className={`corp dark corp-overlay onboarding-portada fixed inset-0 z-[250] flex items-center justify-center p-0 sm:p-5`}
+      className={`corp dark corp-overlay onboarding-portada fixed inset-0 z-[250] flex items-center justify-center p-0 sm:p-5 sm:pt-[max(1.25rem,var(--seguro-arriba))]`}
       style={{ animation: 'pixelFadeIn 0.35s ease-out' }}
     >
       <style>{KEYFRAMES}</style>
@@ -951,25 +940,25 @@ export function VentanaRecorrido({
               </div>
             </div>
 
-            <nav className="onb-nodos flex-1 min-h-0 overflow-y-auto" aria-label="Pasos">
+            <nav ref={caminoRef} className="onb-nodos flex-1 min-h-0 overflow-y-auto" aria-label="Pasos">
               {nodos.map((s, i) => {
                 const actual = i === index;
                 const hecho = i < total ? accepted[i] : false;
                 const enabled = canGoTo(i);
                 return (
                   <button
-                    key={s.label}
+                    key={i}
                     type="button"
                     disabled={!enabled}
                     aria-current={actual ? 'step' : undefined}
                     onClick={() => enabled && go(i, i > index ? 1 : -1)}
-                    className={`onb-nodo ${actual ? 'es-actual' : ''} ${hecho ? 'es-hecho' : ''} ${!enabled ? 'es-bloqueado' : ''}`}
+                    className={`onb-nodo ${s.sub ? 'es-sub' : ''} ${actual ? 'es-actual' : ''} ${hecho ? 'es-hecho' : ''} ${!enabled ? 'es-bloqueado' : ''}`}
                   >
                     <span className="onb-nodo-punto">
-                      {hecho && !actual ? <Check /> : !enabled ? <Lock /> : <s.Icon />}
+                      {hecho && !actual ? <Check /> : !enabled ? <Lock /> : s.sub ? s.sub.n : <s.Icon />}
                     </span>
                     <span className="onb-nodo-texto">
-                      <span className="onb-nodo-num">Paso {i + 1}</span>
+                      {!s.sub && <span className="onb-nodo-num">Paso {numeros[i]}</span>}
                       <span className="onb-nodo-nombre">{s.label}</span>
                     </span>
                   </button>
@@ -980,16 +969,25 @@ export function VentanaRecorrido({
 
           {/* ── El paso ── */}
           <section className="onb-paso flex flex-col min-h-0">
-            {/* El nombre del paso solo se escribe aquí cuando el camino no se ve (teléfono); la
-                pregunta del último paso, siempre. */}
-            <header className={`onb-cabecera ${isForm ? '' : 'es-sin-titulo'}`}>
-              <h2 className={`onb-titulo min-w-0 flex-1 ${isForm ? '' : 'lg:hidden'}`}>{title}</h2>
+            {/* La cabecera es solo la «×»: el título tema va centrado arriba del contenido. */}
+            <header className="onb-cabecera es-sin-titulo">
               <BotonCerrar onClick={onClose} />
             </header>
 
             <div className="onb-cuerpo flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
               <div key={index} style={{ animation: `${animName} 0.45s cubic-bezier(0.22,1,0.36,1)` }}>
-                {isForm || !SlideComponent ? final.contenido : <SlideComponent />}
+                <div className="onb-tema">
+                  {!isForm && current.sub && (
+                    <p className="onb-tema-grupo">
+                      {current.sub.grupo} · {current.sub.n} de {current.sub.de}
+                    </p>
+                  )}
+                  <h2 className="onb-tema-titulo">{title}</h2>
+                  {!isForm && current.resumen && <p className="onb-tema-resumen">{current.resumen}</p>}
+                </div>
+                <div className={!isForm && current.centrado ? 'onb-centrado' : undefined}>
+                  {isForm || !SlideComponent ? final.contenido : <SlideComponent />}
+                </div>
               </div>
             </div>
 
@@ -1218,54 +1216,8 @@ function CandidateForm({
 /* Subcomponentes y estilos                                           */
 /* ------------------------------------------------------------------ */
 
+/** Un texto de un apartado: su título, la línea de resumen y su cuerpo (cada uno es un paso). */
 type AccordionItem = { name: string; summary: string; body: () => React.ReactNode };
-
-/** Lista de tarjetas expandibles (una abierta a la vez). Reutilizada por varios sliders. */
-function Accordion({ items }: { items: AccordionItem[] }) {
-  const [open, setOpen] = useState(0);
-  return (
-    <div className="flex flex-col gap-2.5">
-      {items.map((t, i) => {
-        const isOpen = open === i;
-        return (
-          <div
-            key={t.name}
-            className={`rounded-lg border bg-digi-card overflow-hidden transition-colors ${
-              isOpen ? 'border-accent' : 'border-digi-border'
-            }`}
-          >
-            <button
-              type="button"
-              onClick={() => setOpen(isOpen ? -1 : i)}
-              className="w-full flex items-center gap-3 p-3.5 text-left"
-            >
-              <span style={stepNum}>{i + 1}</span>
-              <span className="flex-1 min-w-0">
-                <span style={cardTitle}>{t.name}</span>
-                {!isOpen && (
-                  <span style={{ ...cardDesc, display: 'block', marginTop: 2 }}>{t.summary}</span>
-                )}
-              </span>
-              <ChevronDown
-                className={`w-4 h-4 shrink-0 transition-transform ${
-                  isOpen ? 'rotate-180 text-accent' : 'text-digi-muted'
-                }`}
-              />
-            </button>
-            {isOpen && (
-              <div
-                className="px-3.5 pb-4 pt-0 border-t border-digi-border flex flex-col gap-2.5"
-                style={{ animation: 'onbFadeUp 0.3s ease-out', paddingTop: 14 }}
-              >
-                {t.body()}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 /** Encabezado de sub-sección dentro de un slider (icono/barra accent + título). */
 /** Aviso de advertencia (rojo corp) — reusa los literales semánticos del dashboard. */
@@ -1286,13 +1238,6 @@ function Aviso({ tono, titulo, children }: { tono: 'peligro' | 'info'; titulo: s
 
 /* --- Tokens de estilo del modal (fuente única; todos apuntan a `.corp`) --- */
 
-const kickerStyle: React.CSSProperties = {
-  fontSize: '0.6875rem',
-  fontWeight: 600,
-  letterSpacing: '0.08em',
-  textTransform: 'uppercase',
-  color: 'var(--color-digi-muted)',
-};
 
 const pStyle: React.CSSProperties = {
   fontSize: '0.9375rem',
@@ -1322,20 +1267,6 @@ const cardDesc: React.CSSProperties = {
   margin: 0,
 };
 
-const stepNum: React.CSSProperties = {
-  width: 34,
-  height: 34,
-  flexShrink: 0,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  fontFamily: 'var(--font-body)',
-  fontSize: '0.85rem',
-  fontWeight: 600,
-  color: '#ffffff',
-  background: 'var(--color-accent)',
-  borderRadius: 6,
-};
 
 // Solo color de texto: sin relleno ni borde (Fernando, 2026-10-29: las etiquetas con fondo y
 // borde «no me gustan y no las quiero ver en otras partes»).

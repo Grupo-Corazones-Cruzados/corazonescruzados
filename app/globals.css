@@ -2792,10 +2792,28 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
   letter-spacing: -0.01em;
   color: var(--color-digi-text);
 }
-/* Sin título (2026-10-29): en escritorio la cabecera es solo la «×», en una franja corta. */
-@media (min-width: 1024px) {
-  .onb-cabecera.es-sin-titulo { justify-content: flex-end; padding-top: 12px; padding-bottom: 2px; }
-}
+/* La cabecera es solo la «×», en una franja corta (2026-11-12: el título tema va en el contenido).
+   En el teléfono la ventana ocupa la pantalla entera: en la app de iPhone la «×» quedaba debajo de
+   la hora; baja lo que mide esa franja (`--seguro-arriba`, 0 en el navegador). */
+.onb-cabecera.es-sin-titulo { justify-content: flex-end; padding-top: calc(10px + var(--seguro-arriba)); padding-bottom: 0; }
+@media (min-width: 640px) { .onb-cabecera.es-sin-titulo { padding-top: 12px; padding-bottom: 2px; } }
+
+/* EL TÍTULO TEMA DE CADA PASO, centrado (Fernando, 2026-11-12). Si el paso es uno de los textos de un
+   apartado, arriba va «Motivos · 2 de 3» y debajo su línea de resumen. */
+.onb-tema { max-width: 640px; margin: 0 auto 22px; text-align: center; }
+.onb-tema-grupo { margin: 0 0 8px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-accent-glow); }
+.onboarding-portada .onb-tema-titulo { margin: 0; font-family: var(--font-display); font-size: clamp(1.35rem, 2.4vw, 1.7rem); font-weight: 700; line-height: 1.2; letter-spacing: -0.015em; text-wrap: balance; color: var(--color-digi-text); }
+.onb-tema-resumen { margin: 8px 0 0; font-size: 0.95rem; line-height: 1.5; color: var(--color-digi-muted); text-wrap: balance; }
+.onb-centrado { max-width: 640px; margin: 0 auto; text-align: center; }
+.onb-centrado .aviso-gcc-titulo { justify-content: center; }
+
+/* Los textos de un apartado cuelgan de él en el camino: punto pequeño con su número sobre la misma
+   línea (centro a 38 px, como el de los apartados) y el nombre más pequeño. */
+.onb-nodo.es-sub { padding: 4px 10px 4px 15px; gap: 10px; }
+.onb-nodo.es-sub .onb-nodo-punto { width: 18px; height: 18px; font-size: 0.62rem; font-weight: 600; }
+.onb-nodo.es-sub .onb-nodo-punto svg { width: 10px; height: 10px; }
+.onb-nodo.es-sub .onb-nodo-nombre { font-size: 0.78rem; color: var(--color-digi-muted); }
+.onb-nodo.es-sub.es-actual .onb-nodo-nombre { color: var(--color-digi-text); }
 
 /* CAMINO Y PASO SEPARADOS (Fernando, 2026-10-29): desde `lg` el panel deja de ser una caja y
    el camino y el paso son dos tarjetas con aire entre ellas, cada una como la del inicio de
