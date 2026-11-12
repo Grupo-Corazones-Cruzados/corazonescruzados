@@ -14,6 +14,12 @@ set -eo pipefail   # sin -u: el bash 3.2 de macOS trata una lista vacía como va
 
 [ -f "$HOME/.gcc-servidor.env" ] && . "$HOME/.gcc-servidor.env"
 : "${M1_HOST:?Falta M1_HOST en ~/.gcc-servidor.env}"; : "${M1_CLAVE:?Falta M1_CLAVE en ~/.gcc-servidor.env}"
+# Una publicación a la vez (la automática tras un push y una a mano no se pisan): se espera hasta 40 min.
+CANDADO=/tmp/gcc-publicar.candado
+TENGO=0
+for i in $(seq 1 240); do mkdir "$CANDADO" 2>/dev/null && { TENGO=1; break; }; [ "$i" = 1 ] && echo "… esperando a otra publicación"; sleep 10; done
+[ "$TENGO" = 1 ] || { echo "✖ otra publicación no termina (si no hay ninguna: rmdir $CANDADO)"; exit 1; }
+trap 'rmdir "$CANDADO" 2>/dev/null' EXIT   # cualquier salida suelta el candado (abajo se amplía)
 SSH=(ssh -i "$M1_CLAVE" -o BatchMode=yes -o ServerAliveInterval=30)
 remoto() { "${SSH[@]}" "$M1_HOST" "$@"; }
 
@@ -37,7 +43,7 @@ APP_LOCK=$(git -C "$R" rev-parse "$SHA:package-lock.json")
 
 W=$(mktemp -d /tmp/gcc-publicar.XXXXXX)
 limpiar() { rm -f "$W/node_modules" "$W"/productos/*/node_modules "$W/.env" "$W/.env.local" "$W"/productos/*/.env; git -C "$R" worktree remove --force "$W" 2>/dev/null || rm -rf "$W"; }
-trap limpiar EXIT
+trap 'limpiar; rmdir "$CANDADO" 2>/dev/null' EXIT
 git -C "$R" worktree add --detach "$W" "$SHA" >/dev/null 2>&1
 
 # Compilar. Las páginas prerenderizadas leen la base: el .env local da la cadena.
