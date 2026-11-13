@@ -173,12 +173,13 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
             }
             onCerrar={() => setSelectedId(null)}
             pie={isAdmin && selected.status !== 'approved' ? (
+              // La peligrosa a la izquierda y la principal a la derecha, como en todos los pies.
               <div className="flex gap-2">
-                <button onClick={() => openApprove(selected)} disabled={busyId === String(selected.id)} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
-                  <Check className="w-4 h-4" /> {busyId === String(selected.id) ? '...' : 'Aprobar'}
-                </button>
                 <button onClick={() => reject(selected)} disabled={busyId === String(selected.id)} className={`${BTN_DANGER} flex-1 disabled:opacity-50`}>
                   <X className="w-4 h-4" /> Rechazar
+                </button>
+                <button onClick={() => openApprove(selected)} disabled={busyId === String(selected.id)} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
+                  <Check className="w-4 h-4" /> {busyId === String(selected.id) ? '...' : 'Aprobar'}
                 </button>
               </div>
             ) : undefined}
@@ -188,9 +189,11 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
                 <a href={`mailto:${selected.email}`} className="text-accent hover:underline break-all" style={mf}>{selected.email}</a>
               </div>
 
-              <div>
+              {/* El motivo se queda con el alto que sobra y «Detalles» va fijo abajo, justo sobre los botones
+                  (Fernando, 2026-11-13); si el motivo es largo, se desplaza dentro de su cuadro. */}
+              <div className="flex-1 min-h-32 flex flex-col">
                 <p className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={df}>Motivo para unirse</p>
-                <p className="text-[13px] text-digi-text leading-relaxed whitespace-pre-wrap rounded-lg border border-digi-border bg-digi-darker p-3" style={mf}>{selected.reason || 'Sin motivo indicado.'}</p>
+                <p className="flex-1 min-h-0 overflow-y-auto text-[13px] text-digi-text leading-relaxed whitespace-pre-wrap rounded-lg border border-digi-border bg-digi-darker p-3" style={mf}>{selected.reason || 'Sin motivo indicado.'}</p>
               </div>
 
               <div>
