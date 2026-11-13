@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PanelDetalle from '@/components/ui/PanelDetalle';
-import { buildUsername } from '@/lib/workspace/username';
 import BarraLista from '@/components/ui/BarraLista';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -72,22 +71,30 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
   const [approving, setApproving] = useState<any | null>(null);
   const [username, setUsername] = useState('');
 
+  // Con nombres, el usuario es automático (Fernando, 2026-11-13): se pide al servidor el primero libre y solo
+  // se enseña. Sin nombres (postulaciones anteriores al 2026-11-12) se sigue escribiendo a mano.
+  const [correoAuto, setCorreoAuto] = useState<{ cargando: boolean; correo: string | null; error?: string }>({ cargando: false, correo: null });
   const openApprove = (p: any) => {
-    // Con los dos nombres y los dos apellidos, el usuario sale de la regla (2026-11-12); se puede corregir.
-    setUsername(p.primer_nombre ? buildUsername({ firstName: p.primer_nombre, secondName: p.segundo_nombre, firstSurname: p.primer_apellido, secondSurname: p.segundo_apellido }, 0) : '');
+    setUsername('');
     setApproving(p);
+    if (!p.primer_nombre) { setCorreoAuto({ cargando: false, correo: null }); return; }
+    setCorreoAuto({ cargando: true, correo: null });
+    fetch(`/api/admin/candidate-proposals/${p.id}/approve`)
+      .then(async (r) => { const d = await r.json().catch(() => ({})); setCorreoAuto(r.ok ? { cargando: false, correo: d.correo } : { cargando: false, correo: null, error: d.error || 'No se pudo calcular el correo.' }); })
+      .catch(() => setCorreoAuto({ cargando: false, correo: null, error: 'Revisa tu conexión.' }));
   };
 
   const submitApprove = async () => {
     const p = approving;
     if (!p) return;
-    if (!username.trim()) { toast.error('Escribe el nombre de usuario'); return; }
+    const automatico = !!p.primer_nombre;
+    if (!automatico && !username.trim()) { toast.error('Escribe el nombre de usuario'); return; }
     setBusyId(String(p.id));
     try {
       const res = await fetch(`/api/admin/candidate-proposals/${p.id}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: username.trim().toLowerCase() }),
+        body: JSON.stringify(automatico ? {} : { username: username.trim().toLowerCase() }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Error');
@@ -221,41 +228,51 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
       {/* Modal de aprobación: define el usuario corporativo (nomenclatura) */}
       <PixelModal open={!!approving} onClose={() => setApproving(null)} title="Aprobar postulación" size="md">
         <div className="space-y-4">
-          <p className="text-[13px] text-digi-muted" style={mf}>
-            {approving?.primer_nombre ? (
-              <>Usuario corporativo de <strong>{nombreDe(approving)}</strong>. Al aprobar se crea el correo y le llega a esa dirección la credencial para el formulario de alta; si el usuario ya existe, se usa el siguiente número.</>
-            ) : (
-              <>Define el <strong>usuario corporativo</strong> del candidato <strong>{approving?.email}</strong>. El candidato completará su nombre al crear su cuenta.</>
-            )}
-          </p>
-          <div className="rounded-md border border-digi-border bg-digi-darker p-3 text-[12px] text-digi-muted leading-relaxed" style={mf}>
-            <strong className="text-digi-text">Nomenclatura sugerida:</strong> inicial del 1er nombre + inicial del 2º nombre +
-            1er apellido + inicial del 2º apellido + número. Ej.: <em>Luis Fernando González Muyulema → </em>
-            <span className="text-accent font-medium">lfgonzalezm0</span>. Si el usuario ya existe, el sistema usa el siguiente número.
-          </div>
-
-          <div>
-            <label className="text-[12px] font-medium text-digi-muted" style={mf}>NOMBRE DE USUARIO</label>
-            <div className="flex items-center gap-2 mt-1">
-              <div className="flex-1 flex items-center rounded-md border-2 border-digi-border bg-digi-darker focus-within:border-accent">
-                <AtSign className="w-4 h-4 text-digi-muted ml-2.5 shrink-0" />
-                <input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
-                  className="field-control flex-1 bg-transparent border-0 px-2 py-1.5 text-[14px] text-digi-text focus:outline-none"
-                  style={mf}
-                  placeholder="lfgonzalezm0"
-                />
-                <span className="text-[13px] text-digi-muted pr-3 shrink-0" style={mf}>@grupocc.org</span>
+          {approving?.primer_nombre ? (
+            <>
+              <p className="text-[13px] text-digi-muted" style={mf}>
+                Al aprobar se crea el correo corporativo de <strong className="text-digi-text">{nombreDe(approving)}</strong>, y
+                a esa dirección le llega la credencial para el formulario de alta.
+              </p>
+              <div>
+                <p className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={df}>Correo corporativo</p>
+                <p className="flex items-center gap-2 text-[15px] text-digi-text" style={mf}>
+                  <AtSign className="w-4 h-4 text-digi-muted shrink-0" />
+                  {correoAuto.cargando ? <span className="text-digi-muted">Calculando…</span>
+                    : correoAuto.correo ? <span className="font-medium break-all">{correoAuto.correo}</span>
+                    : <span className="text-red-400">{correoAuto.error}</span>}
+                </p>
               </div>
-            </div>
-          </div>
+            </>
+          ) : (
+            <>
+              <p className="text-[13px] text-digi-muted" style={mf}>
+                Define el <strong>usuario corporativo</strong> del candidato <strong>{approving?.email}</strong>. El candidato completará su nombre al crear su cuenta.
+              </p>
+              <div>
+                <label className="text-[12px] font-medium text-digi-muted" style={mf}>NOMBRE DE USUARIO</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="flex-1 flex items-center rounded-md border-2 border-digi-border bg-digi-darker focus-within:border-accent">
+                    <AtSign className="w-4 h-4 text-digi-muted ml-2.5 shrink-0" />
+                    <input
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+                      className="field-control flex-1 bg-transparent border-0 px-2 py-1.5 text-[14px] text-digi-text focus:outline-none"
+                      style={mf}
+                      placeholder="lfgonzalezm0"
+                    />
+                    <span className="text-[13px] text-digi-muted pr-3 shrink-0" style={mf}>@grupocc.org</span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="flex justify-end gap-2 pt-2 border-t border-digi-border">
             <button type="button" onClick={() => setApproving(null)} className={BTN_SECONDARY} style={mf}>
               <X className="w-4 h-4" /> Cancelar
             </button>
-            <button type="button" onClick={submitApprove} disabled={busyId === String(approving?.id) || !username.trim()} className={BTN_PRIMARY} style={mf}>
+            <button type="button" onClick={submitApprove} disabled={busyId === String(approving?.id) || (approving?.primer_nombre ? !correoAuto.correo : !username.trim())} className={BTN_PRIMARY} style={mf}>
               <Check className="w-4 h-4" /> {busyId === String(approving?.id) ? 'Aprobando…' : 'Aprobar candidato'}
             </button>
           </div>

@@ -29,6 +29,23 @@ async function resolveFreeUsername(desired: string): Promise<string | null> {
   return null;
 }
 
+// GET — el correo corporativo que se creará al aprobar, para enseñarlo antes (Fernando, 2026-11-13). Es el primero
+// libre según los nombres; si entre tanto otro lo ocupa, el POST vuelve a buscar y usa el siguiente.
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== 'admin') return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+  const { id } = await params;
+  const { rows: [p] } = await pool.query(`SELECT * FROM gcc_world.candidate_proposals WHERE id = $1 LIMIT 1`, [id]);
+  if (!p) return NextResponse.json({ error: 'Postulación no encontrada' }, { status: 404 });
+  if (!p.primer_nombre) return NextResponse.json({ usuario: null });
+  try {
+    const usuario = await usuarioLibre({ firstName: p.primer_nombre, secondName: p.segundo_nombre, firstSurname: p.primer_apellido, secondSurname: p.segundo_apellido });
+    return NextResponse.json({ usuario, correo: `${usuario}@grupocc.org` });
+  } catch (e: any) {
+    return NextResponse.json({ error: `No se pudo calcular el usuario corporativo: ${e?.message || 'error'}` }, { status: 502 });
+  }
+}
+
 // POST — aprueba una postulación: deja la fila de candidato en gcc_world.clients
 // APROBADA pero SIN contraseña (queda como una solicitud aprobada) y le envía el
 // correo de aprobación. El candidato define su contraseña + datos al continuar su
@@ -64,7 +81,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // correo corporativo, se crea como grupo de Google que reenvía al correo personal, y a ESA dirección le llega la
     // credencial (correo + contraseña temporal) para el formulario de alta. Desde ahí el correo personal no se usa.
     if (proposal.primer_nombre && proposal.primer_apellido) {
-      return aprobarConCorreoCorporativo(proposal, desiredUsername || null, user);
+      // El usuario es AUTOMÁTICO (Fernando, 2026-11-13: «el usuario no debe poner el nombre de usuario»): sale de
+      // los nombres y, si ya existe, sube el número. Lo que mande el navegador no cuenta.
+      return aprobarConCorreoCorporativo(proposal, null, user);
     }
 
     // Columnas de cuenta de candidato (idempotente).
