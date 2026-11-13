@@ -68,7 +68,7 @@ import { tituloDePaso, type PasoPostulacionId } from '@/lib/sitio/pasosPostulaci
 import { sonarInterruptor } from '@/lib/sitio/sonidoSeleccion';
 import LogoGirando from '@/components/ui/LogoGirando';
 import MiembrosGaleria from '@/components/landing/MiembrosGaleria';
-import AnimacionPaso from '@/components/landing/AnimacionPaso';
+import AnimacionPaso, { EscenarioAnimacion } from '@/components/landing/AnimacionPaso';
 import PixelInput from '@/components/ui/PixelInput';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
@@ -965,6 +965,7 @@ export function VentanaRecorrido({
    * que nada parpadee; sin movimiento si el sistema pide reducirlo.
    */
   const cuentoRef = useRef<HTMLDivElement>(null);
+  const [escenario, setEscenario] = useState<HTMLDivElement | null>(null);
   useLayoutEffect(() => {
     const raiz = cuentoRef.current;
     if (!raiz || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -1101,8 +1102,12 @@ export function VentanaRecorrido({
                   <h2 className="onb-tema-titulo">{title}</h2>
                   {!isForm && current.resumen && <p className="onb-tema-resumen">{current.resumen}</p>}
                 </div>
+                {/* La animación del paso va aquí, bajo el título (ver `EscenarioAnimacion`). */}
+                <div ref={setEscenario} className="onb-escenario" />
                 <div data-cuento-hijos className={!isForm && current.centrado ? 'onb-centrado' : undefined}>
-                  {isForm || !SlideComponent ? final.contenido : <SlideComponent />}
+                  <EscenarioAnimacion.Provider value={escenario}>
+                    {isForm || !SlideComponent ? final.contenido : <SlideComponent />}
+                  </EscenarioAnimacion.Provider>
                 </div>
                 </div>
               </div>

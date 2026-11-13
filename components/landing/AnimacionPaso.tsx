@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 /** Cada WebP se descarga una sola vez por visita; cada vez que se muestra, una URL nueva del mismo blob. */
 const blobs = new Map<string, Promise<Blob>>();
@@ -8,6 +9,14 @@ const blobDe = (src: string) => {
   if (!blobs.has(src)) blobs.set(src, fetch(src).then((r) => r.blob()));
   return blobs.get(src)!;
 };
+
+/**
+ * EL ESCENARIO DEL PASO (Fernando, 2026-11-13: la animación al final del texto obligaba a desplazarse, y pegada
+ * abajo tapaba el texto). Si la ventana de pasos ofrece un escenario —un hueco bajo el título—, la animación se
+ * pinta ahí, como portada del paso, y el texto sigue debajo sin que nada lo tape. Sin escenario (el libro), se
+ * pinta donde está.
+ */
+export const EscenarioAnimacion = createContext<HTMLElement | null>(null);
 
 /**
  * UNA ANIMACIÓN HECHA EN BLENDER dentro de un paso del formulario (Fernando, 2026-11-12: «llenar esos
@@ -20,6 +29,7 @@ const blobDe = (src: string) => {
 export default function AnimacionPaso({ src, alt }: { src: string; alt: string }) {
   const [turno, setTurno] = useState(false);
   const [url, setUrl] = useState<string | null>(null);
+  const escenario = useContext(EscenarioAnimacion);
 
   useEffect(() => {
     blobDe(src).catch(() => blobs.delete(src));
@@ -42,7 +52,7 @@ export default function AnimacionPaso({ src, alt }: { src: string; alt: string }
     };
   }, [turno, src]);
 
-  return (
+  const animacion = (
     <div
       className="onb-animacion"
       onAnimationStart={() => setTurno(true)}
@@ -56,4 +66,5 @@ export default function AnimacionPaso({ src, alt }: { src: string; alt: string }
       {url && <img src={url} alt={alt} />}
     </div>
   );
+  return escenario ? createPortal(animacion, escenario) : animacion;
 }

@@ -678,12 +678,12 @@ esquinas de cámara no cambian.
     ni relleno ni borde, apagado o marcado (*«ese fondo de relleno morado y borde es del diseño que
     no estoy de acuerdo»*). Lo marcado lo dice el interruptor encendido. ~~Pieza con borde que se
     pinta `accent-light` al marcar~~ — descartado, no reponer.
-  · La animación de Blender de un paso (`AnimacionPaso`) se queda **pegada abajo** del área del paso
-    (`position: sticky`): si el texto no cabe, corre por detrás y la animación se ve entera desde que
-    aparece; al final queda bajo el último párrafo. Su alto sale de la pantalla (`30vh`, 26vh en
-    pantallas de menos de 640 px de alto, entre 100/120 y 337 px, y nunca más que el ancho a 16:9),
-    con el fondo de la tarjeta y un fundido arriba que tapa el texto. Antes había que desplazarse
-    para verla completa en pantallas bajas.
+  · La animación de Blender de un paso (`AnimacionPaso`) es la **PORTADA del paso**: va bajo el título
+    (`.onb-escenario`, la ventana se lo ofrece con `EscenarioAnimacion` y la animación se pinta ahí por
+    portal) y el texto sigue debajo. Se ve entera al entrar y nada tapa el texto. Alto: 24vh, entre
+    110 y 260 px, nunca más que el ancho a 16:9. ~~Al final del texto~~ (había que desplazarse para
+    verla entera) y ~~pegada abajo con el texto corriendo por detrás~~ (cortaba el texto a media
+    frase) — los dos descartados por Fernando el 2026-11-13; no reponerlos.
 - **El Modelo 4P como TABLA, no pestañas (Fernando, 2026-10-29: «es la forma correcta de
   representar el modelo organizacional 4P»).** `Modelo4P` en el paso 1: filas = los 4 PISOS
   (Global → Colaborador, número + nombre), columnas = los 4 PASOS de izquierda a derecha
