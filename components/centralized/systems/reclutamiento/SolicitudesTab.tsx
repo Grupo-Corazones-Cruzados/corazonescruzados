@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PanelDetalle from '@/components/ui/PanelDetalle';
+import { buildUsername } from '@/lib/workspace/username';
 import BarraLista from '@/components/ui/BarraLista';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
@@ -62,7 +63,7 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return proposals;
-    return proposals.filter((p) => `${p.email} ${p.reason || ''}`.toLowerCase().includes(q));
+    return proposals.filter((p) => `${nombreDe(p)} ${p.email} ${p.reason || ''}`.toLowerCase().includes(q));
   }, [proposals, search]);
 
   const selected = useMemo(() => proposals.find((p) => String(p.id) === selectedId) || null, [proposals, selectedId]);
@@ -72,7 +73,8 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
   const [username, setUsername] = useState('');
 
   const openApprove = (p: any) => {
-    setUsername('');
+    // Con los dos nombres y los dos apellidos, el usuario sale de la regla (2026-11-12); se puede corregir.
+    setUsername(p.primer_nombre ? buildUsername({ firstName: p.primer_nombre, secondName: p.segundo_nombre, firstSurname: p.primer_apellido, secondSurname: p.segundo_apellido }, 0) : '');
     setApproving(p);
   };
 
@@ -137,7 +139,7 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
                       <span className="text-[12px] font-semibold text-accent uppercase" style={mf}>{(p.email || '?').charAt(0)}</span>
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className={`text-[13px] font-medium truncate ${active ? 'text-accent' : 'text-digi-text'}`} style={mf}>{p.email}</p>
+                      <p className={`text-[13px] font-medium truncate ${active ? 'text-accent' : 'text-digi-text'}`} style={mf}>{nombreDe(p) || p.email}</p>
                       {p.reason && <p className="text-[11.5px] text-digi-muted truncate" style={mf}>{p.reason}</p>}
                       <div className="flex items-center gap-1.5 mt-1">
                         <PixelBadge variant={STATUS_VARIANT[p.status] || 'default'}>{STATUS_LABEL[p.status] || p.status}</PixelBadge>
@@ -162,7 +164,7 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
              desplaza el cuerpo. Ver `PanelDetalle`. */
           <PanelDetalle
             icono={UserPlus}
-            titulo={<span className="block truncate">{selected.email}</span>}
+            titulo={<span className="block truncate">{nombreDe(selected) || selected.email}</span>}
             subtitulo={
               <span className="flex items-center gap-1.5">
                 <PixelBadge variant={STATUS_VARIANT[selected.status] || 'default'}>{STATUS_LABEL[selected.status] || selected.status}</PixelBadge>
@@ -217,8 +219,11 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
       <PixelModal open={!!approving} onClose={() => setApproving(null)} title="Aprobar postulación" size="md">
         <div className="space-y-4">
           <p className="text-[13px] text-digi-muted" style={mf}>
-            Define el <strong>usuario corporativo</strong> del candidato <strong>{approving?.email}</strong>.
-            El candidato completará su nombre al crear su cuenta.
+            {approving?.primer_nombre ? (
+              <>Usuario corporativo de <strong>{nombreDe(approving)}</strong>. Al aprobar se crea el correo y le llega a esa dirección la credencial para el formulario de alta; si el usuario ya existe, se usa el siguiente número.</>
+            ) : (
+              <>Define el <strong>usuario corporativo</strong> del candidato <strong>{approving?.email}</strong>. El candidato completará su nombre al crear su cuenta.</>
+            )}
           </p>
           <div className="rounded-md border border-digi-border bg-digi-darker p-3 text-[12px] text-digi-muted leading-relaxed" style={mf}>
             <strong className="text-digi-text">Nomenclatura sugerida:</strong> inicial del 1er nombre + inicial del 2º nombre +
@@ -266,4 +271,9 @@ function Row({ Icon, label, value }: { Icon: any; label: string; value: React.Re
       <span className="text-right">{value}</span>
     </div>
   );
+}
+
+/** El nombre completo de la postulación (dos nombres y dos apellidos), o '' si es de antes del 2026-11-12. */
+function nombreDe(p: any): string {
+  return [p?.primer_nombre, p?.segundo_nombre, p?.primer_apellido, p?.segundo_apellido].filter(Boolean).join(' ');
 }

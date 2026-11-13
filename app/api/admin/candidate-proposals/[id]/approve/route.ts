@@ -2,6 +2,11 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextResponse } from 'next/server';
 import { after } from 'next/server';
+import { randomInt } from 'crypto';
+import { hashPassword } from '@/lib/auth/password';
+import { usuarioLibre } from '@/lib/workspace/usuario-libre';
+import { crearGrupoReenvio, borrarGrupo } from '@/lib/integrations/google-workspace';
+import { sendCredencialCandidato } from '@/lib/integrations/email';
 import { avisarReclutamiento } from '@/lib/avisos/reclutamiento';
 import { generateClientToken } from '@/lib/world/session';
 import { sendCandidateApprovalEmail } from '@/lib/integrations/email';
@@ -41,7 +46,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const desiredUsername = String(body?.username || '').trim().toLowerCase();
 
     const pr = await pool.query(
-      `SELECT id, email, ip_hash, status FROM gcc_world.candidate_proposals WHERE id = $1 LIMIT 1`,
+      `SELECT * FROM gcc_world.candidate_proposals WHERE id = $1 LIMIT 1`,
       [id],
     );
     const proposal = pr.rows[0];
@@ -54,6 +59,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const cleanEmail = String(proposal.email).trim().toLowerCase();
     const clientToken = generateClientToken();
+
+    // ⇒ EL FLUJO NUEVO (Fernando, 2026-11-12): con los dos nombres y los dos apellidos de la postulación se genera el
+    // correo corporativo, se crea como grupo de Google que reenvía al correo personal, y a ESA dirección le llega la
+    // credencial (correo + contraseña temporal) para el formulario de alta. Desde ahí el correo personal no se usa.
+    if (proposal.primer_nombre && proposal.primer_apellido) {
+      return aprobarConCorreoCorporativo(proposal, desiredUsername || null, user);
+    }
 
     // Columnas de cuenta de candidato (idempotente).
     await pool.query(
@@ -140,4 +152,87 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     console.error('Approve proposal error:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
+}
+
+/** Contraseña temporal legible: sin letras que se confunden (l/1, O/0). */
+function claveTemporal(): string {
+  const letras = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 10 }, () => letras[randomInt(letras.length)]).join('');
+}
+
+const SIN_PERMISO = /unauthorized_client|insufficient|forbidden|not authorized|403/i;
+
+async function aprobarConCorreoCorporativo(proposal: any, desde: string | null, user: { email?: string | null; userId: string }) {
+  const personal = String(proposal.email).trim().toLowerCase();
+  const nombres = {
+    firstName: proposal.primer_nombre, secondName: proposal.segundo_nombre,
+    firstSurname: proposal.primer_apellido, secondSurname: proposal.segundo_apellido,
+  };
+  const nombreCompleto = [proposal.primer_nombre, proposal.segundo_nombre, proposal.primer_apellido, proposal.segundo_apellido].filter(Boolean).join(' ');
+  const errorGoogle = (e: any, texto: string) => NextResponse.json({ error: SIN_PERMISO.test(e?.message || '')
+    ? 'Falta autorizar en la consola de Google los permisos de grupos para crear el correo corporativo.'
+    : `${texto}: ${e?.message || 'error'}` }, { status: 502 });
+
+  let usuario: string;
+  try { usuario = await usuarioLibre(nombres, desde); }
+  catch (e: any) { return errorGoogle(e, 'No se pudo generar el usuario corporativo'); }
+  const correo = `${usuario}@grupocc.org`;
+
+  // 1. Google primero: si no se puede crear la dirección, no se aprueba nada.
+  try { await crearGrupoReenvio({ email: correo, nombre: nombreCompleto, correoPersonal: personal }); }
+  catch (e: any) { console.error('[candidatos] crear grupo', correo, e?.message); return errorGoogle(e, `Google no creó ${correo}`); }
+
+  // 2. La cuenta del candidato, aprobada y sin contraseña: solo la temporal, que vence en 7 días (se guarda su hash).
+  const clave = claveTemporal();
+  const vence = new Date(Date.now() + 7 * 24 * 3600_000);
+  try {
+    await pool.query(`ALTER TABLE gcc_world.clients
+      ADD COLUMN IF NOT EXISTS account_type text DEFAULT 'candidate', ADD COLUMN IF NOT EXISTS approved boolean DEFAULT false,
+      ADD COLUMN IF NOT EXISTS profile_completed boolean DEFAULT false, ADD COLUMN IF NOT EXISTS workspace_username text,
+      ADD COLUMN IF NOT EXISTS workspace_email text, ADD COLUMN IF NOT EXISTS workspace_tipo text,
+      ADD COLUMN IF NOT EXISTS alta_clave_hash text, ADD COLUMN IF NOT EXISTS alta_clave_vence timestamptz,
+      ADD COLUMN IF NOT EXISTS full_name text`);
+    const claveHash = await hashPassword(clave);
+    const { rows: [existe] } = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = $1 LIMIT 1`, [personal]);
+    if (existe) {
+      await pool.query(
+        `UPDATE gcc_world.clients SET email_verified = true, approved = true, account_type = 'candidate', profile_completed = false,
+                workspace_username = $2, workspace_email = $3, workspace_tipo = 'grupo', alta_clave_hash = $4, alta_clave_vence = $5,
+                full_name = $6, name = $6, client_token = $7
+          WHERE id = $1`,
+        [existe.id, usuario, correo, claveHash, vence, nombreCompleto, generateClientToken()],
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO gcc_world.clients (name, full_name, email, alias, email_verified, approved, account_type, profile_completed,
+            client_token, ip_hash, last_seen_at, workspace_username, workspace_email, workspace_tipo, alta_clave_hash, alta_clave_vence)
+         VALUES ($1, $1, $2, 'Candidato', true, true, 'candidate', false, $3, $4, NOW(), $5, $6, 'grupo', $7, $8)`,
+        [nombreCompleto, personal, generateClientToken(), proposal.ip_hash, usuario, correo, claveHash, vence],
+      );
+    }
+    await pool.query(
+      `UPDATE gcc_world.candidate_proposals SET status = 'approved', decided_at = NOW(), decided_by = $1 WHERE id = $2`,
+      [user.email ?? 'admin', proposal.id],
+    );
+  } catch (e: any) {
+    await borrarGrupo(correo).catch(() => {});
+    throw e;
+  }
+
+  after(() => avisarReclutamiento('postulacion_decidida', {
+    titulo: 'Postulación aprobada',
+    mensaje: `${nombreCompleto} · ${correo} · la aprobó ${user.email}.`,
+    consulta: 'tab=solicitudes',
+    excluirUserId: user.userId,
+  }));
+
+  // 3. La credencial, al correo corporativo (el grupo la reenvía a su bandeja).
+  try {
+    await sendCredencialCandidato({ correo, claveTemporal: clave, nombre: proposal.primer_nombre, vence });
+  } catch (e: any) {
+    console.error('[candidatos] credencial', correo, e?.message);
+    return NextResponse.json({ ok: true, emailSent: false, username: usuario, workspaceEmail: correo,
+      error: `Aprobado y creado ${correo}, pero no se pudo enviar la credencial.` });
+  }
+  return NextResponse.json({ ok: true, emailSent: true, username: usuario, workspaceEmail: correo });
 }

@@ -585,3 +585,61 @@ export async function deleteMeetEvent(calendarEventId: string): Promise<void> {
     throw e;
   }
 }
+
+// ── Correo corporativo de los candidatos como GRUPO de Google (Fernando, 2026-11-12) ──────────────────────────────
+//
+// Un candidato aceptado recibe su dirección `@grupocc.org` como un GRUPO cuyo único miembro es su correo personal: la
+// dirección existe y recibe correo (lo reenvía a su bandeja) sin buzón ni licencia. Cuando el miembro sea rentable se
+// le puede dar un buzón de verdad (regla del 2026-11-05). Los dos alcances hay que autorizarlos en la delegación de
+// dominio de la consola de Google (Seguridad ▸ Control de acceso y datos ▸ Controles de API ▸ Delegación de todo el
+// dominio), junto a los que ya tiene el ID de cliente de la cuenta de servicio.
+const SCOPE_GRUPOS = 'https://www.googleapis.com/auth/admin.directory.group';
+const SCOPE_AJUSTES_GRUPOS = 'https://www.googleapis.com/auth/apps.groups.settings';
+
+/** ¿Existe ya esa dirección en Google, como usuario o como grupo? (Para no repetir un usuario corporativo.) */
+export async function direccionEnGoogle(email: string): Promise<boolean> {
+  const dir = google.admin({ version: 'directory_v1', auth: getAuth([SCOPE_DIRECTORY, SCOPE_GRUPOS]) });
+  const existe = async (f: () => Promise<unknown>) => {
+    try { await f(); return true; } catch (e: any) {
+      const code = e?.code || e?.response?.status;
+      if (code === 404) return false;
+      throw e;
+    }
+  };
+  return (await existe(() => dir.users.get({ userKey: email }))) || (await existe(() => dir.groups.get({ groupKey: email })));
+}
+
+/**
+ * Crea la dirección corporativa como grupo que reenvía al correo personal. Permite miembros de fuera del dominio y que
+ * cualquiera escriba (los clientes también le escriben). Si algo falla a medias, se borra el grupo.
+ */
+export async function crearGrupoReenvio(opts: { email: string; nombre: string; correoPersonal: string }): Promise<void> {
+  const auth = getAuth([SCOPE_GRUPOS, SCOPE_AJUSTES_GRUPOS]);
+  const dir = google.admin({ version: 'directory_v1', auth });
+  await dir.groups.insert({ requestBody: { email: opts.email, name: opts.nombre.slice(0, 73), description: 'Candidato del Grupo Corazones Cruzados' } });
+  try {
+    await google.groupssettings({ version: 'v1', auth }).groups.patch({
+      groupUniqueId: opts.email,
+      requestBody: {
+        allowExternalMembers: 'true',
+        whoCanPostMessage: 'ANYONE_CAN_POST',
+        whoCanViewGroup: 'ALL_MEMBERS_CAN_VIEW',
+        whoCanJoin: 'INVITED_CAN_JOIN',
+        isArchived: 'false',
+        messageModerationLevel: 'MODERATE_NONE',
+        spamModerationLevel: 'ALLOW',
+        includeInGlobalAddressList: 'true',
+      },
+    });
+    await dir.members.insert({ groupKey: opts.email, requestBody: { email: opts.correoPersonal, role: 'MEMBER', delivery_settings: 'ALL_MAIL' } });
+  } catch (e) {
+    await dir.groups.delete({ groupKey: opts.email }).catch(() => {});
+    throw e;
+  }
+}
+
+/** Borra el grupo de una dirección corporativa (para deshacer una aprobación fallida). */
+export async function borrarGrupo(email: string): Promise<void> {
+  const dir = google.admin({ version: 'directory_v1', auth: getAuth([SCOPE_GRUPOS]) });
+  await dir.groups.delete({ groupKey: email });
+}

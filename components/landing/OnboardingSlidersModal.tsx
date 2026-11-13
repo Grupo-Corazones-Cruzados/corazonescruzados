@@ -72,7 +72,10 @@ import AnimacionPaso from '@/components/landing/AnimacionPaso';
 import PixelInput from '@/components/ui/PixelInput';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 
-export type PostulacionData = {
+/** Los dos nombres y los dos apellidos: de ellos sale el correo corporativo al aceptarlo (2026-11-12). */
+export type NombresPostulante = { primerNombre: string; segundoNombre: string; primerApellido: string; segundoApellido: string };
+
+export type PostulacionData = NombresPostulante & {
   email: string;
   reason: string;
   /** Consentimiento OPCIONAL para recibir publicidad/novedades del proyecto. */
@@ -527,7 +530,7 @@ function NivelCrecimiento({ i }: { i: number }) {
 }
 
 /** La pirámide de los 4 niveles; sin botones: el paso decide cuál se marca. */
-function Piramide({ activo = -1 }: { activo?: number }) {
+export function Piramide({ activo = -1 }: { activo?: number }) {
   const widths = ['58%', '72%', '86%', '100%'];
   return (
     <div data-cuento-hijos className="flex flex-col items-center gap-2 text-left">
@@ -801,6 +804,8 @@ export default function OnboardingSlidersModal({
   // Postulación: correo + motivación + aceptaciones. (El resto de datos
   // personales se piden luego, en el formulario de creación de cuenta.)
   const [email, setEmail] = useState('');
+  const [nombres, setNombres] = useState<NombresPostulante>({ primerNombre: '', segundoNombre: '', primerApellido: '', segundoApellido: '' });
+  const nombresOk = Object.values(nombres).every((v) => v.trim().length >= 2);
   const [reason, setReason] = useState('');
   const [marketing, setMarketing] = useState(false);
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -812,12 +817,16 @@ export default function OnboardingSlidersModal({
   const [errorEnvio, setErrorEnvio] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const registro = useEstadoRegistro();
-  const formOk = emailOk && reason.trim().length >= 10 && finalAccepted && !!captcha && !enviando;
+  const formOk = nombresOk && emailOk && reason.trim().length >= 10 && finalAccepted && !!captcha && !enviando;
   const enviar = async () => {
     if (!formOk || !captcha) return;
     setEnviando(true);
     setErrorEnvio(null);
-    const error = await onComplete({ email: email.trim(), reason: reason.trim(), marketing, altcha: captcha });
+    const error = await onComplete({
+      primerNombre: nombres.primerNombre.trim(), segundoNombre: nombres.segundoNombre.trim(),
+      primerApellido: nombres.primerApellido.trim(), segundoApellido: nombres.segundoApellido.trim(),
+      email: email.trim(), reason: reason.trim(), marketing, altcha: captcha,
+    });
     setEnviando(false);
     if (error) {
       setErrorEnvio(error);
@@ -861,6 +870,8 @@ export default function OnboardingSlidersModal({
         contenido: (
           <>
             <CandidateForm
+              nombres={nombres}
+              setNombres={setNombres}
               email={email}
               setEmail={setEmail}
               emailOk={emailOk}
@@ -1239,7 +1250,9 @@ function AcceptTerms({
 /* Formulario de postulación                                          */
 /* ------------------------------------------------------------------ */
 
-function CandidateForm({
+export function CandidateForm({
+  nombres,
+  setNombres,
   email,
   setEmail,
   emailOk,
@@ -1251,6 +1264,8 @@ function CandidateForm({
   onToggleMarketing,
   enfocar = true,
 }: {
+  nombres: NombresPostulante;
+  setNombres: (v: NombresPostulante) => void;
   email: string;
   setEmail: (v: string) => void;
   emailOk: boolean;
@@ -1274,6 +1289,18 @@ function CandidateForm({
       </p>
 
       <div className="rounded-lg border border-digi-border bg-digi-card p-4 flex flex-col gap-4">
+        {/* Los dos nombres y los dos apellidos, obligatorios: con ellos se forma el correo corporativo. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {([
+            ['primerNombre', 'Primer nombre', 'given-name'],
+            ['segundoNombre', 'Segundo nombre', 'additional-name'],
+            ['primerApellido', 'Primer apellido', 'family-name'],
+            ['segundoApellido', 'Segundo apellido', 'family-name'],
+          ] as const).map(([clave, rotulo, auto]) => (
+            <PixelInput key={clave} label={rotulo} name={clave} value={nombres[clave]} autoComplete={auto}
+              onChange={(e) => setNombres({ ...nombres, [clave]: e.target.value.slice(0, 60) })} />
+          ))}
+        </div>
         <PixelInput
           label="Correo electrónico"
           type="email"

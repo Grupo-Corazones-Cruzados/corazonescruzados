@@ -16,13 +16,24 @@ export async function grantCandidateDashboardSession(email: string): Promise<boo
   const cleanEmail = String(email || '').trim().toLowerCase();
   if (!cleanEmail) return false;
 
+  await pool.query(`ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS workspace_tipo text`);
   const cr = await pool.query(
-    `SELECT id, password_hash, full_name FROM gcc_world.clients
-      WHERE LOWER(email) = $1 AND account_type = 'candidate' LIMIT 1`,
+    `SELECT id, password_hash, full_name, workspace_email, workspace_tipo FROM gcc_world.clients
+      WHERE (LOWER(email) = $1 OR (workspace_tipo = 'grupo' AND LOWER(workspace_email) = $1))
+        AND account_type = 'candidate' LIMIT 1`,
     [cleanEmail],
   );
   const cand = cr.rows[0];
   if (!cand || !cand.password_hash) return false; // sin cuenta completada → sin sesión
+  // Con correo corporativo (2026-11-12), la cuenta del panel es SIEMPRE la corporativa, nunca la del correo personal.
+  if (cand.workspace_tipo === 'grupo' && cand.workspace_email) {
+    const correo = String(cand.workspace_email).toLowerCase();
+    const { rows: [u] } = await pool.query(`SELECT id, role FROM gcc_world.users WHERE LOWER(email) = $1 LIMIT 1`, [correo]);
+    if (!u) return false;
+    const rol = (['client', 'member', 'admin'].includes(String(u.role)) ? u.role : 'client') as UserRole;
+    await setAuthCookie(await createToken({ userId: u.id, email: correo, role: rol }));
+    return true;
+  }
 
   // Busca/crea la fila `users`. Si ya existe (p. ej. el correo también es staff), se
   // PRESERVA su rol; si se crea nueva, es rol 'client'.

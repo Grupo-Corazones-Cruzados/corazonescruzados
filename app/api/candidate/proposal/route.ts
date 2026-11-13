@@ -37,12 +37,26 @@ async function ensureProposalsTable() {
   await pool.query(
     `ALTER TABLE gcc_world.candidate_proposals ADD COLUMN IF NOT EXISTS device_token TEXT`,
   );
+  // Los dos nombres y los dos apellidos (2026-11-12): con ellos se genera el correo corporativo al aceptarlo.
+  await pool.query(`ALTER TABLE gcc_world.candidate_proposals
+    ADD COLUMN IF NOT EXISTS primer_nombre TEXT, ADD COLUMN IF NOT EXISTS segundo_nombre TEXT,
+    ADD COLUMN IF NOT EXISTS primer_apellido TEXT, ADD COLUMN IF NOT EXISTS segundo_apellido TEXT`);
+}
+
+/** Un nombre o apellido: sin espacios de más, de 2 a 60 caracteres y con al menos una letra. */
+function limpiarNombre(v: unknown): string | null {
+  const s = typeof v === 'string' ? v.trim().replace(/\s+/g, ' ') : '';
+  return s.length >= 2 && s.length <= 60 && /\p{L}/u.test(s) ? s : null;
 }
 
 // POST — registra una nueva propuesta (bloquea reutilización del correo).
 export async function POST(req: Request) {
   try {
-    const { email, reason, marketing, altcha } = await req.json();
+    const { email, reason, marketing, altcha, primerNombre, segundoNombre, primerApellido, segundoApellido } = await req.json();
+    const nombres = [primerNombre, segundoNombre, primerApellido, segundoApellido].map(limpiarNombre);
+    if (nombres.some((n) => !n)) {
+      return NextResponse.json({ error: 'Escribe tus dos nombres y tus dos apellidos.' }, { status: 400 });
+    }
     // «No soy un robot» (ALTCHA) y un registro cada 24 h por equipo (Fernando, 2026-10-29).
     const fallo = await verificarCaptcha(altcha);
     if (fallo) return NextResponse.json({ error: fallo, captcha: true }, { status: 400 });
@@ -89,9 +103,10 @@ export async function POST(req: Request) {
 
     const { rows: [nueva] } = await pool.query(
       `INSERT INTO gcc_world.candidate_proposals
-         (email, reason, marketing, ip_hash, status, verification_token, device_token)
-       VALUES ($1, $2, $3, $4, 'pending', $5, $6) RETURNING id`,
-      [cleanEmail, cleanReason, marketing === true, ipHash, token, deviceToken],
+         (email, reason, marketing, ip_hash, status, verification_token, device_token,
+          primer_nombre, segundo_nombre, primer_apellido, segundo_apellido)
+       VALUES ($1, $2, $3, $4, 'pending', $5, $6, $7, $8, $9, $10) RETURNING id`,
+      [cleanEmail, cleanReason, marketing === true, ipHash, token, deviceToken, ...nombres],
     );
     await anotarRegistro('postulacion');
     after(() => avisarReclutamiento('postulacion_nueva', {

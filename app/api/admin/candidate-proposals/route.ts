@@ -26,8 +26,12 @@ export async function GET() {
       )
     `);
 
+    await pool.query(`ALTER TABLE gcc_world.candidate_proposals
+      ADD COLUMN IF NOT EXISTS primer_nombre TEXT, ADD COLUMN IF NOT EXISTS segundo_nombre TEXT,
+      ADD COLUMN IF NOT EXISTS primer_apellido TEXT, ADD COLUMN IF NOT EXISTS segundo_apellido TEXT`);
     const { rows } = await pool.query(
-      `SELECT id, email, reason, marketing, status, email_verified, created_at, decided_at, decided_by
+      `SELECT id, email, reason, marketing, status, email_verified, created_at, decided_at, decided_by,
+              primer_nombre, segundo_nombre, primer_apellido, segundo_apellido
          FROM gcc_world.candidate_proposals
         ORDER BY (status = 'pending') DESC, created_at DESC`,
     );

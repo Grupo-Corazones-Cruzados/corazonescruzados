@@ -106,11 +106,12 @@ export async function POST(req: Request) {
     try {
       if (isGoogleWorkspaceConfigured()) {
         const wr = await pool.query(
-          `SELECT workspace_email, workspace_created_at FROM gcc_world.clients WHERE id = $1`,
+          `SELECT workspace_email, workspace_created_at, workspace_tipo FROM gcc_world.clients WHERE id = $1`,
           [row.id],
         );
         const ws = wr.rows[0];
-        if (ws?.workspace_email && !ws.workspace_created_at) {
+        // Con el flujo nuevo (2026-11-12) la dirección es un GRUPO de Google: nunca se crea un usuario encima.
+        if (ws?.workspace_email && !ws.workspace_created_at && ws.workspace_tipo !== 'grupo') {
           const created = await createWorkspaceUser({
             email: ws.workspace_email,
             fullName: typeof fullName === 'string' ? fullName.trim() : '',

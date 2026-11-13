@@ -40,14 +40,23 @@ export async function POST(req: Request) {
       );
     }
 
+    // ⇒ CON CORREO CORPORATIVO, SOLO ÉL (Fernando, 2026-11-12): el candidato aceptado con el flujo nuevo inicia sesión
+    // con su `@grupocc.org`; su correo personal ya no abre la cuenta, y el código va al corporativo.
+    await pool.query(`ALTER TABLE gcc_world.clients ADD COLUMN IF NOT EXISTS workspace_tipo text`);
     const r = await pool.query(
-      `SELECT id, alias, password_hash, email_verified, email
+      `SELECT id, alias, password_hash, email_verified, email, workspace_email, workspace_tipo
          FROM gcc_world.clients
-        WHERE LOWER(email) = $1
+        WHERE LOWER(email) = $1 OR (workspace_tipo = 'grupo' AND LOWER(workspace_email) = $1)
+        ORDER BY (LOWER(workspace_email) = $1) DESC
         LIMIT 1`,
       [cleanEmail],
     );
     const row = r.rows[0];
+    const corporativo = row?.workspace_tipo === 'grupo' && row.workspace_email ? String(row.workspace_email).toLowerCase() : null;
+    if (corporativo && cleanEmail !== corporativo) {
+      return NextResponse.json({ error: `Ingresa con tu correo corporativo (${corporativo}).` }, { status: 403 });
+    }
+    if (corporativo) row.email = corporativo;
     if (!row || !row.password_hash) {
       await claveValida(cleanEmail, password, null); // mira el bloqueo y anota el fallo, como con una cuenta real
       return NextResponse.json(

@@ -29,7 +29,8 @@ export async function POST(req: Request) {
     const r = await pool.query(
       `SELECT id, recovery_code, recovery_code_exp, client_token
          FROM gcc_world.clients
-        WHERE LOWER(email) = $1
+        WHERE (LOWER(email) = $1 AND COALESCE(workspace_tipo, '') <> 'grupo')
+           OR (workspace_tipo = 'grupo' AND LOWER(workspace_email) = $1)
         LIMIT 1`,
       [cleanEmail],
     );
