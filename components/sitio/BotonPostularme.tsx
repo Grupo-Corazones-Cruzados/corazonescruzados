@@ -1,15 +1,16 @@
 'use client';
 
 /**
- * «POSTULARME» EN LA PÁGINA CANDIDATOS: abre EL LIBRO (Fernando, 2026-11-12: «la idea era que este sea el
- * nuevo formulario y no un libro aparte»), la postulación contada como un cuento, con su formulario en la
- * última página. La ventana de pasos de antes (`OnboardingSlidersModal`) queda en el código como respaldo.
+ * «POSTULARME» EN LA PÁGINA CANDIDATOS (Fernando, 2026-11-11): abre la misma ventana flotante de la
+ * postulación (`OnboardingSlidersModal`: el camino de pasos, «Entendido» y Siguiente), que hasta
+ * ahora solo se abría desde la portada. Envía con `enviarPostulacion`, la misma del formulario de la
+ * página, y al terminar confirma que la postulación quedó en revisión.
  */
 
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Send } from 'lucide-react';
-import LibroHistoria from '@/components/libro/LibroHistoria';
+import OnboardingSlidersModal, { enviarPostulacion } from '@/components/landing/OnboardingSlidersModal';
 import { AuthDialog, BotonAuth } from '@/components/landing/AuthSurface';
 
 export default function BotonPostularme() {
@@ -25,13 +26,15 @@ export default function BotonPostularme() {
 
       {/* Al `body` con un portal: dentro del sitio, el contenedor de la página recortaba la ventana
           y sus estilos claros teñían la tabla del Modelo 4P. La ventana trae su isla `.corp dark`. */}
-      {/* Al `body` con un portal: el libro ocupa la pantalla entera y trae su isla `.corp dark`. */}
       {abierto && createPortal(
-        <LibroHistoria
+        <OnboardingSlidersModal
           onClose={() => setAbierto(false)}
-          onEnviada={(email) => {
+          onComplete={async (postulacion) => {
+            const error = await enviarPostulacion(postulacion);
+            if (error) return error;
             setAbierto(false);
-            setEnviada(email);
+            setEnviada(postulacion.email);
+            return null;
           }}
         />,
         document.body,
