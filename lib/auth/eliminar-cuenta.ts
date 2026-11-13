@@ -25,6 +25,9 @@ const DEL_MIEMBRO = ['member_cv_profiles', 'member_portfolio_items', 'member_sch
 
 export class CuentaNoEliminable extends Error {}
 
+/** Cuentas de prueba que usan varias personas a la vez: no se eliminan desde la app. */
+const CUENTAS_COMPARTIDAS = new Set(['probador@gcc.test']);
+
 type ClienteBd = { query: (sql: string, valores?: unknown[]) => Promise<{ rows: any[] }> };
 
 /** Corre dentro de la transacción de quien llama (una transacción necesita su propio cliente). */
@@ -35,6 +38,11 @@ export async function eliminarCuentaEn(cli: ClienteBd, userId: string): Promise<
   if (!u) throw new CuentaNoEliminable('La cuenta no existe');
   if (u.role !== 'client') throw new CuentaNoEliminable('Las cuentas del equipo las da de baja un administrador');
   const correo = String(u.email).trim().toLowerCase();
+  // La cuenta de prueba que comparten los probadores de Google Play (12-Testers, del 2026-11-13 al 27) y el
+  // revisor de Apple: si uno la elimina, todos quedan fuera y la prueba de 14 días vuelve a empezar.
+  if (CUENTAS_COMPARTIDAS.has(correo)) {
+    throw new CuentaNoEliminable('Esta es la cuenta de prueba compartida y no se puede eliminar. Para probar la eliminación, crea una cuenta propia.');
+  }
 
   for (const t of DEL_USUARIO) await cli.query(`DELETE FROM gcc_world.${t} WHERE user_id = $1`, [userId]);
   await cli.query(`DELETE FROM gcc_world.cp_accesos WHERE quien = $1 OR a_quien = $1`, [userId]);
