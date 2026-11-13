@@ -1440,11 +1440,9 @@ export default function ProjectDetailPage() {
           </div>
           <p className="text-[12px] text-digi-muted mb-2" style={{ fontFamily: 'var(--font-body)' }}>Un miembro con al menos uno de los talentos requeridos puede hacerse responsable de inmediato; luego podrá tomar requerimientos o abrir el proyecto a propuestas.</p>
           {(project.required_talents || []).length > 0 && (
-            <div className="flex items-center gap-1 flex-wrap mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-digi-muted shrink-0" />
-              {(project.required_talents || []).map((t: string) => (
-                <span key={t} className="text-[10.5px] px-1.5 py-0.5 rounded bg-black/[0.05] text-digi-text" style={{ fontFamily: 'var(--font-body)' }}>{t}</span>
-              ))}
+            <div className="flex items-center gap-1.5 mb-2 text-[12px] text-accent" style={{ fontFamily: 'var(--font-body)' }}>
+              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+              <span>{(project.required_talents || []).join(' · ')}</span>
             </div>
           )}
           {!isOwner && !!memberId && (project.required_talents || []).some((t: string) => (project.mis_talentos || []).includes(t)) && (
@@ -1614,15 +1612,20 @@ export default function ProjectDetailPage() {
 
                       {/* Talentos y plazas: lo que hace que el proyecto salga en el filtro por talento.
                           Plazas con icono de personas y número; sin plazas, nada. */}
+                      {/* Sin cápsulas (Fernando, 2026-11-13): los talentos son texto en color de acento separado por «·»,
+                          con el icono delante; las plazas, icono y número. Ni fondo ni borde. */}
                       {(r.talents?.length > 0 || r.slots != null) && (
-                        <div className="flex flex-wrap items-center gap-1">
-                          {(r.talents || []).map((t: string) => (
-                            <span key={t} className="text-[10.5px] px-1.5 py-0.5 rounded-full bg-accent-light text-accent border border-accent/20" style={mf}>{t}</span>
-                          ))}
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px]" style={mf}>
+                          {(r.talents || []).length > 0 && (
+                            <span className="inline-flex items-center gap-1.5 text-accent min-w-0">
+                              <Sparkles className="w-3.5 h-3.5 shrink-0" />
+                              <span>{(r.talents || []).join(' · ')}</span>
+                            </span>
+                          )}
                           {r.slots != null && (
                             <span title={`${r.slots} plaza${Number(r.slots) === 1 ? '' : 's'}`}
-                              className="inline-flex items-center gap-1 text-[10.5px] px-1.5 py-0.5 rounded-full border border-digi-border text-digi-muted tabular-nums" style={mf}>
-                              <Users className="w-3 h-3" />{r.slots}
+                              className="inline-flex items-center gap-1 text-digi-muted tabular-nums">
+                              <Users className="w-3.5 h-3.5" />{r.slots}
                             </span>
                           )}
                         </div>
