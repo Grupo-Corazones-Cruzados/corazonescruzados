@@ -139,7 +139,7 @@ export default function DocumentoLegal({
         <ContenedorDoc className="py-3">
           <details className="group">
             <summary className="flex items-center justify-between gap-3 cursor-pointer list-none py-1.5">
-              <span className="text-[13px] font-semibold text-[var(--texto)]">Documentos y contenido</span>
+              <span className="text-[13px] font-semibold text-[var(--texto)]">Documentos e índice</span>
               <span aria-hidden className="text-[var(--tenue)] text-[12px] transition-transform group-open:rotate-180">▾</span>
             </summary>
             <div className="pt-4 pb-2 space-y-6">
@@ -241,7 +241,7 @@ function IndiceSecciones({ grupos }: { grupos: GrupoIndice[] }) {
   return (
     <>
       <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[var(--violeta-txt)] mb-2.5">
-        En este documento
+        Índice
       </p>
       <div className="space-y-5">
         {grupos.map((g) => (
