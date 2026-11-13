@@ -43,7 +43,7 @@ export default function BotonPostularme() {
       {enviada && createPortal(
         <AuthDialog
           Icon={Send}
-          titulo="Tu postulación está en revisión"
+          titulo="Postulación en revisión"
           onClose={() => setEnviada(null)}
           ancho="sm"
           pie={<BotonAuth onClick={() => setEnviada(null)}>Entendido</BotonAuth>}

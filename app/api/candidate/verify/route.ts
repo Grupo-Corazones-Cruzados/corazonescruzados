@@ -10,10 +10,12 @@ export async function GET(req: Request) {
   // Usa el dominio PÚBLICO para la redirección. Detrás del proxy (Railway) req.url
   // apunta al host interno (localhost:8080), así que tomamos NEXT_PUBLIC_APP_URL.
   const base = process.env.NEXT_PUBLIC_APP_URL || new URL(req.url).origin;
-  const home = new URL('/', base);
+  // El resultado se enseña en su propia página (Fernando, 2026-11-13): antes iba a la portada con `?candidato=`,
+  // que nadie leía, y el candidato no veía que su correo quedó verificado.
+  const home = new URL('/postulacion/verificada', base);
 
   if (!token) {
-    home.searchParams.set('candidato', 'token-invalido');
+    home.searchParams.set('estado', 'token-invalido');
     return NextResponse.redirect(home);
   }
 
@@ -38,12 +40,12 @@ export async function GET(req: Request) {
       }));
     }
     home.searchParams.set(
-      'candidato',
+      'estado',
       r.rows.length > 0 ? 'correo-verificado' : 'token-invalido',
     );
   } catch (err) {
     console.error('Candidate verify error:', err);
-    home.searchParams.set('candidato', 'error');
+    home.searchParams.set('estado', 'error');
   }
 
   return NextResponse.redirect(home);

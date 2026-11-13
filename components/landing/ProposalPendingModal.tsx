@@ -1,18 +1,19 @@
 'use client';
-import BotonCerrar from '@/components/ui/BotonCerrar';
+import { Send, MailCheck, BadgeCheck } from 'lucide-react';
+import { AuthDialog, BotonAuth } from '@/components/landing/AuthSurface';
+import { Aviso } from '@/components/landing/OnboardingSlidersModal';
 
 /**
  * ProposalPendingModal
  * --------------------
- * Se muestra a un candidato cuya postulación ya está registrada (reconocido por
- * su IP al volver a "Entrar → candidato", o justo tras enviar su propuesta).
- * Le indica que debe esperar la aprobación del administrador global y verificar
- * el correo enviado.
+ * Se muestra a un candidato cuya postulación ya está registrada (reconocido por su IP al volver a
+ * "Entrar → candidato", o justo tras enviar su propuesta), y al cliente que aún no verificó su correo.
+ *
+ * Con el armazón de los diálogos de acceso (`AuthDialog`, Fernando, 2026-11-13: «actualiza esto con diseño
+ * moderno… tenemos reglas que aquí no están siendo aplicadas»). Antes era pixel: Silkscreen, emoji de reloj,
+ * borde morado de 2 px y un aviso con fondo de color y borde. Ahora: título simple, el texto, y el aviso del
+ * correo como rótulo con icono (`Aviso`), sin caja. El mismo diálogo que el de la página Candidatos.
  */
-
-const PIXEL = "'Silkscreen', cursive";
-const BODY = "'Inter', system-ui, -apple-system, sans-serif";
-
 export default function ProposalPendingModal({
   email,
   emailVerified,
@@ -26,138 +27,59 @@ export default function ProposalPendingModal({
   onClose: () => void;
   /** 'candidate' (postulación, requiere aprobación) | 'client' (solo verificar). */
   mode?: 'candidate' | 'client';
-  /** La postulación ya fue APROBADA por el admin → estado verde + botón "Continuar". */
+  /** La postulación ya fue APROBADA por el admin → botón "Continuar". */
   approved?: boolean;
   /** Acción del botón "Continuar" (crear cuenta). Requerido cuando approved=true. */
   onContinue?: () => void;
 }) {
   const isClient = mode === 'client';
+  const strong = 'font-semibold text-digi-text';
+
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 230,
-        background: 'radial-gradient(circle at 50% 30%, rgba(40,22,80,0.55), rgba(0,0,0,0.82))',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20,
-        animation: 'pixelFadeIn 0.45s ease-out',
-      }}
+    <AuthDialog
+      Icon={approved ? BadgeCheck : isClient ? MailCheck : Send}
+      titulo={approved ? 'Postulación aprobada' : isClient ? 'Verificación de la cuenta' : 'Postulación en revisión'}
+      onClose={onClose}
+      ancho="sm"
+      pie={
+        <BotonAuth onClick={approved ? (onContinue ?? onClose) : onClose}>
+          {approved ? 'Continuar' : 'Entendido'}
+        </BotonAuth>
+      }
     >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: 480,
-          background: '#0e1118',
-          border: '2px solid var(--color-accent)',
-          borderRadius: 6,
-          boxShadow: '6px 6px 0 rgba(0,0,0,0.55), 0 0 36px rgba(75,45,142,0.4)',
-          position: 'relative',
-          padding: '30px 26px 26px',
-          textAlign: 'center',
-        }}
-      >
-        <BotonCerrar onClick={onClose} tono="oscuro" className="absolute top-2.5 right-3" />
-
-        <div style={{ fontSize: '2rem', marginBottom: 8 }}>{approved ? '🎉' : isClient ? '📬' : '⏳'}</div>
-        <h2
-          style={{
-            fontFamily: PIXEL,
-            fontSize: '1rem',
-            color: '#f1eefb',
-            margin: '0 0 14px',
-            textShadow: '1px 1px 0 rgba(0,0,0,0.6)',
-          }}
-        >
-          {approved
-            ? '¡Tu postulación fue aprobada!'
-            : isClient
-              ? 'Verifica tu cuenta de cliente'
-              : 'Tu postulación está en revisión'}
-        </h2>
-
-        <p style={{ fontFamily: BODY, fontSize: '0.9rem', lineHeight: 1.6, color: '#cfc9e2', margin: '0 0 12px' }}>
+      <div className="space-y-5">
+        <p className="text-[13.5px] leading-relaxed text-digi-text">
           {approved ? (
             <>
-              Fuiste aceptado por el administrador del proyecto. Continúa para{' '}
-              <strong style={{ color: '#fff' }}>crear tu cuenta</strong> (contraseña y datos) e ingresar.
+              El administrador del proyecto aprobó tu postulación{email ? <> con el correo <strong className={strong}>{email}</strong></> : ''}.
+              Continúa para <strong className={strong}>crear tu cuenta</strong> con tu contraseña y tus datos.
             </>
           ) : isClient ? (
             <>
-              Ya creaste tu cuenta de cliente. Para poder iniciar sesión, primero{' '}
-              <strong style={{ color: '#fff' }}>verifica tu correo</strong>. No necesitas crear otra
-              cuenta.
+              Tu cuenta de cliente ya está creada, y para iniciar sesión primero debes{' '}
+              <strong className={strong}>verificar tu correo</strong>, sin necesidad de crear otra cuenta.
             </>
           ) : (
             <>
-              Tu propuesta quedó registrada y está{' '}
-              <strong style={{ color: '#fff' }}>en espera de aprobación</strong> por parte del
-              administrador del proyecto. Te avisaremos cuando sea aprobada.
+              Tu propuesta quedó registrada y está <strong className={strong}>en espera de aprobación</strong>{' '}
+              por parte del administrador del proyecto. Te avisaremos cuando sea aprobada.
             </>
           )}
         </p>
 
-        {/* Etiqueta de estado. Aprobado → verde (igual que "correo verificado"). */}
-        {approved ? (
-          <div
-            style={{
-              fontFamily: BODY,
-              fontSize: '0.85rem',
-              lineHeight: 1.55,
-              color: '#bfe6c9',
-              background: 'rgba(40,120,70,0.16)',
-              borderLeft: '3px solid #4fae72',
-              borderRadius: 4,
-              padding: '11px 13px',
-              textAlign: 'left',
-              margin: '4px 0 18px',
-            }}
-          >
-            ✓ Fuiste <strong>aceptado por el administrador</strong>
-            {email ? <> · {email}</> : ''}.
-          </div>
-        ) : (
-          <div
-            style={{
-              fontFamily: BODY,
-              fontSize: '0.85rem',
-              lineHeight: 1.55,
-              color: emailVerified ? '#bfe6c9' : '#f3e2c2',
-              background: emailVerified ? 'rgba(40,120,70,0.16)' : 'rgba(160,110,40,0.16)',
-              borderLeft: `3px solid ${emailVerified ? '#4fae72' : '#caa14a'}`,
-              borderRadius: 4,
-              padding: '11px 13px',
-              textAlign: 'left',
-              margin: '4px 0 18px',
-            }}
-          >
-            {emailVerified ? (
-              <>✓ Tu correo {email ? <strong>{email}</strong> : ''} ya está verificado.</>
-            ) : (
-              <>
-                Te enviamos un correo {email ? <strong>a {email}</strong> : ''}:{' '}
-                <strong style={{ color: '#fff' }}>verifícalo</strong> para continuar. Revisa tu bandeja
-                de entrada (y la carpeta de spam).
-              </>
-            )}
-          </div>
+        {!approved && (
+          emailVerified ? (
+            <Aviso tono="info" titulo="Correo verificado">
+              Tu correo {email ? <strong className={strong}>{email}</strong> : ''} ya está verificado.
+            </Aviso>
+          ) : (
+            <Aviso tono="info" titulo="Verificación del correo">
+              Te enviamos un correo{email ? <> a <strong className={strong}>{email}</strong></> : ''} para
+              verificarlo. Revisa tu bandeja de entrada y la carpeta de spam.
+            </Aviso>
+          )
         )}
-
-        <button
-          type="button"
-          onClick={approved ? (onContinue ?? onClose) : onClose}
-          className="pixel-btn pixel-btn-primary"
-          style={{ width: '100%' }}
-        >
-          {approved ? 'Continuar' : 'Entendido'}
-        </button>
       </div>
-    </div>
+    </AuthDialog>
   );
 }

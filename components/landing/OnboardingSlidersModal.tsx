@@ -1364,7 +1364,7 @@ type AccordionItem = { name: string; summary: string; body: () => React.ReactNod
  * rojo («se ve feísimo»). Lo distingue un rótulo con icono en el color del aviso; el texto va en el
  * color normal del párrafo. Estilos en `globals.css` (`.aviso-gcc`).
  */
-function Aviso({ tono, titulo, children }: { tono: 'peligro' | 'info'; titulo: string; children: React.ReactNode }) {
+export function Aviso({ tono, titulo, children }: { tono: 'peligro' | 'info'; titulo: string; children: React.ReactNode }) {
   const Icono = tono === 'peligro' ? AlertTriangle : Info;
   return (
     <div role="note" className="aviso-gcc" data-tono={tono}>
