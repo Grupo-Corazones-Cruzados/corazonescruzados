@@ -73,6 +73,23 @@ function Lamina({ children }: { children: React.ReactNode }) {
 
 function IlustracionLibro({ il }: { il: Ilustracion }) {
   if (il.tipo === 'animacion') return <Lamina><AnimacionPaso src={`/animaciones/${il.id}.webp`} alt={il.alt} /></Lamina>;
+  if (il.tipo === 'video') {
+    return (
+      <Lamina>
+        <video
+          className="libro-video"
+          src={`/animaciones/${il.id}.mp4`}
+          poster={`/animaciones/${il.id}.jpg`}
+          aria-label={il.alt}
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+        />
+      </Lamina>
+    );
+  }
   if (il.tipo === 'miembros') return <Lamina><div className="libro-miembros"><MiembrosGaleria /></div></Lamina>;
   if (il.tipo === 'piramide') return <Lamina><div className="libro-piramide"><Piramide activo={il.activo} /></div></Lamina>;
   return (

@@ -16,6 +16,8 @@
 
 export type Ilustracion =
   | { tipo: 'animacion'; id: string; alt: string }
+  /** Escena 3D realista (modelos de Poly Haven en Blender), en video MP4 en bucle: `public/animaciones/<id>.mp4`. */
+  | { tipo: 'video'; id: string; alt: string }
   | { tipo: 'miembros' }
   | { tipo: 'piramide'; activo?: number }
   | { tipo: 'desglose'; items: string[] };
@@ -52,7 +54,8 @@ export const PAGINAS: PaginaLibro[] = [
   /* ── I · El niño que soñaba ── */
   {
     id: 'sueno', capitulo: 0, titulo: 'Había una vez un niño que soñaba',
-    izquierda: anim('libro-sueno', 'Un cielo de estrellas y, en medio, el logo del grupo encendiéndose como una constelación'),
+    // Primera escena con modelos 3D reales (2026-11-12, `scripts/animaciones/real/libro-sueno-real.py`).
+    izquierda: { tipo: 'video', id: 'libro-sueno-real', alt: 'El rincón del niño de noche: un farol encendido junto a sus libros y una ventana con el cielo estrellado' },
     parrafos: [
       'Había una vez un niño al que le encantaba soñar. Soñaba de día y soñaba de noche, y cuando cerraba los ojos el mundo se volvía un lugar cálido y cómodo, un lugar del que jamás quería escapar.',
       'Cada noche miraba las estrellas desde su ventana y les ponía nombres, convencido de que allá arriba existía un orden en el que nadie se quedaba fuera. En sus sueños las personas se entendían, y el mundo era justo como debía ser.',
