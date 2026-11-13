@@ -5,17 +5,20 @@
  *
  * Un libro cerrado con el logo en la tapa; al abrirlo, cada DOBLE PÁGINA es un paso: a la izquierda la
  * ilustración (las animaciones de Blender en bucle), a la derecha el texto, que se va «contando» párrafo a
- * párrafo. Se avanza pasando la hoja (un giro 3D de verdad, en la página: el texto sigue siendo texto) y
- * cada página se firma («He leído esta página») antes de pasarla. La última página está en blanco: es el
+ * párrafo. Se avanza con «Siguiente página» al pie de la hoja (Fernando, 2026-11-12: «no sería necesario el
+ * botón de estoy de acuerdo sino un botón de siguiente página»), que pasa la hoja con un giro 3D de verdad
+ * (el texto sigue siendo texto). Papel crema, tinta oscura y letra de libro; las ilustraciones son láminas
+ * oscuras impresas en la página («el libro debe tener su color o diseño»). La última página está en blanco: es el
  * formulario de postulación. Las piezas del formulario (`CandidateForm`, `Piramide`, el captcha y el envío)
  * son las mismas de la ventana de «Postularme», no copias.
  *
- * Teléfono (< 900 px): una sola página a la vez, la ilustración arriba y el texto debajo.
+ * Teléfono (< 900 px): una sola página a la vez, la lámina arriba y el texto debajo; la hoja se pasa girando
+ * desde el lomo, con el botón o deslizando el dedo.
  * El contenido vive en `lib/sitio/libroHistoria.ts`.
  */
 
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ArrowLeft, ArrowRight, BookOpen, Check, Send } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowRight, BookOpen, Send } from 'lucide-react';
 import AnimacionPaso from '@/components/landing/AnimacionPaso';
 import MiembrosGaleria from '@/components/landing/MiembrosGaleria';
 import Captcha from '@/components/landing/Captcha';
@@ -28,6 +31,7 @@ import { trozosNegrita } from '@/lib/sitio/modeloGcc';
 const TOTAL = PAGINAS.length + 2;
 const EPI = PAGINAS.length + 1;
 const GIRO_MS = 950;
+const GIRO_TEL_MS = 700;
 
 type Giro = { de: number; a: number; dir: 1 | -1 };
 
@@ -85,10 +89,15 @@ function BloqueLibro({ b, retardo, dur, relatar }: { b: Bloque; retardo: number;
   );
 }
 
+/** Las láminas van «impresas» en oscuro sobre el papel: dentro, los colores del tema oscuro. */
+function Lamina({ children }: { children: React.ReactNode }) {
+  return <div className="corp dark libro-lamina">{children}</div>;
+}
+
 function IlustracionLibro({ il }: { il: Ilustracion }) {
-  if (il.tipo === 'animacion') return <AnimacionPaso src={`/animaciones/${il.id}.webp`} alt={il.alt} />;
-  if (il.tipo === 'miembros') return <div className="libro-miembros"><MiembrosGaleria /></div>;
-  if (il.tipo === 'piramide') return <div className="libro-piramide"><Piramide activo={il.activo} /></div>;
+  if (il.tipo === 'animacion') return <Lamina><AnimacionPaso src={`/animaciones/${il.id}.webp`} alt={il.alt} /></Lamina>;
+  if (il.tipo === 'miembros') return <Lamina><div className="libro-miembros"><MiembrosGaleria /></div></Lamina>;
+  if (il.tipo === 'piramide') return <Lamina><div className="libro-piramide"><Piramide activo={il.activo} /></div></Lamina>;
   return (
     <ol className="libro-desglose">
       {il.items.map((x, i) => <li key={x}><span>{String(i + 1).padStart(2, '0')}</span>{x}</li>)}
@@ -163,7 +172,7 @@ function PaginaEnBlanco({ relatar }: { relatar: boolean }) {
             enfocar={false}
           />
           <div className="mt-5">
-            <Captcha onCambio={setCaptcha} reinicio={reinicio} tema="oscuro" />
+            <Captcha onCambio={setCaptcha} reinicio={reinicio} tema="claro" />
             {error && <p role="alert" className="mt-3 text-[13px] leading-relaxed text-red-300">{error}</p>}
           </div>
           <button type="button" onClick={enviar} disabled={!listo} className="onb-boton onb-boton-avanzar libro-enviar">
@@ -176,11 +185,11 @@ function PaginaEnBlanco({ relatar }: { relatar: boolean }) {
   );
 }
 
-export default function LibroHistoria() {
+/** `fuente`: la clase de la letra de libro (next/font en la página). */
+export default function LibroHistoria({ fuente = '' }: { fuente?: string }) {
   const [fase, setFase] = useState<'cerrado' | 'abriendo' | 'abierto'>('cerrado');
   const [idx, setIdx] = useState(0);
   const [giro, setGiro] = useState<Giro | null>(null);
-  const [firmadas, setFirmadas] = useState<Set<number>>(() => new Set());
   const [alcanzado, setAlcanzado] = useState(0);
   const [telefono, setTelefono] = useState(false);
   const relatadas = useRef<Set<number>>(new Set());
@@ -199,16 +208,24 @@ export default function LibroHistoria() {
     if (fase === 'abierto' && !giro) relatadas.current.add(idx);
   }, [idx, giro, fase]);
 
-  const firmada = (i: number) => i === 0 || i === EPI || firmadas.has(i);
-  const puedeIr = (i: number) => i <= alcanzado || (i === alcanzado + 1 && firmada(alcanzado));
+  const puedeIr = (i: number) => i <= alcanzado + 1;
+  const [giroTel, setGiroTel] = useState<{ de: number; dir: 1 | -1 } | null>(null);
 
   const ir = useCallback(
     (a: number) => {
       if (giro || a === idx || a < 0 || a >= TOTAL) return;
       const dir: 1 | -1 = a > idx ? 1 : -1;
       setAlcanzado((m) => Math.max(m, a));
-      if (telefono || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         setIdx(a);
+        return;
+      }
+      if (telefono) {
+        // La hoja de encima gira desde el lomo: hacia delante se va la actual; hacia atrás vuelve la anterior.
+        setGiroTel({ de: idx, dir });
+        setIdx(a);
+        window.setTimeout(() => setGiroTel(null), GIRO_TEL_MS);
+        document.querySelector('.libro-hoja-tel')?.scrollTo(0, 0);
         return;
       }
       setGiro({ de: idx, a, dir });
@@ -220,7 +237,7 @@ export default function LibroHistoria() {
     [giro, idx, telefono],
   );
 
-  const siguiente = () => { if (firmada(idx)) ir(idx + 1); };
+  const siguiente = () => ir(idx + 1);
   const anterior = () => ir(idx - 1);
 
   useEffect(() => {
@@ -282,6 +299,11 @@ export default function LibroHistoria() {
               );
             })}
           </ol>
+          <div className="libro-pie">
+            <button type="button" className="libro-siguiente" onClick={siguiente}>
+              Empezar a leer <ArrowRight />
+            </button>
+          </div>
         </div>
       );
     }
@@ -289,7 +311,7 @@ export default function LibroHistoria() {
     const bloques = i === EPI ? [] : PAGINAS[i - 1].bloques;
     const tt = tiempos(bloques, cuenta ? 0.55 : 0);
     const estiloTitulo = cuenta ? ({ '--cuento-retardo': '0.15s' } as React.CSSProperties) : undefined;
-    // La firma llega cuando termina el relato de la página.
+    // El paso de hoja llega cuando termina el relato de la página.
     const ultimo = tt[tt.length - 1];
     const finRelato = ultimo ? ultimo.retardo + ultimo.dur * 0.85 : 0.6;
     return (
@@ -304,17 +326,15 @@ export default function LibroHistoria() {
           bloques.map((b, k) => <BloqueLibro key={k} b={b} retardo={tt[k].retardo} dur={tt[k].dur} relatar={cuenta} />)
         )}
         {i !== EPI && (
-          <div
-            role="checkbox"
-            aria-checked={firmadas.has(i)}
-            tabIndex={0}
-            onClick={() => setFirmadas((s) => { const n = new Set(s); if (n.has(i)) n.delete(i); else n.add(i); return n; })}
-            onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); (e.currentTarget as HTMLElement).click(); } }}
-            className={`onb-aceptar libro-firma ${firmadas.has(i) ? 'es-marcado' : ''} ${cuenta ? 'libro-cuenta' : ''}`}
-            style={cuenta ? ({ '--cuento-retardo': `${finRelato}s` } as React.CSSProperties) : undefined}
-          >
-            <span aria-hidden className="onb-interruptor"><span>{firmadas.has(i) && <Check />}</span></span>
-            <span><strong>Entendido.</strong> He leído esta página.</span>
+          <div className={`libro-pie ${cuenta ? 'libro-cuenta' : ''}`} style={cuenta ? ({ '--cuento-retardo': `${finRelato}s` } as React.CSSProperties) : undefined}>
+            {telefono && (
+              <button type="button" className="libro-atras" onClick={anterior}>
+                <ArrowLeft /> Página anterior
+              </button>
+            )}
+            <button type="button" className="libro-siguiente" onClick={siguiente}>
+              Siguiente página <ArrowRight />
+            </button>
           </div>
         )}
       </div>
@@ -322,11 +342,28 @@ export default function LibroHistoria() {
   };
 
   const pagina = (lado: 'izq' | 'der', i: number, cuenta = false) => (
-    <div className={`libro-pagina es-${lado}`}>
+    <div className={`libro-pagina libro-papel es-${lado}`}>
       <div className="libro-pagina-cuerpo">{lado === 'izq' ? izquierda(i) : derecha(i, cuenta)}</div>
-      <span className="libro-folio">{i * 2 + (lado === 'izq' ? 0 : 1) || ''}</span>
+      <div className="libro-folio">
+        {lado === 'izq' && i > 0 && (
+          <button type="button" className="libro-atras" onClick={anterior}>
+            <ArrowLeft /> Página anterior
+          </button>
+        )}
+        <span>{i * 2 + (lado === 'izq' ? 0 : 1) || ''}</span>
+      </div>
     </div>
   );
+
+  const hojaTel = (i: number) => (
+    <div className="libro-hoja-tel libro-papel">
+      {i !== 0 && <p className="libro-folio-tel">{i * 2 + 1}</p>}
+      {izquierda(i)}
+      {derecha(i, relatar(i))}
+    </div>
+  );
+
+  const toque = useRef<number | null>(null);
 
   /* ── Tapa (cerrado) ── */
   const tapa = (
@@ -340,10 +377,9 @@ export default function LibroHistoria() {
 
   const derEstatica = giro ? (giro.dir === 1 ? giro.a : giro.de) : idx;
   const izqEstatica = giro ? (giro.dir === 1 ? giro.de : giro.a) : idx;
-  const folio = idx === 0 ? 'Índice' : `Página ${idx * 2 + 1} de ${TOTAL * 2 - 1}`;
 
   return (
-    <div className="corp dark libro" data-fase={fase}>
+    <div className={`corp dark libro ${fuente}`} data-fase={fase}>
       {fase === 'cerrado' && (
         <div className="libro-portada">
           <div className="libro-cerrado">{tapa}</div>
@@ -355,11 +391,25 @@ export default function LibroHistoria() {
       )}
 
       {fase !== 'cerrado' && telefono && (
-        <div className="libro-telefono">
-          <div key={idx} className="libro-hoja-tel">
-            {izquierda(idx)}
-            {derecha(idx, relatar(idx))}
-          </div>
+        <div
+          className="libro-telefono"
+          onTouchStart={(e) => { toque.current = e.touches[0].clientX; }}
+          onTouchEnd={(e) => {
+            if (toque.current === null || (e.target as HTMLElement).closest('input, textarea, button')) return;
+            const dx = e.changedTouches[0].clientX - toque.current;
+            toque.current = null;
+            if (dx < -70) siguiente();
+            if (dx > 70) anterior();
+          }}
+        >
+          {/* Hacia atrás, la de abajo sigue siendo la actual hasta que la anterior termina de volver. */}
+          <div key={giroTel?.dir === -1 ? giroTel.de : idx} className="libro-tel-base">{hojaTel(giroTel?.dir === -1 ? giroTel.de : idx)}</div>
+          {giroTel && (
+            <div className={`libro-tel-gira ${giroTel.dir === 1 ? 'es-se-va' : 'es-vuelve'}`}>
+              {hojaTel(giroTel.dir === 1 ? giroTel.de : idx)}
+            </div>
+          )}
+          <button type="button" className="libro-cinta" onClick={() => ir(0)} title="Índice" aria-label="Ir al índice" />
         </div>
       )}
 
@@ -387,29 +437,6 @@ export default function LibroHistoria() {
         </div>
       )}
 
-      {fase === 'abierto' && (
-        <nav className="libro-mando" aria-label="Páginas">
-          <button type="button" className="onb-boton onb-boton-atras" onClick={anterior} disabled={idx === 0 || !!giro}>
-            <ArrowLeft />
-            Atrás
-          </button>
-          <span className="libro-mando-folio">{folio}</span>
-          {idx !== EPI ? (
-            <button
-              type="button"
-              className="onb-boton onb-boton-avanzar"
-              onClick={siguiente}
-              disabled={!firmada(idx) || !!giro}
-              title={firmada(idx) ? undefined : 'Firma esta página para pasar la hoja'}
-            >
-              {idx === 0 ? 'Empezar' : 'Pasar la hoja'}
-              <ArrowRight />
-            </button>
-          ) : (
-            <span />
-          )}
-        </nav>
-      )}
     </div>
   );
 }
