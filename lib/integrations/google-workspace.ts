@@ -603,10 +603,12 @@ export async function direccionEnGoogle(email: string): Promise<boolean> {
     try { await f(); return true; } catch (e: any) {
       const code = e?.code || e?.response?.status;
       if (code === 404) return false;
+      // Pedir como USUARIO una dirección que es un GRUPO responde 400 «Type not supported: userKey»: está ocupada.
+      if (code === 400 && /type not supported/i.test(e?.message || '')) return true;
       throw e;
     }
   };
-  return (await existe(() => dir.users.get({ userKey: email }))) || (await existe(() => dir.groups.get({ groupKey: email })));
+  return (await existe(() => dir.groups.get({ groupKey: email }))) || (await existe(() => dir.users.get({ userKey: email })));
 }
 
 /**
