@@ -212,12 +212,14 @@ async function aprobarConCorreoCorporativo(proposal: any, desde: string | null, 
       ADD COLUMN IF NOT EXISTS alta_clave_hash text, ADD COLUMN IF NOT EXISTS alta_clave_vence timestamptz,
       ADD COLUMN IF NOT EXISTS full_name text`);
     const claveHash = await hashPassword(clave);
+    // `name` es varchar y `full_name` text: el mismo parámetro en los dos va con `::text`, o Postgres no sabe de qué
+    // tipo es («inconsistent types deduced for parameter», 2026-11-13: la aprobación fallaba en silencio).
     const { rows: [existe] } = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = $1 LIMIT 1`, [personal]);
     if (existe) {
       await pool.query(
         `UPDATE gcc_world.clients SET email_verified = true, approved = true, account_type = 'candidate', profile_completed = false,
                 workspace_username = $2, workspace_email = $3, workspace_tipo = 'grupo', alta_clave_hash = $4, alta_clave_vence = $5,
-                full_name = $6, name = $6, client_token = $7
+                full_name = $6::text, name = $6::text, client_token = $7
           WHERE id = $1`,
         [existe.id, usuario, correo, claveHash, vence, nombreCompleto, generateClientToken()],
       );
@@ -225,7 +227,7 @@ async function aprobarConCorreoCorporativo(proposal: any, desde: string | null, 
       await pool.query(
         `INSERT INTO gcc_world.clients (name, full_name, email, alias, email_verified, approved, account_type, profile_completed,
             client_token, ip_hash, last_seen_at, workspace_username, workspace_email, workspace_tipo, alta_clave_hash, alta_clave_vence)
-         VALUES ($1, $1, $2, 'Candidato', true, true, 'candidate', false, $3, $4, NOW(), $5, $6, 'grupo', $7, $8)`,
+         VALUES ($1::text, $1::text, $2, 'Candidato', true, true, 'candidate', false, $3, $4, NOW(), $5, $6, 'grupo', $7, $8)`,
         [nombreCompleto, personal, generateClientToken(), proposal.ip_hash, usuario, correo, claveHash, vence],
       );
     }

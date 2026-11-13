@@ -71,22 +71,17 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
   const [approving, setApproving] = useState<any | null>(null);
   const [username, setUsername] = useState('');
 
-  // Con nombres, el usuario es automático (Fernando, 2026-11-13): se pide al servidor el primero libre y solo
-  // se enseña. Sin nombres (postulaciones anteriores al 2026-11-12) se sigue escribiendo a mano.
-  const [correoAuto, setCorreoAuto] = useState<{ cargando: boolean; correo: string | null; error?: string }>({ cargando: false, correo: null });
+  // Con nombres, todo es automático y se lanza desde «Aprobar» del panel, sin segunda ventana (Fernando,
+  // 2026-11-13: «desde el botón de aprobar ya se lance inmediatamente todo»): el servidor elige el primer usuario
+  // libre, crea el correo y manda la credencial. Sin nombres (postulaciones anteriores al 2026-11-12) se abre la
+  // ventana para escribir el usuario a mano.
   const openApprove = (p: any) => {
+    if (p.primer_nombre) { void aprobar(p); return; }
     setUsername('');
     setApproving(p);
-    if (!p.primer_nombre) { setCorreoAuto({ cargando: false, correo: null }); return; }
-    setCorreoAuto({ cargando: true, correo: null });
-    fetch(`/api/admin/candidate-proposals/${p.id}/approve`)
-      .then(async (r) => { const d = await r.json().catch(() => ({})); setCorreoAuto(r.ok ? { cargando: false, correo: d.correo } : { cargando: false, correo: null, error: d.error || 'No se pudo calcular el correo.' }); })
-      .catch(() => setCorreoAuto({ cargando: false, correo: null, error: 'Revisa tu conexión.' }));
   };
 
-  const submitApprove = async () => {
-    const p = approving;
-    if (!p) return;
+  const aprobar = async (p: any) => {
     const automatico = !!p.primer_nombre;
     if (!automatico && !username.trim()) { toast.error('Escribe el nombre de usuario'); return; }
     setBusyId(String(p.id));
@@ -97,13 +92,16 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
         body: JSON.stringify(automatico ? {} : { username: username.trim().toLowerCase() }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Error');
-      toast.success(`Postulación aprobada — usuario ${data.username}@grupocc.org`);
+      if (!res.ok) throw new Error(data.error || 'No se pudo aprobar la postulación.');
+      toast.success(data.emailSent === false
+        ? `Aprobada — ${data.workspaceEmail || `${data.username}@grupocc.org`}, pero la credencial no se pudo enviar`
+        : `Aprobada — credencial enviada a ${data.workspaceEmail || `${data.username}@grupocc.org`}`);
       setApproving(null);
       await load();
-    } catch (e: any) { toast.error(e.message || 'Error'); }
+    } catch (e: any) { toast.error(e.message || 'No se pudo aprobar la postulación.'); }
     finally { setBusyId(null); }
   };
+  const submitApprove = () => { if (approving) void aprobar(approving); };
 
   const reject = async (p: any) => {
     if (!window.confirm(`¿Rechazar la postulación de ${p.email}? Se eliminará y el correo quedará libre.`)) return;
@@ -186,7 +184,7 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
                   <X className="w-4 h-4" /> Rechazar
                 </button>
                 <button onClick={() => openApprove(selected)} disabled={busyId === String(selected.id)} className={`${BTN_PRIMARY} flex-1 disabled:opacity-50`}>
-                  <Check className="w-4 h-4" /> {busyId === String(selected.id) ? '...' : 'Aprobar'}
+                  <Check className="w-4 h-4" /> {busyId === String(selected.id) ? 'Aprobando…' : 'Aprobar'}
                 </button>
               </div>
             ) : undefined}
@@ -228,24 +226,6 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
       {/* Modal de aprobación: define el usuario corporativo (nomenclatura) */}
       <PixelModal open={!!approving} onClose={() => setApproving(null)} title="Aprobar postulación" size="md">
         <div className="space-y-4">
-          {approving?.primer_nombre ? (
-            <>
-              <p className="text-[13px] text-digi-muted" style={mf}>
-                Al aprobar se crea el correo corporativo de <strong className="text-digi-text">{nombreDe(approving)}</strong>, y
-                a esa dirección le llega la credencial para el formulario de alta.
-              </p>
-              <div>
-                <p className="text-[11px] font-semibold text-digi-muted uppercase tracking-wide mb-1.5" style={df}>Correo corporativo</p>
-                <p className="flex items-center gap-2 text-[15px] text-digi-text" style={mf}>
-                  <AtSign className="w-4 h-4 text-digi-muted shrink-0" />
-                  {correoAuto.cargando ? <span className="text-digi-muted">Calculando…</span>
-                    : correoAuto.correo ? <span className="font-medium break-all">{correoAuto.correo}</span>
-                    : <span className="text-red-400">{correoAuto.error}</span>}
-                </p>
-              </div>
-            </>
-          ) : (
-            <>
               <p className="text-[13px] text-digi-muted" style={mf}>
                 Define el <strong>usuario corporativo</strong> del candidato <strong>{approving?.email}</strong>. El candidato completará su nombre al crear su cuenta.
               </p>
@@ -265,14 +245,12 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
                   </div>
                 </div>
               </div>
-            </>
-          )}
 
           <div className="flex justify-end gap-2 pt-2 border-t border-digi-border">
             <button type="button" onClick={() => setApproving(null)} className={BTN_SECONDARY} style={mf}>
               <X className="w-4 h-4" /> Cancelar
             </button>
-            <button type="button" onClick={submitApprove} disabled={busyId === String(approving?.id) || (approving?.primer_nombre ? !correoAuto.correo : !username.trim())} className={BTN_PRIMARY} style={mf}>
+            <button type="button" onClick={submitApprove} disabled={busyId === String(approving?.id) || !username.trim()} className={BTN_PRIMARY} style={mf}>
               <Check className="w-4 h-4" /> {busyId === String(approving?.id) ? 'Aprobando…' : 'Aprobar candidato'}
             </button>
           </div>
