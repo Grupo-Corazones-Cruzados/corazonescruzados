@@ -1,12 +1,8 @@
 import type { Metadata } from 'next';
-import { Lora } from 'next/font/google';
 import LibroHistoria from '@/components/libro/LibroHistoria';
 
-/** La letra del libro: una serif de lectura, solo en esta página (Fernando: «el libro debe tener su color o diseño»). */
-const lora = Lora({ subsets: ['latin', 'latin-ext'], weight: ['400', '500', '600', '700'], style: ['normal', 'italic'], variable: '--font-libro', display: 'swap' });
-
-/** «El libro de GCC World»: la postulación contada como un cuento (propuesta, 2026-11-12). Fuera de buscadores
- *  mientras Fernando la revisa. */
+/** «El libro de GCC World»: la postulación contada como un cuento. Es el mismo libro que abre «Postularme»;
+ *  esta página es su dirección directa. Fuera de buscadores. */
 export const metadata: Metadata = {
   title: 'El libro · Grupo Corazones Cruzados',
   description: 'La historia del Grupo Corazones Cruzados, contada como un libro.',
@@ -14,5 +10,5 @@ export const metadata: Metadata = {
 };
 
 export default function PaginaLibro() {
-  return <LibroHistoria fuente={lora.variable} />;
+  return <LibroHistoria />;
 }

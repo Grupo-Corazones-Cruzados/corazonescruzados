@@ -1,28 +1,19 @@
 /**
- * «EL LIBRO DE GCC WORLD» — la postulación contada como un cuento (propuesta, Fernando 2026-11-12: «como
- * cuando en las películas te muestran el libro y te cuentan un cuento, con las ilustraciones y usando el
- * contenido que tenemos»).
+ * «EL LIBRO DE GCC WORLD» — la postulación contada como un cuento (Fernando, 2026-11-12).
  *
- * BORRADOR. La columna del libro son los textos de Fernando, LITERALES (los de `modeloGcc.ts` se importan;
- * los del formulario se copian tal cual de `OnboardingSlidersModal.tsx`). Lo único nuevo son los PUENTES
- * (`puente: true`): las frases cortas que unen un capítulo con el siguiente. Esas son mías y son las que
- * Fernando tiene que corregir. `**así**` = negrita.
+ * VERSIÓN 2, una HISTORIA INVENTADA (Fernando: «el cuento debe redactar la historia inventándose una historia
+ * que vaya contando los puntos… para conectar las cosas»): un niño que soñaba, la promesa que hizo, el viaje en
+ * el que descubre lo que une a las personas, la casa de cuatro pisos que construye (el Modelo 4P), las
+ * herramientas que forja, las reglas que graba en la puerta, el camino de los cuatro faroles (la prospección)
+ * y cómo llega un viajero a ser de la casa (la afiliación). Todo lo que se cuenta de la organización es lo
+ * que dicen los textos originales de Fernando; la historia es el hilo que los une. BORRADOR para que él lo
+ * corrija. Los originales, literales, están en `docs/respaldo/textos-postulacion-originales.md`.
  *
- * Cada página es una DOBLE PÁGINA del libro: a la izquierda la ilustración (una animación de Blender en
- * bucle de `public/animaciones/<id>.webp`, o una pieza de la página), a la derecha el texto.
+ * Cada página es una DOBLE PÁGINA: a la izquierda la ilustración, a la derecha la narración. La narración se
+ * lee en voz alta (`public/libro/voz/<id>.mp3`, español de España) y, al terminar, el libro pasa la hoja.
+ * `**así**` = negrita.
  */
-import {
-  HERRAMIENTAS, HERRAMIENTAS_INTRO, MODELO_4P_INTRO, MODELO_PROYECTO, PASOS, PASOS_CONDICIOLOGIA, PISOS, REGLAS_4P,
-} from './modeloGcc';
 
-export type Bloque =
-  | { tipo: 'texto'; texto: string; puente?: boolean }
-  | { tipo: 'lista'; items: { titulo: string; texto: string }[] }
-  | { tipo: 'numerada'; items: string[] }
-  | { tipo: 'aviso'; titulo: string; texto: string }
-  | { tipo: 'pasosMetodologia' };
-
-/** Lo que va en la página izquierda. */
 export type Ilustracion =
   | { tipo: 'animacion'; id: string; alt: string }
   | { tipo: 'miembros' }
@@ -35,302 +26,313 @@ export type PaginaLibro = {
   capitulo: number;
   titulo: string;
   izquierda: Ilustracion;
-  bloques: Bloque[];
+  parrafos: string[];
 };
 
-export const CAPITULOS = [
-  { numero: 'Capítulo I', titulo: 'El sueño' },
-  { numero: 'Capítulo II', titulo: 'Un corazón puede cruzar el mundo' },
-  { numero: 'Capítulo III', titulo: 'Una disciplina centralizada' },
-  { numero: 'Capítulo IV', titulo: 'El poder por convicción' },
-  { numero: 'Capítulo V', titulo: 'El Grupo Corazones Cruzados' },
-  { numero: 'Capítulo VI', titulo: 'El motor' },
-  { numero: 'Capítulo VII', titulo: 'Las herramientas' },
-  { numero: 'Capítulo VIII', titulo: 'Las reglas' },
-  { numero: 'Capítulo IX', titulo: 'La prospección' },
-  { numero: 'Capítulo X', titulo: 'La afiliación' },
-  { numero: 'Epílogo', titulo: 'Tu página en blanco' },
+/** El ambiente de la música de cada capítulo (`public/libro/musica/<ambiente>.mp3`). */
+export type Ambiente = 'sueno' | 'realidad' | 'esperanza' | 'grupo' | 'motor' | 'reglas' | 'camino' | 'final';
+
+export const CAPITULOS: { numero: string; titulo: string; ambiente: Ambiente }[] = [
+  { numero: 'Capítulo I', titulo: 'El niño que soñaba', ambiente: 'sueno' },
+  { numero: 'Capítulo II', titulo: 'Un corazón puede cruzar el mundo', ambiente: 'esperanza' },
+  { numero: 'Capítulo III', titulo: 'La escalera imposible', ambiente: 'realidad' },
+  { numero: 'Capítulo IV', titulo: 'El poder por convicción', ambiente: 'realidad' },
+  { numero: 'Capítulo V', titulo: 'La casa de los corazones cruzados', ambiente: 'grupo' },
+  { numero: 'Capítulo VI', titulo: 'El motor de los cuatro pisos', ambiente: 'motor' },
+  { numero: 'Capítulo VII', titulo: 'Las herramientas', ambiente: 'motor' },
+  { numero: 'Capítulo VIII', titulo: 'Las reglas de la puerta', ambiente: 'reglas' },
+  { numero: 'Capítulo IX', titulo: 'El camino de los cuatro faroles', ambiente: 'camino' },
+  { numero: 'Capítulo X', titulo: 'El viajero que llegó a la casa', ambiente: 'camino' },
+  { numero: 'Epílogo', titulo: 'Tu página en blanco', ambiente: 'final' },
 ];
 
-const t = (texto: string, puente = false): Bloque => ({ tipo: 'texto', texto, puente });
 const anim = (id: string, alt: string): Ilustracion => ({ tipo: 'animacion', id, alt });
-const herramienta = (id: string) => HERRAMIENTAS.find((h) => h.id === id)!;
-
-const metodologia = herramienta('metodologia-condiciologica');
-const control = herramienta('sistema-de-control-psicosocial');
-const centralizado = herramienta('proyecto-centralizado');
-const violeta = herramienta('violeta');
 
 export const PAGINAS: PaginaLibro[] = [
-  /* ── I · El sueño ── */
+  /* ── I · El niño que soñaba ── */
   {
-    id: 'sueno', capitulo: 0, titulo: 'El sueño',
+    id: 'sueno', capitulo: 0, titulo: 'Había una vez un niño que soñaba',
     izquierda: anim('libro-sueno', 'Un cielo de estrellas y, en medio, el logo del grupo encendiéndose como una constelación'),
-    bloques: [
-      t('Esta historia comenzó mucho antes de que existiera el Grupo Corazones Cruzados, en la infancia de quien hoy la cuenta, cuando todavía no sabía que un sueño podía convertirse en un proyecto.', true),
-      t('¡Cuando era pequeño me encantaba soñar! Soñar, soñar y solo soñar... ¡cuánto me encantaba soñar! Para mí, el sueño era la cuna de los retorcidos, el lugar más cálido, el lugar más cómodo, el mundo del cual jamás quería escapar.'),
+    parrafos: [
+      'Había una vez un niño al que le encantaba soñar. Soñaba de día y soñaba de noche, y cuando cerraba los ojos el mundo se volvía un lugar cálido y cómodo, un lugar del que jamás quería escapar.',
+      'Cada noche miraba las estrellas desde su ventana y les ponía nombres, convencido de que allá arriba existía un orden en el que nadie se quedaba fuera. En sus sueños las personas se entendían, y el mundo era justo como debía ser.',
     ],
   },
   {
     id: 'realidad', capitulo: 0, titulo: 'La realidad',
     izquierda: anim('libro-realidad', 'Un mundo gris que gira despacio y, sobre él, una sola luz violeta que late'),
-    bloques: [
-      t('Pero la realidad siempre volvía en forma de responsabilidad. Y vivir se convirtió en recordar aquello que no me gustaba y que sentía que no podía cambiar. Esa confrontación entre mi sueño y la realidad es lo que he revivido tantas veces, arrastrando una frustración intolerable que hunde mi pecho como si no tuviese otra forma de estar.'),
-      t('¡Porque soy incapaz de aceptar este mundo! Y me aferro aquí, usando la promesa de aquel día que en profundo dolor, decidí dejar de soñar para empezar a vivir una realidad, dispuesto a cambiar todo lo que he visto y que jamás voy a olvidar.'),
+    parrafos: [
+      'Pero cada mañana la realidad volvía, y siempre volvía en forma de responsabilidad. Afuera el mundo era gris: había cosas que estaban mal y que nadie parecía dispuesto a cambiar, y el niño crecía recordando todo aquello que no le gustaba.',
+      'La distancia entre su sueño y la realidad le apretaba el pecho con una frustración que no sabía cómo soltar. Hasta que un día, en medio de un profundo dolor, comprendió algo que lo cambió todo: no era capaz de aceptar ese mundo.',
     ],
   },
   {
     id: 'promesa', capitulo: 0, titulo: 'La promesa',
     izquierda: anim('libro-realidad', 'Un mundo gris que gira despacio y, sobre él, una sola luz violeta que late'),
-    bloques: [
-      t('No tengo otra opción. Prefiero morir antes que seguir observando todo lo que está mal en este mundo. Así que esto es todo lo que tengo, lo que me mueve y por lo que estoy dispuesto a darlo todo. No voy a aceptar jamás un futuro en el que mis hijos vivan en un mundo diferente al que quiero construir. No importa lo difícil o imposible que parezca; voy a cambiar este mundo, aunque me cueste la vida.'),
-      t('De esa promesa nacieron tres convicciones, las cuales dieron forma a todo lo que se cuenta en las siguientes páginas.', true),
+    parrafos: [
+      'Aquel día hizo una promesa. Dejaría de soñar para empezar a vivir la realidad, dispuesto a cambiar todo lo que había visto y que jamás iba a olvidar.',
+      'Prometió que nunca aceptaría un futuro en el que sus hijos crecieran en un mundo distinto al que quería construir, y que no importaba lo difícil o lo imposible que pareciera: iba a cambiar ese mundo, aunque le costara la vida.',
+      'Con esa promesa guardada en el pecho, el niño, que ya empezaba a ser un hombre, salió a buscar la manera de cumplirla.',
     ],
   },
 
   /* ── II · Un corazón puede cruzar el mundo ── */
   {
-    id: 'corazon', capitulo: 1, titulo: 'Un corazón puede cruzar el mundo',
+    id: 'corazon', capitulo: 1, titulo: 'El viaje',
     izquierda: anim('motivos-1', 'El logo del grupo cruza el mundo y une sus puntos'),
-    bloques: [
-      t('La primera convicción fue que nadie puede cambiar el mundo solo, y que para lograrlo había que encontrar aquello que une a las personas por encima de lo que las separa.', true),
-      t('Vivimos en sociedades separadas por fronteras y representadas por símbolos que, con el tiempo, nos han enseñado a mirarnos como distintos. Es cierto que crecemos en entornos diferentes, pero los valores que de verdad importan son los mismos en todas partes.'),
-      t('Creemos que un corazón y una organización puede representar esa **alianza que ya existe**, silenciosa, en el fondo de la humanidad. El Grupo Corazones Cruzados nace para unir al mundo a través de sus valores y de un sistema que represente lo que de verdad necesitamos. Y lo que más necesitamos hoy es una **razón para trabajar juntos** por un futuro mejor.'),
+    parrafos: [
+      'Su viaje empezó cruzando fronteras. En cada lugar encontraba sociedades separadas por líneas en los mapas y representadas por símbolos que, con el tiempo, habían enseñado a las personas a mirarse como distintas.',
+      'Sin embargo, en cada pueblo y en cada ciudad descubrió lo mismo: aunque la gente creciera en entornos diferentes, los valores que de verdad importaban eran iguales en todas partes. Había una **alianza que ya existía**, silenciosa, en el fondo de la humanidad.',
+      'Entonces lo entendió. Un corazón y una organización podían representar esa alianza y unir al mundo a través de sus valores, porque lo que más necesitaban las personas era una **razón para trabajar juntos** por un futuro mejor.',
     ],
   },
 
-  /* ── III · Una disciplina centralizada ── */
+  /* ── III · La escalera imposible ── */
   {
-    id: 'disciplina', capitulo: 2, titulo: 'Una realidad imposible, frente a una disciplina centralizada',
+    id: 'disciplina', capitulo: 2, titulo: 'La escalera imposible',
     izquierda: anim('motivos-2', 'Una luz sube una escalera paso a paso y limpia los problemas hasta llegar al logo'),
-    bloques: [
-      t('La segunda convicción fue que unir a las personas no era suficiente, si no existía una forma de trabajar que no se rindiera ante lo que todos llaman imposible.', true),
-      t('Sueño con un futuro en el que la humanidad trabaje unida por objetivos más grandes; un mundo donde las próximas generaciones no tengan que crecer entre la corrupción y las mafias que dañan, sin reparo, a quienes tienen el potencial de cambiarlo todo.'),
-      t('Demasiadas veces los más jóvenes heredamos las consecuencias de problemas que otros prefirieron ignorar, convencidos de que era más fácil llamarlos imposibles que intentar resolverlos. Esa **realidad imposible** donde los valores se unen y la organización se fortalece por encima de la separación, solo puede cumplirse mediante una **disciplina centralizada** en trabajar cada día por resolver las problemáticas sociales paso a paso hasta limpiar nuestras calles y el mundo, de aquello que está mal.'),
+    parrafos: [
+      'En el camino conoció a muchos jóvenes que habían heredado las consecuencias de problemas que otros prefirieron ignorar. La corrupción y las mafias dañaban, sin reparo, a quienes tenían el potencial de cambiarlo todo, y los mayores repetían que aquello era imposible de resolver.',
+      'El soñador vio en esa **realidad imposible** una escalera muy alta, llena de obstáculos en cada peldaño. Comprendió que solo se podía subir mediante una **disciplina centralizada**: trabajar cada día, paso a paso, resolviendo las problemáticas sociales una a una, hasta limpiar las calles y el mundo de aquello que está mal.',
     ],
   },
 
   /* ── IV · El poder por convicción ── */
   {
-    id: 'poder', capitulo: 3, titulo: 'El poder por convicción, y no por decisión',
+    id: 'poder', capitulo: 3, titulo: 'Los que convencían',
     izquierda: anim('motivos-3', 'El logo en el centro y anillos de personas que giran unidas a él'),
-    bloques: [
-      t('La tercera convicción fue sobre quién merece dirigir una organización como ésta, y por qué.', true),
-      t('Crecimos creyendo que la democracia, a través del voto, era la mejor forma de elegir a quienes nos gobiernan, pero con demasiada frecuencia esa forma ha terminado en corrupción y en entregar el poder a quien no se lo ha merecido, creando una clase política que es capaz de todo por convencer a las masas, mientras ignoramos todas las incompetencias que éstos tienen para transformar la realidad que vivimos.'),
-      t('Debemos cambiar lo que siempre se ha hecho, empezando por el poder, ya que éste no se debe entregar ni por convencimiento, ni por retórica. Los líderes se deben ganar su posición mediante lo que realmente son capaces de **hacer** y **construir** según sus logros, su propósito, y el impacto real que han tenido en la sociedad sin depender de los recursos de otros. "Porque sino puede cambiar su vida, peor va a poder cambiar la vida de otras personas". Así que tener o no tener recursos, solo es una excusa y una mentira que no podemos volver a aceptar.'),
+    parrafos: [
+      'Más adelante llegó a una ciudad donde el poder se entregaba por votos. Allí, quienes gobernaban no eran los más capaces, sino los que mejor sabían convencer a las masas, y con demasiada frecuencia aquello terminaba en corrupción y en entregar el poder a quien no se lo había merecido.',
+      'El pueblo, cansado, se conformaba cada vez más con lo poco que le daban, sin manera de tomar acciones inmediatas para cambiar lo que le afectaba. El soñador entendió que había que cambiar lo que siempre se había hecho, empezando por el poder, que no debía entregarse ni por convencimiento ni por retórica.',
     ],
   },
   {
-    id: 'lider', capitulo: 3, titulo: 'Un líder nato',
+    id: 'lider', capitulo: 3, titulo: 'El líder nato',
     izquierda: anim('motivos-3', 'El logo en el centro y anillos de personas que giran unidas a él'),
-    bloques: [
-      t('Hoy vivimos algo completamente diferente e incoherente con lo que necesitamos, porque nuestros gobernantes nacen de cúpula de poder que se mueve e interesa por la política con el fin de obtener más poder. El pueblo a causa de la incompetencia natural que vivimos, aceptamos y nos conformamos  cada vez más con lo poco que nos dan, sin tener manera de tomar acciones inmediatas para cambiar lo que nos afecta. Un verdadero líder no necesita una posición para imponerse, porque alguien que es capaz de movilizar a personas, y habitar su corazón mediante su ejemplo y sacrificio; entonces ése es un líder nato; caso contrario, simplemente no lo es.'),
+    parrafos: [
+      'Desde entonces tuvo claro que un líder se gana su posición por lo que es capaz de **hacer** y de **construir**: por sus logros, por su propósito y por el impacto real que ha tenido en la sociedad, sin depender de los recursos de otros. Porque quien no puede cambiar su propia vida, peor va a poder cambiar la vida de los demás.',
+      'Un verdadero líder no necesita una posición para imponerse. Quien es capaz de movilizar a las personas y de habitar su corazón mediante su ejemplo y su sacrificio, ese es un líder nato.',
     ],
   },
 
-  /* ── V · El Grupo Corazones Cruzados ── */
+  /* ── V · La casa de los corazones cruzados ── */
   {
-    id: 'grupo', capitulo: 4, titulo: 'El Grupo Corazones Cruzados',
+    id: 'grupo', capitulo: 4, titulo: 'La casa de los corazones cruzados',
     izquierda: anim('libro-grupo', 'Personas que llegan desde lejos y se unen al anillo que rodea al logo'),
-    bloques: [
-      t('Con esas tres convicciones nació el Grupo Corazones Cruzados, y con él, un proyecto al que cualquier persona que comparta esos valores puede postularse.', true),
-      t(MODELO_PROYECTO),
+    parrafos: [
+      'Con todo lo aprendido, el soñador volvió a casa y fundó el **Grupo Corazones Cruzados**: un **proyecto de desarrollo humano** para luchar por un sueño, el de transformar el mundo y construir un futuro mejor.',
+      'La idea era sencilla de decir y difícil de cumplir: reconocer y aprovechar las condiciones de cada persona para lograr estrategias organizacionales que resolvieran las problemáticas sociales. Poco a poco, personas de lugares muy distintos empezaron a llegar y a unirse alrededor de aquel corazón.',
     ],
   },
   {
-    id: 'miembros', capitulo: 4, titulo: 'Los miembros',
+    id: 'miembros', capitulo: 4, titulo: 'Los primeros de la casa',
     izquierda: { tipo: 'miembros' },
-    bloques: [
-      t('Toda historia tiene sus personajes, y los de ésta son los miembros que hoy forman parte del proyecto, quienes ya demostraron los valores de la organización y trabajan cada día en ella.', true),
-      t('Cada persona que se postula empieza como **candidato**, y al final de este libro se explica el camino que debe recorrer para llegar a ser uno de ellos.', true),
+    parrafos: [
+      'Estos son los miembros que hoy forman parte de la historia. Cada uno llegó primero como candidato, demostró los valores de la organización y hoy trabaja cada día en ella.',
+      'Todo el que llega a la casa empieza por el mismo lugar, y en las últimas páginas de este libro se cuenta el camino que hay que recorrer para llegar a ser uno de ellos.',
     ],
   },
 
-  /* ── VI · El motor ── */
+  /* ── VI · El motor de los cuatro pisos ── */
   {
-    id: 'motor', capitulo: 5, titulo: 'El Modelo Organizacional 4P',
+    id: 'motor', capitulo: 5, titulo: 'El motor de los cuatro pisos',
     izquierda: anim('libro-4p', 'Una rejilla de cuatro pisos por cuatro pasos que una onda recorre en diagonal'),
-    bloques: [
-      t(MODELO_4P_INTRO),
-      { tipo: 'lista', items: PISOS.map((p) => ({ titulo: `Piso ${p.name}`, texto: p.desc })) },
+    parrafos: [
+      'Para alcanzar un objetivo tan grande, la casa necesitaba un motor. El soñador lo llamó **Modelo Organizacional 4P**, y su secreto consistía en descubrir el talento de cada persona para colocarla en el rol y la función que le correspondían en cualquier proyecto.',
+      'El motor tenía cuatro pisos. En el piso **Global** se gobernaban los sistemas fundamentales y se tomaban las decisiones de alto nivel que hacían crecer cada etapa. En el piso **Pilar** se diseñaban y gestionaban los proyectos aprobados, dándoles forma y dirección.',
+      'En el piso **Controlador** cada proyecto se traducía en tareas concretas que se asignaban a quienes las llevarían a cabo, y en el piso **Colaborador** esas tareas se ejecutaban con precisión: era el lugar donde las ideas se transformaban en trabajo terminado.',
     ],
   },
   {
-    id: 'pasos-4p', capitulo: 5, titulo: 'Los pasos de un proyecto',
+    id: 'pasos-4p', capitulo: 5, titulo: 'Las cuatro puertas',
     izquierda: anim('libro-4p', 'Una rejilla de cuatro pisos por cuatro pasos que una onda recorre en diagonal'),
-    bloques: [{ tipo: 'lista', items: PASOS.map((p) => ({ titulo: `${p.n} · ${p.name}`, texto: p.desc })) }],
+    parrafos: [
+      'Cada piso tenía además cuatro puertas, una por cada paso de un proyecto. La primera era la **Fundamentación**, porque todo comienza con el porqué: allí se investigaba y se construía la base de conocimiento, para que nada se levantara sobre suposiciones.',
+      'La segunda era la **Creación**, donde la idea ya fundamentada se convertía en una propuesta concreta. La tercera, la **Implementación**, llevaba el proyecto puertas adentro: su gestión interna, sus políticas y reglas, y los roles que lo mantendrían en marcha.',
+      'La cuarta puerta era la **Gestión**, y por ella el proyecto salía al mundo con su publicación, su marketing y su monetización, para crecer y generar valor real.',
+    ],
   },
   {
-    id: 'reglas-4p', capitulo: 5, titulo: 'Cómo se lee el modelo',
+    id: 'reglas-4p', capitulo: 5, titulo: 'Cómo funcionaba el motor',
     izquierda: anim('libro-4p', 'Una rejilla de cuatro pisos por cuatro pasos que una onda recorre en diagonal'),
-    bloques: [{ tipo: 'numerada', items: REGLAS_4P }],
+    parrafos: [
+      'Así funcionaba el motor: cada piso era un rol que cumplía una necesidad en la gestión de un proyecto, y cada paso era una función en su levantamiento y su progreso.',
+      'A cada miembro se le asignaba un piso y un paso de acuerdo con su talento, y según ese lugar tenía acceso a un conjunto de sistemas, que se activaban según la necesidad del proyecto en el que participara.',
+      'Y por encima de todo había una sola ley, que el soñador escribió en la primera página de sus planos: **la necesidad determina todo lo que hacemos**.',
+    ],
   },
 
   /* ── VII · Las herramientas ── */
   {
-    id: 'herramientas', capitulo: 6, titulo: 'Las herramientas del Modelo',
-    izquierda: { tipo: 'desglose', items: HERRAMIENTAS.map((h) => h.nombre) },
-    bloques: [t(HERRAMIENTAS_INTRO)],
+    id: 'herramientas', capitulo: 6, titulo: 'Las herramientas del motor',
+    izquierda: { tipo: 'desglose', items: ['Metodología Condiciológica', 'Sistema de Control Psicosocial', 'Proyecto Centralizado', 'Violeta'] },
+    parrafos: [
+      'Pero un motor solo funciona si sus piezas están en buenas condiciones, y lo que este motor necesitaba era un **talento correctamente clasificado**, que se pudiera tratar y posicionar en función de la estrategia de la organización.',
+      'Para clasificarlo bien, el soñador forjó cuatro herramientas. Serían las fuentes de información que justificarían el lugar de cada miembro dentro de la casa.',
+    ],
   },
   {
-    id: 'metodologia', capitulo: 6, titulo: metodologia.nombre,
+    id: 'metodologia', capitulo: 6, titulo: 'La primera herramienta',
     izquierda: anim('herramienta-metodologia', 'Seis pasos en ciclo, recorridos por un pulso de luz'),
-    bloques: [t(metodologia.parrafos[0]), { tipo: 'pasosMetodologia' }, ...metodologia.parrafos.slice(1).map((p) => t(p))],
+    parrafos: [
+      'La primera fue la **Metodología Condiciológica**, una metodología con enfoque científico de seis pasos: **reconocer, controlar, predecir, experimentar, convertir y cambiar**, aplicables a cualquier ámbito de investigación.',
+      'Nació para desarrollar la **Condiciología**, una ciencia en desarrollo que estudia las **condiciones**: el conjunto de factores que dan lugar a un comportamiento en un instante de la realidad.',
+      'Los datos que necesita cada paso vienen de herramientas que se ofrecen solo a candidatos y miembros, y cada uno decide, según las condiciones del servicio, si acepta usarlas o no.',
+    ],
   },
   {
-    id: 'control', capitulo: 6, titulo: control.nombre,
+    id: 'control', capitulo: 6, titulo: 'La segunda herramienta',
     izquierda: anim('herramienta-control', 'Una ciudad bajo una cúpula que recoge las señales de sus casas'),
-    bloques: control.parrafos.map((p) => t(p)),
+    parrafos: [
+      'La segunda fue el **Sistema de Control Psicosocial**, una arquitectura tecnológica pensada para resolver la **inseguridad física**. Funciona con las señales de la gran masa de clientes, candidatos y miembros, y de todos los dispositivos asociados, incluidos los agentes con inteligencia artificial, para dibujar la realidad tal como está ocurriendo.',
+      'Su propósito es llevar la seguridad y la aplicación de la ley a un nivel **«ipso facto»**, para que un acto delictivo tenga consecuencias en el momento, sin procesos ni intermediarios que alarguen o disminuyan la condena. Su función principal es **organizar a las masas**: castiga el delito y recompensa de muchas maneras a quienes lo denuncian.',
+    ],
   },
   {
-    id: 'centralizado', capitulo: 6, titulo: centralizado.nombre,
+    id: 'centralizado', capitulo: 6, titulo: 'La tercera herramienta',
     izquierda: anim('herramienta-centralizado', 'Las áreas de un negocio unidas a un centro por el que va y viene el trabajo'),
-    bloques: centralizado.parrafos.map((p) => t(p)),
+    parrafos: [
+      'La tercera fue el **Proyecto Centralizado**, un servicio exclusivo para clientes, candidatos y miembros cuyos negocios atraviesan una necesidad, un problema interno o una crisis, y necesitan recuperar el buen funcionamiento de su flujo de trabajo o descubrir mejores formas de hacer las cosas.',
+      'Para ofrecerlo se llega primero a un **acuerdo con el dueño del negocio**, que da acceso y control temporal de los departamentos afectados para implantar los sistemas de gobernanza del Grupo. Y los negocios que se conectan pasan a formar parte de la **Estrategia Organizacional**, que une negocios y talentos para adoptar las mejores soluciones y crear oportunidades.',
+    ],
   },
   {
-    id: 'violeta', capitulo: 6, titulo: violeta.nombre,
+    id: 'violeta', capitulo: 6, titulo: 'La cuarta herramienta',
     izquierda: anim('herramienta-violeta', 'El logo del grupo envuelto en aros de luz violeta'),
-    bloques: violeta.parrafos.slice(0, 2).map((p) => t(p)),
+    parrafos: [
+      'La cuarta herramienta no se forjó en ningún taller. Se llamó **Violeta**, la luz que representa a la casa, el color que une corazones y un lugar para aquellos que son diferentes. Es una luz que ilumina el vacío y lo aprovecha, que une destinos y convierte lo que parece imposible en sueños y en felicidad.',
+      'Violeta aparece cuando alguien recuerda sus raíces. Es lo que se siente en cada latido, en cada esfuerzo y en cada lágrima, y la nostalgia del momento preciso en que todo lo malo cambió.',
+    ],
   },
   {
     id: 'violeta-2', capitulo: 6, titulo: 'El reto de Violeta',
     izquierda: anim('herramienta-violeta', 'El logo del grupo envuelto en aros de luz violeta'),
-    bloques: violeta.parrafos.slice(2).map((p) => t(p)),
+    parrafos: [
+      'Violeta es la fuerza que hace soñar, desear y seguir buscando sin saber cuándo parar; un deseo tan profundo que no cabe en el pecho y que tiene la habilidad de cruzar los corazones y transformar la realidad.',
+      'Por eso es el reto de todos los candidatos y miembros: proteger lo que nos hace humanos y el futuro de nuestros hijos, y convertirse en los líderes dispuestos a cambiar el mundo. Es un sueño que se mide a través de la **prospección**, y cada participante demuestra en la **evaluación continua** si es capaz de representar sus valores y una bandera que logrará cruzar al mundo.',
+    ],
   },
 
-  /* ── VIII · Las reglas ── */
+  /* ── VIII · Las reglas de la puerta ── */
   {
-    id: 'reglas', capitulo: 7, titulo: 'Reglas del proyecto para todos los Candidatos y Miembros',
+    id: 'reglas', capitulo: 7, titulo: 'Las reglas de la puerta',
     izquierda: { tipo: 'desglose', items: ['Regla #1 · ¿Quiénes somos?', 'Regla 2 · Comandos', 'Regla 3 · Opciones de crecimiento'] },
-    bloques: [
-      t('Quien decide formar parte de esta historia acepta sus reglas, las cuales aplican por igual a candidatos y miembros en cualquier rol.', true),
-      { tipo: 'aviso', titulo: 'Advertencia', texto: 'Cualquier intento de faltar a una sola de estas reglas implica la **destitución** del candidato y aplica igual a todos los miembros en cualquier rol. Quien es destituido del proyecto no tiene otra oportunidad para unirse; solo los fallos no intencionales se evalúan y pueden no llevar a la destitución.' },
+    parrafos: [
+      'Cuando la casa estuvo lista, el soñador grabó tres reglas en su puerta, para todos los candidatos y miembros, en cualquier rol.',
+      'Debajo escribió una advertencia: faltar a una sola de esas reglas significa la **destitución**, y quien es destituido no tiene otra oportunidad para volver a unirse. Solo los fallos que no son intencionales se evalúan, y pueden no llevar a la destitución.',
     ],
   },
   {
-    id: 'regla-1', capitulo: 7, titulo: 'Regla #1 · ¿Quiénes somos?',
+    id: 'regla-1', capitulo: 7, titulo: 'La primera regla: ¿quiénes somos?',
     izquierda: anim('regla-1', 'Nueve valores alrededor del logo que se encienden uno a uno'),
-    bloques: [
-      t('El proyecto del Grupo Corazones Cruzados es una organización que incluye en sus filas, solo candidatos y miembros que tienen la prospección a representarnos. Aquellos que caigan de delincuentes, mentirosos, o realicen cualquier mala intención u acción por mínima que sea, o incluso olviden trabajar y sostener en sus relaciones sociales y en su vida diaria nuestros valores organizacionales, serán des-agrupados del proyecto.'),
-      t('A continuación te presento los valores que deberás trabajar para representar nuestra organización:'),
+    parrafos: [
+      'La primera regla dice quiénes pueden vivir en la casa: solo candidatos y miembros que tienen la prospección de representarla. Quienes caigan en delitos o mentiras, quienes actúen con mala intención por mínima que sea, o quienes olviden sostener en su vida diaria y en sus relaciones los valores de la organización, serán des-agrupados del proyecto.',
+      'Y esos valores son nueve, como nueve estrellas alrededor del corazón.',
     ],
   },
   {
-    id: 'valores', capitulo: 7, titulo: 'Los valores',
+    id: 'valores', capitulo: 7, titulo: 'Las nueve estrellas',
     izquierda: anim('regla-1', 'Nueve valores alrededor del logo que se encienden uno a uno'),
-    bloques: [{
-      tipo: 'lista',
-      items: [
-        { titulo: 'Determinación', texto: 'Insiste hasta el cansancio, o levántate y no te rindas.' },
-        { titulo: 'Coraje', texto: 'Confronta todo lo que está mal, y descubre un motivo para superar tus miedos.' },
-        { titulo: 'Pureza', texto: 'Nunca olvides tus raíces y quien realmente eres.' },
-        { titulo: 'Fe', texto: 'Confía en ti, y convierte en real esos sueños que pueden parecer imposibles.' },
-        { titulo: 'Paciencia', texto: 'Hay tantas cosas que puedes valorar en esta vida, antes de que te dejes llevar por la desesperación.' },
-        { titulo: 'Seriedad', texto: 'Prioriza tus necesidades, y céntrate en hacerte responsable para aprender a solucionar tus problemas.' },
-        { titulo: 'Espontaneidad', texto: 'Explora lo que sientes, y sin arrepentimientos a equivocarte.' },
-        { titulo: 'Autonomía', texto: 'Tu futuro, depende únicamente de ti.' },
-        { titulo: 'Empatía', texto: 'Recuerda valorar el corazón de quienes sí valen la pena.' },
-      ],
-    }],
+    parrafos: [
+      '**Determinación**: insistir hasta el cansancio, levantarse y no rendirse. **Coraje**: confrontar todo lo que está mal y descubrir un motivo para superar los miedos. **Pureza**: no olvidar nunca las raíces ni quién eres en realidad.',
+      '**Fe**: confiar en ti y convertir en reales los sueños que parecen imposibles. **Paciencia**: valorar todo lo que hay en esta vida antes de dejarse llevar por la desesperación. **Seriedad**: priorizar las necesidades y hacerse responsable para aprender a solucionar los propios problemas.',
+      '**Espontaneidad**: explorar lo que sientes, sin miedo a equivocarte. **Autonomía**: saber que tu futuro depende únicamente de ti. Y **Empatía**: valorar el corazón de quienes sí valen la pena.',
+    ],
   },
   {
-    id: 'regla-2', capitulo: 7, titulo: 'Regla 2 · Comandos',
+    id: 'regla-2', capitulo: 7, titulo: 'La segunda regla: los comandos',
     izquierda: anim('regla-2', 'Desde el logo bajan los comandos a los miembros y sube la corrección'),
-    bloques: [
-      t('La gobernanza del Grupo Corazones Cruzados **escucha, decide y analiza correcciones** por cada estrategia organizacional que se implementa  con el fin de progresar, y enfrentar una problemática.'),
-      t('Antes de decidirse por una estrategia organizacional, el líder tuvo que escuchar las propuestas y discusiones asociadas a esa problemática para que según las alternativas posibles, se desarrolle un  mapa visual del proyecto, y luego se presente la opción más viable a ejecutar y medir sus efectos.'),
-      t('La relación entre el líder, los miembros o los candidatos se sostiene principalmente a través de los comandos que se solicitan ejecutar para cumplir el planteamiento de la estrategia organizacional decidida.'),
-      t('Cualquier miembro o candidato que no se acata o afecta el cálculo de la estrategia, queda fuera del proyecto en el acto, ya que los comandos se ejecutan sin cuestionamiento, y solo se analizan y corrigen durante la etapa de corrección en donde todos sin excepción tienen la obligación de votar y participar.'),
+    parrafos: [
+      'La segunda regla explica cómo se mueve la casa. La gobernanza **escucha, decide y analiza correcciones** en cada estrategia que pone en marcha para progresar y enfrentar una problemática.',
+      'Antes de decidir, el líder escucha las propuestas y las discusiones, se dibuja un mapa visual del proyecto con las alternativas posibles y se elige la opción más viable para ejecutarla y medir sus efectos. Desde ese momento, la relación entre el líder, los miembros y los candidatos se sostiene a través de los comandos que hay que ejecutar.',
+      'Los comandos se ejecutan sin cuestionamiento, y quien no los acata o afecta el cálculo de la estrategia queda fuera del proyecto en el acto. Todo se analiza y se corrige después, en la etapa de corrección, donde todos sin excepción tienen la obligación de votar y participar.',
     ],
   },
   {
-    id: 'regla-3', capitulo: 7, titulo: 'Regla 3 · Opciones de crecimiento',
+    id: 'regla-3', capitulo: 7, titulo: 'La tercera regla: la confianza',
     izquierda: anim('regla-3', 'Un árbol por el que sube la energía hasta abrir sus brotes'),
-    bloques: [
-      t('El Grupo Corazones Cruzados ofrece un sistema de "Desarrollo Humano" que permite impulsar a los candidatos y miembros de la organización, y acceder a oportunidades para avanzar en su progreso sin excepciones ni condiciones.'),
-      t('La confianza que ofrecemos y el acceso a mayores recursos y beneficios, depende de la **prospección** y de los **resultados** o logros obtenidos. Esa confianza se entrega **una sola vez**, y si una opción de crecimiento se usa de forma abusiva o para fines distintos a los acordados, la decisión es la destitución.'),
-      t('Para esta organización, la confianza no se recupera tras una traición, además que nosotros abordamos todas las necesidades aunque no sean de interés personal o progreso, así que no hay excusa para mentir o abusar de los recursos. Les pedimos mantener siempre las buenas intenciones, y las opciones de crecimiento llegarán.'),
+    parrafos: [
+      'La tercera regla habla de crecer. La casa ofrece un sistema de **Desarrollo Humano** que impulsa a sus candidatos y miembros y les da acceso a oportunidades para avanzar en su progreso, sin excepciones ni condiciones.',
+      'Pero la confianza y el acceso a mayores recursos dependen de la **prospección** y de los **resultados** obtenidos, y esa confianza se entrega **una sola vez**. Si una oportunidad se usa de forma abusiva o para otros fines, la decisión es la destitución, porque para esta casa la confianza no se recupera tras una traición.',
+      'Como la casa atiende todas las necesidades, incluso las que no son de interés personal, no hay excusa para mentir ni para abusar de los recursos. Solo pide mantener siempre las buenas intenciones, y las opciones de crecimiento llegarán.',
     ],
   },
 
-  /* ── IX · La prospección ── */
+  /* ── IX · El camino de los cuatro faroles ── */
   {
-    id: 'prospeccion', capitulo: 8, titulo: 'La prospección',
+    id: 'prospeccion', capitulo: 8, titulo: 'El camino de los cuatro faroles',
     izquierda: anim('libro-prospeccion', 'Una pirámide de cuatro niveles que una luz recorre hasta llegar al logo'),
-    bloques: [
-      t('Las reglas dicen qué se espera de cada persona, y la prospección mide si de verdad lo está cumpliendo.', true),
-      t('La prospección de cada persona, es un indicador que mide su intención de crecimiento según 4 aspectos  ordenados por la importancia que tienen para transformar su vida.'),
-      t('A continuación te presento el método de evaluación continua del Grupo Corazones Cruzados:'),
+    parrafos: [
+      'Para saber quién estaba preparado para crecer, el soñador trazó un camino iluminado por cuatro faroles. Lo llamó **prospección**: un indicador que mide la intención de crecimiento de cada persona según cuatro aspectos, ordenados por la importancia que tienen para transformar su vida.',
+      'Ese camino es el método de evaluación continua del Grupo Corazones Cruzados, y cada farol alumbra uno de esos aspectos.',
     ],
   },
   {
-    id: 'talento', capitulo: 8, titulo: 'Talento',
+    id: 'talento', capitulo: 8, titulo: 'El primer farol: el talento',
     izquierda: { tipo: 'piramide', activo: 0 },
-    bloques: [
-      t('El talento es justo lo que hace de este proyecto una realidad, cuando una persona puede traer a este mundo un valor agregado con su esfuerzo y capacidad, se convierte en una herramienta de altísimo valor para el progreso del proyecto que lo requiera.'),
-      t('Nosotros queremos descubrir ese talento, y generar oportunidades en donde podamos sacar beneficios por posicionarte dentro de una estrategia organizacional, donde cada movimiento va a desarrollar tu talento y causar mayor interés en nuevos clientes que deseen tus servicios.'),
+    parrafos: [
+      'El primer farol, el más brillante, es el **talento**. Es lo que hace de este proyecto una realidad: cuando una persona puede aportar al mundo un valor con su esfuerzo y su capacidad, se convierte en una herramienta de altísimo valor para el proyecto que lo necesite.',
+      'La casa quiere descubrir ese talento y crear oportunidades para posicionarlo dentro de una estrategia organizacional, donde cada movimiento lo desarrolle y despierte el interés de nuevos clientes que deseen sus servicios.',
     ],
   },
   {
-    id: 'valores-prospeccion', capitulo: 8, titulo: 'Valores',
+    id: 'valores-prospeccion', capitulo: 8, titulo: 'El segundo farol: los valores',
     izquierda: { tipo: 'piramide', activo: 1 },
-    bloques: [
-      t('La confianza de los clientes se mide en tus valores, cuando una persona no sostiene sus valores puede tomar un requerimiento como algo sin importancia, y limitando incluso el desarrollo de su talento; debido a eso, exigimos los valores organizacionales ya que son la fuente principal para obtener oportunidades.'),
-      t('La lógica es la siguiente, según al nivel de confianza que tenga un cliente, se arriesga a invertir su tiempo y dinero en cualquiera de nuestros servicios, talentos, y productos que ofrecemos. Si demostramos alta calidad humana sin importar el tipo de cliente o el lugar en donde estemos, nos podemos convertir en una organización ideal para encontrar personas que puedan trabajar en un proyecto en donde van a representar bien lo que estamos dispuestos a hacer por solucionar un problema.'),
+    parrafos: [
+      'El segundo farol son los **valores**, porque la confianza de los clientes se mide en ellos. Quien no los sostiene puede tomar un encargo como algo sin importancia y limitar incluso su propio talento; por eso la casa exige sus valores, que son la fuente principal de las oportunidades.',
+      'Según la confianza que tenga, un cliente se arriesga a invertir su tiempo y su dinero en los servicios, talentos y productos de la casa. Si sus miembros demuestran una alta calidad humana, sin importar el cliente ni el lugar, la casa se convierte en el lugar ideal para encontrar a quien sabe resolver un problema.',
     ],
   },
   {
-    id: 'dimensiones', capitulo: 8, titulo: 'Dimensiones de desarrollo humano',
+    id: 'dimensiones', capitulo: 8, titulo: 'El tercer farol: las dimensiones',
     izquierda: { tipo: 'piramide', activo: 2 },
-    bloques: [
-      t('Evaluamos las cuatro dimensiones del desarrollo humano ( **laboral, corporal, social y mental** ), cada una representa un conjunto de problemas que al no ser abordados, aumentan el riesgo de tomar malas decisiones, intenciones y malos comportamientos que terminen perjudicando a uno mismo, y a los demás.'),
-      t('Estos riesgos se sostienen mediante los valores, y cuando el talento es muy competente, aumenta las posibilidades de resolver sus problemas haciendo uso de los recursos que puede obtener. Sin embargo existen problemas que se deben trabajar mediante estrategias personalizadas que logren mejorar la calidad de vida. Si estos problemas son abordados entonces el sujeto impulsará sus valores y talento en su entorno de trabajo.'),
+    parrafos: [
+      'El tercer farol alumbra las cuatro **dimensiones del desarrollo humano**: la **laboral, la corporal, la social y la mental**. Cada una guarda un conjunto de problemas que, si no se atienden, aumentan el riesgo de malas decisiones y comportamientos que terminan dañando a uno mismo y a los demás.',
+      'Los valores sostienen esos riesgos, y un talento competente tiene más posibilidades de resolverlos con los recursos que consigue. Aun así, hay problemas que requieren estrategias personalizadas para mejorar la calidad de vida, y cuando se abordan, la persona impulsa sus valores y su talento en su entorno de trabajo.',
     ],
   },
   {
-    id: 'red-apoyo', capitulo: 8, titulo: 'Red de apoyo',
+    id: 'red-apoyo', capitulo: 8, titulo: 'El cuarto farol: la red de apoyo',
     izquierda: { tipo: 'piramide', activo: 3 },
-    bloques: [
-      t('En la actualidad, cuando las dimensiones de desarrollo humano se ven muy afectadas por problemas difíciles de resolver, la red de apoyo suele ser un factor vital para impulsar la solución de problemas, además de ser un buen referente para sostener los valores, y así obtener fuerzas para buscar oportunidades que, en caso de tener suerte, te permiten aprovechar tu talento y mejorar tu situación.'),
-      t('Sin embargo para esta organización este factor vital tiene menor importancia porque los valores organizacionales te enseñan que no necesitas una red de apoyo para abordar tus problemas, sino que su importancia debe ser para nosotros un complemento que apoya nuestra condición, y por lo tanto no podemos depender de ella para estar bien.'),
+    parrafos: [
+      'El último farol es la **red de apoyo**: las personas que nos rodean. Cuando las dimensiones están muy afectadas, suele ser un factor vital para resolver los problemas, un buen referente para sostener los valores y una fuerza para buscar oportunidades.',
+      'Pero en esta casa es el farol de menor importancia, porque sus valores enseñan que no se necesita una red de apoyo para afrontar los propios problemas. Es un complemento que acompaña, y nadie debe depender de ella para estar bien.',
     ],
   },
 
-  /* ── X · La afiliación ── */
+  /* ── X · El viajero que llegó a la casa ── */
   {
-    id: 'afiliacion', capitulo: 9, titulo: 'La afiliación',
+    id: 'afiliacion', capitulo: 9, titulo: 'El viajero que llegó a la casa',
     izquierda: anim('libro-afiliacion', 'Un camino de cinco paradas que termina en el logo del grupo'),
-    bloques: [
-      t('La **afiliación** es el proceso por el que un candidato se convierte en miembro, demostrando y representando los valores esperados. Sigue estas indicaciones:'),
-      {
-        tipo: 'lista',
-        items: [
-          { titulo: '01 · Postúlate', texto: 'Envía tu propuesta en el formulario de postulación. Si eres elegido como candidato, recibirás un **correo de confirmación**.' },
-          { titulo: '02 · Recibe tu acceso', texto: 'Como candidato recibirás una invitación y acceso al sitio web como **usuario candidato**. Desde ese momento puedes usar las herramientas del grupo para tu desarrollo humano; encontrarás todos sus detalles dentro del sitio web.' },
-          { titulo: '03 · Asiste a las reuniones semanales', texto: 'Allí recibirás todas las indicaciones sobre **cómo demostrar tu afiliación** y los comandos que deberás ejecutar.' },
-        ],
-      },
+    parrafos: [
+      'Un día llegó a la casa un viajero que quería ser parte de ella, y el soñador le explicó cómo se recorre la **afiliación**, el camino por el que un candidato se convierte en miembro.',
+      'Primero tendría que **postularse**, enviando su propuesta en el formulario, y si era elegido recibiría un **correo de confirmación**. Después **recibiría su acceso** al sitio web como **usuario candidato**, y desde ese momento podría usar las herramientas del grupo para su desarrollo humano.',
+      'Luego **asistiría a las reuniones semanales**, donde recibiría las indicaciones para **demostrar su afiliación** y los comandos que debería ejecutar.',
     ],
   },
   {
     id: 'afiliacion-2', capitulo: 9, titulo: 'Convertirse en miembro',
     izquierda: anim('libro-afiliacion', 'Un camino de cinco paradas que termina en el logo del grupo'),
-    bloques: [{
-      tipo: 'lista',
-      items: [
-        { titulo: '04 · Eleva tu prospección', texto: 'Tu avance se mide con la **evaluación continua de la prospección**: cada tarea que cumples suma y cada una que no cumples resta en el valor al que corresponde, y además se evalúan tus talentos, tus cuatro dimensiones de desarrollo humano y tu red de apoyo. Cuando tu prospección alcanza un nivel alto, tu caso se revisa para convertirte en miembro.' },
-        { titulo: '05 · Conviértete en miembro', texto: 'Cuando cumplas con la demostración, un miembro **Global** del paso de **Implementación** realizará tu afiliación como nuevo miembro.' },
-      ],
-    }],
+    parrafos: [
+      'Después tendría que **elevar su prospección**. Cada tarea cumplida sumaría y cada tarea incumplida restaría en el valor al que corresponde, y además se evaluarían sus talentos, sus cuatro dimensiones y su red de apoyo. Cuando su prospección alcanzara un nivel alto, su caso se revisaría para convertirlo en miembro.',
+      'Y al final, cuando cumpliera con la demostración, un miembro **Global** del paso de **Implementación** realizaría su afiliación como nuevo miembro de la casa.',
+      'El viajero escuchó en silencio, miró la puerta con sus tres reglas grabadas y sonrió. Ya sabía qué tenía que hacer.',
+    ],
   },
 ];
 
 /** La última doble página: el formulario. */
 export const EPILOGO = {
+  id: 'epilogo',
   capitulo: CAPITULOS.length - 1,
   titulo: 'Tu página en blanco',
   ilustracion: anim('libro-pagina', 'Una página en la que una luz escribe renglón a renglón'),
-  puente: 'Este libro todavía no termina. Las siguientes páginas las escriben quienes deciden formar parte del Grupo Corazones Cruzados, y la primera línea de esa historia empieza aquí.',
+  parrafos: [
+    'Este libro todavía no termina. Las páginas que faltan las escriben quienes deciden formar parte del Grupo Corazones Cruzados, y la primera línea de esa historia empieza aquí.',
+  ],
 };
 
-export { PASOS_CONDICIOLOGIA };
+/** Lo que se lee en voz alta en el índice. */
+export const NARRACION_INDICE = 'Grupo Corazones Cruzados. Un corazón puede cruzar al mundo.';
+
+export const PASOS_CONDICIOLOGIA = ['Reconocer', 'Controlar', 'Predecir', 'Experimentar', 'Convertir', 'Cambiar'];

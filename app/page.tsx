@@ -14,7 +14,7 @@ import { IconoCorazon, IconoMundo } from '@/components/landing/IconosTitular';
 import { useCorteAnimado, type ModoPortada } from '@/lib/sitio/portadaPartida';
 import { appInstalada, type AppDeTelefono } from '@/lib/sitio/appDeTelefono';
 import AccountRecoveryModal from '@/components/landing/AccountRecoveryModal';
-import OnboardingSlidersModal, { enviarPostulacion } from '@/components/landing/OnboardingSlidersModal';
+import LibroHistoria from '@/components/libro/LibroHistoria';
 import EntryChoiceModal from '@/components/landing/EntryChoiceModal';
 import { ACCESO_PLATAFORMA, destinoTrasAccesoValido } from '@/lib/sitio/acceso';
 import ProposalPendingModal from '@/components/landing/ProposalPendingModal';
@@ -520,17 +520,14 @@ export default function LandingPage() {
         />
       )}
 
+      {/* La postulación es EL LIBRO (Fernando, 2026-11-12): la historia contada con voz y, en la última
+          página, el formulario. Envía él mismo; aquí solo se abre el aviso de «en revisión». */}
       {onboardingOpen && (
-        <OnboardingSlidersModal
-          tema="progreso"
+        <LibroHistoria
           onClose={() => setOnboardingOpen(false)}
-          onComplete={async (postulacion) => {
-            // Registra la propuesta (`enviarPostulacion`, la misma que usa la página Candidatos).
-            const error = await enviarPostulacion(postulacion);
-            if (error) return error;
+          onEnviada={(email) => {
             setOnboardingOpen(false);
-            setProposalPending({ email: postulacion.email, emailVerified: false });
-            return null;
+            setProposalPending({ email, emailVerified: false });
           }}
         />
       )}

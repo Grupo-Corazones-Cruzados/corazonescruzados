@@ -1,0 +1,7 @@
+Cómo funcionaba el motor.
+
+Así funcionaba el motor: cada piso era un rol que cumplía una necesidad en la gestión de un proyecto, y cada paso era una función en su levantamiento y su progreso.
+
+A cada miembro se le asignaba un piso y un paso de acuerdo con su talento, y según ese lugar tenía acceso a un conjunto de sistemas, que se activaban según la necesidad del proyecto en el que participara.
+
+Y por encima de todo había una sola ley, que el soñador escribió en la primera página de sus planos: la necesidad determina todo lo que hacemos.
