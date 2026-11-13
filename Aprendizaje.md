@@ -1,5 +1,37 @@
 # Aprendizaje — Sistema "Gestión de Datos" (Centralizado · pilar · fundamentación)
 
+## Objetivo (declarado 2026-11-12) — ONBOARDING DEL CANDIDATO ACEPTADO CON CORREO CORPORATIVO · 🔎 95 % — PUBLICADO (5b6f10c2); FALTA AUTORIZAR LOS ALCANCES DE GRUPOS
+
+**Necesidad (Fernando):** postulación → aceptación → se genera solo el correo `@grupocc.org`
+(inicial nombre 1 + inicial nombre 2 + apellido 1 completo + inicial apellido 2 + contador desde 0:
+`lfgonzalezm0`, el siguiente igual `lfgonzalezm1`). A ese correo llega una credencial (correo + contraseña
+temporal) para entrar a un formulario de alta, donde crea su contraseña y completa sus datos; después
+inicia sesión en la plataforma SOLO con el correo corporativo. El correo personal deja de usarse tras
+aceptar. La postulación pide 4 campos obligatorios: dos nombres y dos apellidos.
+
+**Rol:** arquitecto de identidad y cuentas (autenticación, Google Workspace, correo).
+
+**Cómo funciona hoy (mapa del 2026-11-12):**
+- Postulación (`OnboardingSlidersModal`, `POST /api/candidate/proposal`): solo correo, motivo y marketing;
+  `candidate_proposals` sin nombres.
+- Aprobación (`SolicitudesTab` → `approve/route.ts`): el aprobador ESCRIBE el usuario; se guarda en
+  `clients.workspace_username/workspace_email`; el correo de aprobación va al correo PERSONAL con un enlace
+  `/api/candidate/continuar?t=` que abre `CandidateAccountModal` (contraseña, nombre, país, dirección, teléfono).
+- `complete-profile` crea la cuenta de Google en `/Candidatos` (`createWorkspaceUser`) y TIRA su contraseña.
+- El panel: `grantCandidateDashboardSession` busca/crea `users` por el correo PERSONAL. Todo inicio de sesión
+  y todo aviso usan el correo personal. 23 candidatos, ninguno con correo corporativo.
+- Correo saliente: Gmail API con delegación de dominio, desde `lfgonzalezm0@grupocc.org`.
+
+### P1 — ¿Cómo recibe correo la dirección corporativa? · ✅ Resuelta (Fernando, 2026-11-12: grupo de Google que reenvía al personal)
+- **Por qué importa:** la credencial tiene que LLEGAR a esa dirección. Un usuario de Google sin licencia
+  (Cloud Identity gratis) no tiene buzón; con licencia cuesta cada mes (regla del 2026-11-05: solo cuando el
+  miembro ya es rentable). Opción gratis: un GRUPO de Google con esa dirección que reenvía al correo personal
+  (pide autorizar el alcance de grupos en la consola).
+### P2 — ¿Qué pide el formulario de alta además de la contraseña? · ✅ país, teléfono, dirección
+### P3 — ¿Los 23 candidatos actuales se migran? · ✅ no; solo las aprobaciones nuevas
+### P4 — ¿El usuario se genera solo o el aprobador lo puede corregir? · ✅ se genera y se puede corregir antes de aprobar
+### P5 — Alcances de grupos en la consola de Google · ⏸ Fernando: `admin.directory.group` y `apps.groups.settings` en la delegación del ID 111768031245769195077. Probado 2026-11-12: sin ellos la aprobación se detiene limpia; el alta y el inicio de sesión corporativo funcionan (simulados en la base de reserva).
+
 ## Objetivo (declarado 2026-11-08) — EL PRODUCTO «AUTOMATIZACIONES DE WHATSAPP» COMO MODELO DE LOS CINCO: TIENDAS, WEB, DISEÑO Y NAVEGACIÓN · 🔎 55 %
 
 Fernando, 2026-11-08: dejar bien definido Automatizaciones de WhatsApp para aprender de él las reglas de
