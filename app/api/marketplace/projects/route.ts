@@ -41,6 +41,15 @@ export async function GET(req: NextRequest) {
       }
     }
     let where = `WHERE ${visibles} AND p.status = 'completed'`;
+    // Sin los proyectos de alguien a quien esta cuenta bloqueó (lib/moderacion.ts; Apple, norma 1.2).
+    if (user) {
+      params.push(user.userId);
+      where += ` AND NOT EXISTS (
+        SELECT 1 FROM gcc_world.moderacion_bloqueos b
+          LEFT JOIN gcc_world.users bu ON bu.id = b.bloqueado_user_id
+         WHERE b.usuario_id = $${params.length}::uuid
+           AND ${miembroEnProyectoSql('p', 'COALESCE(b.bloqueado_member_id, bu.member_id)')})`;
+    }
 
     if (search) {
       params.push(`%${search}%`);
@@ -65,7 +74,7 @@ export async function GET(req: NextRequest) {
               p.public_docs_token,
               COALESCE(array_length(p.images, 1), 0)::int as image_count,
               COALESCE(
-                (SELECT json_agg(json_build_object('name', m.name, 'photo_url', m.photo_url))
+                (SELECT json_agg(json_build_object('id', m.id, 'name', m.name, 'photo_url', m.photo_url))
                  FROM gcc_world.members m
                  WHERE ${miembroEnProyectoSql('p', 'm.id')}),
                 '[]'::json

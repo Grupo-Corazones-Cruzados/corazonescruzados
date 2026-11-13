@@ -30,26 +30,28 @@ export type Autor = { userId?: string; memberId?: number; nombre?: string };
  * (Admin ▸ Denuncias); el bloqueo es personal y se deshace en Configuración ▸ Perfil.
  * Sin `autor` (un proyecto es del equipo) solo se ofrece denunciar.
  */
-export default function MenuModeracion({ tipo, objetoId, autor, onBloqueado, className = '', compacto = false }: {
+export default function MenuModeracion({ tipo, objetoId, autor, autores, onBloqueado, className = '', compacto = false }: {
   tipo: TipoDenuncia;
   objetoId: string | number;
   autor?: Autor;
+  /** Varios autores (el equipo de un proyecto): una opción «Bloquear a …» por cada uno. */
+  autores?: Autor[];
   onBloqueado?: (autor: Autor) => void;
   className?: string;
   /** Dentro de una burbuja de chat: el «⋯» pequeño y sin borde. */
   compacto?: boolean;
 }) {
   const [denunciando, setDenunciando] = useState(false);
-  const [bloqueando, setBloqueando] = useState(false);
+  const [bloqueando, setBloqueando] = useState<Autor | null>(null);
   const [motivo, setMotivo] = useState('');
   const [detalle, setDetalle] = useState('');
   const [enviando, setEnviando] = useState(false);
-  const puedeBloquear = !!(autor?.userId || autor?.memberId != null);
-  const nombre = autor?.nombre || 'esta persona';
+  const bloqueables = [...(autor ? [autor] : []), ...(autores || [])].filter((a) => a.userId || a.memberId != null);
+  const nombre = bloqueando?.nombre || 'esta persona';
 
   const items: AccionMenu[] = [
     { label: 'Denunciar', icon: Flag, onClick: () => { setMotivo(''); setDetalle(''); setDenunciando(true); } },
-    ...(puedeBloquear ? [{ label: `Bloquear a ${nombre}`, icon: Ban, danger: true, onClick: () => setBloqueando(true) }] : []),
+    ...bloqueables.map((a) => ({ label: `Bloquear a ${a.nombre || 'esta persona'}`, icon: Ban, danger: true, onClick: () => setBloqueando(a) })),
   ];
 
   const enviar = async () => {
@@ -72,14 +74,14 @@ export default function MenuModeracion({ tipo, objetoId, autor, onBloqueado, cla
     try {
       const r = await fetch('/api/moderacion/bloqueos', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: autor?.userId, memberId: autor?.memberId }),
+        body: JSON.stringify({ userId: bloqueando?.userId, memberId: bloqueando?.memberId }),
       });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(d.error || 'No se pudo bloquear');
       toast.success(`Bloqueaste a ${d.nombre || nombre}. Ya no verás lo que publica.`);
-      onBloqueado?.(autor || {});
+      onBloqueado?.(bloqueando || {});
     } catch (e: any) { toast.error(e.message); }
-    finally { setBloqueando(false); }
+    finally { setBloqueando(null); }
   };
 
   return (
@@ -105,9 +107,9 @@ export default function MenuModeracion({ tipo, objetoId, autor, onBloqueado, cla
           </div>
         </div>
       </PixelModal>
-      <PixelConfirm open={bloqueando} title={`Bloquear a ${nombre}`}
+      <PixelConfirm open={!!bloqueando} title={`Bloquear a ${nombre}`}
         message="Dejarás de ver sus publicaciones del Marketplace y sus mensajes. No se le avisa. Puedes desbloquearlo en Configuración ▸ Perfil."
-        confirmLabel="Bloquear" danger onConfirm={bloquear} onCancel={() => setBloqueando(false)} />
+        confirmLabel="Bloquear" danger onConfirm={bloquear} onCancel={() => setBloqueando(null)} />
     </span>
   );
 }

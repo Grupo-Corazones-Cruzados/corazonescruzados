@@ -178,9 +178,11 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   const alBloquear = (memberId?: number) => {
     if (memberId == null) return;
     setBloqueadas((b) => new Set(b).add(Number(memberId)));
-    if (Number(selected?.member_id) === Number(memberId)) cerrarPanel();
+    if (Number(selected?.member_id) === Number(memberId)
+      || (Array.isArray(selected?.team) && selected.team.some((m: any) => Number(m?.id) === Number(memberId)))) cerrarPanel();
   };
-  const visible = (i: any) => i.member_id == null || !bloqueadas.has(Number(i.member_id));
+  const visible = (i: any) => (i.member_id == null || !bloqueadas.has(Number(i.member_id)))
+    && !(Array.isArray(i.team) && i.team.some((m: any) => m?.id != null && bloqueadas.has(Number(m.id))));
 
   const [items, setItems] = useState<any[]>([]);
   const [search, setSearch] = useState('');
@@ -475,6 +477,7 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
               {conModeracion && (
                 <MenuModeracion compacto tipo={isProject ? 'proyecto' : 'portafolio'} objetoId={item.id}
                   autor={!isProject && item.member_id != null ? { memberId: Number(item.member_id), nombre: item.member_name } : undefined}
+                  autores={isProject ? (item.team || []).filter((m: any) => m?.id != null).map((m: any) => ({ memberId: Number(m.id), nombre: m.name })) : undefined}
                   onBloqueado={(a) => alBloquear(a.memberId)} />
               )}
             </div>

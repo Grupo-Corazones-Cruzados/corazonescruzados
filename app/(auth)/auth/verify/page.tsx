@@ -4,6 +4,15 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { PANEL_AUTH, TITULO_AUTH, TEXTO_AUTH } from "@/components/landing/authEstilos";
+import { dentroDeUnaApp } from "@/lib/sitio/appDeTelefono";
+
+/**
+ * El correo se abre en Safari aunque la cuenta se haya creado en la app (Fernando, 2026-11-13): en un iPhone, fuera
+ * de la app, en vez de entrar a la web se ofrece volver a GCC World (`gccworld://`, el esquema de la app de iPhone)
+ * para iniciar sesión allí; «Seguir en la web» queda debajo por si no la tiene instalada.
+ */
+const enIphoneFueraDeLaApp = () =>
+  typeof navigator !== "undefined" && /iPhone|iPad|iPod/.test(navigator.userAgent) && !dentroDeUnaApp();
 
 /**
  * CONFIRMAR EL CORREO — la página del enlace que llega al crear la cuenta. Con el aspecto del
@@ -14,6 +23,7 @@ function VerifyContent() {
   const token = params.get("token");
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
+  const [volverALaApp, setVolverALaApp] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -33,6 +43,7 @@ function VerifyContent() {
           // era una pantalla intermedia en negro que a su vez lo mandaba al marketplace.
           // El cliente va DIRECTO al marketplace, que es su primera pantalla.
           const destino = data.role === "client" ? "/dashboard/marketplace" : "/dashboard";
+          if (enIphoneFueraDeLaApp()) { setVolverALaApp(destino); return; }
           setTimeout(() => { window.location.href = destino; }, 3000);
         } else {
           setStatus("error");
@@ -55,7 +66,15 @@ function VerifyContent() {
             <CheckCircle2 className="w-5 h-5 text-green-400 shrink-0" /> Correo confirmado
           </h1>
           <p style={TEXTO_AUTH}>{message}</p>
-          <Esperando texto="Entrando a la plataforma…" />
+          {volverALaApp ? (
+            <>
+              <p style={TEXTO_AUTH}>Vuelve a la app GCC World e inicia sesión con tu correo y tu contraseña.</p>
+              <a href="gccworld://" className="pixel-btn pixel-btn-primary w-full flex items-center justify-center">Abrir la app GCC World</a>
+              <a href={volverALaApp} className="block text-center text-[0.84rem] text-digi-muted hover:text-digi-text" style={{ fontFamily: "var(--font-body)" }}>Seguir en la web</a>
+            </>
+          ) : (
+            <Esperando texto="Entrando a la plataforma…" />
+          )}
         </>
       )}
 
