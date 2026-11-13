@@ -8,6 +8,7 @@
 
 import { useCerrarAlTocarFuera } from '@/lib/hooks/useCerrarAlTocarFuera';
 import { useState } from 'react';
+import { MailWarning } from 'lucide-react';
 import { horaDeReanudacion, useEstadoRegistro } from './estadoRegistro';
 import { motivoPasskey, passkeyDisponible, usePasskeyPreparada, usePasskeyRegistro } from '@/lib/hooks/usePasskeyPreparada';
 import LogoGirando from '@/components/ui/LogoGirando';
@@ -364,44 +365,25 @@ export default function ClientLoginModal({
               />
               {error && <ErrorMsg>{error}</ErrorMsg>}
               {porVerificar !== null && (
-                <div
-                  role="status"
-                  style={{
-                    border: '1px solid rgba(251,191,36,0.45)',
-                    background: 'rgba(251,191,36,0.10)',
-                    borderRadius: 8,
-                    padding: '10px 12px',
-                    fontFamily: BODY,
-                    fontSize: '0.82rem',
-                    lineHeight: 1.5,
-                    color: '#fde68a',
-                  }}
-                >
-                  <strong style={{ color: '#fef3c7' }}>Falta verificar tu correo.</strong> Te enviamos un enlace
-                  {porVerificar ? <> a <strong style={{ color: '#fef3c7' }}>{porVerificar}</strong></> : null}: ábrelo para
-                  activar tu cuenta y vuelve a pulsar «Continuar». Revisa también el correo no deseado.
-                  <div style={{ marginTop: 8 }}>
-                    <button
-                      type="button"
-                      onClick={reenviar}
-                      disabled={busy}
-                      style={{
-                        background: 'transparent',
-                        border: 0,
-                        padding: 0,
-                        cursor: 'pointer',
-                        fontFamily: BODY,
-                        fontSize: '0.82rem',
-                        fontWeight: 600,
-                        color: '#fcd34d',
-                        textDecoration: 'underline',
-                      }}
-                    >
-                      ¿No te llegó? Reenviar el correo
-                    </button>
-                  </div>
+                /* Sin caja amarilla con relleno y borde (Fernando, 2026-11-13: «el mismo error de diseño»;
+                   regla «sin etiquetas con relleno»): rótulo con icono y el texto en el color del párrafo. */
+                <div role="status" className="aviso-gcc" data-tono="info">
+                  <p className="aviso-gcc-titulo"><MailWarning aria-hidden />Falta verificar tu correo</p>
+                  <p className="aviso-gcc-texto" style={{ fontFamily: BODY, fontSize: '0.86rem' }}>
+                    Te enviamos un enlace{porVerificar ? <> a <strong>{porVerificar}</strong></> : null}: ábrelo para
+                    activar tu cuenta y vuelve a pulsar «Continuar». Revisa también el correo no deseado.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={reenviar}
+                    disabled={busy}
+                    className="justify-self-start text-accent underline underline-offset-2 disabled:opacity-50"
+                    style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', fontFamily: BODY, fontSize: '0.84rem', fontWeight: 600 }}
+                  >
+                    ¿No te llegó? Reenviar el correo
+                  </button>
                   {reenvio && (
-                    <div style={{ marginTop: 6, color: reenvio.ok ? '#bbf7d0' : '#fecaca' }}>{reenvio.texto}</div>
+                    <p className="aviso-gcc-texto" style={{ fontFamily: BODY, fontSize: '0.84rem', color: reenvio.ok ? '#16a34a' : 'var(--auth-error, #dc2626)' }}>{reenvio.texto}</p>
                   )}
                 </div>
               )}
