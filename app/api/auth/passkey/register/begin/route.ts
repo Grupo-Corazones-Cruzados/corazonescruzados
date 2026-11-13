@@ -57,9 +57,12 @@ export async function POST(req: Request) {
     if (!client) {
       client = (
         await pool.query(
-          `INSERT INTO gcc_world.clients (name, email, alias, last_seen_at)
-           VALUES ($1, $1, $2, NOW()) RETURNING id, alias, email`,
-          [email, email.split('@')[0]],
+          // ⚠️ Con su TIPO (2026-11-13): sin `account_type` la fila salía con el de la tabla, 'candidate', y un
+          // cliente que creaba su passkey nada más registrarse ya no podía volver a entrar como cliente
+          // («Esta cuenta no es de cliente»; le pasó a Fernando grabando el video para Apple).
+          `INSERT INTO gcc_world.clients (name, email, alias, last_seen_at, account_type, user_id)
+           VALUES ($1, $1, $2, NOW(), $3, $4) RETURNING id, alias, email`,
+          [email, email.split('@')[0], user.role === 'client' ? 'client' : 'candidate', user.role === 'client' ? user.userId : null],
         )
       ).rows[0];
     }
