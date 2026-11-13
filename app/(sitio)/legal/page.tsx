@@ -36,13 +36,13 @@ export const metadata: Metadata = {
  * muro. Agrupadas, se localiza el tema primero y la sección después.
  */
 const INDICE: GrupoIndice[] = [
-  { label: 'Lo básico', entradas: [
+  { label: 'Generalidades', entradas: [
     { id: 's1', label: 'Antecedentes y objeto' },
     { id: 's2', label: 'Responsable y contacto' },
     { id: 's3', label: 'Definiciones' },
     { id: 's4', label: 'Principios' },
   ] },
-  { label: 'Qué datos y para qué', entradas: [
+  { label: 'Datos y finalidades', entradas: [
     { id: 's5', label: 'Datos que tratamos' },
     { id: 's6', label: 'Momento de la recolección' },
     { id: 's7', label: 'Finalidades' },
@@ -51,19 +51,19 @@ const INDICE: GrupoIndice[] = [
     { id: 's10', label: 'Cookies' },
     { id: 's11', label: 'Decisiones automatizadas' },
   ] },
-  { label: 'Con quién y cuánto tiempo', entradas: [
+  { label: 'Encargados, conservación y seguridad', entradas: [
     { id: 's12', label: 'Encargados y transferencias' },
     { id: 's13', label: 'Conservación' },
     { id: 's15', label: 'Seguridad' },
     { id: 's16', label: 'Vulneraciones' },
   ] },
-  { label: 'Tus derechos', entradas: [
+  { label: 'Derechos del Titular', entradas: [
     { id: 's14', label: 'Derechos del titular' },
-    { id: 'eliminar-datos', label: 'Cómo eliminar tus datos' },
+    { id: 'eliminar-datos', label: 'Eliminación de datos' },
     { id: 's17', label: 'Permisos y desafiliación' },
     { id: 's18', label: 'Menores de edad' },
   ] },
-  { label: 'El sitio', entradas: [
+  { label: 'Uso del sitio', entradas: [
     { id: 's19', label: 'Términos de uso' },
     { id: 's20', label: 'Modificaciones' },
     { id: 's22', label: 'Contacto y autoridad' },
@@ -77,7 +77,7 @@ export default function LegalPage() {
     <DocumentoLegal
       id="general"
       titulo="Términos y condiciones y política de privacidad"
-      subtitulo="Cómo tratamos los datos de las personas candidatas y miembros del proyecto, y las condiciones de uso de este sitio."
+      subtitulo="Tratamiento de los datos de los candidatos y miembros del proyecto, y condiciones de uso de este sitio."
       actualizado={ULTIMA_ACTUALIZACION}
       indice={INDICE}
     >
@@ -85,25 +85,26 @@ export default function LegalPage() {
         <Titulo id="s1">1. Antecedentes y objeto</Titulo>
         <p className={pp}>
           El presente documento (en adelante, la “Política”) regula el uso de este sitio web y el{' '}
-          <strong className={b}>tratamiento de datos personales</strong> de las personas usuarias y
-          candidatas (en adelante, “el Usuario” o “el Titular”), de conformidad con la{' '}
+          <strong className={b}>tratamiento de datos personales</strong> de los usuarios, candidatos y
+          miembros del proyecto (en adelante, “el Usuario” o “el Titular”), de conformidad con la{' '}
           <strong className={b}>Constitución de la República del Ecuador</strong> (artículo 66, numeral
           19), la <strong className={b}>Ley Orgánica de Protección de Datos Personales (LOPDP)</strong>,
           su <strong className={b}>Reglamento General</strong> y demás normativa aplicable. Al aceptar la
           Política, el Titular declara haberla leído y comprendido, y otorga su consentimiento{' '}
           <strong className={b}>libre, específico, informado e inequívoco</strong> para el tratamiento de
-          sus datos en los términos aquí descritos. El responsable podrá actualizar esta Política;
+          sus datos en los términos aquí descritos. El responsable podrá actualizar esta Política, y
           la versión vigente se publicará siempre en esta página.
         </p>
 
         <Titulo id="s2">2. Responsable del tratamiento y contacto de protección de datos</Titulo>
         <p className={pp}>
-          <strong className={b}>Alcance de esta Política:</strong> regula el sitio web y los datos
-          de las personas candidatas y miembros del proyecto, respecto de los cuales Grupo
-          Corazones Cruzados es <strong className={b}>responsable</strong>. No cubre las
-          conversaciones de WhatsApp que atendemos <strong className={b}>por cuenta de empresas
-          clientes</strong>: en ese servicio somos <strong className={b}>encargados</strong> y la
-          responsable es la empresa, con su propio documento en{' '}
+          <strong className={b}>Alcance de esta Política.</strong> Esta Política regula el sitio web y
+          los datos de los candidatos y miembros del proyecto, de los cuales el Grupo Corazones
+          Cruzados es <strong className={b}>responsable</strong>. Las conversaciones de WhatsApp que
+          atendemos <strong className={b}>por cuenta de empresas clientes</strong> no forman parte de
+          esta Política, ya que en ese servicio el Grupo Corazones Cruzados actúa como{' '}
+          <strong className={b}>encargado</strong> y la responsable es la empresa, conforme a su propio
+          documento en{' '}
           <a href="/legal/whatsapp" className={link}>
             /legal/whatsapp
           </a>
@@ -159,7 +160,7 @@ export default function LegalPage() {
           </li>
         </ul>
 
-        <Titulo id="s4">4. Principios que aplicamos</Titulo>
+        <Titulo id="s4">4. Principios</Titulo>
         <p className={pp}>
           Tratamos los datos conforme a los principios de la LOPDP:{' '}
           <strong className={b}>juridicidad, lealtad, transparencia, finalidad, pertinencia y
@@ -171,34 +172,42 @@ export default function LegalPage() {
         <Titulo id="s5">5. Datos que tratamos</Titulo>
         <p className={pp}>
           Aplicamos el principio de <strong className={b}>minimización</strong>: solo tratamos los datos
-          necesarios para las finalidades indicadas. Las categorías de datos que podemos recabar son:
+          necesarios para las finalidades indicadas. A continuación se presentan las categorías de
+          datos que podemos recabar:
         </p>
         <ul className={ul}>
           <li>
-            <strong className={b}>Datos de postulación:</strong> nombre completo, correo electrónico,
-            país, dirección y contacto telefónico, la motivación que el Titular redacta (texto libre)
-            y el registro de las aceptaciones que otorga (qué aceptó y cuándo). Estos datos se
-            solicitan únicamente en el formulario de postulación.
+            <strong className={b}>Datos de postulación:</strong> nombres y apellidos, correo
+            electrónico personal, la motivación que el Titular redacta (texto libre) y el registro de
+            las aceptaciones que otorga (qué aceptó y cuándo). Estos datos se solicitan en el
+            formulario de postulación.
           </li>
           <li>
-            <strong className={b}>Datos de cuenta y perfil:</strong> alias o nombre de usuario,
-            configuración de su personaje/avatar y contraseña (almacenada de forma cifrada) para el
-            acceso y la recuperación de la cuenta.
+            <strong className={b}>Datos del alta del candidato aceptado:</strong> al aprobarse la
+            postulación se crea un <strong className={b}>correo corporativo</strong> con los nombres y
+            apellidos del Titular, el cual reenvía los mensajes a su correo personal, y con ese correo
+            el Titular completa su cuenta con su país, teléfono y dirección.
+          </li>
+          <li>
+            <strong className={b}>Datos de cuenta y perfil:</strong> nombre de usuario, foto de
+            perfil y contraseña (almacenada de forma cifrada) para el acceso y la recuperación de la
+            cuenta.
           </li>
           <li>
             <strong className={b}>Datos técnicos y de conexión:</strong> identificadores de dispositivo,
-            cookies o tokens de sesión y <strong className={b}>dirección IP</strong>, utilizados para
-            reconocer si el Titular es nuevo o recurrente y para la seguridad del servicio.
+            cookies o tokens de sesión y la <strong className={b}>dirección IP</strong>, los cuales se
+            utilizan para reconocer si el Titular es nuevo o recurrente y para la seguridad del
+            servicio.
           </li>
           <li>
             <strong className={b}>Datos de comunicación:</strong> los que el Titular nos proporcione al
-            contactarnos o participar en reuniones del proyecto.
+            contactarnos o al participar en las reuniones del proyecto.
           </li>
           <li>
             <strong className={b}>Datos de ubicación y seguridad de los miembros:</strong> solo de los
-            miembros que lo aceptan en el Sistema de Control Psicosocial (ver sección 9): ubicación, su
-            precisión y su hora, nivel de batería, llegadas y salidas de puntos de reunión y alertas de
-            auxilio.
+            miembros que lo aceptan en el Sistema de Control Psicosocial (ver sección 9), los cuales son
+            la ubicación con su precisión y su hora, el nivel de batería, las llegadas y salidas de los
+            puntos de reunión y las alertas de auxilio.
           </li>
         </ul>
 
@@ -207,19 +216,20 @@ export default function LegalPage() {
           Como medida de responsabilidad proactiva, <strong className={b}>los datos de postulación se
           recolectan y conservan únicamente cuando el Titular completa y envía el formulario de
           postulación</strong> y otorga su aceptación final. Antes de ese momento, la información
-          introducida permanece de forma temporal en el dispositivo del Titular y no es transmitida
-          ni almacenada por el responsable con fines de tratamiento.
+          que introduce permanece de forma temporal en su dispositivo, y no es transmitida ni
+          almacenada por el responsable con fines de tratamiento.
         </p>
 
         <Titulo id="s7">7. Finalidades del tratamiento</Titulo>
         <ul className={ul}>
-          <li>Gestionar la postulación y, en su caso, la afiliación del Titular al proyecto.</li>
+          <li>Gestionar la postulación y, en su caso, la afiliación del Titular al proyecto, incluida la
+            creación de su correo corporativo.</li>
           <li>Crear y administrar su cuenta y permitir el acceso al sitio y a sus herramientas.</li>
           <li>Comunicarnos con el Titular respecto de su candidatura y del proyecto.</li>
           <li>Garantizar la seguridad del servicio y prevenir fraudes o usos indebidos.</li>
           <li>
-            Proteger la seguridad de los miembros que lo aceptan: localizarlos en una emergencia, avisar
-            a los demás miembros y saber quién ha llegado a un punto de reunión.
+            Proteger la seguridad de los miembros que lo aceptan, con el fin de localizarlos en una
+            emergencia, avisar a los demás miembros y saber quién ha llegado a un punto de reunión.
           </li>
           <li>Cumplir obligaciones legales aplicables.</li>
         </ul>
@@ -246,8 +256,8 @@ export default function LegalPage() {
           <strong className={b}>antes de acceder a la herramienta correspondiente</strong>, no de forma
           anticipada. Hoy está en funcionamiento la herramienta de{' '}
           <strong className={b}>Rastreo</strong>, disponible únicamente para los{' '}
-          <strong className={b}>miembros</strong> de la organización, en la aplicación de su teléfono.
-          No se aplica a candidatos, clientes ni visitantes del sitio.
+          <strong className={b}>miembros</strong> de la organización en la aplicación de su teléfono, y
+          no se aplica a candidatos, clientes ni visitantes del sitio.
         </p>
         <ul className={ul}>
           <li>
@@ -258,40 +268,41 @@ export default function LegalPage() {
           <li>
             <strong className={b}>Quién la ve.</strong> Todos los miembros, incluido el administrador,
             pueden ver la ubicación actual y el recorrido de quienes lo han aceptado. Cada consulta queda
-            registrada y el miembro puede ver quién la hizo.
+            registrada, y el miembro puede ver quién la hizo.
           </li>
           <li>
-            <strong className={b}>Puntos de reunión.</strong> Los marcan los administradores. Al llegar a
-            uno de ellos o salir de él, los demás miembros reciben un aviso y queda registrado.
+            <strong className={b}>Puntos de reunión.</strong> Los marcan los administradores, y cuando un
+            miembro llega a uno de ellos o sale de él, los demás miembros reciben un aviso y queda
+            registrado.
           </li>
           <li>
-            <strong className={b}>Detección de voz.</strong> Es un consentimiento aparte. Si el miembro la
-            activa, el teléfono escucha de forma continua para detectar una frase de auxilio. El audio se
-            procesa solo dentro del teléfono:{' '}
-            <strong className={b}>no se graba, no se guarda y no se envía</strong>. Al detectarla hay unos
-            segundos para cancelar; después, se envía la alerta.
+            <strong className={b}>Detección de voz.</strong> Requiere un consentimiento aparte. Si el
+            miembro la activa, el teléfono escucha de forma continua con el fin de detectar una frase de
+            auxilio, y el audio se procesa solo dentro del teléfono, por lo que{' '}
+            <strong className={b}>no se graba, no se guarda y no se envía</strong>. Al detectar la frase,
+            el miembro tiene unos segundos para cancelar, y después se envía la alerta.
           </li>
           <li>
-            <strong className={b}>Auxilio.</strong> Lo envía el miembro con un botón o con la frase de voz.
-            Todos los miembros reciben la alerta y la ubicación de quien lo pidió. La plataforma{' '}
-            <strong className={b}>no avisa por sí sola a las autoridades</strong>: el botón del 911 abre
-            el marcador del teléfono y es la persona quien hace la llamada.
+            <strong className={b}>Auxilio.</strong> Lo envía el miembro con un botón o con la frase de voz,
+            y todos los miembros reciben la alerta y la ubicación de quien lo pidió. La plataforma{' '}
+            <strong className={b}>no avisa por sí sola a las autoridades</strong>, ya que el botón del 911
+            abre el marcador del teléfono y es la persona quien hace la llamada.
           </li>
           <li>
             <strong className={b}>Conservación.</strong> El recorrido, las llegadas y las salidas se
-            eliminan a los 7 días. Lo registrado durante un auxilio se conserva con ese auxilio, y también
-            la constancia de cada aceptación y retirada del consentimiento.
+            eliminan a los 7 días. Lo registrado durante un auxilio se conserva junto con ese auxilio, al
+            igual que la constancia de cada aceptación y retiro del consentimiento.
           </li>
           <li>
             <strong className={b}>Control del miembro.</strong> Nadie puede activar estas funciones por
             otra persona, y el teléfono muestra siempre que están en uso. El miembro puede apagarlas en
-            cualquier momento desde la misma pantalla: deja de enviarse y se eliminan su recorrido, sus
-            llegadas y sus salidas.
+            cualquier momento desde la misma pantalla, y en ese momento su ubicación deja de enviarse y
+            se eliminan su recorrido, sus llegadas y sus salidas.
           </li>
         </ul>
         <p className={pp}>
           Si en el futuro se habilitan otras herramientas que requieran datos, se solicitará el
-          consentimiento explícito y separado correspondiente y se adoptarán las garantías y, cuando
+          consentimiento explícito y separado correspondiente, y se adoptarán las garantías y, cuando
           proceda, la evaluación de impacto que exija la LOPDP. El Titular podrá negarse a cualquiera de
           estos tratamientos sin que ello le impida usar las funciones que no dependan de esos datos.
         </p>
@@ -301,7 +312,7 @@ export default function LegalPage() {
           Utilizamos cookies o tokens de sesión estrictamente necesarios para el funcionamiento y la
           seguridad del sitio (por ejemplo, para mantener la sesión y distinguir entre usuarios
           nuevos y recurrentes). El Titular puede gestionar las cookies desde la configuración de su
-          navegador; deshabilitarlas puede afectar el funcionamiento de algunas funciones.
+          navegador, aunque deshabilitarlas puede afectar el funcionamiento de algunas funciones.
         </p>
 
         <Titulo id="s11">11. Decisiones automatizadas y elaboración de perfiles</Titulo>
@@ -316,15 +327,15 @@ export default function LegalPage() {
         <Titulo id="s12">12. Encargados del tratamiento y transferencias internacionales</Titulo>
         <p className={pp}>
           Para prestar el servicio utilizamos proveedores tecnológicos que actúan como encargados del
-          tratamiento, algunos ubicados fuera del Ecuador, entre ellos: servicios de{' '}
+          tratamiento, algunos de ellos ubicados fuera del Ecuador, los cuales son los servicios de{' '}
           <strong className={b}>alojamiento e infraestructura</strong>, de{' '}
-          <strong className={b}>envío de correo electrónico</strong> y de{' '}
-          <strong className={b}>inteligencia artificial</strong> para funciones del sitio y de{' '}
-          <strong className={b}>notificaciones</strong> de Google y Apple, por donde pasan los avisos que
-          llegan al teléfono. El mapa de Control Psicosocial se dibuja con{' '}
-          <strong className={b}>OpenStreetMap</strong>, que recibe la zona que se está mirando. Estos
-          encargados tratan los datos siguiendo nuestras instrucciones y con obligaciones de
-          confidencialidad y seguridad. En las transferencias internacionales adoptamos las garantías
+          <strong className={b}>correo electrónico</strong> (incluido Google Workspace, en donde se
+          crean los correos corporativos), de <strong className={b}>inteligencia artificial</strong>{' '}
+          para funciones del sitio, y de <strong className={b}>notificaciones</strong> de Google y Apple,
+          por donde pasan los avisos que llegan al teléfono. El mapa del Sistema de Control Psicosocial
+          se dibuja con <strong className={b}>OpenStreetMap</strong>, el cual recibe la zona que se está
+          mirando. Estos encargados tratan los datos siguiendo nuestras instrucciones y con
+          obligaciones de confidencialidad y seguridad. En las transferencias internacionales adoptamos las garantías
           adecuadas previstas en la LOPDP (cláusulas contractuales u otros mecanismos válidos).
         </p>
 
@@ -358,9 +369,8 @@ export default function LegalPage() {
         <p className={pp}>
           Aplicamos medidas técnicas y organizativas razonables para proteger los datos frente a
           accesos no autorizados, pérdida, alteración o divulgación (entre otras, cifrado de
-          contraseñas, control de acceso y conexiones seguras). Ningún sistema es completamente
-          infalible; el Titular también es responsable de mantener la confidencialidad de sus
-          credenciales.
+          contraseñas, control de acceso y conexiones seguras). Ningún sistema es infalible, por lo
+          que el Titular también es responsable de mantener la confidencialidad de sus credenciales.
         </p>
 
         <Titulo id="s16">16. Vulneraciones de seguridad</Titulo>
@@ -406,10 +416,10 @@ export default function LegalPage() {
           ofensivo, el acoso, el engaño ni el spam, ni a quien lo publica. Cualquier persona puede
           denunciar una publicación del Marketplace o un mensaje con el botón{' '}
           <strong className={b}>⋯ ▸ Denunciar</strong>, y bloquear a quien lo publicó con{' '}
-          <strong className={b}>⋯ ▸ Bloquear</strong>; desde ese momento deja de ver lo que esa persona
-          publica, y puede desbloquearla en Configuración ▸ Perfil. Revisamos las denuncias en menos de
-          24 horas: retiramos el contenido que incumple estas reglas y suspendemos la cuenta de quien
-          lo publicó.
+          <strong className={b}>⋯ ▸ Bloquear</strong>, con lo cual deja de ver lo que esa persona
+          publica, y puede desbloquearla en Configuración ▸ Perfil. Las denuncias se revisan en menos
+          de 24 horas, y cuando el contenido incumple estas reglas se retira y se suspende la cuenta
+          de quien lo publicó.
         </p>
 
         <Titulo id="s20">20. Modificaciones</Titulo>
@@ -419,13 +429,14 @@ export default function LegalPage() {
           continuado del sitio tras una actualización implica la aceptación de la versión vigente.
         </p>
 
-        <Titulo id="eliminar-datos">21. Cómo eliminar tus datos</Titulo>
+        <Titulo id="eliminar-datos">21. Eliminación de datos</Titulo>
         <p className={pp}>
           El Titular puede solicitar la <strong className={b}>eliminación de sus datos personales</strong>{' '}
-          en cualquier momento y de forma gratuita. Si tienes cuenta de cliente o de candidato, también
-          desde la app GCC World, puedes hacerlo tú mismo: inicia sesión y ve a{' '}
+          en cualquier momento y de forma gratuita. Si su cuenta es de cliente o de candidato, puede
+          hacerlo por sí mismo desde el sitio o desde la app GCC World, iniciando sesión y entrando en{' '}
           <strong className={b}>Configuración ▸ Perfil ▸ Eliminar mi cuenta</strong> (la papelera). Si
-          no puedes entrar, o tu cuenta es de miembro, sigue estos pasos:
+          no puede iniciar sesión, o su cuenta es de miembro, a continuación se presentan los pasos a
+          seguir:
         </p>
         <ol className={ul}>
           <li>
@@ -456,8 +467,8 @@ export default function LegalPage() {
 
         <Titulo id="s22">22. Contacto y autoridad de control</Titulo>
         <p className={pp}>
-          Para cualquier consulta sobre esta Política o sobre el tratamiento de tus datos, escríbenos
-          a{' '}
+          Para cualquier consulta sobre esta Política o sobre el tratamiento de sus datos, el Titular
+          puede escribir a{' '}
           <a href={`mailto:${CONTACTO}`} className={link}>
             {CONTACTO}
           </a>
