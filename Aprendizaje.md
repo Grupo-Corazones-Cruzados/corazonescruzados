@@ -12425,4 +12425,7 @@ API de Gemini solo como apoyo puntual. Primero, una prueba local gratuita con su
   - El plan Free **no** permite leer `firewallEventsAdaptiveGroups` (error `authz`); `httpRequests1dGroups` y `httpRequestsAdaptiveGroups` sí.
   - Ruido propio: `/api/espacio-trabajo/estado` da 404 en producción (141 veces), porque esa ruta solo existe en la Mac.
 - **Copia nocturna a Railway:** nunca había corrido (faltaba `~/gcc/env/railway-destino`). Ahora la comprobación cuenta la base del M1 antes y después de copiar. La copia del script en `~/gcc/respaldo-railway.sh` **se pone a mano**: publicar no la actualiza. Primera copia buena el 2026-11-12 (950 s).
-- **Propuesto, pendiente de Fernando:** regla de Cloudflare que corte en el borde las rutas de escaneo (`/.`, `.php`, `/actuator`, `.sql`, `.yml`) y límite de intentos en `/api/auth`, sin Bot Fight Mode.
+- **Reglas de Cloudflare, hechas el 2026-11-13 con el visto bueno de Fernando** (por API; no había reglas antes):
+  - *Custom rule* «GCC: rutas de escaneo»: bloquea las rutas que contienen `/.` (salvo `/.well-known/`, que llevan las passkeys y los enlaces de las apps) y las que terminan en `.php`, `.sql`, `.yml` o `.yaml`, más `/actuator`.
+  - *Rate limit* «GCC: límite en el inicio de sesión»: más de 10 POST a `/api/auth/` en 10 s desde una misma IP dan 429 durante 10 s. Son los mínimos del plan Free: periodo y castigo de 10 s, por IP y centro de datos.
+  - Comprobado: los escaneos dan 403; los dos `.well-known`, la portada, `www`, los productos y el manifiesto dan 200; el POST número 11 da 429 y a los 12 s se vuelve a entrar. Para quitarlas: Security → WAF en el panel, o un PUT con `rules: []` a las fases `http_request_firewall_custom` y `http_ratelimit`.
