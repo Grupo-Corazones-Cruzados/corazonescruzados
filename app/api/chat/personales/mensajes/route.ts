@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   try {
     const num = (v: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined);
     const [messages, unread] = await Promise.all([
-      listMessages(g.conversationId, { after: num(sp.get('after')), before: num(sp.get('before')), limit: num(sp.get('limit')) ?? 50 }),
+      listMessages(g.conversationId, { after: num(sp.get('after')), before: num(sp.get('before')), limit: num(sp.get('limit')) ?? 50, viewerId: g.userId }),
       getUnreadCount(g.conversationId, g.userId),
     ]);
     return NextResponse.json({ data: { conversationId: g.conversationId, me: g.userId, messages, unread } });

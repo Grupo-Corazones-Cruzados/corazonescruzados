@@ -37,7 +37,8 @@ export type ClaseAviso =
   | 'subscription'
   | 'payout'
   | 'firma'
-  | 'cp_llegada' | 'cp_salida';
+  | 'cp_llegada' | 'cp_salida'
+  | 'moderacion';
 
 export type DefinicionAviso = {
   clase: ClaseAviso;
@@ -81,6 +82,8 @@ export const AVISOS: DefinicionAviso[] = [
 
   { clase: 'payout', grupo: 'Cobros', nombre: 'Te transfirieron un pago', canales: ['push', 'campana'], alcance: 'equipo' },
   // Sin push: lo dispara el cron nocturno (01:00 de Ecuador) y no debe despertar a nadie; va además por correo.
+  { clase: 'moderacion', grupo: 'Moderación', nombre: 'Denuncia de contenido (administradores)', canales: ['push', 'campana'], alcance: 'miembros' },
+
   { clase: 'firma', grupo: 'Facturación', nombre: 'Firma electrónica por vencer', canales: ['campana'], alcance: 'equipo' },
 ];
 

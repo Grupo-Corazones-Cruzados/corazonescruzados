@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AutoGrowTextarea from '@/components/ui/AutoGrowTextarea';
 import { MessageCircle, Send, Loader2, AlertCircle } from 'lucide-react';
+import MenuModeracion from '@/components/moderacion/MenuModeracion';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -57,19 +58,22 @@ export default function ChatThread({
   const prevHeightRef = useRef(0);
   const lastIdRef = useRef(0);
 
+  // Quien se bloquea desde el hilo desaparece al momento; el servidor ya no manda sus mensajes al recargar.
+  const [ocultos, setOcultos] = useState<Set<string>>(new Set());
   const rendered = useMemo<Row[]>(() => {
     const out: Row[] = [];
     let lastDay = '';
-    messages.forEach((m, i) => {
+    const vistos = messages.filter((m) => !ocultos.has(m.userId));
+    vistos.forEach((m, i) => {
       const k = dayKey(m.createdAt);
       if (k !== lastDay) { out.push({ type: 'day', key: `d-${k}-${m.id}`, label: fmtDayLabel(m.createdAt) }); lastDay = k; }
-      const prev = messages[i - 1];
+      const prev = vistos[i - 1];
       const chained = !!prev && prev.userId === m.userId && dayKey(prev.createdAt) === k
         && new Date(m.createdAt).getTime() - new Date(prev.createdAt).getTime() < 5 * 60000;
       out.push({ type: 'msg', key: `m-${m.id}`, m, chained });
     });
     return out;
-  }, [messages]);
+  }, [messages, ocultos]);
 
   // Distingue "llegó un mensaje nuevo" (bajar) de "se cargó historial" (conservar posición).
   useEffect(() => {
@@ -134,7 +138,8 @@ export default function ChatThread({
                   <span className="flex-1 h-px bg-digi-border" />
                 </div>
               ) : (
-                <Bubble key={row.key} m={row.m} mine={row.m.userId === me} chained={row.chained} />
+                <Bubble key={row.key} m={row.m} mine={row.m.userId === me} chained={row.chained}
+                  onBloqueado={(uid) => setOcultos((o) => new Set(o).add(uid))} />
               ),
             )}
           </>
@@ -170,7 +175,7 @@ export default function ChatThread({
 }
 
 /** Burbuja: la propia a la derecha en color de marca; la ajena a la izquierda con autor. */
-function Bubble({ m, mine, chained }: { m: Msg; mine: boolean; chained: boolean }) {
+function Bubble({ m, mine, chained, onBloqueado }: { m: Msg; mine: boolean; chained: boolean; onBloqueado: (userId: string) => void }) {
   return (
     <div className={`flex gap-2 ${mine ? 'justify-end' : 'justify-start'} ${chained ? 'mt-0.5' : 'mt-2'}`}>
       {!mine && (
@@ -200,7 +205,14 @@ function Bubble({ m, mine, chained }: { m: Msg; mine: boolean; chained: boolean 
         >
           {m.body}
         </div>
-        <span className="text-[9.5px] text-digi-muted/70 mt-0.5 px-1 tabular-nums" style={mf}>{fmtTime(m.createdAt)}</span>
+        <div className="flex items-center gap-0.5 mt-0.5 px-1">
+          <span className="text-[9.5px] text-digi-muted/70 tabular-nums" style={mf}>{fmtTime(m.createdAt)}</span>
+          {/* Denunciar el mensaje o bloquear a quien lo escribió (Apple, norma 1.2). Solo en los ajenos. */}
+          {!mine && (
+            <MenuModeracion compacto tipo="mensaje" objetoId={m.id}
+              autor={{ userId: m.userId, nombre: m.authorName }} onBloqueado={() => onBloqueado(m.userId)} />
+          )}
+        </div>
       </div>
     </div>
   );

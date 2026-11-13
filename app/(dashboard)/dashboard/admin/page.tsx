@@ -16,7 +16,8 @@ import SolucionesPanel from '@/components/admin/SolucionesPanel';
 import PromptsPanel from '@/components/admin/PromptsPanel';
 import PagosMiembrosPanel from '@/components/admin/PagosMiembrosPanel';
 import EmisoresPanel from '@/components/admin/EmisoresPanel';
-import { Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers, NotebookPen, Banknote, Receipt } from 'lucide-react';
+import DenunciasPanel from '@/components/admin/DenunciasPanel';
+import { Flag, Flame, ShieldAlert, Database, Video, ListChecks, HelpCircle, Layers, NotebookPen, Banknote, Receipt } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
 
@@ -28,6 +29,8 @@ const mf = { fontFamily: 'var(--font-body)' } as const;
 const TABS = [
   { value: 'razones', label: 'Razones', Icon: Flame, grupo: 'Personal' },
   { value: 'fuentes', label: 'Fuentes', Icon: Database, grupo: 'Datos' },
+  // Lo denunciado desde el Marketplace y los chats (Apple, norma 1.2; 2026-11-13).
+  { value: 'denuncias', label: 'Denuncias', Icon: Flag, grupo: 'Datos' },
   { value: 'tutoriales', label: 'Tutoriales', Icon: Video, grupo: 'Contenido público' },
   { value: 'listas', label: 'Listas', Icon: ListChecks, grupo: 'Datos' },
   // Las preguntas frecuentes que se PUBLICAN en /clientes/<seccion>. Es la única pestaña
@@ -138,6 +141,7 @@ function Contenido({ tab }: { tab: string }) {
       {tab === 'prompts' && <PromptsPanel />}
       {tab === 'pagos' && <PagosMiembrosPanel />}
       {tab === 'emisores' && <EmisoresPanel />}
+      {tab === 'denuncias' && <DenunciasPanel />}
     </div>
   );
 }

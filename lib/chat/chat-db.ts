@@ -225,12 +225,19 @@ export async function summarizeConversations(
  * Sin ninguno de los dos devuelve los `limit` más recientes.
  */
 export async function listMessages(
-  conversationId: number, opts: { after?: number; before?: number; limit?: number } = {},
+  conversationId: number, opts: { after?: number; before?: number; limit?: number; viewerId?: string } = {},
 ): Promise<ChatMessage[]> {
   await ensureChatTables();
   const limit = Math.min(Math.max(1, opts.limit ?? 50), 200);
   const params: any[] = [conversationId];
   let rows: any[];
+  // Los mensajes de quien `viewerId` bloqueó no le llegan (lib/moderacion.ts).
+  let sinBloqueados = '';
+  if (opts.viewerId) {
+    params.push(opts.viewerId);
+    sinBloqueados = `AND NOT EXISTS (SELECT 1 FROM gcc_world.moderacion_bloqueos b
+                      WHERE b.usuario_id = $${params.length}::uuid AND b.bloqueado_user_id::text = m.user_id)`;
+  }
 
   if (opts.after != null) {
     params.push(opts.after, limit);
@@ -238,8 +245,8 @@ export async function listMessages(
       `SELECT m.id, m.user_id, m.body, m.created_at, u.first_name, u.last_name, u.avatar_url, u.role, u.email
          FROM gcc_world.ch_messages m
          LEFT JOIN gcc_world.users u ON u.id::text = m.user_id
-        WHERE m.conversation_id = $1 AND m.id > $2
-        ORDER BY m.id ASC LIMIT $3`, params)).rows;
+        WHERE m.conversation_id = $1 AND m.id > $${params.length - 1} ${sinBloqueados}
+        ORDER BY m.id ASC LIMIT $${params.length}`, params)).rows;
   } else {
     // Los más recientes (o los anteriores a `before`); se invierten para devolverlos en orden.
     let where = '';
@@ -249,7 +256,7 @@ export async function listMessages(
       `SELECT m.id, m.user_id, m.body, m.created_at, u.first_name, u.last_name, u.avatar_url, u.role, u.email
          FROM gcc_world.ch_messages m
          LEFT JOIN gcc_world.users u ON u.id::text = m.user_id
-        WHERE m.conversation_id = $1 ${where}
+        WHERE m.conversation_id = $1 ${where} ${sinBloqueados}
         ORDER BY m.id DESC LIMIT $${params.length}`, params)).rows;
     rows.reverse();
   }

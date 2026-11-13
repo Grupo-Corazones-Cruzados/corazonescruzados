@@ -140,6 +140,7 @@ export default function MarketplacePage() {
       <PageHeader title="Marketplace" description="Proyectos, productos y automatizaciones del grupo" />
 
       <MarketplaceCatalog
+        conModeracion
         onPrimaryAction={handlePrimaryAction}
         tabsExtra={[{ value: 'orders', label: 'Mis pedidos', Icon: ShoppingBag }]}
         renderExtra={(v) => (v === 'orders' ? renderOrders() : null)}

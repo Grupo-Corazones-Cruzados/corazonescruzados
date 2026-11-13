@@ -11,6 +11,7 @@ import GrupoForm from '@/components/settings/GrupoForm';
 import { BTN_PRIMARY } from '@/components/ui/Button';
 import PieAcciones from '@/components/ui/PieAcciones';
 import EliminarCuenta from '@/components/settings/EliminarCuenta';
+import PersonasBloqueadas from '@/components/settings/PersonasBloqueadas';
 import PasskeysPanel from '@/components/settings/PasskeysPanel';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 
@@ -279,6 +280,7 @@ export default function ProfilePanel({ accion }: { accion?: React.ReactNode } = 
             ⚠️ Sus botones llevan `type="button"`: dentro de un <form>, un botón sin
             tipo envía el formulario. */}
         <PasskeysPanel />
+        <PersonasBloqueadas />
 
       </form>
       <EliminarCuenta open={eliminando} onClose={() => setEliminando(false)} />

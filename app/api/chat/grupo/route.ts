@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     const num = (v: string | null) => (v && /^\d+$/.test(v) ? Number(v) : undefined);
     const [messages, unread] = await Promise.all([
-      listMessages(conv.id, { after: num(sp.get('after')), before: num(sp.get('before')), limit: num(sp.get('limit')) ?? 50 }),
+      listMessages(conv.id, { after: num(sp.get('after')), before: num(sp.get('before')), limit: num(sp.get('limit')) ?? 50, viewerId: u.userId }),
       getUnreadCount(conv.id, u.userId),
     ]);
 

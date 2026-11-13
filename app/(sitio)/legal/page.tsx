@@ -70,7 +70,7 @@ const INDICE: GrupoIndice[] = [
   ] },
 ];
 
-const ULTIMA_ACTUALIZACION = '5 de noviembre de 2026';
+const ULTIMA_ACTUALIZACION = '13 de noviembre de 2026';
 
 export default function LegalPage() {
   return (
@@ -398,6 +398,18 @@ export default function LegalPage() {
           del servicio. El responsable podrá suspender o cancelar el acceso ante usos indebidos. Los
           contenidos y signos distintivos del proyecto pertenecen a sus titulares y no podrán
           utilizarse sin autorización.
+        </p>
+        {/* Apple, norma 1.2 (2026-11-13): los términos tienen que decir que no se tolera el contenido ofensivo ni a
+            quien lo publica, y cómo se denuncia y se bloquea. Texto pendiente de que lo corrija Fernando. */}
+        <p className={pp} id="contenido-de-usuarios">
+          <strong className={b}>Contenido que publican los usuarios.</strong> No se tolera el contenido
+          ofensivo, el acoso, el engaño ni el spam, ni a quien lo publica. Cualquier persona puede
+          denunciar una publicación del Marketplace o un mensaje con el botón{' '}
+          <strong className={b}>⋯ ▸ Denunciar</strong>, y bloquear a quien lo publicó con{' '}
+          <strong className={b}>⋯ ▸ Bloquear</strong>; desde ese momento deja de ver lo que esa persona
+          publica, y puede desbloquearla en Configuración ▸ Perfil. Revisamos las denuncias en menos de
+          24 horas: retiramos el contenido que incumple estas reglas y suspendemos la cuenta de quien
+          lo publicó.
         </p>
 
         <Titulo id="s20">20. Modificaciones</Titulo>

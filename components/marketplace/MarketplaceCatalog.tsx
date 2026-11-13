@@ -20,6 +20,7 @@ import { esUrlCloudinary, urlRedimensionada } from '@/lib/cloudinary-url';
 import { slugDeTitulo } from '@/lib/marketplace/slug';
 import BotonCerrar from '@/components/ui/BotonCerrar';
 import BarraLista from '@/components/ui/BarraLista';
+import MenuModeracion from '@/components/moderacion/MenuModeracion';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
 
 // Dashboard es Fluent (.corp): --font-display y --font-body resuelven a Segoe UI.
@@ -76,6 +77,11 @@ export interface MarketplaceCatalogProps {
   slugInicial?: string;
   /** Avisa de cada selección (o de cerrarla) para que la página refleje el registro en la dirección. */
   onSeleccion?: (item: any | null, tab: string) => void;
+  /**
+   * Con sesión: cada tarjeta lleva el «⋯» de denunciar y bloquear (Apple, norma 1.2; 2026-11-13). El
+   * Marketplace público no lo lleva: sin cuenta no se puede denunciar ni bloquear.
+   */
+  conModeracion?: boolean;
 }
 
 /**
@@ -151,7 +157,7 @@ function Demostracion({ item }: { item: any }) {
 /** El detalle partido para la ventana del teléfono: el contenido y los botones del `pie`. */
 type PartesVentana = { contenido: React.ReactNode; pie: React.ReactNode };
 
-export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], renderExtra, onTabChange, slugInicial, onSeleccion }: MarketplaceCatalogProps) {
+export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], renderExtra, onTabChange, slugInicial, onSeleccion, conModeracion = false }: MarketplaceCatalogProps) {
   const pagosEnApp = usePagosEnApp();
   const tabs = [...CATALOG_TABS, ...tabsExtra];
   const [tab, setTabState] = useState('projects');
@@ -167,6 +173,14 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
   const accesosDe = (item: any): AccesoProducto[] | undefined =>
     item?.item_type === 'product' || item?.es_suscripcion ? accesos[productoDeUrl(item?.project_url)] : undefined;
   const isCatalog = CATALOG_VALUES.has(tab);
+  // Fichas de quien se acaba de bloquear: desaparecen al momento (el servidor ya no las manda al recargar).
+  const [bloqueadas, setBloqueadas] = useState<Set<number>>(new Set());
+  const alBloquear = (memberId?: number) => {
+    if (memberId == null) return;
+    setBloqueadas((b) => new Set(b).add(Number(memberId)));
+    if (Number(selected?.member_id) === Number(memberId)) cerrarPanel();
+  };
+  const visible = (i: any) => i.member_id == null || !bloqueadas.has(Number(i.member_id));
 
   const [items, setItems] = useState<any[]>([]);
   const [search, setSearch] = useState('');
@@ -454,9 +468,16 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
           ) : null}
           <div className="flex items-center justify-between gap-2 mt-auto pt-2.5 border-t border-digi-border/60">
             <CardMembers item={item} />
-            {isProject && item.requirements_count != null && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-digi-muted shrink-0" style={mf}><ListChecks className="w-3.5 h-3.5" /> {item.requirements_count}</span>
-            )}
+            <div className="flex items-center gap-1 shrink-0">
+              {isProject && item.requirements_count != null && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-digi-muted shrink-0" style={mf}><ListChecks className="w-3.5 h-3.5" /> {item.requirements_count}</span>
+              )}
+              {conModeracion && (
+                <MenuModeracion compacto tipo={isProject ? 'proyecto' : 'portafolio'} objetoId={item.id}
+                  autor={!isProject && item.member_id != null ? { memberId: Number(item.member_id), nombre: item.member_name } : undefined}
+                  onBloqueado={(a) => alBloquear(a.memberId)} />
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -589,9 +610,9 @@ export default function MarketplaceCatalog({ onPrimaryAction, tabsExtra = [], re
 
   const ventana = enTelefono && selected ? (renderMarketplacePanel(true) as PartesVentana) : null;
 
-  const cards = tab === 'projects'
+  const cards = (tab === 'projects'
     ? marketplaceProjects.filter((p: any) => !search || p.title?.toLowerCase().includes(search.toLowerCase()))
-    : filtered;
+    : filtered).filter(visible);
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 items-start">
