@@ -217,7 +217,7 @@ function ListaDocumentos({ activo }: { activo: string }) {
               >
                 {d.corto}
                 <span className={`block mt-0.5 text-[10.5px] ${esActivo ? 'text-[var(--violeta-txt)]' : 'text-[var(--apagado)]'}`}>
-                  {d.papel === 'encargado' ? 'Somos encargados' : 'Somos responsables'}
+                  {d.papel === 'encargado' ? 'Encargado del tratamiento' : 'Responsable del tratamiento'}
                 </span>
               </Link>
             </li>

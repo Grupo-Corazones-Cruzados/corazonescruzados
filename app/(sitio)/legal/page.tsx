@@ -32,41 +32,42 @@ export const metadata: Metadata = {
 };
 
 /**
- * El índice, **por categorías**. Veintidós secciones seguidas no son un índice: son un
- * muro. Agrupadas, se localiza el tema primero y la sección después.
+ * El índice, por categorías y con los MISMOS títulos y números de las secciones (Fernando, 2026-11-13: el
+ * índice tenía nombres distintos de los títulos y sus grupos desordenaban la numeración). Las secciones van en el
+ * orden de los grupos.
  */
 const INDICE: GrupoIndice[] = [
   { label: 'Generalidades', entradas: [
-    { id: 's1', label: 'Antecedentes y objeto' },
-    { id: 's2', label: 'Responsable y contacto' },
-    { id: 's3', label: 'Definiciones' },
-    { id: 's4', label: 'Principios' },
+    { id: 's1', label: '1. Antecedentes y objeto' },
+    { id: 's2', label: '2. Responsable del tratamiento y contacto de protección de datos' },
+    { id: 's3', label: '3. Definiciones' },
+    { id: 's4', label: '4. Principios' },
   ] },
-  { label: 'Datos y finalidades', entradas: [
-    { id: 's5', label: 'Datos que tratamos' },
-    { id: 's6', label: 'Momento de la recolección' },
-    { id: 's7', label: 'Finalidades' },
-    { id: 's8', label: 'Base de licitud' },
-    { id: 's9', label: 'Control Psicosocial' },
-    { id: 's10', label: 'Cookies' },
-    { id: 's11', label: 'Decisiones automatizadas' },
+  { label: 'Datos personales', entradas: [
+    { id: 's5', label: '5. Datos que tratamos' },
+    { id: 's6', label: '6. Momento de la recolección (minimización y responsabilidad)' },
+    { id: 's7', label: '7. Finalidades del tratamiento' },
+    { id: 's8', label: '8. Base de licitud' },
+    { id: 's9', label: '9. Sistema de Control Psicosocial y geolocalización' },
+    { id: 's10', label: '10. Cookies y tecnologías similares' },
+    { id: 's11', label: '11. Decisiones automatizadas y elaboración de perfiles' },
   ] },
-  { label: 'Encargados, conservación y seguridad', entradas: [
-    { id: 's12', label: 'Encargados y transferencias' },
-    { id: 's13', label: 'Conservación' },
-    { id: 's15', label: 'Seguridad' },
-    { id: 's16', label: 'Vulneraciones' },
+  { label: 'Encargados y seguridad', entradas: [
+    { id: 's12', label: '12. Encargados del tratamiento y transferencias internacionales' },
+    { id: 's13', label: '13. Conservación' },
+    { id: 's15', label: '14. Seguridad de la información' },
+    { id: 's16', label: '15. Vulneraciones de seguridad' },
   ] },
-  { label: 'Derechos del Titular', entradas: [
-    { id: 's14', label: 'Derechos del titular' },
-    { id: 'eliminar-datos', label: 'Eliminación de datos' },
-    { id: 's17', label: 'Permisos y desafiliación' },
-    { id: 's18', label: 'Menores de edad' },
+  { label: 'Derechos', entradas: [
+    { id: 's14', label: '16. Derechos del Titular' },
+    { id: 'eliminar-datos', label: '17. Eliminación de datos' },
+    { id: 's17', label: '18. Permisos otorgados y desafiliación' },
+    { id: 's18', label: '19. Personas menores de edad' },
   ] },
   { label: 'Uso del sitio', entradas: [
-    { id: 's19', label: 'Términos de uso' },
-    { id: 's20', label: 'Modificaciones' },
-    { id: 's22', label: 'Contacto y autoridad' },
+    { id: 's19', label: '20. Términos de uso del sitio' },
+    { id: 's20', label: '21. Modificaciones' },
+    { id: 's22', label: '22. Contacto y autoridad de control' },
   ] },
 ];
 
@@ -241,7 +242,7 @@ export default function LegalPage() {
           ejecución de medidas precontractuales a petición del Titular, en el interés legítimo del
           responsable o en el cumplimiento de obligaciones legales. El Titular puede{' '}
           <strong className={b}>retirar su consentimiento</strong> en cualquier momento, sin que ello
-          afecte la licitud del tratamiento realizado con anterioridad (ver sección 14).
+          afecte la licitud del tratamiento realizado con anterioridad (ver sección 16).
         </p>
 
         <Titulo id="s9">9. Sistema de Control Psicosocial y geolocalización</Titulo>
@@ -348,7 +349,24 @@ export default function LegalPage() {
           en la sección 9.
         </p>
 
-        <Titulo id="s14">14. Derechos del Titular</Titulo>
+        <Titulo id="s15">14. Seguridad de la información</Titulo>
+        <p className={pp}>
+          Aplicamos medidas técnicas y organizativas razonables para proteger los datos frente a
+          accesos no autorizados, pérdida, alteración o divulgación (entre otras, cifrado de
+          contraseñas, control de acceso y conexiones seguras). Ningún sistema es infalible, por lo
+          que el Titular también es responsable de mantener la confidencialidad de sus credenciales.
+        </p>
+
+        <Titulo id="s16">15. Vulneraciones de seguridad</Titulo>
+        <p className={pp}>
+          Ante una vulneración de la seguridad de los datos personales que entrañe un riesgo para los
+          derechos del Titular, notificaremos a la <strong className={b}>SPDP</strong> y, cuando
+          corresponda, a los Titulares afectados, en el plazo previsto por la normativa{' '}
+          (<strong className={b}>dentro de los cinco (5) días</strong> siguientes a su conocimiento),
+          describiendo la naturaleza del incidente y las medidas adoptadas.
+        </p>
+
+        <Titulo id="s14">16. Derechos del Titular</Titulo>
         <p className={pp}>
           El Titular puede ejercer, de forma gratuita, sus derechos de{' '}
           <strong className={b}>acceso, rectificación y actualización, eliminación (supresión),
@@ -365,71 +383,7 @@ export default function LegalPage() {
           <strong className={b}>Superintendencia de Protección de Datos Personales del Ecuador (SPDP)</strong>.
         </p>
 
-        <Titulo id="s15">15. Seguridad de la información</Titulo>
-        <p className={pp}>
-          Aplicamos medidas técnicas y organizativas razonables para proteger los datos frente a
-          accesos no autorizados, pérdida, alteración o divulgación (entre otras, cifrado de
-          contraseñas, control de acceso y conexiones seguras). Ningún sistema es infalible, por lo
-          que el Titular también es responsable de mantener la confidencialidad de sus credenciales.
-        </p>
-
-        <Titulo id="s16">16. Vulneraciones de seguridad</Titulo>
-        <p className={pp}>
-          Ante una vulneración de la seguridad de los datos personales que entrañe un riesgo para los
-          derechos del Titular, notificaremos a la <strong className={b}>SPDP</strong> y, cuando
-          corresponda, a los Titulares afectados, en el plazo previsto por la normativa{' '}
-          (<strong className={b}>dentro de los cinco (5) días</strong> siguientes a su conocimiento),
-          describiendo la naturaleza del incidente y las medidas adoptadas.
-        </p>
-
-        <Titulo id="s17">17. Permisos otorgados y desafiliación</Titulo>
-        <p className={pp}>
-          La aceptación de esta Política implica la concesión de los permisos necesarios para las
-          finalidades descritas. Sin perjuicio de los derechos del Titular reconocidos por la ley
-          (sección 14), tales permisos se mantienen vigentes mientras el Titular forme parte del
-          proyecto y <strong className={b}>se retiran cuando: (i) el Titular solicita voluntariamente su
-          desafiliación, o (ii) se produce su desafiliación por incumplimiento de las reglas</strong>.
-          En ambos casos cesa el tratamiento basado en dichos permisos y se procede conforme a la
-          sección 13.
-        </p>
-
-        <Titulo id="s18">18. Personas menores de edad</Titulo>
-        <p className={pp}>
-          El sitio está dirigido a personas mayores de edad. El tratamiento de datos de niñas, niños
-          y adolescentes, de ser el caso, se realizará únicamente con el consentimiento de su
-          representante legal y con las garantías reforzadas que exige la LOPDP, atendiendo a su
-          interés superior.
-        </p>
-
-        <Titulo id="s19">19. Términos de uso del sitio</Titulo>
-        <p className={pp}>
-          El Titular se compromete a usar el sitio de forma lícita y de buena fe, a proporcionar
-          información veraz y a no realizar actividades que afecten la seguridad o el funcionamiento
-          del servicio. El responsable podrá suspender o cancelar el acceso ante usos indebidos. Los
-          contenidos y signos distintivos del proyecto pertenecen a sus titulares y no podrán
-          utilizarse sin autorización.
-        </p>
-        {/* Apple, norma 1.2 (2026-11-13): los términos tienen que decir que no se tolera el contenido ofensivo ni a
-            quien lo publica, y cómo se denuncia y se bloquea. Texto pendiente de que lo corrija Fernando. */}
-        <p className={pp} id="contenido-de-usuarios">
-          <strong className={b}>Contenido que publican los usuarios.</strong> No se tolera el contenido
-          ofensivo, el acoso, el engaño ni el spam, ni a quien lo publica. Cualquier persona puede
-          denunciar una publicación del Marketplace o un mensaje con el botón{' '}
-          <strong className={b}>⋯ ▸ Denunciar</strong>, y bloquear a quien lo publicó con{' '}
-          <strong className={b}>⋯ ▸ Bloquear</strong>, con lo cual deja de ver lo que esa persona
-          publica, y puede desbloquearla en Configuración ▸ Perfil. Las denuncias se revisan en menos
-          de 24 horas, y cuando el contenido incumple estas reglas se retira y se suspende la cuenta
-          de quien lo publicó.
-        </p>
-
-        <Titulo id="s20">20. Modificaciones</Titulo>
-        <p className={pp}>
-          Podemos actualizar esta Política para reflejar cambios legales o del servicio. Publicaremos
-          la versión vigente en esta página, indicando la fecha de última actualización. El uso
-          continuado del sitio tras una actualización implica la aceptación de la versión vigente.
-        </p>
-
-        <Titulo id="eliminar-datos">21. Eliminación de datos</Titulo>
+        <Titulo id="eliminar-datos">17. Eliminación de datos</Titulo>
         <p className={pp}>
           El Titular puede solicitar la <strong className={b}>eliminación de sus datos personales</strong>{' '}
           en cualquier momento y de forma gratuita. Si su cuenta es de cliente o de candidato, puede
@@ -463,6 +417,53 @@ export default function LegalPage() {
           plazos aplicables (ver sección 13). La eliminación de los datos implica la{' '}
           <strong className={b}>cancelación de la cuenta</strong> y el cese del tratamiento descrito en
           esta Política.
+        </p>
+
+        <Titulo id="s17">18. Permisos otorgados y desafiliación</Titulo>
+        <p className={pp}>
+          La aceptación de esta Política implica la concesión de los permisos necesarios para las
+          finalidades descritas. Sin perjuicio de los derechos del Titular reconocidos por la ley
+          (sección 16), tales permisos se mantienen vigentes mientras el Titular forme parte del
+          proyecto y <strong className={b}>se retiran cuando: (i) el Titular solicita voluntariamente su
+          desafiliación, o (ii) se produce su desafiliación por incumplimiento de las reglas</strong>.
+          En ambos casos cesa el tratamiento basado en dichos permisos y se procede conforme a la
+          sección 13.
+        </p>
+
+        <Titulo id="s18">19. Personas menores de edad</Titulo>
+        <p className={pp}>
+          El sitio está dirigido a personas mayores de edad. El tratamiento de datos de niñas, niños
+          y adolescentes, de ser el caso, se realizará únicamente con el consentimiento de su
+          representante legal y con las garantías reforzadas que exige la LOPDP, atendiendo a su
+          interés superior.
+        </p>
+
+        <Titulo id="s19">20. Términos de uso del sitio</Titulo>
+        <p className={pp}>
+          El Titular se compromete a usar el sitio de forma lícita y de buena fe, a proporcionar
+          información veraz y a no realizar actividades que afecten la seguridad o el funcionamiento
+          del servicio. El responsable podrá suspender o cancelar el acceso ante usos indebidos. Los
+          contenidos y signos distintivos del proyecto pertenecen a sus titulares y no podrán
+          utilizarse sin autorización.
+        </p>
+        {/* Apple, norma 1.2 (2026-11-13): los términos tienen que decir que no se tolera el contenido ofensivo ni a
+            quien lo publica, y cómo se denuncia y se bloquea. Texto pendiente de que lo corrija Fernando. */}
+        <p className={pp} id="contenido-de-usuarios">
+          <strong className={b}>Contenido que publican los usuarios.</strong> No se tolera el contenido
+          ofensivo, el acoso, el engaño ni el spam, ni a quien lo publica. Cualquier persona puede
+          denunciar una publicación del Marketplace o un mensaje con el botón{' '}
+          <strong className={b}>⋯ ▸ Denunciar</strong>, y bloquear a quien lo publicó con{' '}
+          <strong className={b}>⋯ ▸ Bloquear</strong>, con lo cual deja de ver lo que esa persona
+          publica, y puede desbloquearla en Configuración ▸ Perfil. Las denuncias se revisan en menos
+          de 24 horas, y cuando el contenido incumple estas reglas se retira y se suspende la cuenta
+          de quien lo publicó.
+        </p>
+
+        <Titulo id="s20">21. Modificaciones</Titulo>
+        <p className={pp}>
+          Podemos actualizar esta Política para reflejar cambios legales o del servicio. Publicaremos
+          la versión vigente en esta página, indicando la fecha de última actualización. El uso
+          continuado del sitio tras una actualización implica la aceptación de la versión vigente.
         </p>
 
         <Titulo id="s22">22. Contacto y autoridad de control</Titulo>
