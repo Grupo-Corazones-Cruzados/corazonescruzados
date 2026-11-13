@@ -2930,6 +2930,29 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
    para que el texto no salte cuando llega la imagen. */
 .onb-animacion { width: 100%; max-width: 600px; margin: 4px auto 0; aspect-ratio: 16 / 9; }
 .onb-animacion > img { display: block; width: 100%; height: 100%; object-fit: contain; }
+/* LA ANIMACIÓN SIEMPRE ENTERA (Fernando, 2026-11-13: «hay que deslizarse hacia abajo para ver completamente
+   la animación»). Dentro de un paso, la animación se queda PEGADA abajo del área del paso: si el texto no
+   cabe, el texto corre por detrás y la animación se ve entera desde que aparece; al llegar al final queda en
+   su sitio, debajo del último párrafo. Su alto sale del alto de la pantalla (nunca más de 16:9 a 600 px), así
+   en una pantalla baja o en el teléfono es más pequeña en vez de cortarse. Lleva el fondo de la tarjeta con
+   un fundido arriba para tapar el texto que pasa por detrás. */
+.onb-cuerpo .onb-animacion {
+  --anim-alto: min(clamp(120px, 30vh, 337px), (100vw - 40px) * 0.5625);
+  position: sticky;
+  /* Hasta el borde de abajo del área (el cuerpo tiene 36 px de relleno abajo): nada asoma por debajo. */
+  bottom: -36px;
+  z-index: 1;
+  width: auto;
+  max-width: none;
+  aspect-ratio: auto;
+  box-sizing: border-box;
+  height: calc(var(--anim-alto) + 52px);
+  margin: 6px calc(-1 * clamp(18px, 3vw, 32px)) -36px;
+  padding: 22px clamp(18px, 3vw, 32px) 30px;
+  background: linear-gradient(to bottom, transparent, var(--color-digi-card) 22px);
+}
+.onb-cuerpo .onb-animacion > img { max-width: 600px; margin: 0 auto; }
+@media (max-height: 640px) { .onb-cuerpo .onb-animacion { --anim-alto: min(clamp(100px, 26vh, 337px), (100vw - 40px) * 0.5625); } }
 
 /* COMO QUIEN CUENTA UN CUENTO: cada pieza entra por turno (`--cuento-retardo`, lo pone la ventana) y
    cada párrafo se descubre de arriba abajo durante `--cuento-duracion`. */
@@ -3020,21 +3043,20 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 .onb-boton:focus-visible { outline: 2px solid var(--color-accent-glow); outline-offset: 2px; }
 
 /* La aceptación, con interruptor. */
+/* Sin caja (Fernando, 2026-11-13): ni relleno ni borde alrededor, ni apagado ni marcado. Solo el interruptor
+   y el texto; marcado lo dice el interruptor encendido. */
 .onb-aceptar {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 11px 14px;
-  border-radius: 6px;
-  border: 1px solid var(--color-digi-border);
-  background: var(--color-digi-darker);
+  padding: 2px 0;
+  border-radius: 4px;
   cursor: pointer;
-  transition: border-color 200ms ease, background 200ms ease;
 }
 .onb-aceptar > span:last-child { font-size: 0.82rem; line-height: 1.5; }
-.onb-aceptar:hover { border-color: var(--color-digi-muted); }
-.onb-aceptar:focus-visible { outline: 2px solid var(--color-accent-glow); outline-offset: 2px; }
-.onb-aceptar.es-marcado { border-color: var(--color-accent); background: var(--color-accent-light); }
+.onb-aceptar:hover .onb-interruptor { background: var(--color-digi-muted); }
+.onb-aceptar.es-marcado:hover .onb-interruptor { background: var(--color-accent-hover); }
+.onb-aceptar:focus-visible { outline: 2px solid var(--color-accent-glow); outline-offset: 4px; }
 .onb-interruptor {
   flex: none;
   position: relative;

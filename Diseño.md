@@ -669,11 +669,21 @@ esquinas de cámara no cambian.
   mundos: velo `rgba(6,7,12,.72)` + desenfoque 6 px; tarjetas `digi-card` con borde
   `digi-border`, radio 8 px y sombra `0 20px 60px rgba(0,0,0,.5)`; Inter en todo (títulos 600);
   botones de 40 px, radio 4 px, «Siguiente» en `accent` plano (hover `accent-hover`) y «Atrás»
-  en `digi-darker` con borde; aceptación e interruptor planos (`accent-light` + borde `accent`
-  al marcar); nodos del camino planos (actual = punto `accent`, hecho = visto en `accent-light`),
+  en `digi-darker` con borde; aceptación SIN CAJA (2026-11-13, abajo); nodos del camino planos (actual = punto `accent`, hecho = visto en `accent-light`),
   sin latido; pestañas segmentadas de radio 6/4 px; números en cuadrado `accent` plano; notas en
   `digi-darker` con filete `accent`. **Sin degradados, brillos ni Space Grotesk.** La prop `tema`
   sigue existiendo pero ya no cambia el aspecto. Estilos: bloque `.onb-*` en globals.css.
+- **⭐ La aceptación sin caja y la animación siempre entera (Fernando, 2026-11-13).**
+  · `.onb-aceptar` («Entendido» y los términos del último paso) es SOLO el interruptor y el texto:
+    ni relleno ni borde, apagado o marcado (*«ese fondo de relleno morado y borde es del diseño que
+    no estoy de acuerdo»*). Lo marcado lo dice el interruptor encendido. ~~Pieza con borde que se
+    pinta `accent-light` al marcar~~ — descartado, no reponer.
+  · La animación de Blender de un paso (`AnimacionPaso`) se queda **pegada abajo** del área del paso
+    (`position: sticky`): si el texto no cabe, corre por detrás y la animación se ve entera desde que
+    aparece; al final queda bajo el último párrafo. Su alto sale de la pantalla (`30vh`, 26vh en
+    pantallas de menos de 640 px de alto, entre 100/120 y 337 px, y nunca más que el ancho a 16:9),
+    con el fondo de la tarjeta y un fundido arriba que tapa el texto. Antes había que desplazarse
+    para verla completa en pantallas bajas.
 - **El Modelo 4P como TABLA, no pestañas (Fernando, 2026-10-29: «es la forma correcta de
   representar el modelo organizacional 4P»).** `Modelo4P` en el paso 1: filas = los 4 PISOS
   (Global → Colaborador, número + nombre), columnas = los 4 PASOS de izquierda a derecha

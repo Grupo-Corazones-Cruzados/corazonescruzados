@@ -1202,8 +1202,8 @@ function AcceptTerms({
           alternar();
         }
       }}
-      // El interruptor de aceptación (2026-10-26): una pieza con borde que se enciende al
-      // marcarla, con un interruptor en vez de una casilla.
+      // El interruptor de aceptación (2026-10-26): un interruptor en vez de una casilla. Sin caja
+      // alrededor (Fernando, 2026-11-13): solo el interruptor y el texto.
       className={`onb-aceptar ${inline ? 'es-en-linea' : ''} ${checked ? 'es-marcado' : ''}`}
     >
       <span aria-hidden className="onb-interruptor">
