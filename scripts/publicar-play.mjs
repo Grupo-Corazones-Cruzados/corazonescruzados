@@ -36,7 +36,7 @@ try {
     });
     await play.edits.tracks.update({
       packageName, editId, track: canal,
-      requestBody: { track: canal, releases: [{ versionCodes: [String(b.versionCode)], status: 'completed' }] },
+      requestBody: { track: canal, releases: [{ name: process.env.NOTAS_NOMBRE || undefined, versionCodes: [String(b.versionCode)], status: 'completed', releaseNotes: process.env.NOTAS ? [{ language: 'es-419', text: process.env.NOTAS }] : undefined }] },
     });
     await play.edits.commit({ packageName, editId });
     confirmado = true;

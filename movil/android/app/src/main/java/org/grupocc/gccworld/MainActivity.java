@@ -2,7 +2,10 @@ package org.grupocc.gccworld;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.webkit.WebSettingsCompat;
 import androidx.webkit.WebViewFeature;
 import com.getcapacitor.BridgeActivity;
@@ -59,11 +62,13 @@ public class MainActivity extends BridgeActivity {
             WebSettingsCompat.setWebAuthenticationSupport(
                 getBridge().getWebView().getSettings(), WebSettingsCompat.WEB_AUTHENTICATION_SUPPORT_FOR_APP);
         }
+        getBridge().getWebView().addJavascriptInterface(new Barras(), "gccBarras");
         // Entrar y salir de la cuenta acaban cargando una página: la sesión queda guardada en ese momento.
         getBridge().addWebViewListener(new WebViewListener() {
             @Override
             public void onPageLoaded(WebView webView) {
                 guardarCookies();
+                webView.evaluateJavascript(MIRAR_FONDO, null);
             }
         });
         // DESCARGAR (Fernando, 2026-11-09: «no funciona el botón de descargar»). La WebView de Capacitor no
@@ -89,6 +94,39 @@ public class MainActivity extends BridgeActivity {
         });
         abrirRuta(getIntent());
     }
+
+    /**
+     * LOS ICONOS DE LAS BARRAS DEL SISTEMA SEGÚN NUESTRO FONDO (12-Testers, 2026-11-13: «los iconos de la barra de
+     * navegación casi no se ven en modo oscuro»). Con Android 15 la app va de borde a borde y las barras se pintan
+     * ENCIMA de la página; Android elige el color de sus iconos por el modo del SISTEMA, así que con el teléfono en
+     * oscuro y la página en claro quedaban blancos sobre blanco. La página mide el color que tiene debajo de cada
+     * barra (arriba y abajo) y aquí se pintan los iconos al contrario: oscuros sobre claro, claros sobre oscuro.
+     */
+    private class Barras {
+        @JavascriptInterface
+        public void fondos(boolean arribaClaro, boolean abajoClaro) {
+            runOnUiThread(() -> {
+                WindowInsetsControllerCompat c = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+                c.setAppearanceLightStatusBars(arribaClaro);
+                c.setAppearanceLightNavigationBars(abajoClaro);
+            });
+        }
+    }
+
+    /** Mide el fondo bajo la barra de arriba y la de abajo; se repite al cambiar la página, el tema o el tamaño. */
+    private static final String MIRAR_FONDO = "(function(){if(window.__gccBarras)return;window.__gccBarras=1;"
+        + "function claro(x,y){var e=document.elementFromPoint(x,y);while(e&&e!==document.documentElement){"
+        + "var c=getComputedStyle(e).backgroundColor,m=c&&c.match(/rgba?\\(([^)]+)\\)/);"
+        + "if(m){var v=m[1].split(',').map(parseFloat);if(v.length<4||v[3]>0.5){return (0.299*v[0]+0.587*v[1]+0.114*v[2])>150;}}"
+        + "e=e.parentElement;}var b=getComputedStyle(document.body).backgroundColor.match(/\\d+/g);"
+        + "return b?(0.299*b[0]+0.587*b[1]+0.114*b[2])>150:true;}"
+        + "var t=0,u='';function mirar(){clearTimeout(t);t=setTimeout(function(){try{var w=innerWidth/2,"
+        + "a=claro(w,2),z=claro(w,innerHeight-2),k=a+'/'+z;if(k!==u){u=k;gccBarras.fondos(a,z);}}catch(_){}},150);}"
+        + "new MutationObserver(mirar).observe(document.documentElement,{subtree:true,childList:true,attributes:true,attributeFilter:['class','style']});"
+        + "addEventListener('resize',mirar);addEventListener('scroll',mirar,true);"
+        // Al cambiar el modo del sistema, Capacitor vuelve a pintar las barras a su manera: se reenvía aunque no cambie.
+        + "try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){u='';setTimeout(mirar,300);});}catch(_){}"
+        + "document.addEventListener('visibilitychange',function(){if(!document.hidden){u='';mirar();}});mirar();})();";
 
     @Override
     protected void onNewIntent(Intent intent) {
