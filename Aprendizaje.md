@@ -12416,3 +12416,13 @@ API de Gemini solo como apoyo puntual. Primero, una prueba local gratuita con su
 - ✅ **Passkey en Android probada (2026-11-12):** GCC World y GCC Miembros 2.0 instaladas por cable (adb) en un Galaxy
   S10+ (Android 12, WebView 156); Fernando creó la passkey desde la pantalla de inicio de sesión y entró con ella.
   Para compilar las APK hace falta `JAVA_HOME` del JBR de Android Studio (`/Applications/Android Studio.app/Contents/jbr/Contents/Home`).
+
+## Revisión del 2026-11-12/13: sin intrusiones, solo escaneo automático
+- **SSH:** 32 sesiones, todas de Fernando con su llave; ningún intento ajeno (el M1 no tiene puertos abiertos a internet).
+- **Plataforma:** 5 contraseñas fallidas en una cuenta y desde una IP (8 y 9 de noviembre); nadie llegó a un bloqueo.
+- **Cloudflare** (el token ya tiene *Analytics: Read*, «All zones»): unas 32.000 peticiones en dos días, ~450 visitantes al día y el 70 % desde Ecuador.
+  - 116 «amenazas» (96 desde Canadá) son robots que buscan secretos expuestos: `/.env`, `/.ssh/id_ed25519`, `/.aws/config`, `/.claude/settings.json`, `/.codex/auth.json`, `/actuator`, `/phpinfo`, `/database.sql`… Todas dan el 404 genérico de la app; se comprobó una por una.
+  - El plan Free **no** permite leer `firewallEventsAdaptiveGroups` (error `authz`); `httpRequests1dGroups` y `httpRequestsAdaptiveGroups` sí.
+  - Ruido propio: `/api/espacio-trabajo/estado` da 404 en producción (141 veces), porque esa ruta solo existe en la Mac.
+- **Copia nocturna a Railway:** nunca había corrido (faltaba `~/gcc/env/railway-destino`). Ahora la comprobación cuenta la base del M1 antes y después de copiar. La copia del script en `~/gcc/respaldo-railway.sh` **se pone a mano**: publicar no la actualiza. Primera copia buena el 2026-11-12 (950 s).
+- **Propuesto, pendiente de Fernando:** regla de Cloudflare que corte en el borde las rutas de escaneo (`/.`, `.php`, `/actuator`, `.sql`, `.yml`) y límite de intentos en `/api/auth`, sin Bot Fight Mode.
