@@ -112,10 +112,9 @@ def conducir(dueno, prop, expr, indice=-1):
 
 
 def escala(obj, expr):
-    """Escala uniforme según la expresión (multiplica la escala de origen)."""
-    base = obj.scale[0]
+    """Multiplica la escala de origen de cada eje por la expresión (un bloque alargado sigue alargado)."""
     for i in range(3):
-        conducir(obj, "scale", f"{base}*({expr})", i)
+        conducir(obj, "scale", f"{obj.scale[i]}*({expr})", i)
 
 
 def pico(expr_fase, centro=0.0, agudeza=10):
