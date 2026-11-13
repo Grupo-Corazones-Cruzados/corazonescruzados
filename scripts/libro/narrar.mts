@@ -39,7 +39,10 @@ for (const p of paginas) {
     body: JSON.stringify({ model: 'gpt-4o-mini-tts', voice: 'onyx', input: p.texto, instructions: INSTRUCCIONES, response_format: 'mp3' }),
   });
   if (!r.ok) throw new Error(`${p.id}: ${r.status} ${(await r.text()).slice(0, 300)}`);
-  writeFileSync(mp3, Buffer.from(await r.arrayBuffer()));
+  writeFileSync(mp3 + '.tmp.mp3', Buffer.from(await r.arrayBuffer()));
+  // Voz hablada: mono a 56 kbps basta y pesa la mitad.
+  execFileSync('ffmpeg', ['-y', '-v', 'error', '-i', mp3 + '.tmp.mp3', '-ac', '1', '-b:a', '56k', mp3]);
+  execFileSync('rm', [mp3 + '.tmp.mp3']);
   writeFileSync(txt, p.texto);
   console.log('narrada', p.id);
 }

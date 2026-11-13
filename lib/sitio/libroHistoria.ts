@@ -9,8 +9,9 @@
  * que dicen los textos originales de Fernando; la historia es el hilo que los une. BORRADOR para que él lo
  * corrija. Los originales, literales, están en `docs/respaldo/textos-postulacion-originales.md`.
  *
- * Cada página es una DOBLE PÁGINA: a la izquierda la ilustración, a la derecha la narración. La narración se
- * lee en voz alta (`public/libro/voz/<id>.mp3`, español de España) y, al terminar, el libro pasa la hoja.
+ * Cada página es una ESCENA: `izquierda` es lo que se ve en el centro de la pantalla (escena 3D real en video,
+ * o animación) y `parrafos` lo que cuenta la voz (`public/libro/voz/<id>.mp3`, español de España); al
+ * terminar, pasa sola a la siguiente. (El nombre `izquierda` viene de cuando era un libro.)
  * `**así**` = negrita.
  */
 
@@ -63,7 +64,7 @@ export const PAGINAS: PaginaLibro[] = [
   },
   {
     id: 'realidad', capitulo: 0, titulo: 'La realidad',
-    izquierda: anim('libro-realidad', 'Un mundo gris que gira despacio y, sobre él, una sola luz violeta que late'),
+    izquierda: { tipo: 'video', id: 'libro-realidad-real', alt: 'El cuarto del niño de mañana, gris, con el farol apagado y el despertador sonando' },
     parrafos: [
       'Pero cada mañana la realidad volvía, y siempre volvía en forma de responsabilidad. Afuera el mundo era gris: había cosas que estaban mal y que nadie parecía dispuesto a cambiar, y el niño crecía recordando todo aquello que no le gustaba.',
       'La distancia entre su sueño y la realidad le apretaba el pecho con una frustración que no sabía cómo soltar. Hasta que un día, en medio de un profundo dolor, comprendió algo que lo cambió todo: no era capaz de aceptar ese mundo.',
@@ -71,7 +72,7 @@ export const PAGINAS: PaginaLibro[] = [
   },
   {
     id: 'promesa', capitulo: 0, titulo: 'La promesa',
-    izquierda: anim('libro-realidad', 'Un mundo gris que gira despacio y, sobre él, una sola luz violeta que late'),
+    izquierda: { tipo: 'video', id: 'libro-promesa-real', alt: 'El amanecer entra por la ventana: una brújula, una libreta y unas botas, listas para el viaje' },
     parrafos: [
       'Aquel día hizo una promesa. Dejaría de soñar para empezar a vivir la realidad, dispuesto a cambiar todo lo que había visto y que jamás iba a olvidar.',
       'Prometió que nunca aceptaría un futuro en el que sus hijos crecieran en un mundo distinto al que quería construir, y que no importaba lo difícil o lo imposible que pareciera: iba a cambiar ese mundo, aunque le costara la vida.',
@@ -132,7 +133,7 @@ export const PAGINAS: PaginaLibro[] = [
     izquierda: { tipo: 'miembros' },
     parrafos: [
       'Estos son los miembros que hoy forman parte de la historia. Cada uno llegó primero como candidato, demostró los valores de la organización y hoy trabaja cada día en ella.',
-      'Todo el que llega a la casa empieza por el mismo lugar, y en las últimas páginas de este libro se cuenta el camino que hay que recorrer para llegar a ser uno de ellos.',
+      'Todo el que llega a la casa empieza por el mismo lugar, y al final de esta historia se cuenta el camino que hay que recorrer para llegar a ser uno de ellos.',
     ],
   },
 
@@ -331,7 +332,7 @@ export const EPILOGO = {
   titulo: 'Tu página en blanco',
   ilustracion: anim('libro-pagina', 'Una página en la que una luz escribe renglón a renglón'),
   parrafos: [
-    'Este libro todavía no termina. Las páginas que faltan las escriben quienes deciden formar parte del Grupo Corazones Cruzados, y la primera línea de esa historia empieza aquí.',
+    'Esta historia todavía no termina. Lo que falta lo escriben quienes deciden formar parte del Grupo Corazones Cruzados, y la primera línea de ese camino empieza aquí.',
   ],
 };
 
