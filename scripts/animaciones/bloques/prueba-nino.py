@@ -2,7 +2,7 @@
 intenta hacer 5 segundos de video y me lo muestras, a ver qué tal animas»).
 
 Estilo propio del cuento (no copia de ningún juego ni canal): todo de bloques, como cartón pintado. EL NIÑO:
-sudadera violeta con el corazón de la casa en el pecho, pelo negro de bloques, ojos, cejas y boca de bloque
+sudadera violeta lisa (sin logo: Fernando, 2026-11-13), pelo negro de bloques, ojos, cejas y boca de bloque
 que cambian de expresión. Va al ritmo de las dos primeras frases de la narración (`public/libro/voz/sueno.mp3`):
   0,0–2,7 s «Había una vez un niño que soñaba»: la cámara se acerca; mira las estrellas por la ventana y parpadea.
   2,7–6,7 s «…al que le encantaba soñar»: apoya la cara en las manos, levanta las cejas y sonríe.
@@ -28,7 +28,6 @@ p = a.parse_args(sys.argv[sys.argv.index("--") + 1:])
 
 FPS = 24
 DUR = 6.7
-LOGO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../public/logo-gcc-512.png")
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 E = bpy.context.scene
@@ -186,20 +185,6 @@ for dx in (0.27, 0.43):
     bloque("Zapato", (dx, 0.39, 0.06), (0.13, 0.2, 0.08), m_blanco, cadera)
 torso = vacio("Torso", (0.35, 0.1, 0.56), cadera)
 bloque("Tronco", (0.35, 0.1, 0.76), (0.34, 0.2, 0.4), m_violeta, torso)
-# El corazón de la casa en el pecho
-emb = bpy.data.materials.new("Emblema")
-emb.use_nodes = True
-et = emb.node_tree
-eb = et.nodes["Principled BSDF"]
-ei = et.nodes.new("ShaderNodeTexImage")
-ei.image = bpy.data.images.load(os.path.abspath(LOGO))
-et.links.new(ei.outputs["Color"], eb.inputs["Base Color"])
-eb.inputs["Roughness"].default_value = 0.6
-bpy.ops.mesh.primitive_plane_add(size=0.1, location=(0.42, 0.205, 0.84), rotation=(math.pi / 2, 0, 0))
-pecho = bpy.context.active_object
-pecho.data.materials.append(emb)
-pecho.parent = torso
-pecho.matrix_parent_inverse = torso.matrix_world.inverted()
 
 
 def brazo(lado):
