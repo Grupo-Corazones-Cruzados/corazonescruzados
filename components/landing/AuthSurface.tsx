@@ -116,14 +116,12 @@ export function Casilla({
   checked, onChange, children,
 }: { checked: boolean; onChange: (v: boolean) => void; children: ReactNode }) {
   return (
-    <label
-      className={`flex items-start gap-2.5 rounded-md border p-3 cursor-pointer transition-colors ${
-        checked ? 'border-accent bg-accent-light' : 'border-digi-border hover:border-accent/50'
-      }`}
-    >
+    // Sin caja con relleno y borde alrededor del texto (Fernando, 2026-11-13; regla «sin etiquetas con
+    // relleno»): la casilla y su texto, solos.
+    <label className="flex items-start gap-3 cursor-pointer select-none">
       <input
         type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5 w-[15px] h-[15px] shrink-0 accent-[var(--color-accent)]"
+        className="mt-0.5 w-[18px] h-[18px] shrink-0 cursor-pointer accent-[var(--color-accent)]"
       />
       <span className="text-[12.5px] leading-relaxed text-digi-text" style={mf}>{children}</span>
     </label>

@@ -108,11 +108,11 @@ export function CuentaClienteCreada({ email, onClose }: { email: string; onClose
  * definición, para que no haya tres altas que piden cosas distintas.
  */
 export function FormularioCliente({
-  onCreada, tema = 'oscuro',
+  onCreada, tema = 'auto',
 }: {
   onCreada: (email: string) => void;
-  /** El captcha en claro dentro de la página del sitio; oscuro en las ventanas. */
-  tema?: 'oscuro' | 'claro';
+  /** El captcha en claro dentro de la página del sitio; en las ventanas, con los colores del tema (`auto`). */
+  tema?: 'oscuro' | 'claro' | 'auto';
 }) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
