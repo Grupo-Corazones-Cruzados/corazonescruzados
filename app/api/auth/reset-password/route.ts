@@ -64,7 +64,8 @@ export async function POST(req: NextRequest) {
 
       const hash = await hashPassword(password);
       await pool.query(
-        "UPDATE gcc_world.users SET password_hash = $1, reset_token = NULL, reset_token_exp = NULL WHERE id = $2",
+        // Cambiar la contraseña cierra todas las sesiones abiertas: si alguien la conocía, ya no entra.
+        "UPDATE gcc_world.users SET password_hash = $1, reset_token = NULL, reset_token_exp = NULL, tokens_invalidated_at = NOW() WHERE id = $2",
         [hash, result.rows[0].id]
       );
 

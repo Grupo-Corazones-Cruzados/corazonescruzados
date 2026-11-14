@@ -48,6 +48,18 @@ async function cargarContexto(slug: string, sesion: SesionUsuario) {
     include: { suscripcion: { include: { plan: true } } },
   });
   if (!inquilino || inquilino.slug !== slug) return null;
+  // Sesión viva (auditoría de seguridad, 2026-11-14): la cuenta sigue activa en este negocio y su rol
+  // es el de la base, no el que quedó firmado en el token. Antes, una cuenta desactivada o bajada de rol
+  // conservaba su acceso hasta 7 días. Se corrige el rol sobre la misma sesión, que es la que miran luego
+  // los permisos de cada pantalla.
+  {
+    const cuenta = await prisma.usuario.findFirst({
+      where: { id: sesion.uid, inquilinoId: sesion.inquilinoId, activo: true },
+      select: { rol: true },
+    });
+    if (!cuenta) return null;
+    sesion.rol = cuenta.rol;
+  }
   return { inquilino, sesion, acceso: evaluarAcceso(inquilino) };
 }
 

@@ -65,18 +65,21 @@ export async function verifyTokenWithInvalidation(
   if (!payload) return null;
 
   const result = await pool.query(
-    "SELECT tokens_invalidated_at FROM gcc_world.users WHERE id = $1",
+    "SELECT tokens_invalidated_at, role FROM gcc_world.users WHERE id = $1",
     [payload.userId]
   );
   if (result.rows.length === 0) return null;
 
-  const { tokens_invalidated_at } = result.rows[0];
+  const { tokens_invalidated_at, role } = result.rows[0];
   if (tokens_invalidated_at && payload.iat) {
     const invalidatedAtSec = Math.floor(new Date(tokens_invalidated_at).getTime() / 1000);
     if (payload.iat <= invalidatedAtSec) return null;
   }
 
-  return payload;
+  // El rol se lee de la base, no del token: un miembro bajado a cliente (o un admin bajado) dejaba
+  // de serlo solo al caducar su sesión, hasta 7 días después (auditoría de seguridad, 2026-11-14).
+  // Al suplantar, `userId` es la cuenta suplantada, así que el rol sigue siendo el suyo.
+  return role ? { ...payload, role } : payload;
 }
 
 export async function setAuthCookie(token: string): Promise<void> {

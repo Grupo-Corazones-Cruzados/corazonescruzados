@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { SignJWT, jwtVerify } from 'jose';
+import { prisma } from '@/lib/db';
 import type { RolUsuario } from '@/generated/prisma/enums';
 
 /**
@@ -97,6 +98,10 @@ export async function leerSesionOperador(): Promise<SesionOperador | null> {
   try {
     const { payload } = await jwtVerify(token, secreto());
     if (typeof payload.oid !== 'number') return null;
+    // El operador sigue activo (auditoría de seguridad, 2026-11-14): desactivarlo cortaba su acceso
+    // solo al caducar el token, 7 días después, y estas son las llaves de todos los negocios.
+    const op = await prisma.operadorGcc.findFirst({ where: { id: payload.oid, activo: true }, select: { id: true } });
+    if (!op) return null;
     return payload as unknown as SesionOperador;
   } catch {
     return null;
