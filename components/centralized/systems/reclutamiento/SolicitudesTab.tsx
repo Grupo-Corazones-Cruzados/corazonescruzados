@@ -8,6 +8,7 @@ import PixelModal from '@/components/ui/PixelModal';
 import { BTN_PRIMARY, BTN_SECONDARY, BTN_DANGER } from '@/components/ui/Button';
 import {
   Inbox, Mail, Check, X, ShieldCheck, ShieldAlert, Megaphone, CalendarDays, AtSign, UserPlus,
+  Send,
 } from 'lucide-react';
 import PanelHastaElPie from '@/components/ui/PanelHastaElPie';
 import PanelDetalle from '@/components/ui/PanelDetalle';
@@ -103,6 +104,17 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
   };
   const submitApprove = () => { if (approving) void aprobar(approving); };
 
+  const reenviarCredencial = async (p: any) => {
+    setBusyId(String(p.id));
+    try {
+      const res = await fetch(`/api/admin/candidate-proposals/${p.id}/credencial`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'No se pudo enviar la credencial.');
+      toast.success(`Credencial enviada a ${data.personal}`);
+    } catch (e: any) { toast.error(e.message || 'No se pudo enviar la credencial.'); }
+    finally { setBusyId(null); }
+  };
+
   const reject = async (p: any) => {
     if (!window.confirm(`¿Rechazar la postulación de ${p.email}? Se eliminará y el correo quedará libre.`)) return;
     setBusyId(String(p.id));
@@ -177,7 +189,12 @@ export default function SolicitudesTab({ isAdmin }: { isAdmin: boolean }) {
               </span>
             }
             onCerrar={() => setSelectedId(null)}
-            pie={isAdmin && selected.status !== 'approved' ? (
+            pie={isAdmin && selected.status === 'approved' && selected.primer_nombre ? (
+              // Aprobada con correo corporativo: reenviar la credencial (contraseña temporal nueva, al correo personal).
+              <button onClick={() => reenviarCredencial(selected)} disabled={busyId === String(selected.id)} className={`${BTN_PRIMARY} w-full disabled:opacity-50`}>
+                <Send className="w-4 h-4" /> {busyId === String(selected.id) ? 'Enviando…' : 'Reenviar credencial'}
+              </button>
+            ) : isAdmin && selected.status !== 'approved' ? (
               // La peligrosa a la izquierda y la principal a la derecha, como en todos los pies.
               <div className="flex gap-2">
                 <button onClick={() => reject(selected)} disabled={busyId === String(selected.id)} className={`${BTN_DANGER} flex-1 disabled:opacity-50`}>

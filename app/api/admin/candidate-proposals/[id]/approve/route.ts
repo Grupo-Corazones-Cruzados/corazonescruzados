@@ -6,7 +6,7 @@ import { randomInt } from 'crypto';
 import { hashPassword } from '@/lib/auth/password';
 import { usuarioLibre } from '@/lib/workspace/usuario-libre';
 import { crearGrupoReenvio, borrarGrupo } from '@/lib/integrations/google-workspace';
-import { sendCredencialCandidato } from '@/lib/integrations/email';
+import { emitirCredencialAlta } from '@/lib/candidatos/credencial';
 import { avisarReclutamiento } from '@/lib/avisos/reclutamiento';
 import { generateClientToken } from '@/lib/world/session';
 import { sendCandidateApprovalEmail } from '@/lib/integrations/email';
@@ -247,9 +247,10 @@ async function aprobarConCorreoCorporativo(proposal: any, desde: string | null, 
     excluirUserId: user.userId,
   }));
 
-  // 3. La credencial, al correo corporativo (el grupo la reenvía a su bandeja).
+  // 3. La credencial, al correo PERSONAL (ver `lib/candidatos/credencial.ts`).
   try {
-    await sendCredencialCandidato({ correo, claveTemporal: clave, nombre: proposal.primer_nombre, vence });
+    const { rows: [cl] } = await pool.query(`SELECT id FROM gcc_world.clients WHERE LOWER(email) = $1 LIMIT 1`, [personal]);
+    await emitirCredencialAlta(cl.id, proposal.primer_nombre);
   } catch (e: any) {
     console.error('[candidatos] credencial', correo, e?.message);
     return NextResponse.json({ ok: true, emailSent: false, username: usuario, workspaceEmail: correo,

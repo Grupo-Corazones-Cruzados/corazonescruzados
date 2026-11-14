@@ -831,20 +831,21 @@ export const EMAIL_THEME = { ...CORP, font: FONT } as const;
 export { emailShell, emailHeading, emailParagraph, emailNote, emailButton, emailBadge, emailInfoBox, accentStrong };
 
 /**
- * ⇒ LA CREDENCIAL DEL CANDIDATO ACEPTADO (Fernando, 2026-11-12). Va a su CORREO CORPORATIVO (el grupo de Google lo
- * reenvía a su bandeja): el correo y una contraseña temporal para entrar al formulario de creación de la cuenta, en
- * donde define su contraseña. Texto de partida: lo corrige Fernando y se traslada literal.
+ * ⇒ LA CREDENCIAL DEL CANDIDATO ACEPTADO (Fernando, 2026-11-12; desde el 2026-11-14 va a su CORREO PERSONAL, porque
+ * el reenvío del grupo corporativo no llegó a Outlook): avisa que su cuenta corporativa está creada, que desde ahora
+ * ingresa con ella y que al ingresar con la contraseña temporal define la suya. Texto de partida: lo corrige
+ * Fernando y se traslada literal.
  */
-export async function sendCredencialCandidato(opts: { correo: string; claveTemporal: string; nombre: string; vence: Date }) {
+export async function sendCredencialCandidato(opts: { personal: string; correo: string; claveTemporal: string; nombre: string; vence: Date }) {
   const url = `${APP_URL}/alta`;
   const fecha = opts.vence.toLocaleDateString('es-EC', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Guayaquil' });
   const html = emailShell(
-    emailHeading('Postulación aprobada', 'Grupo Corazones Cruzados') +
-    emailParagraph(`${opts.nombre}, el Grupo Corazones Cruzados aprobó tu postulación como candidato, y te asignó un correo corporativo con el cual vas a realizar todas tus gestiones dentro de la plataforma. A continuación te presento la credencial con la que debes ingresar al formulario de creación de tu cuenta, en donde vas a definir tu contraseña y completar tus datos:`) +
+    emailHeading('Cuenta corporativa creada', 'Grupo Corazones Cruzados') +
+    emailParagraph(`${opts.nombre}, el Grupo Corazones Cruzados aprobó tu postulación como candidato y creó tu cuenta corporativa, con la cual vas a ingresar a la plataforma y realizar todas tus gestiones desde ahora. A continuación te presento la credencial con la que debes ingresar por primera vez, en donde vas a cambiar la contraseña temporal por la tuya y completar tus datos:`) +
     emailInfoBox('Correo corporativo', opts.correo) +
     emailInfoBox('Contraseña temporal', opts.claveTemporal) +
-    emailButton(url, 'Ingresar al formulario') +
-    emailNote(`La contraseña temporal es válida hasta el ${fecha}. Una vez completado el formulario, ingresas a la plataforma con tu correo corporativo y la contraseña que definas.`),
+    emailButton(url, 'Ingresar a la plataforma') +
+    emailNote(`La contraseña temporal es válida hasta el ${fecha}. Una vez que definas tu contraseña, ingresas siempre con tu correo corporativo; tu correo personal ya no sirve para iniciar sesión.`),
   );
-  return deliver({ from: FROM_EMAIL, to: opts.correo, subject: 'Postulación aprobada — credencial de acceso', html });
+  return deliver({ from: FROM_EMAIL, to: opts.personal, subject: 'Cuenta corporativa creada — credencial de acceso', html });
 }
