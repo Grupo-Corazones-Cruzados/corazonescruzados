@@ -41,6 +41,6 @@ export default async function TemasClientes({ inicial }: { inicial: string }) {
       ),
     };
   });
-  return <RecorridoPagina pasos={pasos} inicial={inicial} base="/clientes" etiqueta="Temas de Clientes" />;
+  return <RecorridoPagina pasos={pasos} inicial={inicial} base="/clientes" etiqueta="Temas de Clientes" arriba />;
 }
 

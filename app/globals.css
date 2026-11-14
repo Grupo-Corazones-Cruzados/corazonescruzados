@@ -4901,6 +4901,19 @@ dialog[data-saliendo]::backdrop { animation: veloSale 0.2s ease-out forwards; }
 @media (prefers-reduced-motion: reduce) { .galeria-flechas button { transition: none; } }
 .paso-cliente-texto { margin: 0; font-size: 0.9375rem; line-height: 1.65; color: var(--color-digi-text); }
 .recorrido-paso > .tema-contenido { margin-top: 20px; }
+/* El camino en una fila encima del apartado (`arriba`, Clientes 2026-11-14): el contenido usa todo el
+   ancho; los pasos se reparten a lo ancho y la línea los une en horizontal. */
+@media (min-width: 1024px) {
+  .recorrido.es-arriba { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .recorrido.es-arriba .recorrido-camino { position: static; }
+  .recorrido.es-arriba .recorrido-camino ol { display: flex; align-items: center; gap: 0; }
+  .recorrido.es-arriba .recorrido-camino ol::before { display: none; }
+  .recorrido.es-arriba .recorrido-camino li { display: flex; align-items: center; flex: 1 1 0; min-width: 0; }
+  .recorrido.es-arriba .recorrido-camino li:last-child { flex: none; }
+  /* La línea que une cada paso con el siguiente. */
+  .recorrido.es-arriba .recorrido-camino li:not(:last-child)::after { content: ''; flex: 1; height: 2px; min-width: 24px; margin: 0 18px 0 4px; border-radius: 2px; background: var(--linea); }
+  .recorrido.es-arriba .recorrido-nodo { width: auto; flex: none; padding-right: 0; }
+}
 .postulacion-aviso { display: flex; gap: 16px; align-items: flex-start; } /* sin caja: §4-septies de /diseno (2026-11-11) */
 .postulacion-aviso > svg { flex-shrink: 0; width: 22px; height: 22px; margin-top: 2px; color: var(--violeta-txt); }
 .postulacion-aviso-titulo { margin-bottom: 6px; font: 700 1.05rem/1.3 'Space Grotesk', 'Inter', system-ui, sans-serif; color: var(--texto); }

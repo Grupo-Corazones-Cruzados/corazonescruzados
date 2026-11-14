@@ -25,13 +25,16 @@ export interface PasoRecorrido {
 const dos = (n: number) => String(n).padStart(2, '0');
 
 export default function RecorridoPagina({
-  pasos, inicial, base, etiqueta,
+  pasos, inicial, base, etiqueta, arriba: enFila = false,
 }: {
   pasos: PasoRecorrido[];
   inicial: string;
   /** La ruta de la que cuelgan los apartados (`/candidatos`, `/clientes`). */
   base: string;
   etiqueta: string;
+  /** El camino en una fila ENCIMA del apartado, que se queda con todo el ancho (Clientes, 2026-11-14:
+   * Fernando, «el contenido principal se fue a la derecha y tiene menos espacio y se ve muy angosto»). */
+  arriba?: boolean;
 }) {
   const [activa, setActiva] = useState(() => Math.max(0, pasos.findIndex((s) => s.id === inicial)));
   const [dir, setDir] = useState<'der' | 'izq' | null>(null);
@@ -47,7 +50,7 @@ export default function RecorridoPagina({
   };
 
   return (
-    <section ref={arriba} className="recorrido scroll-mt-24" aria-label={etiqueta}>
+    <section ref={arriba} className={`recorrido scroll-mt-24${enFila ? ' es-arriba' : ''}`} aria-label={etiqueta}>
       <label className="segmentado-movil recorrido-select">
         <span className="sr-only">Apartado</span>
         <select value={paso.id} onChange={(e) => ir(pasos.findIndex((s) => s.id === e.target.value))}>
