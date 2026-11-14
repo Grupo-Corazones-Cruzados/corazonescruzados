@@ -73,3 +73,7 @@ tsconfig.tsbuildinfo
 Contenido de Profesor/
 # Instancia local del espacio de trabajo y sus pruebas.
 .next-espacio*/
+
+# Documentos con credenciales de revisores o de clientes: solo en local, nunca en el repo público (2026-11-13)
+/app-review-instrucciones.txt
+/guia-coexistencia-proveedor.html
