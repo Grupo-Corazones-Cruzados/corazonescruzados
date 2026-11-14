@@ -7,6 +7,8 @@ import {
   COLUMNA_DUENO, INCIDENT_SEVERITIES, INCIDENT_STATUSES, type IncidentOwnerType, type IncidentOwner,
 } from '@/lib/incidents/schema';
 import { esSuPlataforma } from '@/lib/productos/plataformas';
+import { cargarTicketParaPermiso, puedeVerTicket } from '@/lib/tickets/permisos';
+import { participaEnProyecto } from '@/lib/projects/permisos';
 import { decodificarDataUri, fileIdDe, guardar, nombresDe, quitar } from '@/lib/media';
 
 /**
@@ -31,6 +33,18 @@ async function acceso(tipo: IncidentOwnerType, ctx: Ctx, gestionar: boolean) {
   // Los incidentes de una plataforma solo los ve su cliente (o el admin): tener sesión no basta.
   if (tipo === 'plataforma' && user.role !== 'admin' && !(await esSuPlataforma(owner, user.email))) {
     return { error: NextResponse.json({ error: NO_ENCONTRADO[tipo] }, { status: 404 }) };
+  }
+  // Ticket o proyecto: hay que poder verlo. Antes bastaba con tener sesión y cualquiera leía y
+  // creaba incidentes de un ticket ajeno o de un proyecto privado (auditoría, 2026-11-14).
+  if (tipo === 'ticket' && user.role !== 'admin') {
+    const t = await cargarTicketParaPermiso(owner.id);
+    if (!t || !(await puedeVerTicket(user, t))) return { error: NextResponse.json({ error: NO_ENCONTRADO[tipo] }, { status: 404 }) };
+  }
+  if (tipo === 'project' && user.role !== 'admin') {
+    const { rows: [p] } = await pool.query(`SELECT is_private, status FROM gcc_world.projects WHERE id = $1`, [owner.id]);
+    if (p && (p.is_private || p.status === 'draft') && !(await participaEnProyecto(user, String(owner.id)))) {
+      return { error: NextResponse.json({ error: NO_ENCONTRADO[tipo] }, { status: 404 }) };
+    }
   }
   const canManage = await canManageIncidents(user, owner);
   if (gestionar && !canManage) return { error: NextResponse.json({ error: 'No autorizado' }, { status: 403 }) };

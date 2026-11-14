@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { MAX_SKILLS } from '@/lib/members/cv-tipos';
+import { puedeGestionarMiembro } from '@/lib/members/puede-gestionar';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -28,6 +29,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const { id } = await params;
+    if (!(await puedeGestionarMiembro(user, id))) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     const body = await req.json();
 
     // Las skills son de cada talento desde 2026-08-15. El formulario ya lo impide;

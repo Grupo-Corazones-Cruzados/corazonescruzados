@@ -1,12 +1,7 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { puedeGestionarMiembro } from '@/lib/members/puede-gestionar';
 import { NextRequest, NextResponse } from 'next/server';
-
-async function canManage(user: any, memberId: string): Promise<boolean> {
-  if (user.role === 'admin') return true;
-  const { rows } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId]);
-  return String(rows[0]?.member_id || '') === String(memberId);
-}
 
 // PATCH — edita o activa/desactiva un servicio propio { name?, description?, base_price?, is_active? }.
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string; sid: string }> }) {
@@ -14,7 +9,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id, sid } = await params;
-    if (!(await canManage(user, id))) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    if (!(await puedeGestionarMiembro(user, id))) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     const b = await req.json();
     const sets: string[] = [];
     const vals: any[] = [];
@@ -46,7 +41,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id, sid } = await params;
-    if (!(await canManage(user, id))) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    if (!(await puedeGestionarMiembro(user, id))) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     await pool.query(`DELETE FROM gcc_world.services WHERE id = $1 AND member_id = $2`, [sid, id]);
     return NextResponse.json({ ok: true });
   } catch (err: any) {

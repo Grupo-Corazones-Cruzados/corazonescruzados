@@ -90,6 +90,16 @@ export async function esDelEquipoDelProyecto(user: Usuario, projectId: string): 
   return rows.length > 0;
 }
 
+/**
+ * ¿Participa en el proyecto? Admin, su gestor (creador o responsable) o alguien de su equipo. Es lo
+ * mínimo para leer o escribir lo interno de un proyecto (observaciones, incidencias…): antes bastaba
+ * con tener sesión (auditoría de seguridad, 2026-11-14).
+ */
+export async function participaEnProyecto(user: Usuario, projectId: string): Promise<boolean> {
+  if (!/^\d{1,18}$/.test(String(projectId))) return false;
+  return (await esGestorDelProyecto(user, projectId)) || (await esDelEquipoDelProyecto(user, projectId));
+}
+
 /** Estados en los que el trabajo ya no se toca (lo que se cobra está cerrado). */
 /**
  * ¿Puede subir, quitar y renombrar las FOTOS del proyecto? Admin, el creador (su ficha es

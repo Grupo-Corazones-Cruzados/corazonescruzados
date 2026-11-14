@@ -50,6 +50,8 @@ export async function POST() {
        WHERE id = $2`,
       [token, memberId],
     );
+    // Un enlace nuevo invalida el anterior: sus suscriptores dejan de recibir avisos.
+    await pool.query(`DELETE FROM gcc_world.member_calendar_subscribers WHERE member_id = $1`, [memberId]);
 
     return NextResponse.json({ token, member_id: memberId });
   } catch (err: any) {
@@ -72,6 +74,7 @@ export async function DELETE() {
        WHERE id = $1`,
       [memberId],
     );
+    await pool.query(`DELETE FROM gcc_world.member_calendar_subscribers WHERE member_id = $1`, [memberId]);
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error('Public-link DELETE error:', err.message);

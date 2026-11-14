@@ -1,5 +1,6 @@
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { puedeGestionarMiembro } from '@/lib/members/puede-gestionar';
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
@@ -14,11 +15,6 @@ async function ensureServiceCols() {
 }
 
 /** ¿El usuario puede gestionar el perfil de miembro `id`? Dueño (users.member_id) o admin. */
-async function canManage(user: any, memberId: string): Promise<boolean> {
-  if (user.role === 'admin') return true;
-  const { rows } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [user.userId]);
-  return String(rows[0]?.member_id || '') === String(memberId);
-}
 
 // GET — servicios del miembro (opcional ?active=1 y ?talent=). Para el CV y el ticket.
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -51,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
     const { id } = await params;
-    if (!(await canManage(user, id))) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    if (!(await puedeGestionarMiembro(user, id))) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     await ensureServiceCols();
     const b = await req.json();
     const name = String(b.name || '').trim();

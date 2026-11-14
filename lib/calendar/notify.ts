@@ -10,14 +10,15 @@ export async function notifyCalendarSubscribers(params: {
   eventStart: Date;
   eventEnd: Date;
 }) {
-  const { memberId, action, eventTitle, eventStart, eventEnd } = params;
+  const { memberId, action, eventStart, eventEnd } = params;
   try {
     const memberRes = await pool.query(
       `SELECT name, calendar_public_token FROM gcc_world.members WHERE id = $1`,
       [memberId],
     );
     const member = memberRes.rows[0];
-    if (!member) return;
+    // Sin enlace público no hay suscripción viva: quitar o rotar el enlace también corta los avisos.
+    if (!member?.calendar_public_token) return;
 
     const subsRes = await pool.query(
       `SELECT email FROM gcc_world.member_calendar_subscribers
@@ -26,9 +27,7 @@ export async function notifyCalendarSubscribers(params: {
     );
     if (subsRes.rowCount === 0) return;
 
-    const publicUrl = member.calendar_public_token
-      ? `${APP_URL}/calendario/${memberId}?token=${member.calendar_public_token}`
-      : `${APP_URL}/calendario/${memberId}`;
+    const publicUrl = `${APP_URL}/calendario/${memberId}?token=${member.calendar_public_token}`;
 
     await Promise.allSettled(
       subsRes.rows.map((r: any) =>
@@ -36,7 +35,9 @@ export async function notifyCalendarSubscribers(params: {
           email: r.email,
           memberName: member.name,
           action,
-          eventTitle,
+          // Lo mismo que muestra el calendario público: «Ocupado». El título real es privado del miembro
+          // y el suscriptor es cualquiera con el enlace (auditoría de seguridad, 2026-11-14).
+          eventTitle: 'Ocupado',
           eventStart,
           eventEnd,
           publicUrl,

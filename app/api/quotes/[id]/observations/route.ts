@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureQuoteTables, validateQuoteToken } from '@/lib/cotizaciones/schema';
+import { participaEnProyecto } from '@/lib/projects/permisos';
 
 /**
  * Observaciones de una cotización. El cliente/externo (por token) las agrega desde la vista
@@ -19,6 +20,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     } else {
       const user = await getCurrentUser();
       if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      if (!(await participaEnProyecto(user, String(id)))) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
     }
     const { rows } = await pool.query(
       `SELECT id, author_name, author_email, body, status, created_at
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     } else {
       const user = await getCurrentUser();
       if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+      if (!(await participaEnProyecto(user, String(id)))) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
       authorUserId = user.userId;
       const u = (await pool.query(`SELECT first_name, last_name, email FROM gcc_world.users WHERE id = $1`, [user.userId])).rows[0] || {};
       authorName = [u.first_name, u.last_name].filter(Boolean).join(' ').trim() || u.email || 'Miembro';
