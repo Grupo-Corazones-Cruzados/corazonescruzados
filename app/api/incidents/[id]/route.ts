@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { soloEquipo } from '@/lib/auth/solo-equipo';
 import { prisma } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { nombresDe } from '@/lib/media';
@@ -10,6 +11,8 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const rechazo = await soloEquipo();
+  if (rechazo) return rechazo;
   const { id } = await params;
   const incident = await prisma.incident.findUnique({ where: { id } });
   if (!incident) {

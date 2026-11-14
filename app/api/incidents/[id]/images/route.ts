@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { soloEquipo } from '@/lib/auth/solo-equipo';
 import { prisma } from '@/lib/db';
 import { guardarFotosIncidencia } from '@/lib/media/incidencias';
 import { quitar } from '@/lib/media';
@@ -10,6 +11,8 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const rechazo = await soloEquipo();
+  if (rechazo) return rechazo;
   try {
     const { id } = await params;
     const form = await req.formData();
@@ -43,6 +46,8 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const rechazo = await soloEquipo();
+  if (rechazo) return rechazo;
   try {
     const { id } = await params;
     const { imageIndex } = await req.json();

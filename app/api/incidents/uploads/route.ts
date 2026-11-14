@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { soloEquipo } from '@/lib/auth/solo-equipo';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -8,6 +9,8 @@ export const dynamic = 'force-dynamic';
 
 // GET /api/incidents/uploads?file=xxx
 export async function GET(req: Request) {
+  const rechazo = await soloEquipo();
+  if (rechazo) return rechazo;
   const { searchParams } = new URL(req.url);
   const file = searchParams.get('file');
   if (!file || file.includes('..') || file.includes('/')) {

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { soloEquipo } from '@/lib/auth/solo-equipo';
 import { prisma, pool } from '@/lib/db';
 import { guardarFotosIncidencia } from '@/lib/media/incidencias';
 
@@ -8,6 +9,8 @@ export const dynamic = 'force-dynamic';
 // Returns incidents WITHOUT base64 images (lightweight list).
 // Uses raw SQL to avoid fetching the heavy images column from the DB.
 export async function GET(req: Request) {
+  const rechazo = await soloEquipo();
+  if (rechazo) return rechazo;
   const { searchParams } = new URL(req.url);
   const projectId = searchParams.get('projectId');
 
@@ -29,6 +32,8 @@ export async function GET(req: Request) {
 
 // POST /api/incidents — create (multipart)
 export async function POST(req: Request) {
+  const rechazo = await soloEquipo();
+  if (rechazo) return rechazo;
   try {
     const form = await req.formData();
     const projectId = form.get('projectId') as string;
@@ -62,6 +67,8 @@ export async function POST(req: Request) {
 
 // PUT /api/incidents — update { id, ...fields }
 export async function PUT(req: Request) {
+  const rechazo = await soloEquipo();
+  if (rechazo) return rechazo;
   try {
     const { id, ...updates } = await req.json();
     if (!id) return NextResponse.json({ error: 'Missing id' }, { status: 400 });

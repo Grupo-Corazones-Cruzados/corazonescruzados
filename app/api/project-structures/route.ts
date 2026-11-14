@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { soloEquipo } from '@/lib/auth/solo-equipo';
 import { prisma, pool } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
@@ -36,6 +37,8 @@ async function ensureTables() {
 
 // GET — returns all projects with nested modules > sections > subsections
 export async function GET() {
+  const rechazo = await soloEquipo();
+  if (rechazo) return rechazo;
   await ensureTables();
   const projects = await prisma.project.findMany({
     include: {
@@ -60,6 +63,8 @@ export async function GET() {
 
 // PUT — full replace: receives the complete array of project structures
 export async function PUT(req: Request) {
+  const rechazo = await soloEquipo();
+  if (rechazo) return rechazo;
   try {
     const structures = await req.json();
 
