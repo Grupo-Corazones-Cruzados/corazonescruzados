@@ -11,6 +11,11 @@ import { pool } from '@/lib/db';
  *   APNS_KEY (contenido del .p8) · APNS_KEY_ID · APNS_TEAM_ID · APNS_BUNDLE_ID
  * Mudar la app a la cuenta propia = cambiar esas cuatro variables y recompilar.
  *
+ * ⇒ DOS APPS (2026-11-14): GCC World y GCC Miembros son de la cuenta de Fernando (K7PVYYMP32) y cada una
+ * tiene su identificador. `APNS_BUNDLE_ID` lleva los dos separados por coma; como el token no dice de qué
+ * app es, se prueban en orden (Apple responde `DeviceTokenNotForTopic` al equivocado) y el que acierta
+ * queda en `push_devices.apns_bundle` (migración 092).
+ *
  * APNs exige HTTP/2 (por eso `node:http2` y no `fetch`) y un JWT ES256 que se puede reutilizar
  * hasta una hora; se renueva a los 50 minutos.
  *
@@ -25,7 +30,8 @@ let jwt: { valor: string; hecho: number } | null = null;
 function configurado() {
   const { APNS_KEY, APNS_KEY_ID, APNS_TEAM_ID, APNS_BUNDLE_ID } = process.env;
   return APNS_KEY && APNS_KEY_ID && APNS_TEAM_ID && APNS_BUNDLE_ID
-    ? { clave: APNS_KEY.replace(/\\n/g, '\n'), keyId: APNS_KEY_ID, teamId: APNS_TEAM_ID, bundle: APNS_BUNDLE_ID }
+    ? { clave: APNS_KEY.replace(/\\n/g, '\n'), keyId: APNS_KEY_ID, teamId: APNS_TEAM_ID,
+        bundles: APNS_BUNDLE_ID.split(',').map((b) => b.trim()).filter(Boolean) }
     : null;
 }
 
@@ -62,6 +68,36 @@ function enviarUno(entorno: EntornoApns, ruta: string, cabeceras: Record<string,
   });
 }
 
+/** El identificador de app que Apple ya aceptó para cada token (los demás, sin saber todavía). */
+async function bundlesConocidos(tokens: string[]): Promise<Map<string, string>> {
+  try {
+    const { rows } = await pool.query(
+      `SELECT token, apns_bundle FROM gcc_world.push_devices WHERE token = ANY($1) AND apns_bundle IS NOT NULL`, [tokens]);
+    return new Map(rows.map((r: any) => [r.token, r.apns_bundle]));
+  } catch { return new Map(); } // sin la migración 092: se prueban todos
+}
+
+/**
+ * Un envío a un token probando los identificadores de app en orden (el conocido primero). Al acertar uno
+ * distinto del guardado, lo guarda.
+ */
+async function enviarConTema(
+  bundles: string[], conocido: string | undefined, sufijo: string,
+  entorno: EntornoApns, t: string, cabeceras: Record<string, string>, cuerpo: string,
+): Promise<{ estado: number; motivo?: string }> {
+  const orden = conocido ? [conocido, ...bundles.filter((b) => b !== conocido)] : bundles;
+  let r: { estado: number; motivo?: string } = { estado: 0, motivo: 'sin identificador de app' };
+  for (const b of orden) {
+    r = await enviarUno(entorno, `/3/device/${t}`, { ...cabeceras, 'apns-topic': b + sufijo }, cuerpo);
+    if (r.motivo === 'DeviceTokenNotForTopic' || r.motivo === 'TopicDisallowed') continue;
+    if (r.estado === 200 && b !== conocido) {
+      await pool.query(`UPDATE gcc_world.push_devices SET apns_bundle = $1 WHERE token = $2`, [b, t]).catch(() => {});
+    }
+    return r;
+  }
+  return r;
+}
+
 /**
  * Envía un evento a Actividades en Vivo (`start` a un token de arranque, `end`/`update` al
  * token de una actividad). Borra los tokens que Apple da por muertos.
@@ -77,11 +113,11 @@ export async function enviarActividadEnVivo(
     const bearer = await token(c);
     const cuerpo = JSON.stringify({ aps: { timestamp: Math.floor(Date.now() / 1000), ...aps } });
     const muertos: string[] = [];
+    const conocidos = await bundlesConocidos(destinos.map((d) => d.token));
     await Promise.all(destinos.map(async ({ token: t, entorno }) => {
-      const r = await enviarUno(entorno, `/3/device/${t}`, {
+      const r = await enviarConTema(c.bundles, conocidos.get(t), '.push-type.liveactivity', entorno, t, {
         authorization: `bearer ${bearer}`,
         'apns-push-type': 'liveactivity',
-        'apns-topic': `${c.bundle}.push-type.liveactivity`,
         'apns-priority': '10',
         'content-type': 'application/json',
       }, cuerpo);
@@ -126,11 +162,11 @@ export async function enviarAvisoApns(
       ...(aviso.datos || {}),
     });
     const muertos: string[] = [];
+    const conocidos = await bundlesConocidos(destinos.map((d) => d.token));
     await Promise.all(destinos.map(async ({ token: t, entorno }) => {
-      const r = await enviarUno(entorno, `/3/device/${t}`, {
+      const r = await enviarConTema(c.bundles, conocidos.get(t), '', entorno, t, {
         authorization: `bearer ${bearer}`,
         'apns-push-type': 'alert',
-        'apns-topic': c.bundle,
         'apns-priority': '10',
         'content-type': 'application/json',
       }, cuerpo);
