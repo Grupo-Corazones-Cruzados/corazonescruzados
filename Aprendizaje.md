@@ -12429,3 +12429,11 @@ API de Gemini solo como apoyo puntual. Primero, una prueba local gratuita con su
   - *Custom rule* «GCC: rutas de escaneo»: bloquea las rutas que contienen `/.` (salvo `/.well-known/`, que llevan las passkeys y los enlaces de las apps) y las que terminan en `.php`, `.sql`, `.yml` o `.yaml`, más `/actuator`.
   - *Rate limit* «GCC: límite en el inicio de sesión»: más de 10 POST a `/api/auth/` en 10 s desde una misma IP dan 429 durante 10 s. Son los mínimos del plan Free: periodo y castigo de 10 s, por IP y centro de datos.
   - Comprobado: los escaneos dan 403; los dos `.well-known`, la portada, `www`, los productos y el manifiesto dan 200; el POST número 11 da 429 y a los 12 s se vuelve a entrar. Para quitarlas: Security → WAF en el panel, o un PUT con `rules: []` a las fases `http_request_firewall_custom` y `http_ratelimit`.
+
+## Auditoría completa con la skill security-audit de Cloudflare (2026-11-13/14)
+- Se hizo una pasada completa del repositorio con la skill `security-audit` de Cloudflare: 6 olas de revisión, doble verificación independiente y crítico final limpio.
+- El informe y los hallazgos están **fuera del repositorio**, a propósito: el repo es público y los fallos aún no están corregidos. Fernando tiene la ruta.
+- Aquí solo se anota lo que ya está resuelto:
+  - Dos documentos con credenciales salieron del repo el 2026-11-13.
+  - La contraseña de `revisor.meta` se rotó y sus sesiones se anularon.
+  - Las tareas que quedan para Fernando están en `services/servidor-m1/TAREAS-DE-FERNANDO.md` §E.
