@@ -6,6 +6,9 @@ import { diasConHistorial } from '@/lib/centralized/control-psicosocial';
 export async function GET(req: Request) {
   const m = await miembroDeSesion();
   if (!m) return NextResponse.json({ error: 'Solo para miembros' }, { status: 403 });
+  // Ver ubicaciones queda registrado a nombre de quien mira: suplantando, el registro diría que miró
+  // la persona suplantada y no el administrador (auditoría de seguridad, 2026-11-14).
+  if (m.suplantado) return NextResponse.json({ error: 'Las ubicaciones no se ven suplantando a otra persona' }, { status: 403 });
   const dia = new URL(req.url).searchParams.get('dia') || '';
   if (!diasConHistorial().includes(dia)) return NextResponse.json({ error: 'Día no válido' }, { status: 400 });
   try {

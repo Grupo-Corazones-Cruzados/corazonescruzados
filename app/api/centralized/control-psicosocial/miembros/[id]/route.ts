@@ -5,6 +5,9 @@ import { detalleMiembro, miembroDeSesion } from '@/lib/centralized/control-psico
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const m = await miembroDeSesion();
   if (!m) return NextResponse.json({ error: 'Solo para miembros' }, { status: 403 });
+  // Ver ubicaciones queda registrado a nombre de quien mira: suplantando, el registro diría que miró
+  // la persona suplantada y no el administrador (auditoría de seguridad, 2026-11-14).
+  if (m.suplantado) return NextResponse.json({ error: 'Las ubicaciones no se ven suplantando a otra persona' }, { status: 403 });
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ error: 'No encontrado' }, { status: 404 });
   try {

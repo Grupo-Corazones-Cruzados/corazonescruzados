@@ -34,21 +34,29 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     let w = parseInt(req.nextUrl.searchParams.get('w') || '480', 10) || 480;
     if (!ALLOWED_W.has(w)) w = 480;
 
-    const key = `${id}:${i}:${w}`;
-    const hit = cache.get(key);
-    if (hit) {
-      return new NextResponse(new Uint8Array(hit), {
-        status: 200,
-        headers: { 'Content-Type': 'image/webp', 'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800' },
-      });
-    }
-
+    // Primero la base y el permiso, después la caché (auditoría de seguridad, 2026-11-14): con la caché
+    // delante, una miniatura que alguien con sesión ya había pedido se servía a cualquiera, aunque el
+    // proyecto no estuviera publicado o ya se hubiera borrado.
     const { rows: [row] } = await pool.query(
       `SELECT p.images[$2] as img, p.is_marketplace_published FROM gcc_world.projects p WHERE p.id = $1`,
       [id, i + 1]
     );
     if (!row || !row.img) return new NextResponse(null, { status: 404 });
     if (!user && !row.is_marketplace_published) return new NextResponse(null, { status: 404 });
+    // Lo no publicado no lo guarda ningún intermediario (Cloudflare, navegador compartido).
+    const cacheControl = row.is_marketplace_published
+      ? 'public, max-age=86400, stale-while-revalidate=604800'
+      : 'private, max-age=300';
+
+    // La clave lleva la referencia de la imagen: si la foto cambia, no se sirve la vieja.
+    const key = `${id}:${i}:${w}:${String(row.img).length}:${String(row.img).slice(-48)}`;
+    const hit = cache.get(key);
+    if (hit) {
+      return new NextResponse(new Uint8Array(hit), {
+        status: 200,
+        headers: { 'Content-Type': 'image/webp', 'Cache-Control': cacheControl },
+      });
+    }
 
     const raw = String(row.img);
     // Ya migrada a Cloudinary: redirige a la transformación de ancho (WebP/AVIF auto).
@@ -76,7 +84,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return new NextResponse(new Uint8Array(out), {
       status: 200,
-      headers: { 'Content-Type': 'image/webp', 'Cache-Control': 'public, max-age=86400, stale-while-revalidate=604800' },
+      headers: { 'Content-Type': 'image/webp', 'Cache-Control': cacheControl },
     });
   } catch {
     return new NextResponse(null, { status: 500 });
