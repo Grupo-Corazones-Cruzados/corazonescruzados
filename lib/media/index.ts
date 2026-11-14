@@ -105,10 +105,23 @@ export async function renombrar(fileId: string, base: string): Promise<string> {
   return nombre;
 }
 
-/** Quitada de la plataforma → a la papelera de Drive. Lo que no es de Drive se ignora. */
-export async function quitar(ref: string | null | undefined): Promise<void> {
+/**
+ * Quitada de la plataforma → a la papelera de Drive. Lo que no es de Drive se ignora.
+ *
+ * Solo va a la papelera un archivo que la plataforma subió (tiene fila en `media_drive`) y que no se
+ * borró ya; con `dueño`, además, que sea de ese módulo y esa ficha. Antes bastaba con colgar en una
+ * galería la referencia `/api/media/<id>` de cualquier archivo del Drive de la empresa y quitarla
+ * después para mandarlo a la papelera (auditoría de seguridad, 2026-11-14).
+ */
+export async function quitar(
+  ref: string | null | undefined,
+  dueño?: { modulo: Modulo; referencia: string | number },
+): Promise<void> {
   const id = fileIdDe(ref);
   if (!id) return;
+  const r = await registro(id);
+  if (!r || r.borrado_en) return;
+  if (dueño && (r.modulo !== dueño.modulo || String(r.referencia) !== String(dueño.referencia))) return;
   await drive.aPapelera(id);
   await pool.query(`UPDATE gcc_world.media_drive SET borrado_en = NOW() WHERE file_id = $1`, [id]);
 }

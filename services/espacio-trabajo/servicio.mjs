@@ -562,6 +562,14 @@ async function ubicar(proyecto, id) {
   return null;
 }
 
+/**
+ * Una sesión AISLADA (las que nacen de una incidencia de WhatsApp) solo trabaja en modo plan. El modo
+ * venía del navegador y al retomarla se abría con el modo por defecto, permisos completos: el texto de un
+ * desconocido acababa con acceso total a la máquina (auditoría de seguridad, 2026-11-14). Salir del plan
+ * es «Quitar aislamiento», una decisión explícita.
+ */
+const modoPara = (id, pedido) => (leerAisladas().has(id) ? 'plan' : pedido);
+
 async function asegurarViva(id, proyectoId, { forzar = false, modelo, modo } = {}) {
   const existente = vivas.get(id);
   if (existente) return existente;
@@ -569,7 +577,7 @@ async function asegurarViva(id, proyectoId, { forzar = false, modelo, modo } = {
   const donde = await ubicar(proyecto, id);
   if (!donde) throw new ErrorApi(404, 'No encuentro esa sesión en los archivos de Claude Code de este proyecto.');
   if (!forzar && abiertaEnTerminal(id)) throw new ErrorApi(409, 'Esta sesión está abierta en una terminal. Si escribes aquí también, las dos partes dejarán de ver lo que hace la otra.', 'abierta_en_terminal');
-  const s = new SesionViva({ id, proyecto, cwd: donde.dir, modelo, modo, retomar: true, proyectosTodos: await proyectos() });
+  const s = new SesionViva({ id, proyecto, cwd: donde.dir, modelo, modo: modoPara(id, modo), retomar: true, proyectosTodos: await proyectos() });
   vivas.set(id, s);
   return s;
 }
@@ -717,7 +725,7 @@ ruta('POST', '/sesiones', async ({ cuerpo }) => {
   const proyecto = await proyectoPorId(cuerpo.proyecto);
   const id = crypto.randomUUID();
   if (cuerpo.aislada === true) marcarAislada(id, true);
-  const s = new SesionViva({ id, proyecto, cwd: proyecto.ruta, modelo: cuerpo.modelo, modo: cuerpo.modo, retomar: false, proyectosTodos: await proyectos() });
+  const s = new SesionViva({ id, proyecto, cwd: proyecto.ruta, modelo: cuerpo.modelo, modo: modoPara(id, cuerpo.modo), retomar: false, proyectosTodos: await proyectos() });
   vivas.set(id, s);
   if (cuerpo.texto || cuerpo.imagenes?.length) s.enviar(cuerpo);
   return { id };
@@ -767,6 +775,7 @@ ruta('POST', '/sesiones/:id/ajustes', async ({ p, cuerpo }) => {
   const s = vivas.get(p.id);
   if (!s) return { ok: true, aplicado: false };
   if (cuerpo.modelo) { await s.q.setModel(cuerpo.modelo); s.modelo = cuerpo.modelo; }
+  if (cuerpo.modo && modoPara(p.id, cuerpo.modo) !== cuerpo.modo) throw new ErrorApi(409, 'Esta sesión está aislada: solo trabaja en modo plan. Para darle más permisos, quita el aislamiento.');
   if (cuerpo.modo) { await s.q.setPermissionMode(cuerpo.modo); s.modo = cuerpo.modo; }
   s.emitir({ tipo: 'ajustes', modelo: s.modelo, modo: s.modo });
   return { ok: true, aplicado: true };

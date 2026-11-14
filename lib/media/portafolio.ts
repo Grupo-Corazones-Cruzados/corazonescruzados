@@ -1,5 +1,5 @@
 import { pool } from '@/lib/db';
-import { decodificarDataUri, guardar, quitar } from '@/lib/media';
+import { decodificarDataUri, fileIdDe, guardar, quitar } from '@/lib/media';
 
 /**
  * Fotos de los ítems del PORTAFOLIO (productos, automatizaciones y proyectos escritos a mano:
@@ -22,7 +22,11 @@ export async function guardarFotosPortafolio(
   const finales: string[] = [];
   for (const img of lista) {
     const d = decodificarDataUri(img);
-    if (!d || !d.mime.startsWith('image/')) { finales.push(img); continue; }
+    if (!d || !d.mime.startsWith('image/')) {
+      // Una referencia a Drive solo vale si ya era de este ítem: así nadie cuelga aquí un archivo ajeno.
+      if (fileIdDe(img) && !antes.includes(img)) continue;
+      finales.push(img); continue;
+    }
     const g = await guardar({
       datos: d.datos, mime: d.mime,
       base: `${titulo} · foto ${String(finales.length + 1).padStart(2, '0')}`,
@@ -33,8 +37,8 @@ export async function guardarFotosPortafolio(
   return { imagenes: finales, quitadas: antes.filter((x) => !finales.includes(x)) };
 }
 
-export async function quitarFotos(refs: string[]): Promise<void> {
-  for (const ref of refs) await quitar(ref).catch((e) => console.error('[portafolio] papelera de Drive', e?.message));
+export async function quitarFotos(refs: string[], itemId: string | number): Promise<void> {
+  for (const ref of refs) await quitar(ref, { modulo: 'portafolio_foto', referencia: itemId }).catch((e) => console.error('[portafolio] papelera de Drive', e?.message));
 }
 
 /** El portafolio de un miembro lo toca ese miembro (o un administrador), no cualquier sesión. */

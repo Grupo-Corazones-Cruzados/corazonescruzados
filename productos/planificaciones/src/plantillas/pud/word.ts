@@ -1,3 +1,4 @@
+import { esDescargable } from '@/lib/imagenPermitida';
 import {
   AlignmentType,
   BorderStyle,
@@ -155,7 +156,8 @@ async function cargarImagen(url: string | null | undefined) {
   try {
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), 6000);
-    const res = await fetch(url, { signal: ctl.signal });
+    if (!esDescargable(url)) { clearTimeout(t); throw new Error('dirección no permitida'); }
+    const res = await fetch(url, { signal: ctl.signal, redirect: 'error' });
     clearTimeout(t);
     const tipo = res.headers.get('content-type') ?? '';
     if (res.ok && /image\/(png|jpe?g)/.test(tipo)) r = { datos: Buffer.from(await res.arrayBuffer()), tipo: /png/.test(tipo) ? 'png' : 'jpg' };

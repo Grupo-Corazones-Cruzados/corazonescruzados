@@ -75,7 +75,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
       `UPDATE gcc_world.member_portfolio_items SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *, cost as price, item_type as type`,
       values
     );
-    await quitarFotos(quitadas);
+    await quitarFotos(quitadas, itemId);
 
     return NextResponse.json({ data: rows[0] });
   } catch (err: any) {
@@ -96,7 +96,7 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
       `DELETE FROM gcc_world.member_portfolio_items WHERE id = $1 AND member_id = $2 RETURNING COALESCE(images, '{}') AS images`,
       [itemId, id]
     );
-    if (borrado) await quitarFotos(borrado.images);
+    if (borrado) await quitarFotos(borrado.images, itemId);
 
     return NextResponse.json({ message: 'Deleted' });
   } catch (err: any) {

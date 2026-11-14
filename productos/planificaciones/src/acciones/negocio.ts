@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { esImagenPermitida } from '@/lib/imagenPermitida';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { contextoEscritura } from '@/lib/inquilino';
@@ -39,6 +40,7 @@ async function leerLogo(datos: FormData, clave: string, actual: string | null): 
   }
   if (datos.get(`${clave}Quitar`) === 'true') return { ok: true, url: null };
   const url = String(datos.get(clave) || '').trim();
+  if (url && !esImagenPermitida(url)) return { ok: false, error: 'El logo tiene que subirse como archivo PNG o JPG.' };
   return { ok: true, url: url || actual };
 }
 

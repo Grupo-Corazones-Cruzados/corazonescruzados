@@ -25,3 +25,17 @@ Audio del equipo (Cliente) ─┴→ Gumdramon.app → núcleo en 127.0.0.1:3793
 - **La sesión:** es una sesión normal de Claude Code en el proyecto Gumdramon del Espacio de trabajo (carpeta `~/.gcc-copiloto/sesion`, con su `CLAUDE.md`). Se abre desde el widget y se puede seguir allí.
 - **Sesiones (pestaña del widget, 2026-11-08):** lista las sesiones de Gumdramon. Tocar una la **retoma**: las preguntas siguientes van a esa conversación y el widget enseña lo ya preguntado (sin el contexto de la reunión, y «Sin respuesta» si Claude no llegó a responder). También se les cambia el nombre (queda fijo: el Espacio lo guarda en `titulos.json`, que manda sobre el resumen de Claude Code, y «Reunión <hora>» solo se pone una vez a las sesiones nuevas) y se eliminan (papelera del Espacio, 30 días). «Nueva sesión» hace que la siguiente pregunta abra otra. Rutas del núcleo: `GET /sesiones`, `POST /sesiones/nueva`, `POST /sesiones/:id/{retomar|titulo|eliminar}`.
 - **Seguridad:** lo que se oye lo puede decir cualquiera, como el WhatsApp de las incidencias. Por eso va en modo `dontAsk` con los permisos que escribe `instalar.sh`: `Read`, `WebSearch`, subagentes, la búsqueda en todos los proyectos (`nucleo/buscar.mjs`, porque esta versión de Claude Code no trae `Grep` ni `Glob` y un `grep` libre leería los `.env`) y un SELECT de solo lectura (`nucleo/bd.mjs`). Sin escritura y sin `WebFetch`. `peter-tours` y las llaves están vedados.
+
+## Base de datos del copiloto (2026-11-14)
+`consultar-bd.mjs` entra con el usuario **`copiloto_lectura`** del Postgres del M1, por el túnel local
+`127.0.0.1:55433`. Ese usuario:
+- tiene la transacción en solo lectura y un límite de 5 s por consulta;
+- puede leer `gcc_world` **sin** las columnas de contraseñas, tokens, hashes y claves cifradas;
+- no puede usar `pg_read_file` y no es superusuario.
+
+La cadena vive en `~/.gcc-copiloto/.env` (600) y no está en el repositorio. Antes entraba como superusuario
+en la copia de Railway, y el filtro de texto de `bd.mjs` se podía saltar.
+
+Una tabla nueva **no** es legible hasta que se repitan los permisos. Para eso hay que volver a correr, en el
+M1, el bloque `GRANT SELECT (columnas sin secretos)` sobre las tablas de `gcc_world`, con el mismo filtro de
+nombres.

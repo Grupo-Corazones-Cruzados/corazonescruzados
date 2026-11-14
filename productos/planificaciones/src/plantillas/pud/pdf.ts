@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit/js/pdfkit.standalone';
+import { esDescargable } from '@/lib/imagenPermitida';
 import type { Bloque, Celda, DocumentoPud, SemanaDoc } from '../tipos';
 import { parsearEstrategias, lineas } from './estrategias';
 import { anchosDeFila } from './anchos';
@@ -125,7 +126,8 @@ async function cargarImagen(url: string | null | undefined): Promise<string | nu
   try {
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), 6000);
-    const r = await fetch(url, { signal: ctl.signal });
+    if (!esDescargable(url)) { clearTimeout(t); throw new Error('dirección no permitida'); }
+    const r = await fetch(url, { signal: ctl.signal, redirect: 'error' });
     clearTimeout(t);
     const tipo = r.headers.get('content-type') ?? '';
     // PDFKit solo entiende PNG y JPEG. Un logo en SVG o WEBP se omite, no rompe el documento.
