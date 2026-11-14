@@ -68,6 +68,7 @@ import { tituloDePaso, type PasoPostulacionId } from '@/lib/sitio/pasosPostulaci
 import { sonarInterruptor } from '@/lib/sitio/sonidoSeleccion';
 import LogoGirando from '@/components/ui/LogoGirando';
 import MiembrosGaleria from '@/components/landing/MiembrosGaleria';
+import { Aviso } from '@/components/ui/Aviso';
 import AnimacionPaso, { EscenarioAnimacion } from '@/components/landing/AnimacionPaso';
 import PixelInput from '@/components/ui/PixelInput';
 import BotonCerrar from '@/components/ui/BotonCerrar';
@@ -1364,15 +1365,7 @@ type AccordionItem = { name: string; summary: string; body: () => React.ReactNod
  * rojo («se ve feísimo»). Lo distingue un rótulo con icono en el color del aviso; el texto va en el
  * color normal del párrafo. Estilos en `globals.css` (`.aviso-gcc`).
  */
-export function Aviso({ tono, titulo, children }: { tono: 'peligro' | 'info'; titulo: string; children: React.ReactNode }) {
-  const Icono = tono === 'peligro' ? AlertTriangle : Info;
-  return (
-    <div role="note" className="aviso-gcc" data-tono={tono}>
-      <p className="aviso-gcc-titulo"><Icono aria-hidden />{titulo}</p>
-      <p className="aviso-gcc-texto">{children}</p>
-    </div>
-  );
-}
+export { Aviso };
 
 /* --- Tokens de estilo del modal (fuente única; todos apuntan a `.corp`) --- */
 

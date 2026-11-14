@@ -6,6 +6,7 @@ import { addParticipant } from '@/lib/projects/members';
 import { esGestorDelProyecto, miembroDe } from '@/lib/projects/permisos';
 import { encaja, talentosAbiertosDelProyecto, top5DeMiembro } from '@/lib/talentos/demostrados';
 import { motivoSinSegundoBeneficiario } from '@/lib/ganancias';
+import { rechazoSinRuc } from '@/lib/facturacion/ruc-obligatorio';
 
 async function ensureColumns() {
   await pool.query(`ALTER TABLE gcc_world.project_bids ADD COLUMN IF NOT EXISTS requirement_costs JSONB DEFAULT '{}'`);
@@ -35,6 +36,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Sin RUC habilitado no se crea, toma ni propone (desde el 2026-12-01; ver `lib/facturacion/ruc-obligatorio.ts`).
+    { const sinRuc = await rechazoSinRuc(user as any); if (sinRuc) return sinRuc; }
     const { id } = await params;
     const body = await req.json();
     await ensureColumns();

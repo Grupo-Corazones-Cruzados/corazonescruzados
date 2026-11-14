@@ -1,4 +1,5 @@
 'use client';
+import AvisoRucPendiente from '@/components/facturacion/AvisoRucPendiente';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
@@ -387,6 +388,7 @@ export default function TicketsPage() {
   return (
     <div>
       <PageHeader title="Tickets" description="Solicitudes de trabajo y soporte" />
+      <AvisoRucPendiente />
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: estado ── */}

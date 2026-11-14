@@ -2,6 +2,7 @@ import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureProjectMembersTable, setResponsible } from '@/lib/projects/members';
+import { rechazoSinRuc } from '@/lib/facturacion/ruc-obligatorio';
 
 /**
  * Aceptar / rechazar la INVITACIÓN a tomar el liderazgo (responsable) de un proyecto.
@@ -13,6 +14,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Sin RUC habilitado no se crea, toma ni propone (desde el 2026-12-01; ver `lib/facturacion/ruc-obligatorio.ts`).
+    { const sinRuc = await rechazoSinRuc(user as any); if (sinRuc) return sinRuc; }
     const { id } = await params;
     const { action } = await req.json();
     await ensureProjectMembersTable();

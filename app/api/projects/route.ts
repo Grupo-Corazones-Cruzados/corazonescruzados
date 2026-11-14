@@ -11,6 +11,7 @@ import { sendProjectClientInvitationEmail } from '@/lib/integrations/email';
 import { columnasProyecto } from '@/lib/projects/columnas';
 import { misTalentos, proyectoPublicadoParaSql, validarTalento } from '@/lib/talentos/demostrados';
 import { filtrarAlCatalogo } from '@/lib/talentos/catalogo';
+import { rechazoSinRuc } from '@/lib/facturacion/ruc-obligatorio';
 
 /** `invoice_projects` para los LEFT JOIN de la lista — una vez por proceso, no en cada clic. */
 let asegurandoFacturasProyecto: Promise<void> | null = null;
@@ -283,6 +284,8 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Sin RUC habilitado no se crea, toma ni propone (desde el 2026-12-01; ver `lib/facturacion/ruc-obligatorio.ts`).
+    { const sinRuc = await rechazoSinRuc(user as any); if (sinRuc) return sinRuc; }
 
     const body = await req.json();
     if (!body.title) return NextResponse.json({ error: 'title required' }, { status: 400 });

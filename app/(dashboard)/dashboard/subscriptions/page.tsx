@@ -1,4 +1,5 @@
 'use client';
+import AvisoRucPendiente from '@/components/facturacion/AvisoRucPendiente';
 
 import { usePagosEnApp } from '@/lib/hooks/usePagosEnApp';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -394,6 +395,7 @@ export default function SubscriptionsPage() {
   return (
     <div>
       <PageHeader title="Suscripciones" description="Cobros mensuales recurrentes y su facturación" />
+      <AvisoRucPendiente />
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: estado ── */}

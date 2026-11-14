@@ -7,6 +7,7 @@ import { filtrarAlCatalogo } from '@/lib/talentos/catalogo';
 import { fichaDeMiembro, misTalentos, validarTalento } from '@/lib/talentos/demostrados';
 import { ensureTicketBidsTable } from '@/lib/tickets/bids';
 import { anunciarTicket } from '@/lib/tickets/alta';
+import { rechazoSinRuc } from '@/lib/facturacion/ruc-obligatorio';
 
 
 /**
@@ -156,6 +157,8 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    // Sin RUC habilitado no se crea, toma ni propone (desde el 2026-12-01; ver `lib/facturacion/ruc-obligatorio.ts`).
+    { const sinRuc = await rechazoSinRuc(user as any); if (sinRuc) return sinRuc; }
 
     const body = await req.json();
     const { title, description, service_id, member_id, client_id, client_email, deadline, estimated_hours, estimated_cost, time_slots } = body;

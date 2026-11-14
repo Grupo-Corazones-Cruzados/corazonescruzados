@@ -1,4 +1,5 @@
 'use client';
+import AvisoRucPendiente from '@/components/facturacion/AvisoRucPendiente';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useConsultaMedia, PANTALLA_XL } from '@/lib/hooks/useConsultaMedia';
@@ -455,6 +456,7 @@ export default function ProjectsPage() {
   return (
     <div>
       <PageHeader title="Proyectos" description="Proyectos, propuestas y su facturación" />
+      <AvisoRucPendiente />
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
         {/* ── Left rail: alcance + estado ── */}

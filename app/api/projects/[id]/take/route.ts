@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { setResponsible } from '@/lib/projects/members';
 import { memberTalents } from '@/lib/tickets/bids';
 import { createNotification } from '@/lib/notifications';
+import { rechazoSinRuc } from '@/lib/facturacion/ruc-obligatorio';
 
 // POST — un miembro con el talento requerido TOMA el proyecto abierto-por-talento y queda
 // como RESPONSABLE de inmediato (sin invitación/propuesta). Luego puede tomar requerimientos
@@ -14,6 +15,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     // Miembros, admin y candidatos (rol cliente con ficha de miembro): lo que decide es el
     // talento demostrado, no el rol (2026-11-09).
     if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 403 });
+    // Sin RUC habilitado no se crea, toma ni propone (desde el 2026-12-01; ver `lib/facturacion/ruc-obligatorio.ts`).
+    { const sinRuc = await rechazoSinRuc(user as any); if (sinRuc) return sinRuc; }
     const { id } = await params;
     const projectId = Number(id);
 

@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { listTicketBids, createTicketBid, acceptTicketBid, deleteTicketBid } from '@/lib/tickets/bids';
 import { createNotification } from '@/lib/notifications';
 import { puedeVerTicket, cargarTicketParaPermiso } from '@/lib/tickets/permisos';
+import { rechazoSinRuc } from '@/lib/facturacion/ruc-obligatorio';
 
 async function myMemberId(userId: string): Promise<number | null> {
   const { rows: [u] } = await pool.query(`SELECT member_id FROM gcc_world.users WHERE id = $1`, [userId]);
@@ -35,6 +36,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   try {
     const user = await getCurrentUser();
     if (!user) return NextResponse.json({ error: 'No autenticado' }, { status: 401 });
+    // Sin RUC habilitado no se crea, toma ni propone (desde el 2026-12-01; ver `lib/facturacion/ruc-obligatorio.ts`).
+    { const sinRuc = await rechazoSinRuc(user as any); if (sinRuc) return sinRuc; }
     const { id } = await params;
     const mid = await myMemberId(user.userId);
     if (!mid) return NextResponse.json({ error: 'Necesitas un perfil de miembro para enviar propuestas.' }, { status: 403 });

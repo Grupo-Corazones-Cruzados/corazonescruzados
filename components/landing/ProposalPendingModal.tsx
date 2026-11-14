@@ -1,7 +1,7 @@
 'use client';
 import { Send, MailCheck, BadgeCheck } from 'lucide-react';
 import { AuthDialog, BotonAuth } from '@/components/landing/AuthSurface';
-import { Aviso } from '@/components/landing/OnboardingSlidersModal';
+import { Aviso } from '@/components/ui/Aviso';
 
 /**
  * ProposalPendingModal

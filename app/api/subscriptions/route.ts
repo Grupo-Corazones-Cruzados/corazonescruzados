@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureSubscriptionTables, computePeriods, summarizeSubscription, toYMD } from '@/lib/subscriptions';
 import { alcanceSuscripciones } from '@/lib/subscriptions-alcance';
+import { rechazoSinRuc } from '@/lib/facturacion/ruc-obligatorio';
 
 const PER_PAGE_MAX = 100;
 
@@ -141,6 +142,8 @@ export async function POST(req: NextRequest) {
     if (!user || (user.role !== 'admin' && user.role !== 'member')) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
+    // Sin RUC habilitado no se crea, toma ni propone (desde el 2026-12-01; ver `lib/facturacion/ruc-obligatorio.ts`).
+    { const sinRuc = await rechazoSinRuc(user as any); if (sinRuc) return sinRuc; }
     await ensureSubscriptionTables();
 
     const body = await req.json();
