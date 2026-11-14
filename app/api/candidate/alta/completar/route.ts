@@ -7,6 +7,7 @@ import { ensureAdminMember } from '@/lib/ensure-admin-member';
 import { TALENTOS, TALENTOS_SET } from '@/lib/centralized/talentos';
 import { IDIOMAS, ESTADOS, JORNADAS, MODALIDADES, DIAS_SEMANA } from '@/lib/perfil/opciones';
 import { prepararHorario } from '@/lib/perfil/horario';
+import { guardarEmisor } from '@/lib/facturacion-emisores';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,7 @@ export const dynamic = 'force-dynamic';
  *  · `member_cv_profiles` (por `member_id`): biografía, talentos con su educación y experiencia, ubicación,
  *    idiomas, aspiración salarial y disponibilidad laboral (`job_*`).
  *  · `member_schedules`: el horario semanal.
+ *  · `sri_emisores`: la cuenta de emisor, solo si dio su RUC (opcional).
  * La cuenta solo queda utilizable al final, cuando se pone su contraseña y se marca `profile_completed`: si algo falla
  * a mitad, el candidato vuelve a enviar el formulario y nadie entra con el perfil a medias.
  */
@@ -68,8 +70,9 @@ function leerFormulario(b: any): { ok: true; d: any } | ({ ok: false } & Fallo) 
   d.bio = texto(b.bio, 2000);
   if (d.bio.length < 30) return mal('Escribe tu biografía (al menos 30 caracteres).');
 
+  // Los talentos son OPCIONALES (Fernando, 2026-11-14: «si no tiene talento registrado, déjalo que pueda avanzar»);
+  // el que se elige sí lleva su educación y su experiencia.
   const talentos = Array.isArray(b.talentos) ? b.talentos.slice(0, 10) : [];
-  if (!talentos.length) return mal('Agrega al menos un talento.');
   d.talentos = [];
   for (const t of talentos) {
     const key = String(t?.key || '');
@@ -103,6 +106,8 @@ function leerFormulario(b: any): { ok: true; d: any } | ({ ok: false } & Fallo) 
   });
   if (!d.horario.some((h: any) => h.activo)) return mal('Marca al menos un día en tu horario.');
   if (d.horario.some((h: any) => h.activo && h.fin <= h.inicio)) return mal('En el horario, la hora de fin debe ser posterior a la de inicio.');
+  // Facturación OPCIONAL: si trae RUC, se registra como en Configuración ▸ Facturación (`guardarEmisor` lo valida entero).
+  d.facturacion = b.facturacion && typeof b.facturacion === 'object' && String(b.facturacion.ruc || '').trim() ? b.facturacion : null;
   return { ok: true, d };
 }
 
@@ -133,6 +138,15 @@ export async function POST(req: Request) {
     }
     await pool.query(`UPDATE gcc_world.clients SET user_id = $1, phone = $2, full_name = $3 WHERE id = $4`,
       [userId, d.telefono, `${d.nombre} ${d.apellido}`, c.id]);
+
+    // 1-bis. Su cuenta de emisor, si dio el RUC. Si el SRI no lo aceptaría, se avisa y no se sigue.
+    if (d.facturacion) {
+      const f = d.facturacion;
+      const g = await guardarEmisor(userId, { ruc: f.ruc, razonSocial: f.razonSocial, nombreComercial: f.nombreComercial,
+        dirMatriz: f.dirMatriz, regimen: f.regimen, obligadoContabilidad: f.obligadoContabilidad === true,
+        cobraIva: f.cobraIva === true, tarifaIva: f.tarifaIva });
+      if (!g.ok) return NextResponse.json({ error: `Facturación: ${g.error}` }, { status: 400 });
+    }
 
     // 2. Su ficha de miembro (la que piden el CV y la disponibilidad), como hace el panel al entrar.
     const memberId = await ensureAdminMember(userId, correo, `${d.nombre} ${d.apellido}`);
