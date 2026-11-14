@@ -5,7 +5,7 @@ import { createToken, setAuthCookie } from '@/lib/auth/jwt';
 
 /**
  * EL ALTA DEL CANDIDATO ACEPTADO (Fernando, 2026-11-12). Se entra al formulario con el CORREO CORPORATIVO y la
- * contraseña temporal que le llegó a ese correo; al entrar se abre una sesión corta de alta (cookie `gcc_alta`, 30 min)
+ * contraseña temporal que le llegó a ese correo; al entrar se abre una sesión corta de alta (cookie `gcc_alta`, 3 h: el formulario pide el perfil, el CV y la disponibilidad completos)
  * que solo sirve para completar el formulario. Al completarlo, su cuenta del panel usa el correo corporativo: el
  * personal deja de servir para entrar.
  */
@@ -32,8 +32,8 @@ export async function candidatoPorCorreo(correo: string) {
 
 export async function abrirSesionAlta(clientId: number): Promise<void> {
   const token = randomBytes(32).toString('hex');
-  await pool.query(`UPDATE gcc_world.clients SET alta_sesion = $1, alta_sesion_vence = NOW() + INTERVAL '30 minutes' WHERE id = $2`, [token, clientId]);
-  (await cookies()).set(COOKIE_ALTA, token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 1800 });
+  await pool.query(`UPDATE gcc_world.clients SET alta_sesion = $1, alta_sesion_vence = NOW() + INTERVAL '3 hours' WHERE id = $2`, [token, clientId]);
+  (await cookies()).set(COOKIE_ALTA, token, { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax', path: '/', maxAge: 3 * 3600 });
 }
 
 /** El candidato de la sesión de alta abierta (o null si no hay, venció o ya completó). */
@@ -42,7 +42,7 @@ export async function candidatoDeLaSesionAlta() {
   if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;
   await prepararAlta();
   const { rows: [c] } = await pool.query(
-    `SELECT id, full_name, workspace_email FROM gcc_world.clients
+    `SELECT id, full_name, workspace_email, email AS personal FROM gcc_world.clients
       WHERE alta_sesion = $1 AND alta_sesion_vence > NOW() AND COALESCE(profile_completed, false) = false LIMIT 1`,
     [token],
   );

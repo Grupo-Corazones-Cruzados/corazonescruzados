@@ -1,3 +1,4 @@
+import { prepararHorario } from '@/lib/perfil/horario';
 import { pool } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { NextRequest, NextResponse } from 'next/server';
@@ -56,17 +57,26 @@ export async function PUT(req: NextRequest) {
     const { schedule } = await req.json();
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-    await pool.query('DELETE FROM gcc_world.member_schedules WHERE member_id = $1', [memberId]);
-
-    for (let i = 0; i < days.length; i++) {
-      const day = schedule[days[i]];
-      if (!day) continue;
-      await pool.query(
-        `INSERT INTO gcc_world.member_schedules (member_id, day_of_week, is_active, start_time, end_time)
-         VALUES ($1, $2, $3, $4, $5)`,
-        [memberId, i + 1, day.active, day.start, day.end]
-      );
-    }
+    // En una transacción (2026-11-14): si un día falla, el horario anterior se queda como estaba en vez de perderse.
+    await prepararHorario();
+    const db = await pool.connect();
+    try {
+      await db.query('BEGIN');
+      await db.query('DELETE FROM gcc_world.member_schedules WHERE member_id = $1', [memberId]);
+      for (let i = 0; i < days.length; i++) {
+        const day = schedule[days[i]];
+        if (!day) continue;
+        await db.query(
+          `INSERT INTO gcc_world.member_schedules (member_id, day_of_week, is_active, start_time, end_time)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [memberId, i + 1, day.active, day.start, day.end]
+        );
+      }
+      await db.query('COMMIT');
+    } catch (e) {
+      await db.query('ROLLBACK').catch(() => {});
+      throw e;
+    } finally { db.release(); }
 
     return NextResponse.json({ message: 'Disponibilidad actualizada' });
   } catch (err: any) {

@@ -845,7 +845,7 @@ export async function sendCredencialCandidato(opts: { personal: string; correo: 
     emailInfoBox('Correo corporativo', opts.correo) +
     emailInfoBox('Contraseña temporal', opts.claveTemporal) +
     emailButton(url, 'Ingresar a la plataforma') +
-    emailNote(`La contraseña temporal es válida hasta el ${fecha}. Una vez que definas tu contraseña, ingresas siempre con tu correo corporativo; tu correo personal ya no sirve para iniciar sesión.`),
+    emailNote(`La contraseña temporal es válida hasta el ${fecha}, y si hasta esa fecha no completas el formulario, se eliminan tu cuenta y tu postulación. El formulario pide tu foto, tus datos de perfil, tu currículum con tus talentos, y tu disponibilidad. Una vez completado, ingresas siempre con tu correo corporativo y la contraseña que definas.`),
   );
   return deliver({ from: FROM_EMAIL, to: opts.personal, subject: 'Cuenta corporativa creada — credencial de acceso', html });
 }

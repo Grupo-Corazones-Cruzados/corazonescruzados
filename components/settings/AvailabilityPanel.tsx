@@ -1,4 +1,5 @@
 'use client';
+import { ESTADOS, JORNADAS, MODALIDADES, type EstadoLaboral } from '@/lib/perfil/opciones';
 
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -30,25 +31,7 @@ const dayHours = (d: DaySchedule) => Math.max(0, toMin(d.end) - toMin(d.start)) 
  * malentendido de esta pantalla: el horario dice *a qué hora atiendes*, esto dice
  * *cuándo puedes empezar, con qué jornada y desde dónde*. Vive en
  * `member_cv_profiles` (campos `job_*`) y es lo que sale en el CV público.        */
-type EstadoLaboral = 'immediate' | 'from_date' | 'not_available';
-
-// Textos cortos: van en un segmentado de tres en 390 px (2026-10-30).
-const ESTADOS: { v: EstadoLaboral; label: string }[] = [
-  { v: 'immediate', label: 'De inmediato' },
-  { v: 'from_date', label: 'Desde una fecha' },
-  { v: 'not_available', label: 'No disponible' },
-];
-const JORNADAS = [
-  { v: 'full', label: 'Completa' },
-  { v: 'part', label: 'Media jornada' },
-  { v: 'both', label: 'Cualquiera' },
-];
-const MODALIDADES = [
-  { v: 'remote', label: 'Remoto' },
-  { v: 'hybrid', label: 'Híbrido' },
-  { v: 'onsite', label: 'Presencial' },
-  { v: 'any', label: 'Cualquiera' },
-];
+// Opciones compartidas con el formulario de alta: `lib/perfil/opciones.ts`.
 
 interface Laboral {
   job_status: EstadoLaboral;

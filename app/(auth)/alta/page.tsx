@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { PANEL_AUTH, TITULO_AUTH, TEXTO_AUTH, CAMPO_AUTH, ERROR_AUTH } from '@/components/landing/authEstilos';
+import FormularioAlta from './FormularioAlta';
 
 /**
  * EL FORMULARIO DE ALTA DEL CANDIDATO ACEPTADO (Fernando, 2026-11-12). Se llega por el enlace de la credencial que
@@ -12,10 +13,9 @@ import { PANEL_AUTH, TITULO_AUTH, TEXTO_AUTH, CAMPO_AUTH, ERROR_AUTH } from '@/c
  */
 export default function AltaCandidato() {
   const [paso, setPaso] = useState<'cargando' | 'ingreso' | 'datos'>('cargando');
-  const [cuenta, setCuenta] = useState<{ nombre: string | null; correo: string } | null>(null);
+  const [cuenta, setCuenta] = useState<{ correo: string; nombres: string; apellidos: string; talentos: string[] } | null>(null);
   const [correo, setCorreo] = useState('');
   const [clave, setClave] = useState('');
-  const [datos, setDatos] = useState({ password: '', confirmar: '', pais: '', telefono: '', direccion: '' });
   const [error, setError] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -32,21 +32,10 @@ export default function AltaCandidato() {
       const r = await fetch('/api/candidate/alta/entrar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ correo, clave }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { setError(j.error || 'No se pudo ingresar.'); return; }
-      setCuenta({ nombre: j.nombre, correo: j.correo }); setPaso('datos');
-    } catch { setError('Revisa tu conexión e inténtalo de nuevo.'); }
-    finally { setEnviando(false); }
-  };
-
-  const completar = async (e: React.FormEvent) => {
-    e.preventDefault(); setError('');
-    if (datos.password.length < 8) { setError('La contraseña debe tener al menos 8 caracteres.'); return; }
-    if (datos.password !== datos.confirmar) { setError('Las contraseñas no coinciden.'); return; }
-    setEnviando(true);
-    try {
-      const r = await fetch('/api/candidate/alta/completar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos) });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) { setError(j.error || 'No se pudo crear la cuenta.'); if (r.status === 401) setPaso('ingreso'); return; }
-      window.location.href = j.destino || '/dashboard';
+      // Con la sesión abierta se piden los datos del formulario (nombres de la postulación y talentos).
+      const d = await fetch('/api/candidate/alta/completar');
+      if (!d.ok) { setError('No se pudo abrir el formulario. Vuelve a intentarlo.'); return; }
+      setCuenta(await d.json()); setPaso('datos');
     } catch { setError('Revisa tu conexión e inténtalo de nuevo.'); }
     finally { setEnviando(false); }
   };
@@ -56,11 +45,6 @@ export default function AltaCandidato() {
       {enviando ? enCurso : texto}
     </button>
   );
-  const campo = (clave: keyof typeof datos, marcador: string, tipo = 'text', auto?: string) => (
-    <input type={tipo} required value={datos[clave]} autoComplete={auto} placeholder={marcador} aria-label={marcador}
-      onChange={(e) => setDatos({ ...datos, [clave]: e.target.value })} style={CAMPO_AUTH} />
-  );
-
   if (paso === 'cargando') return <div style={PANEL_AUTH} />;
 
   if (paso === 'ingreso') {
@@ -80,19 +64,6 @@ export default function AltaCandidato() {
     );
   }
 
-  return (
-    <div style={PANEL_AUTH}>
-      <h1 style={TITULO_AUTH}>Datos de la cuenta</h1>
-      <p style={TEXTO_AUTH}>{cuenta?.nombre ? `${cuenta.nombre} · ` : ''}{cuenta?.correo}</p>
-      <form onSubmit={completar} className="flex flex-col gap-2.5">
-        {campo('password', 'Contraseña (mín. 8)', 'password', 'new-password')}
-        {campo('confirmar', 'Repite la contraseña', 'password', 'new-password')}
-        {campo('pais', 'País', 'text', 'country-name')}
-        {campo('telefono', 'Teléfono', 'tel', 'tel')}
-        {campo('direccion', 'Dirección', 'text', 'street-address')}
-        {error && <div role="alert" style={ERROR_AUTH}>{error}</div>}
-        {boton('Crear cuenta e ingresar', 'Creando…')}
-      </form>
-    </div>
-  );
+  if (!cuenta) return <div style={PANEL_AUTH} />;
+  return <FormularioAlta cuenta={cuenta} alTerminar={(destino) => { window.location.href = destino; }} />;
 }

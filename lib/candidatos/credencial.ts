@@ -24,8 +24,14 @@ export async function emitirCredencialAlta(clientId: number | string, nombre?: s
   );
   if (!c || c.workspace_tipo !== 'grupo' || !c.workspace_email) throw new Error('Este candidato no tiene correo corporativo.');
   if (c.profile_completed) throw new Error('Este candidato ya creó su cuenta.');
+  // Vale hasta 7 días después de la APROBACIÓN, que es cuando se borra si no llenó el formulario (`purga.ts`):
+  // reenviarla no alarga ese plazo.
+  const { rows: [p] } = await pool.query(
+    `SELECT decided_at FROM gcc_world.candidate_proposals WHERE LOWER(email) = LOWER($1) AND status = 'approved' ORDER BY id DESC LIMIT 1`, [c.email]);
+  const desde = p?.decided_at ? new Date(p.decided_at).getTime() : Date.now();
+  const vence = new Date(desde + DIAS_CREDENCIAL * 24 * 3600_000);
+  if (vence.getTime() <= Date.now()) throw new Error('Pasaron los 7 días desde la aprobación: el candidato ya no puede completar el alta.');
   const clave = claveTemporal();
-  const vence = new Date(Date.now() + DIAS_CREDENCIAL * 24 * 3600_000);
   await pool.query(`UPDATE gcc_world.clients SET alta_clave_hash = $2, alta_clave_vence = $3 WHERE id = $1`,
     [c.id, await hashPassword(clave), vence]);
   const primerNombre = nombre || String(c.full_name || c.name || '').split(' ')[0] || '';

@@ -13,7 +13,8 @@ import { FONDO_AUTH } from '@/components/landing/authEstilos';
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="corp dark min-h-dvh flex items-center justify-center px-4 py-12" style={FONDO_AUTH}>
-      <div className="w-full max-w-[440px] flex flex-col items-center gap-[18px]">
+      {/* Un formulario largo (el alta del candidato, `.alta-ancha`) ensancha el marco; el resto, 440 px. */}
+      <div className="w-full max-w-[440px] has-[.alta-ancha]:max-w-[860px] flex flex-col items-center gap-[18px]">
         <div className="flex flex-col items-center gap-2">
           <LogoGirando tamano={40} />
           <span className="text-[0.72rem] tracking-[0.2em] text-white" style={{ fontFamily: 'var(--font-body)' }}>GCC WORLD</span>

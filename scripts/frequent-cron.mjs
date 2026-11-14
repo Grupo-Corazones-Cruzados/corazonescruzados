@@ -58,6 +58,8 @@ const NIGHTLY_JOBS = [
   { name: 'Media · nombres desde Drive',  path: '/api/media/cron/nombres' },
   // Firma electrónica de cada emisor a 30 días de vencer: campanita + correo, una vez (2026-11-09).
   { name: 'Facturación · firmas por vencer', path: '/api/facturacion/cron/firmas' },
+  // Candidatos aprobados que no llenaron el formulario de alta en 7 días: se borran con su correo corporativo (2026-11-14).
+  { name: 'Candidatos · purga sin alta',     path: '/api/candidatos/cron/purgar' },
 ];
 
 const APP_URL = (process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002').replace(/\/+$/, '');

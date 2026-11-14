@@ -1,4 +1,5 @@
 'use client';
+import { IDIOMAS as LISTA_IDIOMAS } from '@/lib/perfil/opciones';
 
 import { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -15,9 +16,8 @@ import PersonasBloqueadas from '@/components/settings/PersonasBloqueadas';
 import PasskeysPanel from '@/components/settings/PasskeysPanel';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 
-/** Idiomas del selector. Vive aquí porque aquí es donde se eligen. */
-const IDIOMAS = ['Español', 'Inglés', 'Portugués', 'Francés', 'Italiano', 'Alemán', 'Chino (Mandarín)', 'Japonés', 'Coreano', 'Ruso', 'Árabe', 'Kichwa', 'Catalán', 'Neerlandés', 'Hindi']
-  .map((l) => ({ value: l, label: l }));
+/** Idiomas del selector: la lista vive en `lib/perfil/opciones.ts` (la usa también el formulario de alta). */
+const IDIOMAS = LISTA_IDIOMAS.map((l) => ({ value: l, label: l }));
 import { User, Camera, RefreshCw, Save } from 'lucide-react';
 
 const mf = { fontFamily: 'var(--font-body)' } as const;
