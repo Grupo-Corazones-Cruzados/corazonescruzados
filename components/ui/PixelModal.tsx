@@ -108,7 +108,10 @@ export default function PixelModal({ open, onClose, title, size = 'md', busy = f
       // lo tapa entero `.modal-overlay`, que era quien recibía el clic: no cerraba nunca.
       onMouseDown={(e) => { pulsadoEnVelo.current = esVelo(e.target); }}
       onClick={(e) => { if (!busy && pulsadoEnVelo.current && esVelo(e.target)) onClose(); pulsadoEnVelo.current = false; }}
-      className="fixed inset-0 z-50 m-0 w-full h-full bg-transparent backdrop:bg-black/60 backdrop:backdrop-blur-sm"
+      // `max-w-none max-h-none` (2026-11-14): el navegador limita un <dialog> a `calc(100% - 38px)` de ancho y de alto;
+      // con `m-0` quedaba pegado arriba a la izquierda y la ventanita salía 19 px corrida (Fernando lo vio en el
+      // iPhone al denunciar, bloquear y eliminar la cuenta).
+      className="fixed inset-0 z-50 m-0 w-full h-full max-w-none max-h-none bg-transparent backdrop:bg-black/60 backdrop:backdrop-blur-sm"
     >
       <div ref={overlayRef} className="modal-overlay flex items-center justify-center min-h-full p-4">
         <div
