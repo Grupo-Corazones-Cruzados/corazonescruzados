@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import { Camera, Check, Plus, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { PANEL_AUTH, TITULO_AUTH, TEXTO_AUTH, CAMPO_AUTH, ERROR_AUTH } from '@/components/landing/authEstilos';
 import Segmentado from '@/components/ui/Segmentado';
-import Interruptor from '@/components/ui/Interruptor';
 import MultiSelectSearch from '@/components/ui/MultiSelectSearch';
 import { REGIMEN_TEXTO } from '@/components/facturacion/comun';
 import type { Regimen } from '@/lib/integrations/sri/regimen';
@@ -311,35 +310,48 @@ export default function FormularioAlta({ cuenta, alTerminar }: {
         </>}
 
         {paso === 4 && <>
-          <p className="text-[12.5px] text-digi-muted">Con tu RUC puedes emitir tus propias facturas desde la plataforma. Si no lo tienes, continúa; puedes agregarlo después en Configuración ▸ Facturación, junto con tu firma electrónica.</p>
-          <div className="grid sm:grid-cols-2 gap-2.5">
-            {campo(fact.ruc, (v) => setFact({ ...fact, ruc: v.replace(/\D/g, '').slice(0, 13) }), 'RUC (13 dígitos)', { inputMode: 'numeric' })}
-            {campo(fact.razonSocial, (v) => setFact({ ...fact, razonSocial: v }), 'Razón social')}
-            {campo(fact.nombreComercial, (v) => setFact({ ...fact, nombreComercial: v }), 'Nombre comercial (opcional)')}
-            {campo(fact.dirMatriz, (v) => setFact({ ...fact, dirMatriz: v }), 'Dirección matriz')}
+          {/* ORDENADO EN DOS BLOQUES (Fernando, 2026-11-14: los interruptores sueltos «se ven mezclados, un poco caos»):
+              los datos del RUC, y la tributación como una lista de preguntas, una por fila con su respuesta a la derecha.
+              Contabilidad e IVA son elecciones (No / Sí, No cobra / 15 % / 5 %), no interruptores. */}
+          <p className="text-[12.5px] text-digi-muted">Si aún no tienes RUC, continúa: lo agregas después en Configuración ▸ Facturación, junto con tu firma electrónica.</p>
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-digi-muted mb-2">Datos del RUC</p>
+            <div className="grid sm:grid-cols-2 gap-2.5">
+              {campo(fact.ruc, (v) => setFact({ ...fact, ruc: v.replace(/\D/g, '').slice(0, 13) }), 'RUC (13 dígitos)', { inputMode: 'numeric' })}
+              {campo(fact.razonSocial, (v) => setFact({ ...fact, razonSocial: v }), 'Razón social')}
+              {campo(fact.nombreComercial, (v) => setFact({ ...fact, nombreComercial: v }), 'Nombre comercial (opcional)')}
+              {campo(fact.dirMatriz, (v) => setFact({ ...fact, dirMatriz: v }), 'Dirección matriz')}
+            </div>
           </div>
-          {fact.ruc && <>
+          {fact.ruc && (
             <div>
-              <label className={etiqueta}>Régimen</label>
-              <Segmentado etiqueta="Régimen" className="w-full" valor={fact.regimen}
-                onChange={(regimen) => setFact({ ...fact, regimen, cobraIva: regimen === 'rimpe_negocio_popular' ? false : fact.cobraIva })}
-                opciones={(['rimpe_negocio_popular', 'rimpe_emprendedor', 'general'] as Regimen[]).map((r) => ({ valor: r, texto: REGIMEN_TEXTO[r] }))} />
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-digi-muted mb-1">Tributación</p>
+              <div className="divide-y divide-digi-border border-y border-digi-border">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-3">
+                  <span className="text-[13px] text-digi-text">Régimen</span>
+                  <Segmentado etiqueta="Régimen" className="w-full sm:w-[420px]" valor={fact.regimen}
+                    onChange={(regimen) => setFact({ ...fact, regimen, cobraIva: regimen === 'rimpe_negocio_popular' ? false : fact.cobraIva })}
+                    opciones={(['rimpe_negocio_popular', 'rimpe_emprendedor', 'general'] as Regimen[]).map((r) => ({ valor: r, texto: REGIMEN_TEXTO[r] }))} />
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-3">
+                  <span className="text-[13px] text-digi-text">Obligado a llevar contabilidad</span>
+                  <Segmentado etiqueta="Obligado a llevar contabilidad" className="w-full sm:w-[420px]" valor={fact.obligadoContabilidad ? 'si' : 'no'}
+                    onChange={(v) => setFact({ ...fact, obligadoContabilidad: v === 'si' })}
+                    opciones={[{ valor: 'no', texto: 'No' }, { valor: 'si', texto: 'Sí' }]} />
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-3">
+                  <span className="text-[13px] text-digi-text">IVA</span>
+                  {fact.regimen === 'rimpe_negocio_popular' ? (
+                    <span className="text-[13px] text-digi-muted sm:w-[420px] sm:text-center">No cobra (Negocio Popular)</span>
+                  ) : (
+                    <Segmentado etiqueta="IVA" className="w-full sm:w-[420px]" valor={fact.cobraIva ? fact.tarifaIva : 'no'}
+                      onChange={(v) => setFact({ ...fact, cobraIva: v !== 'no', tarifaIva: v === 'no' ? fact.tarifaIva : v })}
+                      opciones={[{ valor: 'no', texto: 'No cobra' }, { valor: '4', texto: '15 %' }, { valor: '5', texto: '5 %' }]} />
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-              <label className="flex items-center gap-3 text-[13px] text-digi-text">
-                <Interruptor activo={fact.obligadoContabilidad} etiqueta="Obligado a llevar contabilidad" onChange={(v) => setFact({ ...fact, obligadoContabilidad: v })} />
-                Obligado a llevar contabilidad
-              </label>
-              <label className="flex items-center gap-3 text-[13px] text-digi-text">
-                <Interruptor activo={fact.cobraIva} etiqueta="Cobra IVA" disabled={fact.regimen === 'rimpe_negocio_popular'} onChange={(v) => setFact({ ...fact, cobraIva: v })} />
-                Cobra IVA
-              </label>
-              {fact.cobraIva && (
-                <Segmentado etiqueta="Tarifa de IVA" className="max-w-[220px]" valor={fact.tarifaIva} onChange={(tarifaIva) => setFact({ ...fact, tarifaIva })}
-                  opciones={[{ valor: '4', texto: '15 %' }, { valor: '5', texto: '5 %' }]} />
-              )}
-            </div>
-          </>}
+          )}
         </>}
 
         {paso === 5 && (
