@@ -17,11 +17,15 @@ final class Delegado: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKU
         let config = WKWebViewConfiguration()
         // La web pregunta por este puente para saberse dentro de una app instalada (`esAppInstalada`).
         config.userContentController.add(self, name: "gccEscritorio")
+        // La versión de la Mac App Store (`construir-tienda.sh`, `-D TIENDA`) va sin el inspector ni la depuración:
+        // `developerExtrasEnabled` es una clave privada de WebKit y Apple rechaza las apps que usan API privadas.
+        #if !TIENDA
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
         if ProcessInfo.processInfo.environment["GCC_DEPURAR"] != nil {
             let js = "window.__errores=[];addEventListener('error',e=>__errores.push(String(e.message||e.target?.src||e.target?.href)),true);addEventListener('unhandledrejection',e=>__errores.push('promesa: '+e.reason))"
             config.userContentController.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentStart, forMainFrameOnly: true))
         }
+        #endif
         web = WKWebView(frame: .zero, configuration: config)
         web.navigationDelegate = self
         web.uiDelegate = self
@@ -167,6 +171,9 @@ final class Delegado: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKU
     /// Prueba desde la terminal: `GCC_DEPURAR=/tmp/foto <app>/Contents/MacOS/GCCEscritorio` escribe cada
     /// página cargada y guarda una foto de la ventana (sin pedir permiso de grabar la pantalla).
     func webView(_ w: WKWebView, didFinish n: WKNavigation!) {
+        #if TIENDA
+        return
+        #else
         guard let ruta = ProcessInfo.processInfo.environment["GCC_DEPURAR"] else { return }
         DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
             w.evaluateJavaScript("[location.href, document.readyState, document.title, document.documentElement.outerHTML.length, document.querySelector('.corp')?.className || '', document.body.innerText.replace(/\\s+/g,' ').slice(0,160), JSON.stringify(window.__errores||[]).slice(0,1500)].join(' | ')") { r, _ in
@@ -187,6 +194,7 @@ final class Delegado: NSObject, NSApplicationDelegate, WKNavigationDelegate, WKU
                 try? png.write(to: URL(fileURLWithPath: ruta + "-\(Int(Date().timeIntervalSince1970)).png"))
             }
         }
+        #endif
     }
 
     /// Una página que no carga (sin red): se avisa y se puede reintentar con ⌘R.
