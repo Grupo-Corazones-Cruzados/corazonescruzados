@@ -154,3 +154,41 @@ Passkey → **Añadir**; cerrar sesión y entrar con **Entrar con passkey**.
 ### ☐ D3. Cuenta de desarrollador de Apple (99 $/año)
 Hace falta para las passkeys dentro de las apps de iPhone, iPad y Mac (decisión de Fernando del 2026-11-11: esperar a
 la cuenta en vez de usar la ventana del sistema). Con ella, Claude añade el permiso de dominios asociados.
+
+---
+
+## E. Credenciales que estuvieron publicadas en GitHub (encontradas por la auditoría del 2026-11-13)
+
+El repositorio `Grupo-Corazones-Cruzados/corazonescruzados` es **público**. Desde agosto tenía dos documentos con
+contraseñas. Claude los sacó del repositorio (quedan solo en tu Mac, ignorados por git), pero siguen en el historial
+de git: lo que protege es cambiar las contraseñas.
+
+### ✅ E0. Cuenta `revisor.meta@grupocc.org` de GCC World (hecho por Claude, 2026-11-13)
+Contraseña nueva y todas sus sesiones anuladas; comprobado que la vieja ya no entra. Sigue siendo `client` y sin
+segundo paso, porque así se le prometió a Meta en la revisión de la app. La contraseña nueva está en el
+**Llavero** de la M4 Pro: app **Acceso a Llaveros** → buscar **«revisor.meta»**.
+
+### ☐ E1. Poner la contraseña nueva del revisor en Meta (5 min)
+**Por qué:** en la revisión de la app de WhatsApp se prometió a Meta que esa cuenta seguiría entrando durante un año.
+Si Meta vuelve a revisar con la contraseña vieja, no entrará.
+1. Abrir **developers.facebook.com/apps** → la app de GCC (proveedor de tecnología) → **Revisión de la app**
+   (*App Review*) → **Solicitudes** → la solicitud aprobada → instrucciones de prueba / credenciales.
+2. Cambiar la contraseña por la del Llavero (E0). Si la solicitud ya cerrada no deja editarla, anotarla en la
+   próxima solicitud o en *Configuración → Básica → Instrucciones para revisores* si aparece.
+3. Avisar a Claude.
+
+### ☐ E2. Peters Tours: el usuario `meta.review` de su sistema y el PIN de WhatsApp (con Diego)
+**Por qué:** `guia-coexistencia-proveedor.html` publicó el usuario y la contraseña de `meta.review` (rol *asesor*,
+**lee y responde conversaciones reales** de los clientes de Peters Tours) y el PIN de dos pasos elegido para su
+número. Ese sistema es del proyecto de Diego (`Diego/Sistema Contable`, repo privado). Claude no lo tocó porque
+es de otro proyecto y porque `docs/REVISION_META.md` de ese proyecto promete a Meta no cambiar esa contraseña
+hasta agosto de 2027.
+1. Con Diego: cambiar la contraseña de `meta.review` **y el mismo día** actualizarla en la revisión de la app de
+   Peters Tours en Meta (igual que E1). Si prefieren, Claude lo hace en ese proyecto cuando lo pidan expresamente.
+2. El PIN de dos pasos **todavía no se aplicó** (`is_pin_enabled: false`): cuando se active, usar **otro** PIN, no
+   el que figuraba en la guía.
+3. Avisar a Peters Tours de que hubo exposición y de qué se cambió. Claude puede redactar el mensaje.
+
+### ☐ E3. Cuenta `revisor.tiendas@gcc.test` (administradora, sin segundo paso)
+Su contraseña **no** estaba en GitHub (está solo en Play Console y App Store Connect). Al aprobarse la revisión de
+Apple y Google, pedir a Claude que la baje a `client` o le cambie la contraseña.
