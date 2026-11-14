@@ -2000,6 +2000,13 @@ teléfono, y salió con la piel pixel antigua (Silkscreen, borde violeta, campo 
 - **Botón cerrar (X) junto a acciones:** ambos como botones **32×32** (`w-8 h-8 flex items-center
   justify-center rounded-md`) en un contenedor `flex items-center` para que queden a la misma altura.
 
+### Recorrido del sitio con el camino ARRIBA (`RecorridoPagina arriba`, Fernando, 2026-11-14)
+
+Con pocos apartados (Clientes: Soluciones · Tickets · Proyectos) el camino va en **una fila encima** del
+apartado y este se queda con todo el ancho: con el camino a la izquierda «el contenido principal se fue a la
+derecha y tiene menos espacio y se ve muy angosto». Los pasos se unen con una línea horizontal; en el teléfono,
+el desplegable de siempre. Candidatos (siete apartados) sigue con el camino vertical a la izquierda.
+
 ### Beneficios del sitio: «Próximamente» también por tarjeta (2026-11-12)
 
 En `BeneficiosCandidatos`, un grupo entero puede ser «Próximamente» (videojuego) y ahora también **una sola
