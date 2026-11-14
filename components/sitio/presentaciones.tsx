@@ -45,6 +45,15 @@ export const PRESENTACION_CANDIDATOS: Presentacion = {
 };
 
 /**
+ * Miembros (Fernando, 2026-11-14): el título, literal. La descripción la dicta él después.
+ */
+export const PRESENTACION_MIEMBROS: Presentacion = {
+  etiqueta: 'Miembros',
+  titulo: 'Un sueño imposible, contra una Disciplina Centralizada',
+  texto: '',
+};
+
+/**
  * Soluciones abre con CIFRAS REALES de lo que ya está hecho, contadas del mismo contenido que
  * enseña el explorador (nada escrito a mano). Una cifra a cero no se enseña.
  */

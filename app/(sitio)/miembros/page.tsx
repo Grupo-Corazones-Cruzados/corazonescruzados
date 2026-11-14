@@ -7,6 +7,8 @@
  */
 
 import type { Metadata } from 'next';
+import { Contenedor, PresentacionPagina } from '@/components/sitio/piezas';
+import { PRESENTACION_MIEMBROS } from '@/components/sitio/presentaciones';
 
 export const metadata: Metadata = {
   title: 'Miembros',
@@ -18,6 +20,9 @@ export default function MiembrosPage() {
   return (
     <section className="flex-1 pt-6 sm:pt-10 pb-16">
       <h1 className="sr-only">Miembros</h1>
+      <Contenedor ancho="sitio">
+        <PresentacionPagina {...PRESENTACION_MIEMBROS} />
+      </Contenedor>
     </section>
   );
 }

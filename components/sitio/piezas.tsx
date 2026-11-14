@@ -490,7 +490,8 @@ export function PresentacionPagina({
           {etiqueta}
         </p>
         <p className="presentacion-titulo">{titulo}</p>
-        <p className="presentacion-texto">{texto}</p>
+        {/* Sin texto mientras Fernando lo dicta (Miembros, 2026-11-14). */}
+        {texto && <p className="presentacion-texto">{texto}</p>}
         {accion && <div className="presentacion-accion">{accion}</div>}
       </div>
       {derecha && <div className="presentacion-visual">{derecha}</div>}
